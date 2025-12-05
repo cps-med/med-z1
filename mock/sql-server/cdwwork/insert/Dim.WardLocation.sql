@@ -1,0 +1,35 @@
+-----------------------------------------------------------------------
+-- Dim.WardLocation.sql
+-- Insert sample data into WardLocation
+-- WardLoacationSID => 2001 series
+-----------------------------------------------------------------------
+
+PRINT '==== Dim.WardLocation ====';
+GO
+
+-- set the active database
+USE CDWWork;
+GO
+
+-- Insert data into Dim.WardLocation table
+INSERT INTO Dim.WardLocation
+(
+    WardLocationSID, WardLocationIEN, Sta3n, WardLocationName, DivisionSID, DivisionName, Sta6a, SpecialtySID, Specialty, BedSection, MedicalService, PrimaryLocation, NursingService, GLOrder, LocationSID
+)
+VALUES
+(2001,'WardLocIENAtlanta19',   508, 'MICU',     2001, 'ATLANTA VAMC','508',1200000128,'MEDICAL ICU','MICU','MEDICINE','GEN MED','NULL',310.0000,430587),
+(2002,'WardLocIENAtlanta20',   508, 'CCU',      2001, 'ATLANTA VAMC','508',1200000128,'MEDICAL ICU','CCU','MEDICINE','GEN MED','NULL',315.0000,431096),
+(2003,'WardLocIENAtlanta29',   508, 'SICU',     2001, 'ATLANTA VAMC','508',1200000184,'SURGICAL ICU','SICU','SURGERY','SURGERY','NULL',110.0000,430580),
+(2004,'WardLocIENAtlanta35',   508, 'NHCU 2',   2001, 'ATLANTA VAMC','508',1200000203,'NHCU','NHCU 2','NHCU','NHCU','NULL',450.0000,431138),
+(2005,'WardLocIENAtlanta36',   508, 'NHCU 3',   2001, 'ATLANTA VAMC','508',1200000203,'NHCU','NHCU 3','NHCU','NHCU','NULL',470.0000,431139),
+(2006,'WardLocIENBayPines107', 516, 'MICU/OB',  2002, 'BAY PINES','516',1200000477,'MEDICAL OBSERVATION','MED OB','NON-COUNT','OB/MED','NULL',28.0000,19843),
+(2007,'WardLocIENBayPines120', 516, '5A/REHAB', 2002, 'BAY PINES','516',1200000473,'REHABILITATION MEDICINE','REHAB','REHAB MEDICINE','REHAB','NULL',9.7500,27888),
+(2008,'WardLocIENBayPines124', 516, '5B/OB',    2002, 'BAY PINES','516',1200000477,'MEDICAL OBSERVATION','MED OB','NON-COUNT','OB/MED','NULL',33.0000,29606),
+(2009,'WardLocIENBayPines153', 516, 'CLCWEST',  2002, 'BAY PINES','516',1200000539,'NHCU','NHCU','NHCU','NHCU','MED',25.0000,506226),
+(2010,'WardLocIENDayton109',   552, '5 S (S)',  2003, 'DAYTON','552',1200001771,'NHCU','B-330','NHCU','MED CTR','NULL',425.0000,593000),
+(2011,'WardLocIENDayton27',    552, 'NH 1',     2003, 'DAYTON','552',1200001771,'NHCU','B-320','NHCU','MED CTR','NULL',340.0000,82984),
+(2012,'WardLocIENDayton36',    552, '410 M',    2003, 'DAYTON','552',1200001776,'DOMICILIARY','B-410','DOMICILIARY','MED CTR','NULL',530.0000,82992),
+(2013,'WardLocIENDayton45',    552, '6 N (R)',  2003, 'DAYTON','552',1200001771,'NHCU','B-330','NHCU','MED CTR','NULL',427.0000,90255),
+(2014,'WardLocIENDayton46',    552, 'ICU (S)',  2003, 'DAYTON','552',1200001752,'SURGICAL ICU','SURGERY','SURGERY','MED CTR','NULL',60.0000,90256),
+(2015,'WardLocIENDayton47',    552, '4 N (S)',  2003, 'DAYTON','552',1200001738,'GENERAL SURGERY','SURGERY','SURGERY','MED CTR','NULL',79.2000,90257);
+GO

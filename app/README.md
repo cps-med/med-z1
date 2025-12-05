@@ -1,4 +1,4 @@
-# med-z1 / app
+# app
 
 This is the initial FastAPI + HTMX + Jinja UI shell for med-z1. Current pages are demo-only (overview, HTMX basics, timer) and will be gradually replaced with JLV-like patient views.
 
@@ -17,7 +17,7 @@ pip install fastapi "uvicorn[standard]" jinja2 python-multipart
 
 Then:
 ```
-cd app
-uvicorn main:app --reload
+cd med-z1
+uvicorn app.main:app --reload
 ```
 
