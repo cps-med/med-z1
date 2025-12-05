@@ -1,0 +1,29 @@
+<div class="panel" style="text-align: center; padding: 3rem;">
+    <div style="display: grid; gap: 1rem; margin-bottom: 2rem;">
+        
+        <div>
+            <span style="color: #6b7280; font-size: 0.9rem;">Total Duration</span>
+            <div style="font-size: 2.5rem; font-weight: 800; color: #4f46e5;">
+                {{ duration }}
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: center; gap: 2rem; font-size: 0.9rem; color: #374151;">
+            <div>
+                <strong>Start:</strong> {{ start_time_display }}
+            </div>
+            <div>
+                <strong>End:</strong> {{ stop_time_display }}
+            </div>
+        </div>
+    </div>
+
+    <button 
+        class="btn btn--primary"
+        hx-post="/timer/start"
+        hx-target="closest div"
+        hx-swap="outerHTML"
+    >
+        Start
+    </button>
+</div>

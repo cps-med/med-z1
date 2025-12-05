@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Timer · Med Dashboard{% endblock %}
+
+{% block header_title %}Timer{% endblock %}
+
+{% block header_subtitle %}
+Track task duration with a simple start/stop mechanism.
+{% endblock %}
+
+{% block content %}
+<section style="max-width: 600px; margin: 0 auto;">
+    
+    <div class="panel" style="text-align: center; padding: 3rem;">
+        
+        <div style="margin-bottom: 2rem; color: #6b7280;">
+            Ready to track time?
+        </div>
+
+        <button 
+            class="btn btn--primary"
+            hx-post="/timer/start" 
+            hx-target="closest div" 
+            hx-swap="outerHTML"
+        >
+            Start
+        </button>
+    </div>
+
+</section>
+{% endblock %}

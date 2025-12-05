@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block title %}Overview · Med Dashboard{% endblock %}
+
+{% block header_title %}Overview{% endblock %}
+
+{% block header_subtitle %}
+Summary of current data, jobs, and system status.
+{% endblock %}
+
+{% block content %}
+
+<!-- Top summary cards -->
+<section class="cards-grid">
+    <article class="card card--accent">
+        <div class="card__label">Total Records</div>
+        <div class="card__value">
+            {{ summary.total_records | default(0) | string }}
+        </div>
+        <div class="card__meta">Across all datasets</div>
+    </article>
+
+    <article class="card">
+        <div class="card__label">Jobs Running</div>
+        <div class="card__value">
+            {{ summary.jobs_running | default(0) }}
+        </div>
+        <div class="card__meta">Active ETL / ML jobs</div>
+    </article>
+
+    <article class="card">
+        <div class="card__label">Last Successful Run</div>
+        <div class="card__value">
+            {{ summary.last_run | default("N/A") }}
+        </div>
+        <div class="card__meta">Pipeline status</div>
+    </article>
+
+    <article class="card card--warning">
+        <div class="card__label">Open Alerts</div>
+        <div class="card__value">
+            {{ summary.alerts | default(0) }}
+        </div>
+        <div class="card__meta">Data quality or job issues</div>
+    </article>
+
+<!-- New System Info card -->
+    <article class="card">
+        <div class="card__label">System Info</div>
+        <div class="card__value">
+            {{ summary.cdwwork_db_server | default("N/A") }}
+        </div>
+        <div class="card__meta">
+            MinIO:
+            {% if summary.use_minio %}
+                On (bucket: {{ summary.minio_bucket }})
+            {% else %}
+                Off
+            {% endif %}
+        </div>
+    </article>
+
+
+<!-- Another New System Info card -->
+    <article class="card card--warning">
+        <div class="card__label">Chuck Test</div>
+        <div class="card__value">
+            Card Text: Hi!
+        </div>
+        <div class="card__meta">
+            CPS Comment:
+            {{ summary.cps_comment | default("N/A") }}
+        </div>
+    </article>
+
+
+</section>
+
+<!-- Two-column layout -->
+<section class="grid-2">
+    <!-- Recent activity -->
+    <section class="panel">
+        <header class="panel__header">
+            <h2 class="panel__title">Recent Activity</h2>
+        </header>
+        <ul class="activity-list">
+            {% for item in recent_activity %}
+                <li class="activity-list__item">
+                    <span class="activity-list__dot"></span>
+                    <span class="activity-list__text">{{ item }}</span>
+                </li>
+            {% else %}
+                <li class="activity-list__item activity-list__item--empty">
+                    No recent activity.
+                </li>
+            {% endfor %}
+        </ul>
+    </section>
+
+    <!-- HTMX time widget + placeholder table -->
+    <section class="panel">
+        <header class="panel__header panel__header--split">
+            <div>
+                <h2 class="panel__title">System Snapshot</h2>
+                <p class="panel__subtitle">
+                    The current time is loaded dynamically via HTMX.
+                </p>
+            </div>
+            <div>
+                <button
+                    class="btn btn--small btn--outline"
+                    hx-get="/time"
+                    hx-target="#time-container"
+                    hx-swap="innerHTML"
+                >
+                    Refresh Time
+                </button>
+            </div>
+        </header>
+
+        <div id="time-container" class="time-box">
+            <span class="time-box__placeholder">
+                Click “Refresh Time” to load current time.
+            </span>
+        </div>
+
+        <div class="table-wrapper">
+            <div class="table-header">
+                <h3 class="table-header__title">Sample Jobs</h3>
+                <span class="table-header__meta">Static placeholder data</span>
+            </div>
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>Job</th>
+                    <th>Status</th>
+                    <th>Last Run</th>
+                    <th>Duration</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td>Daily ETL – Prescriptions</td>
+                    <td><span class="status-pill status-pill--success">Success</span></td>
+                    <td>Today 07:32</td>
+                    <td>3m 12s</td>
+                </tr>
+                <tr>
+                    <td>Weekly – DDI Scan</td>
+                    <td><span class="status-pill status-pill--warning">Running</span></td>
+                    <td>Today 07:30</td>
+                    <td>—</td>
+                </tr>
+                <tr>
+                    <td>Monthly – Data Quality Report</td>
+                    <td><span class="status-pill status-pill--error">Failed</span></td>
+                    <td>Yesterday 22:14</td>
+                    <td>1m 05s</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</section>
+
+{% endblock %}

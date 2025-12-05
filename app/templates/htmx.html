@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}HTMX · Example{% endblock %}
+
+{% block header_title %}htmx{% endblock %}
+
+{% block header_subtitle %}
+Experimenting with htmx basics.
+{% endblock %}
+
+{% block content %}
+
+<section style="max-width: 600px; margin: 0 auto;">
+
+    <div class="panel" style="text-align: center; padding: 3rem;">
+        <div style="margin-bottom: 2rem; color: #6b7280;">
+            Ready to get started?
+        </div>
+        <button 
+            class="btn btn--primary"
+            onclick="showTimeAlert()"
+        >
+            Start
+        </button>
+    </div>
+
+    <!-- <img 
+        src="/static/images/loading_icon.gif" 
+        alt="Loading..."
+        style="
+            width: 100%; 
+            border-radius: 0.5rem; 
+            margin-top: 1rem; 
+            display: block;
+        "
+    > -->
+
+</section>
+
+<script>
+    function showTimeAlert() {
+        const now = new Date();
+        
+        // This formats the time to '11:24 AM' style (short time)
+        const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        
+        alert("You clicked the Start button at " + timeString + ".");
+    }
+</script>
+
+{% endblock %}

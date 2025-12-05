@@ -1,0 +1,599 @@
+/* Custom Styling */
+
+/* --------- CSS RESET-ish --------- */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+    background: #f3f4f6;
+    color: #111827;
+}
+
+/* --------- Layout --------- */
+.layout {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* --------- Sidebar --------- */
+.sidebar {
+    width: 260px;
+    background: #323232;
+    color: #e5e7eb;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem 1.25rem;
+    transition: width 0.3s ease, padding 0.3s ease; 
+    overflow: hidden;
+    white-space: nowrap;
+    position: relative;
+    z-index: 20;
+}
+
+.sidebar__brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.sidebar__logo {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #06b6d4, #4f46e5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    text-transform: lowercase;
+    font-size: 1rem;
+    
+    /* Prevent the logo square from shrinking */
+    flex-shrink: 0;
+}
+
+.sidebar__brand-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.brand-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.brand-subtitle {
+    font-size: 0.75rem;
+    color: #9ca3af;
+}
+
+.sidebar__nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-bottom: auto;
+}
+
+.sidebar__link {
+    display: flex;    
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.55rem 0.65rem;
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
+    color: #e5e7eb;
+    text-decoration: none;
+    opacity: 0.9;   
+    position: relative;
+    overflow: visible;
+}
+
+.sidebar__icon {
+    font-size: 1.2rem;
+    min-width: 24px;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sidebar__text {
+    white-space: nowrap;
+    transition: opacity 0.2s ease;
+}
+
+.sidebar__link:hover {
+    background: rgba(148, 163, 184, 0.12);
+    opacity: 1;
+}
+
+.sidebar__link--active {
+    background: linear-gradient(135deg, #06b6d4, #4f46e5);
+    /* color:#f9fafb; */
+    color: gold;
+    opacity: 1;
+}
+
+.sidebar__footer {
+    padding-top: 1.5rem;
+    font-size: 0.8rem;
+    color: #9ca3af;
+    border-top: 1px solid rgba(148, 163, 184, 0.4);
+    margin-top: 1.5rem;
+}
+
+.sidebar__user-label {
+    display: block;
+    margin-bottom: 0.2rem;
+}
+
+.sidebar__user-name {
+    color: #e5e7eb;
+}
+
+/* --------- Main --------- */
+.main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* --------- Top bar --------- */
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.75rem;
+    background: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.topbar__title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.topbar__subtitle {
+    margin: 0.25rem 0 0;
+    font-size: 0.85rem;
+    color: #6b7280;
+}
+
+.topbar__right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Make title+subtitle align nicely next to the icon button */
+.topbar__left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.topbar__titles {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Sidebar transition */
+.sidebar {
+    transition: width 0.2s ease, padding 0.2s ease;
+}
+
+/* --------------------------------------------------------- */
+/* NEW COLLAPSED LOGIC                                      */
+/* Replaces the old "Hide text labels" block                */
+/* --------------------------------------------------------- */
+
+/* 1. Shrink the sidebar container */
+.layout--sidebar-collapsed .sidebar {
+    width: 64px;
+    padding-inline: 0.5rem;
+    overflow: visible;
+}
+
+/* 2. Hide the specific TEXT span, but leave the ICON span alone */
+.layout--sidebar-collapsed .sidebar__text {
+    opacity: 0;
+    width: 0;
+    pointer-events: none;
+}
+
+/* 3. Center the icons in the narrow strip */
+.layout--sidebar-collapsed .sidebar__link {
+    justify-content: center; 
+    padding-inline: 0;
+    gap: 0;
+}
+
+/* Override the active background only when collapsed */
+.layout--sidebar-collapsed .sidebar__link--active {
+    background: transparent; 
+    /* Optional: If you had a box-shadow on the active state, remove it too */
+    box-shadow: none;
+}
+
+/* 4. Ensure the Brand Text fades out (Title & Subtitle) */
+.layout--sidebar-collapsed .sidebar__brand-text {
+    display: none; /* Or use opacity: 0 if you want it to fade */
+}
+
+/* 5a. Keep the footer container visible so the border-top (HR) shows */
+.layout--sidebar-collapsed .sidebar__footer {
+    display: block; 
+}
+
+/* 5b. Hide the text content inside it */
+.layout--sidebar-collapsed .sidebar__user-label,
+.layout--sidebar-collapsed .sidebar__user-name {
+    display: none;
+}
+
+/* 6. Center the logo */
+.layout--sidebar-collapsed .sidebar__brand {
+    justify-content: center;
+    margin-right: 0;
+}
+
+
+/* Center logo in collapsed mode */
+.layout--sidebar-collapsed .sidebar__brand {
+    justify-content: center;
+}
+
+/* Keep nav links centered */
+.layout--sidebar-collapsed .sidebar__nav {
+    align-items: center;
+}
+
+/* --------- Content --------- */
+.content {
+    padding: 1.5rem 1.75rem 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* --------- Buttons --------- */
+.btn {
+    border-radius: 0.5rem;
+    border: none;
+    padding: 0.5rem 0.9rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    font-weight: 500;
+    transition: background 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
+}
+
+.btn--primary {
+    background: linear-gradient(135deg, #06b6d4, #4f46e5);
+    color: #f9fafb;
+}
+
+.btn--primary:hover {
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.25);
+}
+
+.btn--secondary {
+    background: #e5e7eb;
+    color: #111827;
+}
+
+.btn--secondary:hover {
+    background: #d1d5db;
+}
+
+.btn--outline {
+    background: transparent;
+    border: 1px solid #d1d5db;
+    color: #111827;
+}
+
+.btn--outline:hover {
+    background: #f3f4f6;
+}
+
+.btn--small {
+    padding: 0.3rem 0.65rem;
+    font-size: 0.8rem;
+}
+
+/* --------- Cards --------- */
+.cards-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.card {
+    background: #ffffff;
+    border-radius: 0.8rem;
+    padding: 0.9rem 1rem;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+    border: 1px solid #e5e7eb;
+}
+
+.card--accent {
+    background: linear-gradient(135deg, #06b6d4, #4f46e5);
+    color: #e5e7eb;
+    border-color: transparent;
+}
+
+.card--warning {
+    border-color: #f97316;
+}
+
+.card__label {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #6b7280;
+}
+
+.card--accent .card__label {
+    color: #e5e7eb;
+    opacity: 0.8;
+}
+
+.card__value {
+    margin-top: 0.3rem;
+    font-size: 1.4rem;
+    font-weight: 600;
+}
+
+.card__meta {
+    margin-top: 0.2rem;
+    font-size: 0.8rem;
+    color: #9ca3af;
+}
+
+.card--accent .card__meta {
+    color: #d1d5db;
+}
+
+/* --------- Panels & grid --------- */
+.grid-2 {
+    display: grid;
+    grid-template-columns: 2fr 3fr;
+    gap: 1.25rem;
+}
+
+.panel {
+    background: #ffffff;
+    border-radius: 0.9rem;
+    padding: 1rem 1.1rem 1.1rem;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+    border: 1px solid #e5e7eb;
+}
+
+.panel__header {
+    margin-bottom: 0.75rem;
+}
+
+.panel__header--split {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.panel__title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.panel__subtitle {
+    margin: 0.25rem 0 0;
+    font-size: 0.8rem;
+    color: #6b7280;
+}
+
+/* --------- Activity list --------- */
+.activity-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.activity-list__item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.4rem 0;
+    font-size: 0.9rem;
+}
+
+.activity-list__item + .activity-list__item {
+    border-top: 1px solid #f3f4f6;
+}
+
+.activity-list__item--empty {
+    color: #9ca3af;
+    font-style: italic;
+}
+
+.activity-list__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    margin-top: 0.3rem;
+    background: #4f46e5;
+    flex-shrink: 0;
+}
+
+.activity-list__text {
+    flex: 1;
+}
+
+/* --------- Time box --------- */
+.time-box {
+    background: #f9fafb;
+    border-radius: 0.6rem;
+    padding: 0.75rem 0.85rem;
+    border: 1px dashed #d1d5db;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+}
+
+.time-box__placeholder {
+    color: #9ca3af;
+}
+
+.time-box__value strong {
+    font-weight: 600;
+}
+
+/* --------- Table --------- */
+.table-wrapper {
+    margin-top: 0.5rem;
+}
+
+.table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 0.35rem;
+}
+
+.table-header__title {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.table-header__meta {
+    font-size: 0.8rem;
+    color: #9ca3af;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+
+.table thead {
+    background: #f9fafb;
+}
+
+.table th,
+.table td {
+    text-align: left;
+    padding: 0.45rem 0.5rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.table th {
+    font-weight: 500;
+    color: #6b7280;
+}
+
+/* --------- Status pills --------- */
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    padding: 0.12rem 0.55rem;
+    font-size: 0.7rem;
+    font-weight: 500;
+}
+
+.status-pill--success {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.status-pill--warning {
+    background: #fef9c3;
+    color: #a16207;
+}
+
+.status-pill--error {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+/* --------- Responsive tweaks --------- */
+@media (max-width: 960px) {
+    .sidebar {
+        display: none; /* keep it simple for now */
+    }
+
+    .topbar {
+        padding-inline: 1rem;
+    }
+
+    .content {
+        padding-inline: 1rem;
+    }
+
+    .cards-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .grid-2 {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .cards-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* --- Tooltip Styles --- */
+
+/* Only show tooltip when sidebar is collapsed AND user hovers */
+.layout--sidebar-collapsed .sidebar__link:hover::after {
+    content: attr(data-tooltip); /* Grab the text from HTML */
+    
+    position: absolute;
+    left: 100%;              /* Position it to the right of the button */
+    top: 50%;                /* Center vertically */
+    transform: translateY(-50%); 
+    
+    margin-left: 10px;       /* Little gap from the sidebar */
+    background: #111827;     /* Dark background */
+    color: white;
+    padding: 0.4rem 0.8rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    white-space: nowrap;     /* Don't let the name wrap */
+    z-index: 50;             /* Ensure it floats on top of everything */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    pointer-events: none;    /* Mouse clicks should go through it */
+}
+
+/* Optional: A tiny arrow pointing left at the sidebar */
+.layout--sidebar-collapsed .sidebar__link:hover::before {
+    content: "";
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-left: 4px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: transparent #111827 transparent transparent;
+    z-index: 50;
+}

@@ -1,0 +1,16 @@
+<div class="panel" style="text-align: center; padding: 3rem;">
+    <h3 style="margin-bottom: 0.5rem; font-weight: 500; color: #6b7280;">
+        Started at
+    </h3>
+    <div style="font-size: 2rem; font-weight: 700; margin-bottom: 2rem;">
+        {{ start_time_display }}
+    </div>
+
+    <form hx-post="/timer/stop" hx-target="closest div" hx-swap="outerHTML">
+        <input type="hidden" name="start_timestamp" value="{{ start_timestamp }}">
+        
+        <button type="submit" class="btn btn--primary" style="background: #ef4444;">
+            Stop
+        </button>
+    </form>
+</div>

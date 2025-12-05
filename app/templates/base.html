@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Med Dashboard{% endblock %}</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://kit.fontawesome.com/124182fb50.css" crossorigin="anonymous">
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="icon" href="/static/images/favicon-msu.ico">
+
+    <!-- HTMX -->
+    <!-- The /timer link did not work properly with v2.x, so sticking with 1.9.12  -->
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+</head>
+<body>
+<div class="layout">
+
+    <aside class="sidebar">
+        <!-- <div class="sidebar__inner"> -->
+            <div class="sidebar__brand">
+                <div class="sidebar__logo">med</div>
+                <div class="sidebar__brand-text">
+                    <span class="brand-name">Med Dashboard</span>
+                    <span class="brand-subtitle">Python · FastAPI · HTMX</span>
+                </div>
+            </div>
+
+            <nav class="sidebar__nav">
+                <a href="/" 
+                   class="sidebar__link {{ 'sidebar__link--active' if active_page == 'overview' else '' }}"
+                   data-tooltip="Overview">
+                    <i class="fa-regular fa-chart-column fa-lg"></i>
+                    <span class="sidebar__text">Overview</span>
+                </a>
+                <a href="/htmx" 
+                   class="sidebar__link {{ 'sidebar__link--active' if active_page == 'htmx' else '' }}"
+                   data-tooltip="htmx">
+                   <i class="fa-solid fa-code fa-lg"></i>
+                    <span class="sidebar__text">htmx</span>
+                </a>
+                <a href="/timer" 
+                   class="sidebar__link {{ 'sidebar__link--active' if active_page == 'timer' else '' }}"
+                   data-tooltip="Timer">
+                    <i class="fa-sharp fa-regular fa-timer fa-lg"></i>
+                    <span class="sidebar__text">Timer</span>
+                </a>
+                <a href="#" class="sidebar__link" data-tooltip="Datasets">
+                    <i class="fa-regular fa-cabinet-filing fa-lg"></i>
+                    <span class="sidebar__text">Datasets</span>
+                </a>
+                <a href="#" class="sidebar__link" data-tooltip="Alerts">
+                    <i class="fa-regular fa-bell fa-lg"></i>
+                    <span class="sidebar__text">Alerts</span>
+                </a>
+                <a href="#" class="sidebar__link" data-tooltip="Settings">
+                    <i class="fa-regular fa-gear fa-lg"></i>
+                    <span class="sidebar__text">Settings</span>
+                </a>
+            </nav>
+
+            <div class="sidebar__footer">
+                <span class="sidebar__user-label">Signed in as</span>
+                <span class="sidebar__user-name">csylvester</span>
+            </div>
+
+        </aside>
+
+    <div class="main">
+        <header class="topbar">
+            <div class="topbar__left">
+                <button
+                    class="btn btn--icon"
+                    type="button"
+                    data-toggle-sidebar
+                    aria-label="Toggle sidebar"
+                >
+                    ☰
+                </button>
+                <div class="topbar__titles">
+                    <h1 class="topbar__title">
+                        {% block header_title %}Overview{% endblock %}
+                    </h1>
+                    <p class="topbar__subtitle">
+                        {% block header_subtitle %}
+                        High-level summary of your ETL and data processing activity.
+                        {% endblock %}
+                    </p>
+                </div>
+            </div>
+
+            <div class="topbar__right">
+                <button class="btn btn--secondary">Download Report</button>
+                <button class="btn btn--primary">Run Pipeline</button>
+            </div>
+        </header>
+
+        <!-- Page content -->
+        <main class="content">
+            {% block content %}{% endblock %}
+        </main>
+
+        <!-- Optional per-page scripts -->
+        {% block scripts %}{% endblock %}
+    </div>
+</div>
+
+<!-- Custom JavaScript -->
+<script src="/static/app.js"></script>
+
+</body>
+</html>
