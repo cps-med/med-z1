@@ -1,9 +1,28 @@
----------------------------------------------------------------
--- Create: SPatient.SPatient.sql
----------------------------------------------------------------
+/*
+|---------------------------------------------------------------
+| SPatient.SPatient.sql
+|---------------------------------------------------------------
+| Create table
+|---------------------------------------------------------------
+*/
+
+PRINT '================================================';
+PRINT '====           SPatient.SPatient            ====';
+PRINT '================================================';
+GO
 
 -- set the active database
 USE CDWWork;
+GO
+
+/*
+|----------------------------------------------------------------------
+| Create Table
+| ---------------------------------------------------------------------
+*/
+
+PRINT '';
+PRINT '==== Create Table ===='
 GO
 
 -- create SPatient table in the SPatient schema
@@ -121,8 +140,22 @@ CREATE TABLE SPatient.SPatient
 );
 GO
 
+/*
+|----------------------------------------------------------------------
+| Create Indicies
+| ---------------------------------------------------------------------
+*/
+
+PRINT '';
+PRINT '==== Create Indicies ===='
+GO
+
 -- create indexes for the SPatient.Patient table
 CREATE INDEX IX_PatientSID ON SPatient.SPatient (PatientSID);
 CREATE INDEX IX_PatientIEN ON SPatient.SPatient (PatientIEN);
 CREATE INDEX IX_Sta3n ON SPatient.SPatient (Sta3n);
+GO
+
+PRINT '';
+PRINT '==== Done ===='
 GO

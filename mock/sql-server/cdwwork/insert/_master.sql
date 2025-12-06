@@ -43,5 +43,5 @@
 :r BCMA.BCMASolution.sql
 
 -- Run scripts to add elderly and expansion patients
-:r add_elderly_patients.sql
-:r add_expansion_patients.sql
+-- :r add_elderly_patients.sql
+-- :r add_expansion_patients.sql

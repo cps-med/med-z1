@@ -1,9 +1,28 @@
----------------------------------------------------------------
--- Create: Inpat.Inpatient.sql
----------------------------------------------------------------
+/*
+|---------------------------------------------------------------
+| Inpat.Inpatient.sql
+|---------------------------------------------------------------
+| Create table
+|---------------------------------------------------------------
+*/
+
+PRINT '================================================';
+PRINT '====            Inpat.Inpatient             ====';
+PRINT '================================================';
+GO
 
 -- set the active database
 USE CDWWork;
+GO
+
+/*
+|----------------------------------------------------------------------
+| Create Table
+| ---------------------------------------------------------------------
+*/
+
+PRINT '';
+PRINT '==== Create Table ===='
 GO
 
 -- create Inpatient table in the Inpat schema
@@ -41,8 +60,22 @@ CREATE TABLE Inpat.Inpatient
 );
 GO
 
+/*
+|----------------------------------------------------------------------
+| Create Indicies
+| ---------------------------------------------------------------------
+*/
+
+PRINT '';
+PRINT '==== Create Indicies ===='
+GO
+
 -- create indexes for the SPatient.Patient table
 CREATE INDEX IX_InpatientSID ON Inpat.Inpatient (InpatientSID);
 CREATE INDEX IX_PatientSID ON Inpat.Inpatient (PatientSID);
 CREATE INDEX IX_Sta3n ON Inpat.Inpatient (Sta3n);
+GO
+
+PRINT '';
+PRINT '==== Done ===='
 GO
