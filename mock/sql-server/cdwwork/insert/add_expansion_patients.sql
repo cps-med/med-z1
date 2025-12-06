@@ -1,14 +1,14 @@
 /*
-|--------------------------------------------------------------------------------
+|----------------------------------------------------------------------
 | _add_expansion_patients.sql
-|--------------------------------------------------------------------------------
-| Phase 1 Expansion: Adds 10 patients with balanced age/complexity distribution
-| expanding the total cohort from 15 to 25 patients.
+|----------------------------------------------------------------------
+| Phase 1 Expansion: Adds 10 patients with balanced age/complexity
+| distribution expanding the total cohort from 15 to 25 patients.
 |
 | Patient Cohort Summary:
 | - 10 patients: PatientSID 1016-1025
 | - Age groups: 3 younger (25-45), 4 middle-aged (46-64), 3 elderly (65+)
-| - Geographic distribution: Sta3n 508, 516, 552, 688 (new: Washington DC VAMC)
+| - Geographic area: Sta3n 508, 516, 552, 688 (new: Washington DC VAMC)
 | - Total medications: ~62 prescriptions
 | - Mental health emphasis: 7/10 patients have mental health conditions
 | - Data sources: Mixed (RxOut, BCMA, both)
@@ -24,10 +24,7 @@
 | - Multiple mental health medication combinations
 |
 | Execution: Run this script after initial database setup
-| Usage: sqlcmd -S 127.0.0.1,1433 -U sa -P "$MSSQL_SA_PASSWORD" -d CDWWork -i _add_expansion_patients.sql
-|
-| Design Document: expansion_patient_design.md
-| Created: 2024-11-29
+| sqlcmd -S 127.0.0.1,1433 -U sa -P "PASSWORD" -d CDWWork -i _add_expansion_patients.sql
 |--------------------------------------------------------------------------------
 */
 
