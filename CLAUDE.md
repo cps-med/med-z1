@@ -18,6 +18,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```
 med-z1/
   app/           # FastAPI + HTMX + Jinja2 web application
+  ccow/          # CCOW Context Management Vault service
   etl/           # ETL scripts (Bronze/Silver/Gold transformations)
   mock/          # Mock data subsystem (simulates CDW, SDP, etc.)
     sql-server/  # Microsoft SQL Server schemas and data
@@ -25,28 +26,33 @@ med-z1/
       cdwwork1/  # New EHR-like mock data
   ai/            # AI/ML and agentic components
   db/            # Serving DB DDL, migrations (create when needed)
-  docs/          # Architecture, design docs, devlog
+  docs/          # Architecture, design docs
   lake/          # MinIO/Parquet access configs (create when needed)
   tests/         # Unit/integration tests (create when needed)
 ```
 
 ## Common Development Commands
 
-### Running the FastAPI Application
+### Running the FastAPI Applications
 
 From project root:
 ```bash
 # Ensure dependencies are installed
 pip install -r requirements.txt
 
-# Run the FastAPI development server
+# Run the main med-z1 web application (port 8000)
 uvicorn app.main:app --reload
 
+# Run the CCOW Context Vault service (port 8001, separate terminal)
+uvicorn ccow.main:app --reload --port 8001
+
 # Access in browser
-# http://127.0.0.1:8000/
+# Main app: http://127.0.0.1:8000/
+# CCOW service: http://127.0.0.1:8001/
+# CCOW API docs: http://127.0.0.1:8001/docs
 ```
 
-Stop server with CTRL+C.
+Stop servers with CTRL+C.
 
 ### Python Environment Setup
 
@@ -124,6 +130,29 @@ pip install -r requirements.txt
 **Performance Goals:**
 - Patient Overview page should load in under 4 seconds for 90% of patients (vs. ~20 seconds in current JLV)
 
+### CCOW Context Management
+
+**Purpose:**
+- Implement HL7 CCOW-like patient context synchronization across applications
+- Provide single source of truth for currently active patient
+- Enable med-z1 and external clinical apps to maintain synchronized context
+
+**Implementation:**
+- Separate FastAPI service on port 8001
+- Thread-safe in-memory context vault
+- REST API for get/set/clear active patient context
+- Development/testing scope (not full CCOW standard compliance)
+
+**Key Endpoints:**
+- `GET /ccow/active-patient` - Get current patient context
+- `PUT /ccow/active-patient` - Set patient context
+- `DELETE /ccow/active-patient` - Clear patient context
+- `GET /ccow/history` - View context change history
+
+**Integration:**
+- med-z1 web app calls CCOW when user selects patient
+- Configuration: `CCOW_BASE_URL = "http://localhost:8001"`
+
 ### AI/ML Components
 
 **Primary Use Cases (Early Phases):**
@@ -170,7 +199,7 @@ DoD-specific views (CHCS/AHLTA) are explicitly out of scope for early versions.
 - **Single shared Python environment** at project root: `.venv/`
 - **Single shared .env file** at project root
 - **Single shared config module:** `config.py` at project root
-- All subsystems (app, etl, ai, mock) import from this central configuration
+- All subsystems (app, ccow, etl, ai, mock) import from this central configuration
 
 ### Code Quality and Testing
 
@@ -192,10 +221,10 @@ For detailed information, see:
 - `docs/vision.md` - Problem statement, user personas, user stories (to be created)
 - `docs/architecture.md` - Diagrams and architecture decisions (to be created)
 - `docs/ai-design.md` - AI/ML, RAG, and DDI use-case designs (to be created)
-- `docs/devlog/` - Running design/development notes (to be created)
 
 Subsystem-specific README files:
 - `app/README.md` - FastAPI/HTMX application setup and guidance
+- `ccow/README.md` - CCOW Context Vault setup and usage
 - `etl/README.md` - ETL setup instructions and data-specific notes
 - `mock/README.md` - Mock data subsystem overview
 - `ai/README.md` - AI/ML layer guidance
@@ -205,6 +234,6 @@ Subsystem-specific README files:
 **Phase 0 (1-2 weeks):** Environment & skeleton setup
 **Phase 1 (2-3 weeks):** Mock CDW & Bronze extraction
 **Phase 2 (3-5 weeks):** Silver & Gold transformations
-**Phase 3 (3-4 weeks):** Serving DB loading & basic UI
+**Phase 3 (3-4 weeks):** Serving DB loading, basic UI, CCOW integration
 **Phase 4 (3-6 weeks):** AI-assisted features (experimental)
 **Phase 5 (Ongoing):** Hardening, observability, UX iteration

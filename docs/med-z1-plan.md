@@ -1,5 +1,6 @@
 # med-z1 – Product & Technical Development Plan
-December 5, 2025 | Document version v1
+
+December 7, 2025 • Document version v1.1 (updated with CCOW integration requirements)
 
 ## 1. Product Vision
 
@@ -65,33 +66,51 @@ For the initial versions of med-z1, the primary clinical domains are:
 
 ### 2.3 Core Use Cases (Initial Scope)
 
-1. **Patient Longitudinal Summary**
+1. **CCOW-Aware Patient Context Management**
+   - On application startup, query CCOW Context Vault to retrieve current active patient (if set).
+   - Display patient demographics in persistent header area:
+     - Patient name, ICN (Integrated Care Number).
+     - Last 4 digits of SSN (for verification).
+     - Date of birth, calculated age, biological sex.
+     - Primary VA facility/station.
+   - If no patient context is set in CCOW vault:
+     - Display "No patient selected" (or similar) in header.
+     - User can search for and select a patient via header search UI.
+   - **Patient search and context setting workflow:**
+     - User enters search criteria (name, SSN, ICN, EDIPI) via header search.
+     - Search results display matching patients with key identifiers.
+     - User selects a patient from results.
+     - User explicitly clicks "Set Context" or similar action to update CCOW vault.
+     - App refreshes header to display selected patient demographics.
+   - CCOW context is checked **only on initial page load** (no periodic polling in Phase 1).
+
+2. **Patient Longitudinal Summary**
    - Integrated timeline of encounters, problems, medications, labs, and procedures across VistA (from `CDWWork`) and the new EHR (from `CDWWork1`).
    - Display clear source provenance (facility, system, time).
 
-2. **Domain-Specific Views**
+3. **Domain-Specific Views**
    - For each domain (e.g., Medications, Labs, Problems, Notes, Imaging, Vitals, Orders, Admissions), provide:
      - Filterable, sortable tables.
      - Consistent display of key fields and source system.
      - Ability to focus on recent vs. historical data.
 
-3. **Patient Flags & Risk Indicators**
+4. **Patient Flags & Risk Indicators**
    - Retrieve and display Patient Flags from CDW.
    - Use flags as part of the risk and summary story (Phase 2+).
 
-4. **AI-Assisted Chart Overview (Phase 2+)**
+5. **AI-Assisted Chart Overview (Phase 2+)**
    - Natural-language **chart overview**:
      - Major chronic conditions.
      - Recent admissions/ED visits.
      - Key labs and trends.
      - Notable flags and orders.
 
-5. **AI-Supported Medication Safety (Phase 2+)**
+6. **AI-Supported Medication Safety (Phase 2+)**
    - Identify **drug-drug interaction (DDI) risk** for the current medication list.
    - Highlight combinations that may warrant pharmacist or clinician review.
    - Eventually integrate multiple sources (e.g., CDW meds + external DDI knowledge base).
 
-6. **Future AI Use of Patient Flags**
+7. **Future AI Use of Patient Flags**
    - Incorporate Patient Flag data into risk assessment:
      - Behavioral flags, safety alerts, suicide risk, etc. (as appropriate).
    - Make AI summaries aware of patient flags and incorporate them into the narrative.
@@ -104,10 +123,29 @@ For the initial versions of med-z1, the primary clinical domains are:
 
 med-z1 will use a **dashboard-style layout** with:
 
+- A **persistent patient header** (top of page):
+  - **Always visible** across all pages/views.
+  - **CCOW-aware**: Displays current patient from CCOW Context Vault.
+  - **Patient demographics displayed** (when patient context is set):
+    - Patient name and ICN (Integrated Care Number).
+    - Last 4 digits of SSN.
+    - Date of birth, calculated age, and biological sex.
+    - Primary VA facility/station.
+  - **When no patient is selected** (CCOW vault empty):
+    - Display "No patient selected" or similar message.
+  - **Patient search UI** embedded in header:
+    - Search bar or button to initiate patient search.
+    - Search by: name, SSN, ICN, EDIPI.
+    - Search results displayed inline or as dropdown/overlay.
+    - User selects patient from results, then explicitly clicks "Set Context" to update CCOW vault.
+  - **On initial page load**:
+    - App queries CCOW vault (`GET /ccow/active-patient`).
+    - If patient context exists, fetch patient demographics from serving DB and populate header.
+    - If no context exists, display "No patient selected" state.
+
 - A **left-hand side navigation bar**:
   - Collapsible (e.g., hamburger icon at top-left).
   - Contains navigation links for:
-    - Patient Search (when no patient is selected).
     - Patient Overview.
     - Admissions/Encounters.
     - Problems.
@@ -121,13 +159,12 @@ med-z1 will use a **dashboard-style layout** with:
     - (Future) AI/Insights.
 
 - A **main content area on the right**:
-  - Optional header section (patient header).
-  - Scrollable main content section.
+  - Scrollable main content section below patient header.
 
 The design will favor a **single primary page per patient** with:
 
 - A **Patient Overview** page showing:
-  - Demographics & identifiers.
+  - Demographics & identifiers (also shown in header).
   - Key problems and flags.
   - Brief AI-generated overview (Phase 2+).
   - A longitudinal timeline visualization (Phase 2 or 3).
@@ -138,27 +175,39 @@ Domain-specific pages are accessible from the side navigation, each focused and 
 
 **User experience:**
 
-- Entry point is a **Patient Search** screen or a search bar accessible from the left nav.
+- Entry point is a **patient search UI in the header** (always accessible).
 - User can search by:
-  - Patient **Name** (with facility filter if desired).
-  - **SSN** (or partial).
+  - Patient **Name** (with optional facility filter).
+  - **SSN** (full or partial).
+  - **ICN** (Integrated Care Number).
   - **EDIPI** (DoD ID).
-  - Other identifiers (as available in CDW).
+  - Other identifiers (as available in serving DB).
 
-- Search results list patients with:
-  - Name, age, sex.
-  - Facility, ICN (if available).
-  - Key demographic hints (to avoid wrong-patient selection).
+- Search results display matching patients with:
+  - Name, date of birth, age, sex.
+  - ICN, last 4 of SSN.
+  - Facility/station.
+  - Key demographic hints to avoid wrong-patient selection.
+
+- **Patient selection and CCOW context setting:**
+  - User selects a patient from search results.
+  - User clicks **"Set Context"** or similar explicit action button.
+  - App makes `PUT /ccow/active-patient` request to CCOW vault with selected patient's ICN.
+  - On successful vault update:
+    - App fetches full patient demographics from serving DB.
+    - Patient header refreshes to display selected patient information.
+    - App navigates to Patient Overview page (or remains on current page with updated context).
 
 **Under the hood:**
 
-- CDW’s internal SIDs (e.g., `InpatientSID`, `PatientSID`, `RxOutpatSID`) are **technical keys** for internal joins and are not primary identity elements in the UI.
+- CDW's internal SIDs (e.g., `InpatientSID`, `PatientSID`, `RxOutpatSID`) are **technical keys** for internal joins and are not primary identity elements in the UI.
 - med-z1 will:
   - Resolve to a **canonical identity** (ICN) when available.
   - Represent patients in the UI and medallion layers keyed primarily by ICN and/or a derived `PatientKey`.
+  - **CCOW vault stores patient_id as ICN** for consistency.
   - Keep the **initial identity logic simple** in early versions:
     - No complex merged-identity handling.
-    - Focus on “1 ICN = 1 patient” in the mock environment.
+    - Focus on "1 ICN = 1 patient" in the mock environment.
 
 ### 3.3 Layout & Customization Philosophy
 
@@ -261,10 +310,44 @@ FastAPI will primarily talk to the serving DB for interactive UI work and may ca
 * **Usage:**
 
   * Acts as the **source-of-truth** for development and testing.
-  * Provides stable, version-controlled “fixtures” for ETL and UI tests.
+  * Provides stable, version-controlled "fixtures" for ETL and UI tests.
   * CDWWork1 will mirror CDWWork conceptually but may intentionally differ in column naming and structure for some tables to exercise Silver-layer harmonization logic.
 
-### 4.5 AI & Agentic
+### 4.5 CCOW Context Management
+
+* **Purpose:**
+
+  * Implement a simplified version of the HL7 CCOW (Clinical Context Object Workgroup) standard for **patient context synchronization** across applications.
+  * Provide a **single source of truth** for the currently active patient context, enabling med-z1 and other clinical applications to stay synchronized during clinical workflows.
+
+* **Implementation:**
+
+  * **FastAPI service** running on port 8001 (separate from main app on port 8000).
+  * **Thread-safe in-memory vault** (`vault.py`) for managing current patient context and change history.
+  * **REST API endpoints** for getting, setting, and clearing active patient context.
+  * Pydantic models for request/response validation.
+
+* **Scope (Development/Testing):**
+
+  * Mock/development implementation to demonstrate CCOW-like context synchronization patterns.
+  * Support local development and testing scenarios.
+  * Foundation for future production CCOW integration with real clinical applications.
+
+* **Explicitly Out of Scope (Phase 1):**
+
+  * Full CCOW standard compliance.
+  * Authentication/authorization.
+  * Persistent storage (vault resets on service restart).
+  * Multi-user or multi-session contexts.
+  * Real-time push notifications (WebSocket/SSE).
+
+* **Integration Points:**
+
+  * med-z1 web app (`app/`) will call CCOW service when user selects a patient.
+  * Future integration: external clinical applications (CPRS, imaging viewers, pharmacy systems) can query/set context.
+  * Configuration: `CCOW_BASE_URL = "http://localhost:8001"` in `.env`.
+
+### 4.6 AI & Agentic
 
 * **LLM/AI Access:**
 
@@ -287,7 +370,7 @@ FastAPI will primarily talk to the serving DB for interactive UI work and may ca
   * Initially: local (Chroma/FAISS).
   * Later: **pgvector** in PostgreSQL if desired.
 
-### 4.6 Tooling & Dev Experience
+### 4.7 Tooling & Dev Experience
 
 * **IDE:** VS Code (Python, Jupyter, Docker, SQL extensions).
 * **Environment:** `venv` + `.env` with python-dotenv.
@@ -308,13 +391,18 @@ med-z1/
     vision.md        # Problem statement, user personas, key user stories
     architecture.md  # Diagrams and architecture decisions
     ai-design.md     # AI/ML, RAG, DDI use-case designs
-    devlog/          # Running design/development notes (dated markdown files)
 
   app/               # FastAPI + HTMX + Jinja2 application code
     main.py
     templates/
     static/
     README.md        # Developer setup and app-specific notes
+
+  ccow/              # CCOW Context Management Vault service
+    main.py          # FastAPI service for CCOW context synchronization
+    vault.py         # Thread-safe in-memory context vault
+    models.py        # Pydantic models for context requests/responses
+    README.md        # CCOW setup and usage instructions
 
   etl/               # ETL scripts implementing Bronze/Silver/Gold logic
     README.md        # Developer setup instructions and ETL/data-specific notes
@@ -329,7 +417,7 @@ med-z1/
         create/      # CREATE DATABASE, schemas, tables, indexes for CDWWork1
         insert/      # INSERT / BULK INSERT scripts for CDWWork1 synthetic data
   ai/                # AI/ML & agentic components (create when needed)
-    README.md        # 
+    README.md        #
   db/                # Serving DB DDL, migrations, etc. (create when needed)
   tests/             # Unit/integration tests (as you add them)
 ```
@@ -537,6 +625,39 @@ Gold remains in Parquet/Delta but is also used to populate the serving DB.
 
 * Load Gold into the serving DB.
 * Build patient search, patient overview, and at least one domain view (e.g., Medications) with the side-nav layout.
+* **Implement CCOW Context Management service:**
+  * Stand up CCOW FastAPI service on port 8001.
+  * Ensure CCOW vault is accessible at `http://localhost:8001`.
+  * Test CCOW API endpoints independently (`GET`, `PUT`, `DELETE /ccow/active-patient`).
+* **Integrate CCOW with med-z1 web app:**
+  * **On application startup/page load:**
+    * Query CCOW vault (`GET /ccow/active-patient`) to retrieve current patient context.
+    * If patient context exists (ICN returned):
+      * Fetch patient demographics from serving DB using ICN.
+      * Populate patient header with: name, ICN, last 4 SSN, DOB, age, sex, primary facility.
+    * If no patient context exists (404 response):
+      * Display "No patient selected" message in header.
+  * **Implement patient search UI in header:**
+    * Search bar/button in header area (always accessible).
+    * Search form accepts: name, SSN, ICN, EDIPI.
+    * Query serving DB for matching patients.
+    * Display search results with key demographics and identifiers.
+  * **Implement patient selection and CCOW context setting:**
+    * User selects patient from search results.
+    * User clicks "Set Context" button (explicit action required).
+    * App makes `PUT /ccow/active-patient` with patient's ICN and `set_by: "med-z1"`.
+    * On successful vault update:
+      * Fetch patient demographics from serving DB.
+      * Refresh patient header with selected patient information.
+      * Navigate to Patient Overview page (or stay on current page with updated context).
+  * **Configuration:**
+    * Add `CCOW_BASE_URL=http://localhost:8001` to `.env`.
+    * Import from `config.py` in app code.
+  * **Test end-to-end workflow:**
+    * Test app startup with no CCOW context (verify "No patient selected" state).
+    * Test patient search and selection workflow.
+    * Test "Set Context" action and header refresh.
+    * Test app restart with existing CCOW context (verify patient header populates correctly).
 
 ### 8.5 Phase 4 – AI-Assisted Features (Experimental) (3–6 weeks)
 
@@ -594,14 +715,6 @@ Maintain documentation as part of the med-z1 repo under `docs/`:
 
   * Notes on models, prompts, RAG design, DDI risk logic, and agent workflows.
 
-* `docs/devlog/YYYY-MM-DD_devnotes.md` (optional, to be created)
-
-  * Daily/weekly development journal to capture:
-
-    * Design decisions.
-    * Experiments and results.
-    * Open questions and next steps.
-
 ---
 
 ## 11. Next Steps (Actionable)
@@ -624,5 +737,3 @@ Maintain documentation as part of the med-z1 repo under `docs/`:
 5. Start Phase 1 Bronze extraction:
 
    * Implement minimal Bronze extractors for Patients and Medications from both `CDWWork` and `CDWWork1`.
-
-6. Capture work and decisions in `docs/devlog/` as you go.
