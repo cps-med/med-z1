@@ -1,169 +1,11 @@
 /*
 |----------------------------------------------------------------------
-| _add_expansion_patients.sql
+| _add_expansion_pat_meds.sql
 |----------------------------------------------------------------------
-| Phase 1 Expansion: Adds 10 patients with balanced age/complexity
-| distribution expanding the total cohort from 15 to 25 patients.
-|
-| Patient Cohort Summary:
-| - 10 patients: PatientSID 1016-1025
-| - Age groups: 3 younger (25-45), 4 middle-aged (46-64), 3 elderly (65+)
-| - Geographic area: Sta3n 508, 516, 552, 688 (new: Washington DC VAMC)
-| - Total medications: ~62 prescriptions
-| - Mental health emphasis: 7/10 patients have mental health conditions
-| - Data sources: Mixed (RxOut, BCMA, both)
-| - DDI scenarios: 5 designed, 5 natural emergence
-| - Temporal complexity: 2-3 medication dates per patient (30-90 day span)
-|
-| Key DDI Scenarios Included:
-| - SSRI + Tramadol (serotonin syndrome)
-| - SSRI + NSAID + Antiplatelet (bleeding risk)
-| - ACE inhibitor + Potassium-sparing + NSAID (hyperkalemia, renal)
-| - ACE inhibitor + NSAID in CKD patient (acute renal failure risk)
-| - Clopidogrel + Omeprazole (reduced antiplatelet effect)
-| - Multiple mental health medication combinations
-|
 | Execution: Run this script after initial database setup
 | sqlcmd -S 127.0.0.1,1433 -U sa -P "PASSWORD" -d CDWWork -i _add_expansion_patients.sql
 |--------------------------------------------------------------------------------
 */
-
-PRINT '================================================';
-PRINT '=== ADD 10 EXPANSION PATIENTS (PHASE 1) ===';
-PRINT '================================================';
-GO
-
--- Set the active database
-USE CDWWork;
-GO
-
-/*
-|--------------------------------------------------------------------------------
-| SECTION 1: Patient Demographics (SPatient.SPatient)
-|--------------------------------------------------------------------------------
-*/
-
-PRINT '';
-PRINT '==== SECTION 1: Adding 10 Expansion Patients ====';
-GO
-
-INSERT INTO SPatient.SPatient
-(
- PatientSID, PatientIEN, Sta3n, PatientName, PatientLastName, PatientFirstName,
- TestPatientFlag, CDWPossibleTestPatientFlag, VeteranFlag, PatientType, PatientTypeSID,
- PatientICN, ScrSSN, PatientSSN, PseudoSSNReason, SSNVerificationStatus,
- GovernmentEmployeeFlag, SensitiveFlag, Age, BirthDateTime, BirthVistaErrorDate,
- BirthDateTimeTransformSID, DeceasedFlag, DeathDateTime, DeathVistaErrorDate,
- DeathDateTimeTransformSID, DeathEnteredByStaffSID, DeathNotificationSource,
- DeathDocumentationType, DeathModifiedDateTime, DeathModifiedVistaErrorDate,
- DeathModifiedDateTimeTransformSID, DeathLastUpdatedByStaffSID, Gender,
- SelfIdentifiedGender, Religion, ReligionSID, MaritalStatus, MaritalStatusSID,
- CollateralSponsorPatientSID, CurrentEnrollmentSID, MeansTestStatus, CurrentMeansTestStatusSID,
- PeriodOfService, PeriodOfServiceSID, OperationDesertShieldRank, ODSRankType,
- ODSRecalledCode, ODSTreatmentDateTime, ODSTreatmentVistaErrorDate, ODSTreatmentDateTimeTransformSID,
- FederalAgencySID, FilipinoVeteranCode, ServiceConnectedFlag, Eligibility, EligibilityVACode,
- EligibilitySID, EligibilityStatus, EligibilityStatusDateTime, EligibilityStatusVistaErrorDate,
- EligibilityStatusDateTimeTransformSID, EligibilityVerificationSource, EligibilityVerificationMethod,
- EligibilityInterimDateTime, EligibilityInterimVistaErrorDate, EligibilityInterimDateTimeTransformSID,
- EligibilityEnteredStaffSID, IneligibleReason, IneligibleVAROReason, IneligibleCity,
- IneligibleStateSID, IneligibleDateTime, IneligibleVistaErrorDate, IneligibleDateTimeTransformSID,
- IneligibleSource, PatientMissingSource, PatientMissingDateTime, PatientMissingVistaErrorDate,
- PatientMissingDateTimeTransformSID, PatientMissingCity, PatientMissingStateSID,
- FugitiveFelonFlag, FFFEnteredDateTime, FFFEnteredVistaErrorDate, FFFEnteredDateTimeTransformSID,
- FFFEnteredStaffSID, FFFRemovedReason, FFFRemovedDateTime, FFFRemovedVistaErrorDate,
- FFFRemovedDateTimeTransformSID, FFFRemovedStaffSID, PatientEnteredByStaffSID, PatientEnteredCode,
- PatientEnteredRemark, PatientEnteredDateTime, PatientEnteredVistaErrorDate, PatientEnteredDateTimeTransformSID,
- DuplicateRecordStatus, DestinationMergePatientSID, PreferredInstitutionSID, PreferredInstitutionSource,
- EmergencyResponseIndicator, InsuranceCoverageFlag, MedicaidEligibleFlag, MedicaidNumber,
- MedicaidInquireDateTime, MedicaidInquireVistaErrorDate, MedicaidInquireDateTimeTransformSID,
- VeteranTransportationProgramFlag
-)
-VALUES
--- ========== YOUNGER PATIENTS (Ages 25-45) ==========
-
--- Patient 1016: Age 28, PTSD, Depression - Washington DC VAMC
-(1016, 'PtIEN1016', 688, 'Marcus Johnson', 'Johnson', 'Marcus', 'N', 'N', 'Y', 'Regular', 101, '1016V123456', '777771016', '777771016', 'None', 'Verified', 'N', 'N', 28, '1996-03-15', NULL, NULL, 'N', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'M', 'Male', 'Christian', 1, 'SINGLE', 1, NULL, 1016, 'None', NULL, 'OIF/OEF', 12007, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, 'VERIFIED', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-01-15', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Y'),
-
--- Patient 1017: Age 35, Anxiety, Chronic Pain - Atlanta VAMC
-(1017, 'PtIEN1017', 508, 'Sarah Williams', 'Williams', 'Sarah', 'N', 'N', 'Y', 'Regular', 101, '1017V234567', '888881017', '888881017', 'None', 'Verified', 'N', 'N', 35, '1989-07-22', NULL, NULL, 'N', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', 'Female', 'Protestant', 2, 'DIVORCED', 4, NULL, 1017, 'None', NULL, 'OIF/OEF', 12007, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, 'VERIFIED', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-02-01', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Y'),
-
--- Patient 1018: Age 42, Type 2 Diabetes - Honolulu VAMC
-(1018, 'PtIEN1018', 516, 'David Chen', 'Chen', 'David', 'N', 'N', 'Y', 'Regular', 101, '1018V345678', '999991018', '999991018', 'None', 'Verified', 'N', 'N', 42, '1982-11-08', NULL, NULL, 'N', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'M', 'Male', 'Buddhist', 3, 'MARRIED', 2, NULL, 1018, 'None', NULL, 'PERSIAN GULF', 12005, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, 'VERIFIED', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-01-20', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Y'),
-
--- ========== MIDDLE-AGED PATIENTS (Ages 46-64) ==========
-
--- Patient 1019: Age 48, Depression, Hypertension - Dayton VAMC
-(1019, 'PtIEN1019', 552, 'Linda Rodriguez', 'Rodriguez', 'Linda', 'N', 'N', 'Y', 'Regular', 101, '1019V456789', '111101019', '111101019', 'None', 'Verified', 'N', 'N', 48, '1976-05-14', NULL, NULL, 'N', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', 'Female', 'Catholic', 2, 'MARRIED', 2, NULL, 1019, 'None', NULL, 'PERSIAN GULF', 12005, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, 'VERIFIED', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-01-10', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Y'),
-
--- Patient 1020: Age 53, COPD, Anxiety - Washington DC VAMC
-(1020, 'PtIEN1020', 688, 'Robert Thompson', 'Thompson', 'Robert', 'N', 'N', 'Y', 'Regular', 101, '1020V567890', '222201020', '222201020', 'None', 'Verified', 'N', 'N', 53, '1971-09-30', NULL, NULL, 'N', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'M', 'Male', 'Christian', 1, 'MARRIED', 2, NULL, 1020, 'None', NULL, 'PERSIAN GULF', 12005, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, 'VERIFIED', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-02-05', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Y'),
-
--- Patient 1021: Age 58, Diabetes, CHF - Atlanta VAMC
-(1021, 'PtIEN1021', 508, 'Patricia Garcia', 'Garcia', 'Patricia', 'N', 'N', 'Y', 'Regular', 101, '1021V678901', '333301021', '333301021', 'None', 'Verified', 'N', 'N', 58, '1966-12-03', NULL, NULL, 'N', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', 'Female', 'Catholic', 2, 'WIDOWED', 3, NULL, 1021, 'None', NULL, 'VIETNAM ERA', 12004, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, 'VERIFIED', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-01-08', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Y'),
-
--- Patient 1022: Age 61, CKD, Chronic Pain - Honolulu VAMC
-(1022, 'PtIEN1022', 516, 'James Anderson', 'Anderson', 'James', 'N', 'N', 'Y', 'Regular', 101, '1022V789012', '444401022', '444401022', 'None', 'Verified', 'N', 'N', 61, '1963-04-17', NULL, NULL, 'N', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'M', 'Male', 'Protestant', 2, 'MARRIED', 2, NULL, 1022, 'None', NULL, 'VIETNAM ERA', 12004, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, 'VERIFIED', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-02-12', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Y'),
-
--- ========== ELDERLY PATIENTS (Ages 65+) ==========
-
--- Patient 1023: Age 67, Depression, Diabetes, Hyperlipidemia - Dayton VAMC
-(1023, 'PtIEN1023', 552, 'Barbara Lee', 'Lee', 'Barbara', 'N', 'N', 'Y', 'Regular', 101, '1023V890123', '555501023', '555501023', 'None', 'Verified', 'N', 'N', 67, '1957-08-25', NULL, NULL, 'N', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', 'Female', 'Methodist', 5, 'MARRIED', 2, NULL, 1023, 'None', NULL, 'VIETNAM ERA', 12004, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, 'VERIFIED', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-01-05', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Y'),
-
--- Patient 1024: Age 74, CHF, AFib, CKD - Washington DC VAMC
-(1024, 'PtIEN1024', 688, 'Charles White', 'White', 'Charles', 'N', 'N', 'Y', 'Regular', 101, '1024V901234', '666601024', '666601024', 'None', 'Verified', 'N', 'N', 74, '1950-02-11', NULL, NULL, 'N', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'M', 'Male', 'Protestant', 2, 'WIDOWED', 3, NULL, 1024, 'None', NULL, 'VIETNAM ERA', 12004, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, 'VERIFIED', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-01-12', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Y'),
-
--- Patient 1025: Age 79, COPD, Diabetes, HTN, Depression - Honolulu VAMC
-(1025, 'PtIEN1025', 516, 'Dorothy Martinez', 'Martinez', 'Dorothy', 'N', 'N', 'Y', 'Regular', 101, '1025V012345', '777701025', '777701025', 'None', 'Verified', 'N', 'N', 79, '1945-06-19', NULL, NULL, 'N', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', 'Female', 'Catholic', 2, 'WIDOWED', 3, NULL, 1025, 'None', NULL, 'WWII', 12003, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, 'VERIFIED', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-01-18', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Y');
-GO
-
-PRINT '  ✓ Added 10 expansion patients (PatientSID 1016-1025)';
-PRINT '    - 3 younger (25-45): 1016, 1017, 1018';
-PRINT '    - 4 middle-aged (46-64): 1019, 1020, 1021, 1022';
-PRINT '    - 3 elderly (65+): 1023, 1024, 1025';
-GO
-
-/*
-|--------------------------------------------------------------------------------
-| SECTION 2: Patient Addresses with Geographic Location (SPatient.SPatientAddress)
-|--------------------------------------------------------------------------------
-*/
-
-PRINT '';
-PRINT '==== SECTION 2: Adding Patient Addresses ====';
-GO
-
-INSERT INTO SPatient.SPatientAddress
-(
-    SPatientAddressSID, PatientSID, PatientIEN, Sta3n, OrdinalNumber, AddressType,
-    StreetAddress1, StreetAddress2, StreetAddress3, City, County,
-    [State], StateSID, Zip, Zip4, PostalCode, Country, CountrySID, EmploymentStatus
-)
-VALUES
--- Sta3n 688: Washington DC VAMC (new facility)
-(1016, 1016, 'PtIEN1016', 688, 1, 'HOME', '1234 Constitution Ave NW', 'Apt 5B', '', 'Washington', 'District of Columbia', 'DC', 3561, '20001', '200010016', '', 'UNITED STATES', 1200005271, 'EMPLOYED'),
-(1020, 1020, 'PtIEN1020', 688, 1, 'HOME', '5678 Wisconsin Ave NW', '', '', 'Washington', 'District of Columbia', 'DC', 3561, '20016', '200160020', '', 'UNITED STATES', 1200005271, 'EMPLOYED'),
-(1024, 1024, 'PtIEN1024', 688, 1, 'HOME', '910 Pennsylvania Ave SE', '', '', 'Washington', 'District of Columbia', 'DC', 3561, '20003', '200030024', '', 'UNITED STATES', 1200005271, 'RETIRED'),
-
--- Sta3n 508: Atlanta VAMC
-(1017, 1017, 'PtIEN1017', 508, 1, 'HOME', '2468 Clairmont Rd', '', '', 'Decatur', 'DeKalb', 'GA', 415, '30033', '300330017', '', 'UNITED STATES', 1200005271, 'UNEMPLOYED'),
-(1021, 1021, 'PtIEN1021', 508, 1, 'HOME', '1357 Memorial Dr SE', '', '', 'Atlanta', 'Fulton', 'GA', 415, '30312', '303120021', '', 'UNITED STATES', 1200005271, 'RETIRED'),
-
--- Sta3n 516: Honolulu VAMC
-(1018, 1018, 'PtIEN1018', 516, 1, 'HOME', '753 Kapiolani Blvd', 'Unit 12', '', 'Honolulu', 'Honolulu', 'HI', 1792, '96814', '968140018', '', 'UNITED STATES', 1200005271, 'EMPLOYED'),
-(1022, 1022, 'PtIEN1022', 516, 1, 'HOME', '951 Ala Moana Blvd', '', '', 'Honolulu', 'Honolulu', 'HI', 1792, '96814', '968140022', '', 'UNITED STATES', 1200005271, 'RETIRED'),
-(1025, 1025, 'PtIEN1025', 516, 1, 'HOME', '357 King Street', 'Apt 8C', '', 'Honolulu', 'Honolulu', 'HI', 1792, '96813', '968130025', '', 'UNITED STATES', 1200005271, 'RETIRED'),
-
--- Sta3n 552: Dayton VAMC
-(1019, 1019, 'PtIEN1019', 552, 1, 'HOME', '246 Oakwood Ave', '', '', 'Dayton', 'Montgomery', 'OH', 4963, '45419', '454190019', '', 'UNITED STATES', 1200005271, 'EMPLOYED'),
-(1023, 1023, 'PtIEN1023', 552, 1, 'HOME', '159 Shiloh Springs Rd', '', '', 'Dayton', 'Montgomery', 'OH', 4963, '45415', '454150023', '', 'UNITED STATES', 1200005271, 'RETIRED');
-GO
-
-PRINT '  ✓ Added 10 patient addresses';
-PRINT '    - Sta3n 508 (Atlanta): 2 patients';
-PRINT '    - Sta3n 516 (Honolulu): 3 patients';
-PRINT '    - Sta3n 552 (Dayton): 2 patients';
-PRINT '    - Sta3n 688 (Washington DC): 3 patients';
-GO
 
 /*
 |--------------------------------------------------------------------------------
@@ -173,8 +15,7 @@ GO
 |--------------------------------------------------------------------------------
 */
 
-PRINT '';
-PRINT '==== SECTION 3: Adding Outpatient Prescriptions ====';
+PRINT 'Adding Additional Outpatient Prescriptions';
 GO
 
 INSERT INTO RxOut.RxOutpat
@@ -280,27 +121,7 @@ VALUES
 (5107, 'RxIEN5107', 516, 1025, 'PtIEN1025', 10051, 'DrugIEN10051', 20051, 'MULTIVITAMIN', 'MULTIVITAMIN TAB', '2024-025-0009', '2025-04-02 10:05:00', NULL, NULL, 1003, 'StaffIEN1003', 1003, 'StaffIEN1003', 1003, 'StaffIEN1003', 5002, 'PharmIEN5002', 'VA HONOLULU MAIN PHARMACY', 'ACTIVE', 'MAIL', 90, 90, 5, 5, 5, '1 TAB', '2025-10-02 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-04-02 10:05:00', NULL, NULL, 8001, 'ClinicIEN8001', 'PRIMARY CARE CLINIC', NULL, 'N', 'Y', 'Y');
 GO
 
-PRINT '  ✓ Added 47 outpatient prescriptions';
-PRINT '    - Patient 1016: 3 meds (RxOut)';
-PRINT '    - Patient 1017: 4 meds (RxOut)';
-PRINT '    - Patient 1019: 5 meds (RxOut)';
-PRINT '    - Patient 1020: 5 meds (RxOut)';
-PRINT '    - Patient 1021: 6 meds (RxOut)';
-PRINT '    - Patient 1023: 7 meds (RxOut)';
-PRINT '    - Patient 1024: 8 meds (RxOut)';
-PRINT '    - Patient 1025: 9 meds (RxOut)';
-PRINT '    - Note: Patients 1018, 1022 have BCMA-only (no RxOut)';
-GO
-
-/*
-|--------------------------------------------------------------------------------
-| SECTION 4: BCMA Medication Administration (BCMA.BCMAMedicationLog)
-| For patients with BCMA data source: 1016, 1018, 1019, 1021, 1022, 1023, 1024
-|--------------------------------------------------------------------------------
-*/
-
-PRINT '';
-PRINT '==== SECTION 4: Adding BCMA Medication Administration Records ====';
+PRINT 'Adding Additional BCMA Medication Administration Records';
 GO
 
 INSERT INTO BCMA.BCMAMedicationLog
@@ -342,43 +163,4 @@ VALUES
 
 -- Patient 1024: Metoprolol BCMA administration
 (6042, 'BCMALogIEN6042', 688, 1024, 'PtIEN1024', 1638024, 'PFIEN1024', 'GIVEN', 'COMPLETED', '2025-02-11 14:00:00', NULL, NULL, '2025-02-11 14:00:00', NULL, NULL, '2025-02-11 08:00:00', NULL, NULL, 1005, 'StaffIEN1005', 1005, 'StaffIEN1005', 10011, 'DrugIEN10011', 20011, 'METOPROLOL TARTRATE', 'METOPROLOL TARTRATE 50MG TAB', 'IP-2024-024001', '50MG', '50MG', 'PO', 'RouteIEN01', 'TAB', 'SCHEDULED', 'BID', 'TAB', 2003, 'WardIEN2003', 'CARDIOLOGY WARD', 'N', NULL, NULL, NULL, 'N', NULL, NULL, '2025-02-11 14:00:00', NULL, NULL);
-GO
-
-PRINT '  ✓ Added 12 BCMA medication administration records';
-PRINT '    - Patient 1016: 1 BCMA record (RxOut+BCMA)';
-PRINT '    - Patient 1018: 2 BCMA records (BCMA-only)';
-PRINT '    - Patient 1019: 1 BCMA record (RxOut+BCMA)';
-PRINT '    - Patient 1021: 1 BCMA record (RxOut+BCMA)';
-PRINT '    - Patient 1022: 5 BCMA records (BCMA-only)';
-PRINT '    - Patient 1023: 1 BCMA record (RxOut+BCMA)';
-PRINT '    - Patient 1024: 1 BCMA record (RxOut+BCMA)';
-GO
-
-/*
-|--------------------------------------------------------------------------------
-| VERIFICATION AND SUMMARY
-|--------------------------------------------------------------------------------
-*/
-
-PRINT '';
-PRINT '==== VERIFICATION SUMMARY ====';
-GO
-
--- Verify patient counts
-SELECT 'Total Patients' AS CheckType, COUNT(*) AS ActualCount, 25 AS ExpectedCount
-FROM SPatient.SPatient
-WHERE PatientSID BETWEEN 1001 AND 1025
-UNION ALL
-SELECT 'Expansion Patients', COUNT(*), 10
-FROM SPatient.SPatient
-WHERE PatientSID BETWEEN 1016 AND 1025;
-GO
-
-PRINT '';
-PRINT '================================================';
-PRINT '=== EXPANSION COMPLETE ===';
-PRINT '================================================';
-PRINT 'Total CDWWork patients: 25 (10 base + 5 elderly + 10 expansion)';
-PRINT 'Ready for Phase 2: PhysioNet MIMIC-IV integration';
-PRINT '================================================';
 GO

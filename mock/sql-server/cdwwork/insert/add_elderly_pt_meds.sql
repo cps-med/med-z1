@@ -27,108 +27,6 @@
 |--------------------------------------------------------------------------------
 */
 
-PRINT '========================================';
-PRINT '=== ADD ELDERLY PATIENTS WITH DDI ===';
-PRINT '========================================';
-GO
-
--- Set the active database
-USE CDWWork;
-GO
-
-/*
-|--------------------------------------------------------------------------------
-| SECTION 1: Patient Demographics (SPatient.SPatient)
-|--------------------------------------------------------------------------------
-*/
-
-PRINT '';
-PRINT '==== SECTION 1: Adding 5 Elderly Patients ====';
-GO
-
-INSERT INTO SPatient.SPatient
-(
- PatientSID, PatientIEN, Sta3n, PatientName, PatientLastName, PatientFirstName,
- TestPatientFlag, CDWPossibleTestPatientFlag, VeteranFlag, PatientType, PatientTypeSID,
- PatientICN, ScrSSN, PatientSSN, PseudoSSNReason, SSNVerificationStatus,
- GovernmentEmployeeFlag, SensitiveFlag, Age, BirthDateTime, BirthVistaErrorDate,
- BirthDateTimeTransformSID, DeceasedFlag, DeathDateTime, DeathVistaErrorDate,
- DeathDateTimeTransformSID, DeathEnteredByStaffSID, DeathNotificationSource,
- DeathDocumentationType, DeathModifiedDateTime, DeathModifiedVistaErrorDate,
- DeathModifiedDateTimeTransformSID, DeathLastUpdatedByStaffSID, Gender,
- SelfIdentifiedGender, Religion, ReligionSID, MaritalStatus, MaritalStatusSID,
- CollateralSponsorPatientSID, CurrentEnrollmentSID, MeansTestStatus, CurrentMeansTestStatusSID,
- PeriodOfService, PeriodOfServiceSID, OperationDesertShieldRank, ODSRankType,
- ODSRecalledCode, ODSTreatmentDateTime, ODSTreatmentVistaErrorDate, ODSTreatmentDateTimeTransformSID,
- FederalAgencySID, FilipinoVeteranCode, ServiceConnectedFlag, Eligibility, EligibilityVACode,
- EligibilitySID, EligibilityStatus, EligibilityStatusDateTime, EligibilityStatusVistaErrorDate,
- EligibilityStatusDateTimeTransformSID, EligibilityVerificationSource, EligibilityVerificationMethod,
- EligibilityInterimDateTime, EligibilityInterimVistaErrorDate, EligibilityInterimDateTimeTransformSID,
- EligibilityEnteredStaffSID, IneligibleReason, IneligibleVAROReason, IneligibleCity,
- IneligibleStateSID, IneligibleDateTime, IneligibleVistaErrorDate, IneligibleDateTimeTransformSID,
- IneligibleSource, PatientMissingSource, PatientMissingDateTime, PatientMissingVistaErrorDate,
- PatientMissingDateTimeTransformSID, PatientMissingCity, PatientMissingStateSID,
- FugitiveFelonFlag, FFFEnteredDateTime, FFFEnteredVistaErrorDate, FFFEnteredDateTimeTransformSID,
- FFFEnteredStaffSID, FFFRemovedReason, FFFRemovedDateTime, FFFRemovedVistaErrorDate,
- FFFRemovedDateTimeTransformSID, FFFRemovedStaffSID, PatientEnteredByStaffSID, PatientEnteredCode,
- PatientEnteredRemark, PatientEnteredDateTime, PatientEnteredVistaErrorDate, PatientEnteredDateTimeTransformSID,
- DuplicateRecordStatus, DestinationMergePatientSID, PreferredInstitutionSID, PreferredInstitutionSource,
- EmergencyResponseIndicator, InsuranceCoverageFlag, MedicaidEligibleFlag, MedicaidNumber,
- MedicaidInquireDateTime, MedicaidInquireVistaErrorDate, MedicaidInquireDateTimeTransformSID,
- VeteranTransportationProgramFlag
-)
-VALUES
--- Patient 1011: George Harris - Age 72, Sta3n 508 (Atlanta, GA)
--- Conditions: Atrial Fibrillation, CHF, HTN, Type 2 DM, Hypothyroidism
-(1011, 'PtIEN1011', 508, 'George Harris', 'Harris', 'George', 'N', 'N', 'Y', 'Regular', 101, 'ICN100011', '222221011', '222221011', 'None', 'Verified', 'N', 'N', 72, '1953-03-15', NULL, NULL, 'N', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'M', 'Male', 'Christian', 1, 'MARRIED', 2, NULL, 1011, 'None', NULL, 'VIETNAM ERA', 12004, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, 'VERIFIED', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2024-01-15', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Y'),
-
--- Patient 1012: Helen Martinez - Age 68, Sta3n 516 (Bay Pines, FL)
--- Conditions: Post-MI, HTN, GERD, Chronic pain, Hyperlipidemia
-(1012, 'PtIEN1012', 516, 'Helen Martinez', 'Martinez', 'Helen', 'N', 'N', 'Y', 'Regular', 101, 'ICN100012', '333331012', '333331012', 'None', 'Verified', 'N', 'N', 68, '1957-07-22', NULL, NULL, 'N', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', 'Female', 'Catholic', 2, 'WIDOWED', 3, NULL, 1012, 'None', NULL, 'VIETNAM ERA', 12004, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, 'VERIFIED', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2024-02-10', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Y'),
-
--- Patient 1013: Irving Thompson - Age 77, Sta3n 552 (Dayton, OH)
--- Conditions: Heart Failure, AFib, CKD Stage 3, HTN, Gout
-(1013, 'PtIEN1013', 552, 'Irving Thompson', 'Thompson', 'Irving', 'N', 'N', 'Y', 'Regular', 101, 'ICN100013', '444441013', '444441013', 'None', 'Verified', 'N', 'N', 77, '1948-11-05', NULL, NULL, 'N', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'M', 'Male', 'Protestant', 2, 'MARRIED', 2, NULL, 1013, 'None', NULL, 'KOREAN', 12006, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, 'VERIFIED', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2024-03-05', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Y'),
-
--- Patient 1014: Joyce Kim - Age 70, Sta3n 508 (Atlanta, GA)
--- Conditions: Osteoarthritis, HTN, Type 2 DM, Hypothyroidism, Neuropathy
-(1014, 'PtIEN1014', 508, 'Joyce Kim', 'Kim', 'Joyce', 'N', 'N', 'Y', 'Regular', 101, 'ICN100014', '555551014', '555551014', 'None', 'Verified', 'N', 'N', 70, '1955-02-18', NULL, NULL, 'N', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', 'Female', 'Buddhist', 3, 'MARRIED', 2, NULL, 1014, 'None', NULL, 'VIETNAM ERA', 12004, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, 'VERIFIED', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2024-01-20', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Y'),
-
--- Patient 1015: Kenneth Wilson - Age 82, Sta3n 516 (Bay Pines, FL)
--- Conditions: Post-CVA, HTN, Chronic pain, Depression, GERD, Hyperlipidemia
-(1015, 'PtIEN1015', 516, 'Kenneth Wilson', 'Wilson', 'Kenneth', 'N', 'N', 'Y', 'Regular', 101, 'ICN100015', '666661015', '666661015', 'None', 'Verified', 'N', 'N', 82, '1943-06-10', NULL, NULL, 'N', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'M', 'Male', 'Jewish', 4, 'WIDOWED', 3, NULL, 1015, 'None', NULL, 'WORLD WAR II', 12003, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, 'VERIFIED', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2024-04-12', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Y');
-GO
-
-PRINT '  ✓ Added 5 elderly patients (PatientSID 1011-1015)';
-GO
-
-/*
-|--------------------------------------------------------------------------------
-| SECTION 2: Patient Addresses with Geographic Location (SPatient.SPatientAddress)
-|--------------------------------------------------------------------------------
-*/
-
-PRINT '';
-PRINT '==== SECTION 2: Adding Patient Addresses ====';
-GO
-
-INSERT INTO SPatient.SPatientAddress
-(
-    SPatientAddressSID, PatientSID, PatientIEN, Sta3n, OrdinalNumber, AddressType,
-    StreetAddress1, StreetAddress2, StreetAddress3, City, County,
-    [State], StateSID, Zip, Zip4, PostalCode, Country, CountrySID, EmploymentStatus
-)
-VALUES
-(1011, 1011, 'PtIEN1011', 508, 1, 'HOME', '1234 Peachtree Street NE', '', '', 'Decatur', 'DeKalb', 'GA', 415, '30033', '300330011', '', 'UNITED STATES', 1200005271, 'RETIRED'),
-(1012, 1012, 'PtIEN1012', 516, 1, 'HOME', '5678 Gulf Boulevard', 'Apt 12B', '', 'Bay Pines', 'Pinellas', 'FL', 1792, '33744', '337440012', '', 'UNITED STATES', 1200002442, 'RETIRED'),
-(1013, 1013, 'PtIEN1013', 552, 1, 'HOME', '910 Main Street', '', '', 'Dayton', 'Montgomery', 'OH', 4963, '45402', '454020013', '', 'UNITED STATES', 1200005271, 'RETIRED'),
-(1014, 1014, 'PtIEN1014', 508, 1, 'HOME', '2468 Buford Highway', '', '', 'Decatur', 'DeKalb', 'GA', 415, '30032', '300320014', '', 'UNITED STATES', 1200005271, 'RETIRED'),
-(1015, 1015, 'PtIEN1015', 516, 1, 'HOME', '7890 Seminole Boulevard', '', '', 'Bay Pines', 'Pinellas', 'FL', 1792, '33708', '337080015', '', 'UNITED STATES', 1200002442, 'RETIRED');
-GO
-
-PRINT '  ✓ Added 5 patient addresses with State/Geographic linkage';
-GO
-
 /*
 |--------------------------------------------------------------------------------
 | SECTION 3: Outpatient Prescriptions (RxOut.RxOutpat)
@@ -137,8 +35,7 @@ GO
 |--------------------------------------------------------------------------------
 */
 
-PRINT '';
-PRINT '==== SECTION 3: Adding Outpatient Prescriptions (42 total) ====';
+PRINT 'Adding Additional Outpatient Prescriptions';
 GO
 
 INSERT INTO RxOut.RxOutpat
@@ -214,44 +111,7 @@ VALUES
 (5060, 'RxIEN5060', 516, 1015, 'PtIEN1015', 10019, 'DrugIEN10019', 20019, 'ASPIRIN', 'ASPIRIN 81MG TAB EC', '2025-015-0010', '2025-04-12 10:45:00', NULL, NULL, 1003, 'StaffIEN1003', 1003, 'StaffIEN1003', 1003, 'StaffIEN1003', 5002, 'PharmIEN5002', 'VA BAY PINES MAIN PHARMACY', 'ACTIVE', 'MAIL', 90, 90, 5, 5, 5, '1 TAB', '2025-10-12 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-04-12 10:45:00', NULL, NULL, 8005, 'ClinicIEN8005', 'CARDIOLOGY CLINIC', NULL, 'N', 'Y', 'Y');
 GO
 
-PRINT '  ✓ Added 42 outpatient prescriptions with DDI pairs';
-PRINT '    - Patient 1011 (George Harris): 8 medications';
-PRINT '    - Patient 1012 (Helen Martinez): 7 medications';
-PRINT '    - Patient 1013 (Irving Thompson): 9 medications';
-PRINT '    - Patient 1014 (Joyce Kim): 8 medications';
-PRINT '    - Patient 1015 (Kenneth Wilson): 10 medications';
-GO
 
-/*
-|--------------------------------------------------------------------------------
-| SECTION 4: Inpatient Stays (Inpat.Inpatient)
-| Adding 5 inpatient admissions to support BCMA medication administration records
-|--------------------------------------------------------------------------------
-*/
-
-PRINT '';
-PRINT '==== SECTION 4: Adding Inpatient Stays (5 total) ====';
-GO
-
-INSERT INTO Inpat.Inpatient
-(
- InpatientSID, PTFIEN, Sta3n, PatientSID, MeansTestIndicator, PatientFirstName,
- AdmitDateTime, AdmitDateSID, AdmitSourceSID, AdmitEligibilitySID, TransferFromFacility,
- ASIHDays, AdmitMASMovementTypeSID, AdmitFacilityMovementTypeSID, AdmitFromInstitutionSID,
- AdmitWardLocationSID, AdmitRoomBedSID, AdmitDiagnosis, ProviderSID, HeadNeckCancerFlag,
- IonizingRadiationFlag, SHADFlag, PatientSSN, PseudoSSNReason, SSNVerificationStatus,
- GovernmentEmployeeFlag, SensitiveFlag, Age, BirthDateTime
-)
-VALUES
-(1638011, 'PFIEN1011', 508, 1011, 'MeansTestIndicator', 'George',  '2025-02-10 08:30:00', 20250210, 8001, 3001, 508, 5, 100001, 100001, 100001, 2001, 100001, 'Atrial Fibrillation exacerbation', 1001, 'N', 'N', 'N', '222221011', 'PseudoSSNReason', 'SSNVerificationStatus', 'N', 'N', 72, '1953-03-15 00:00:00'),
-(1638012, 'PFIEN1012', 516, 1012, 'MeansTestIndicator', 'Helen',   '2025-03-05 14:15:00', 20250305, 8001, 3001, 516, 3, 100001, 100001, 100001, 2002, 100001, 'Chest pain r/o MI', 1003, 'N', 'N', 'N', '333331012', 'PseudoSSNReason', 'SSNVerificationStatus', 'N', 'N', 68, '1957-07-22 00:00:00'),
-(1638013, 'PFIEN1013', 552, 1013, 'MeansTestIndicator', 'Irving',  '2025-04-01 06:45:00', 20250401, 8001, 3001, 552, 7, 100001, 100001, 100001, 2003, 100001, 'CHF exacerbation', 1004, 'N', 'N', 'N', '444441013', 'PseudoSSNReason', 'SSNVerificationStatus', 'N', 'N', 77, '1948-11-05 00:00:00'),
-(1638014, 'PFIEN1014', 508, 1014, 'MeansTestIndicator', 'Joyce',   '2025-02-28 11:20:00', 20250228, 8001, 3001, 508, 4, 100001, 100001, 100001, 2001, 100001, 'Acute on chronic pain management', 1001, 'N', 'N', 'N', '555551014', 'PseudoSSNReason', 'SSNVerificationStatus', 'N', 'N', 70, '1955-02-18 00:00:00'),
-(1638015, 'PFIEN1015', 516, 1015, 'MeansTestIndicator', 'Kenneth', '2025-05-15 03:30:00', 20250515, 8001, 3001, 516, 6, 100001, 100001, 100001, 2002, 100001, 'TIA workup', 1003, 'N', 'N', 'N', '666661015', 'PseudoSSNReason', 'SSNVerificationStatus', 'N', 'N', 82, '1943-06-10 00:00:00');
-GO
-
-PRINT '  ✓ Added 5 inpatient stays for elderly patients';
-GO
 
 /*
 |--------------------------------------------------------------------------------
@@ -260,8 +120,7 @@ GO
 |--------------------------------------------------------------------------------
 */
 
-PRINT '';
-PRINT '==== SECTION 5: Adding BCMA Medication Logs (20 total) ====';
+PRINT 'Adding Additional BCMA Medication Administration Records';
 GO
 
 INSERT INTO BCMA.BCMAMedicationLog
@@ -312,49 +171,4 @@ VALUES
 (9036, 'BCMALogIEN9036', 516, 1015, 'PtIEN1015', 1638015, 'PFIEN1015', 'GIVEN', 'COMPLETED', '2025-05-16 08:10:00', NULL, NULL, '2025-05-16 08:00:00', NULL, NULL, '2025-05-15 04:05:00', NULL, NULL, 1004, 'StaffIEN1004', 1003, 'StaffIEN1003', 10030, 'DrugIEN10030', 20030, 'SIMVASTATIN', 'SIMVASTATIN 80MG TAB', 'IP-2025-015002', '80MG', '80MG', 'PO', 'RouteIEN01', 'TAB', 'SCHEDULED', 'QHS', 'TAB', 2002, 'WardIEN2002', '3 SOUTH MEDICAL', 'N', NULL, NULL, 'May increase warfarin effect', 'N', NULL, NULL, '2025-05-16 08:10:00', NULL, NULL),
 (9037, 'BCMALogIEN9037', 516, 1015, 'PtIEN1015', 1638015, 'PFIEN1015', 'GIVEN', 'COMPLETED', '2025-05-16 12:30:00', NULL, NULL, NULL, NULL, NULL, '2025-05-15 04:10:00', NULL, NULL, 1003, 'StaffIEN1003', 1003, 'StaffIEN1003', 10005, 'DrugIEN10005', 20005, 'TRAMADOL HCL', 'TRAMADOL HCL 50MG TAB', 'IP-2025-015003', '50MG', '50MG', 'PO', 'RouteIEN01', 'TAB', 'PRN', 'Q6H PRN', 'TAB', 2002, 'WardIEN2002', '3 SOUTH MEDICAL', 'N', NULL, NULL, 'Monitor for bleeding with concurrent warfarin', 'N', NULL, NULL, '2025-05-16 12:30:00', NULL, NULL),
 (9038, 'BCMALogIEN9038', 516, 1015, 'PtIEN1015', 1638015, 'PFIEN1015', 'GIVEN', 'COMPLETED', '2025-05-16 08:20:00', NULL, NULL, '2025-05-16 08:00:00', NULL, NULL, '2025-05-15 04:15:00', NULL, NULL, 1004, 'StaffIEN1004', 1003, 'StaffIEN1003', 10029, 'DrugIEN10029', 20029, 'OMEPRAZOLE', 'OMEPRAZOLE 40MG CAP DR', 'IP-2025-015004', '40MG', '40MG', 'PO', 'RouteIEN01', 'CAP', 'SCHEDULED', 'QD', 'CAP', 2002, 'WardIEN2002', '3 SOUTH MEDICAL', 'N', NULL, NULL, 'May alter warfarin metabolism', 'N', NULL, NULL, '2025-05-16 08:20:00', NULL, NULL);
-GO
-
-PRINT '  ✓ Added 20 BCMA medication administration records';
-PRINT '    - Patient 1011 (George Harris): 4 administrations';
-PRINT '    - Patient 1012 (Helen Martinez): 4 administrations (1 held due to DDI)';
-PRINT '    - Patient 1013 (Irving Thompson): 4 administrations';
-PRINT '    - Patient 1014 (Joyce Kim): 4 administrations (1 held due to DDI)';
-PRINT '    - Patient 1015 (Kenneth Wilson): 4 administrations';
-GO
-
-PRINT '';
-PRINT '========================================';
-PRINT '=== COMPLETION SUMMARY ===';
-PRINT '========================================';
-PRINT '  ✓ 5 elderly patients added (ages 68-82)';
-PRINT '  ✓ 5 patient addresses with geographic data';
-PRINT '  ✓ 5 inpatient stays';
-PRINT '  ✓ 42 outpatient prescriptions';
-PRINT '  ✓ 20 BCMA medication administration records';
-PRINT '  ✓ 18 clinically significant DDI pairs included';
-PRINT '  ✓ Geographic distribution: Sta3n 508 (Atlanta), 516 (Bay Pines), 552 (Dayton)';
-PRINT '';
-PRINT 'Query Examples:';
-PRINT '  1. Patients with demographics:';
-PRINT '     SELECT * FROM SPatient.SPatient WHERE PatientSID BETWEEN 1011 AND 1015;';
-PRINT '';
-PRINT '  2. Outpatient medications:';
-PRINT '     SELECT * FROM RxOut.RxOutpat WHERE RxOutpatSID BETWEEN 5019 AND 5060;';
-PRINT '';
-PRINT '  3. Inpatient medication administrations:';
-PRINT '     SELECT * FROM BCMA.BCMAMedicationLog WHERE BCMAMedicationLogSID BETWEEN 9019 AND 9038;';
-PRINT '';
-PRINT '  4. Patients with geographic data:';
-PRINT '     SELECT p.PatientSID, p.PatientName, p.Age, a.City, s.State, s.StateAbbrev, st.Sta3nName';
-PRINT '     FROM SPatient.SPatient p';
-PRINT '     JOIN SPatient.SPatientAddress a ON p.PatientSID = a.PatientSID';
-PRINT '     JOIN Dim.State s ON a.StateSID = s.StateSID';
-PRINT '     JOIN Dim.Sta3n st ON p.Sta3n = st.Sta3n';
-PRINT '     WHERE p.PatientSID BETWEEN 1011 AND 1015;';
-PRINT '';
-PRINT '  5. DDI scenarios - medications held/given with comments:';
-PRINT '     SELECT PatientSID, DrugNameWithDose, ActionType, VarianceReason, VarianceComment';
-PRINT '     FROM BCMA.BCMAMedicationLog';
-PRINT '     WHERE BCMAMedicationLogSID BETWEEN 9019 AND 9038 AND VarianceFlag = ''Y'';';
-PRINT '========================================';
 GO

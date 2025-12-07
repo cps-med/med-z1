@@ -18,18 +18,22 @@ GO
 
 /*
 |----------------------------------------------------------------------
-| SECTION 1: Original set of 10 Inpatient records
+| Original set of 10 Inpatient records
 | ---------------------------------------------------------------------
 */
 
-PRINT '';
-PRINT '==== SECTION 1: Adding 10 original Inpatient records ====';
+PRINT 'Adding 10 original Inpatient records';
 GO
 
 -- insert data into the Inpat.Inpatient table
 INSERT INTO Inpat.Inpatient
 (
- InpatientSID, PTFIEN, Sta3n, PatientSID, MeansTestIndicator, PatientFirstName, AdmitDateTime, AdmitDateSID, AdmitSourceSID, AdmitEligibilitySID, TransferFromFacility, ASIHDays, AdmitMASMovementTypeSID, AdmitFacilityMovementTypeSID, AdmitFromInstitutionSID, AdmitWardLocationSID, AdmitRoomBedSID, AdmitDiagnosis, ProviderSID, HeadNeckCancerFlag, IonizingRadiationFlag, SHADFlag, PatientSSN, PseudoSSNReason, SSNVerificationStatus, GovernmentEmployeeFlag, SensitiveFlag, Age, BirthDateTime
+ InpatientSID, PTFIEN, Sta3n, PatientSID, MeansTestIndicator, PatientFirstName,
+ AdmitDateTime, AdmitDateSID, AdmitSourceSID, AdmitEligibilitySID, TransferFromFacility,
+ ASIHDays, AdmitMASMovementTypeSID, AdmitFacilityMovementTypeSID, AdmitFromInstitutionSID,
+ AdmitWardLocationSID, AdmitRoomBedSID, AdmitDiagnosis, ProviderSID, HeadNeckCancerFlag,
+ IonizingRadiationFlag, SHADFlag, PatientSSN, PseudoSSNReason, SSNVerificationStatus,
+ GovernmentEmployeeFlag, SensitiveFlag, Age, BirthDateTime
 )
 VALUES
 -- original records for Sta3n 508
@@ -49,8 +53,31 @@ VALUES
 (1638026, 'PFIEN001', 516, 1606026, 'MeansTestIndicator', 'ZZ',    '2025-01-03 05:02:03', 20250103, 8001, 3001, 516, 3, 100001, 100001, 100001, 2002, 100001, 'AdmitDiagnosis', 1002, 'N', 'N', 'N', '000008887', 'PseudoSSNReason', 'SSNVerificationStatus', 'N', 'N', 83, '1942-01-01 00:00:00');
 GO
 
+/*
+|----------------------------------------------------------------------
+| Aditional set of 5 Inpatient records
+| ---------------------------------------------------------------------
+*/
+
 PRINT '';
-PRINT '==== Done ===='
+PRINT 'Adding Inpatient Stays (5 total)';
+GO
+
+INSERT INTO Inpat.Inpatient
+(
+ InpatientSID, PTFIEN, Sta3n, PatientSID, MeansTestIndicator, PatientFirstName,
+ AdmitDateTime, AdmitDateSID, AdmitSourceSID, AdmitEligibilitySID, TransferFromFacility,
+ ASIHDays, AdmitMASMovementTypeSID, AdmitFacilityMovementTypeSID, AdmitFromInstitutionSID,
+ AdmitWardLocationSID, AdmitRoomBedSID, AdmitDiagnosis, ProviderSID, HeadNeckCancerFlag,
+ IonizingRadiationFlag, SHADFlag, PatientSSN, PseudoSSNReason, SSNVerificationStatus,
+ GovernmentEmployeeFlag, SensitiveFlag, Age, BirthDateTime
+)
+VALUES
+(1638011, 'PFIEN1011', 508, 1011, 'MeansTestIndicator', 'George',  '2025-02-10 08:30:00', 20250210, 8001, 3001, 508, 5, 100001, 100001, 100001, 2001, 100001, 'Atrial Fibrillation exacerbation', 1001, 'N', 'N', 'N', '222221011', 'PseudoSSNReason', 'SSNVerificationStatus', 'N', 'N', 72, '1953-03-15 00:00:00'),
+(1638012, 'PFIEN1012', 516, 1012, 'MeansTestIndicator', 'Helen',   '2025-03-05 14:15:00', 20250305, 8001, 3001, 516, 3, 100001, 100001, 100001, 2002, 100001, 'Chest pain r/o MI', 1003, 'N', 'N', 'N', '333331012', 'PseudoSSNReason', 'SSNVerificationStatus', 'N', 'N', 68, '1957-07-22 00:00:00'),
+(1638013, 'PFIEN1013', 552, 1013, 'MeansTestIndicator', 'Irving',  '2025-04-01 06:45:00', 20250401, 8001, 3001, 552, 7, 100001, 100001, 100001, 2003, 100001, 'CHF exacerbation', 1004, 'N', 'N', 'N', '444441013', 'PseudoSSNReason', 'SSNVerificationStatus', 'N', 'N', 77, '1948-11-05 00:00:00'),
+(1638014, 'PFIEN1014', 508, 1014, 'MeansTestIndicator', 'Joyce',   '2025-02-28 11:20:00', 20250228, 8001, 3001, 508, 4, 100001, 100001, 100001, 2001, 100001, 'Acute on chronic pain management', 1001, 'N', 'N', 'N', '555551014', 'PseudoSSNReason', 'SSNVerificationStatus', 'N', 'N', 70, '1955-02-18 00:00:00'),
+(1638015, 'PFIEN1015', 516, 1015, 'MeansTestIndicator', 'Kenneth', '2025-05-15 03:30:00', 20250515, 8001, 3001, 516, 6, 100001, 100001, 100001, 2002, 100001, 'TIA workup', 1003, 'N', 'N', 'N', '666661015', 'PseudoSSNReason', 'SSNVerificationStatus', 'N', 'N', 82, '1943-06-10 00:00:00');
 GO
 
 -- To-Do: consider addng records for Sta3n 552 (and maybe 688 WashDC)
