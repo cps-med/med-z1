@@ -1,6 +1,22 @@
-# -----------------------------------------------------------
+# ---------------------------------------------------------------------
 # models.py
-# -----------------------------------------------------------
+# ---------------------------------------------------------------------
+# Pydantic data models for the CCOW Context Vault service.
+#
+# Defines the core data structures used throughout the CCOW vault:
+# - PatientContext: Active patient context (current state)
+# - ContextHistoryEntry: Historical context change events
+# - Request/Response models for FastAPI endpoints
+#
+# These Pydantic BaseModels provide:
+# - Automatic type validation (e.g., action must be "set" or "clear")
+# - JSON serialization/deserialization for HTTP APIs
+# - OpenAPI schema generation for FastAPI documentation
+# - IDE autocomplete and type checking support
+#
+# All datetime fields use UTC timezone for consistency across
+# the distributed VA environment (see vault.py for rationale).
+# ---------------------------------------------------------------------
 
 from datetime import datetime, timezone
 from typing import Optional, Literal

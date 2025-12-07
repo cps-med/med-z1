@@ -1,6 +1,32 @@
-# -----------------------------------------------------------
+# ---------------------------------------------------------------------
 # main.py
-# -----------------------------------------------------------
+# ---------------------------------------------------------------------
+# FastAPI application providing HTTP REST API for CCOW Context Vault.
+#
+# Exposes the shared ContextVault singleton (from vault.py) via HTTP
+# endpoints, enabling distributed applications to synchronize patient
+# context across the med-z1 ecosystem. This is the production interface
+# for context management (vs. direct vault access in test scripts).
+#
+# REST API Endpoints:
+# - GET  /                       - Service info
+# - GET  /ccow/health            - Health check
+# - GET  /ccow/active-patient    - Get current patient context
+# - PUT  /ccow/active-patient    - Set/update patient context
+# - DELETE /ccow/active-patient  - Clear patient context
+# - GET  /ccow/history           - Get context change history
+#
+# Key technical considerations:
+# - Uses singleton vault instance from vault.py (thread-safe)
+# - Pydantic models (models.py) for request/response validation
+# - CORS enabled for development (tighten for production)
+# - Returns 404 when no active context (vs. null/empty)
+# - All timestamps in UTC (ISO 8601 with 'Z' suffix)
+#
+# Auto-generated API docs available at:
+# - Swagger UI: http://localhost:8001/docs
+# - ReDoc: http://localhost:8001/redoc
+# ---------------------------------------------------------------------
 
 from datetime import datetime, timezone
 from typing import Optional

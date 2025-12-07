@@ -145,6 +145,21 @@ PATHS = {
 
 
 # -----------------------------------------------------------
+# CCOW Context Vault configuration
+# -----------------------------------------------------------
+
+CCOW_ENABLED = _get_bool("CCOW_ENABLED", default=True)
+CCOW_URL = os.getenv("CCOW_URL", "http://localhost:8001")
+CCOW_VAULT_PORT = int(os.getenv("CCOW_VAULT_PORT", "8001"))
+
+CCOW_CONFIG = {
+    "enabled": CCOW_ENABLED,
+    "url": CCOW_URL,
+    "port": CCOW_VAULT_PORT,
+}
+
+
+# -----------------------------------------------------------
 # Optional logging of config (without secrets)
 # -----------------------------------------------------------
 
@@ -158,3 +173,4 @@ if __name__ != "__main__":
     logger.info(f"USE_MINIO: {USE_MINIO}")
     logger.info(f"ASCII extract folder: {ASCII_EXTRACT_FOLDER}")
     logger.info(f"Log directory: {LOG_DIRECTORY_PATH}")
+    logger.info(f"CCOW enabled: {CCOW_ENABLED}, URL: {CCOW_URL}")

@@ -1,6 +1,6 @@
 # CCOW Context Vault – Consolidated Design & Implementation Guide
 
-December 6, 2025 • Document version v1 (consolidated)
+December 7, 2025 • Document version v1.1 (updated configuration guidance)
 
 > **Note**  
 > This document consolidates and refines the earlier design specs:
@@ -734,33 +734,165 @@ async def get_context_history():
 
 ## 9. Configuration & Running the Service
 
-### 9.1 Configuration in `config.py`
+### 9.1 Overview: med-z1 Configuration Architecture
 
-Add CCOW-specific config to the root `config.py`:
+The med-z1 project uses a **centralized configuration pattern**:
+
+- **Single `.env` file** at project root – contains all environment variables
+- **Single `config.py` module** at project root – loads and exposes configuration to all subsystems
+- **Consistent helper functions** – `_get_bool()`, `_expand_path()` for type-safe config loading
+- **Import from anywhere** – all subsystems (app, etl, ai, ccow) import from `config.py`
+
+This keeps configuration DRY (Don't Repeat Yourself) and ensures consistency across the entire project.
+
+### 9.2 Configuration in `config.py`
+
+Add CCOW-specific configuration to the root `config.py` following the existing pattern.
+
+**Location:** `med-z1/config.py`
+
+Add this section after the existing database and MinIO configuration blocks:
 
 ```python
-# config.py
-
-import os
-
-# ... existing config ...
-
+# -----------------------------------------------------------
 # CCOW Context Vault configuration
-CCOW_ENABLED: bool = os.getenv("CCOW_ENABLED", "true").lower() == "true"
-CCOW_URL: str = os.getenv("CCOW_URL", "http://localhost:8001")
-CCOW_VAULT_PORT: int = int(os.getenv("CCOW_VAULT_PORT", "8001"))
+# -----------------------------------------------------------
+
+CCOW_ENABLED = _get_bool("CCOW_ENABLED", default=True)
+CCOW_URL = os.getenv("CCOW_URL", "http://localhost:8001")
+CCOW_VAULT_PORT = int(os.getenv("CCOW_VAULT_PORT", "8001"))
+
+CCOW_CONFIG = {
+    "enabled": CCOW_ENABLED,
+    "url": CCOW_URL,
+    "port": CCOW_VAULT_PORT,
+}
 ```
 
-### 9.2 Environment Variables (`.env`)
+**Design Notes:**
+
+- Uses existing `_get_bool()` helper for consistent boolean parsing
+- Defaults to **enabled** for local development (graceful degradation if service is down)
+- Exports both individual variables AND a `CCOW_CONFIG` dict for flexibility
+- Follows the same dict-export pattern as `CDWWORK_DB_CONFIG` and `MINIO_CONFIG`
+
+### 9.3 Environment Variables (`.env`)
+
+Add CCOW configuration to the root `.env` file.
+
+**Location:** `med-z1/.env`
+
+Append these lines after the existing configuration sections:
 
 ```bash
-# CCOW Context Vault
+# -----------------------------------------------------------
+# CCOW Context Vault Configuration
+# -----------------------------------------------------------
 CCOW_ENABLED=true
 CCOW_URL=http://localhost:8001
 CCOW_VAULT_PORT=8001
 ```
 
-### 9.3 Starting the Service
+**Environment Variable Reference:**
+
+| Variable           | Type    | Default                   | Description                                      |
+| ------------------ | ------- | ------------------------- | ------------------------------------------------ |
+| `CCOW_ENABLED`     | boolean | `true`                    | Enable/disable CCOW context synchronization      |
+| `CCOW_URL`         | string  | `http://localhost:8001`   | Base URL for CCOW vault service                  |
+| `CCOW_VAULT_PORT`  | integer | `8001`                    | Port for CCOW vault service (use in uvicorn)    |
+
+**Boolean Value Syntax:**
+
+The `_get_bool()` helper accepts: `true`, `false`, `yes`, `no`, `1`, `0` (case-insensitive)
+
+### 9.4 Updating `config.py` Logging (Optional)
+
+If you want CCOW configuration logged at startup (recommended for troubleshooting), update the logging block at the bottom of `config.py`:
+
+```python
+# config.py (bottom of file)
+
+if __name__ != "__main__":
+    logger = logging.getLogger(__name__)
+    logger.info(f"Loaded config from: {ENV_PATH}")
+    logger.info(f"Project root: {PROJECT_ROOT}")
+    logger.info(f"CDWWORK server: {CDWWORK_DB_SERVER} / DB: {CDWWORK_DB_NAME}")
+    logger.info(f"EXTRACT server: {EXTRACT_DB_SERVER} / DB: {EXTRACT_DB_NAME}")
+    logger.info(f"MinIO endpoint: {MINIO_ENDPOINT}, bucket: {MINIO_BUCKET_NAME}")
+    logger.info(f"USE_MINIO: {USE_MINIO}")
+    logger.info(f"ASCII extract folder: {ASCII_EXTRACT_FOLDER}")
+    logger.info(f"Log directory: {LOG_DIRECTORY_PATH}")
+    # Add this line:
+    logger.info(f"CCOW enabled: {CCOW_ENABLED}, URL: {CCOW_URL}")
+```
+
+### 9.5 Using CCOW Configuration in Code
+
+**In the CCOW service (`ccow/main.py`):**
+
+```python
+from fastapi import FastAPI
+from config import CCOW_VAULT_PORT
+
+app = FastAPI(
+    title="CCOW Context Vault",
+    description="Simplified CCOW-style patient context synchronization service",
+    version="1.0.0",
+)
+
+# Port is specified when starting uvicorn, not in app code
+# See section 9.6 below
+```
+
+**In the med-z1 app client (`app/utils/ccow_client.py`):**
+
+```python
+import logging
+from typing import Optional
+import requests
+from config import CCOW_ENABLED, CCOW_URL
+
+logger = logging.getLogger(__name__)
+
+class CCOWClient:
+    """Simple HTTP client for interacting with the CCOW Context Vault."""
+
+    def __init__(self, base_url: str = CCOW_URL, enabled: bool = CCOW_ENABLED):
+        self.base_url = base_url.rstrip("/")
+        self.enabled = enabled
+
+    def set_active_patient(self, patient_id: str, set_by: str = "med-z1") -> bool:
+        """Notify CCOW vault of an active patient change."""
+        if not self.enabled:
+            logger.debug("CCOW is disabled; skipping set_active_patient call")
+            return False
+
+        try:
+            response = requests.put(
+                f"{self.base_url}/ccow/active-patient",
+                json={"patient_id": patient_id, "set_by": set_by},
+                timeout=2.0,
+            )
+            response.raise_for_status()
+            logger.info("Set CCOW active patient context to %s", patient_id)
+            return True
+        except requests.RequestException as exc:
+            logger.error("Failed to set CCOW context: %s", exc)
+            return False
+
+# Global client instance
+ccow_client = CCOWClient()
+```
+
+**Benefits of this approach:**
+
+- Configuration is centralized and consistent
+- Easy to disable CCOW for testing (`CCOW_ENABLED=false`)
+- Easy to point to different environments (dev, staging, prod) by changing `CCOW_URL`
+- No hardcoded URLs or magic numbers in application code
+- Graceful degradation when CCOW service is unavailable
+
+### 9.6 Starting the Service
 
 From the med-z1 project root:
 
@@ -768,7 +900,10 @@ From the med-z1 project root:
 # Activate your virtual environment
 source .venv/bin/activate  # or equivalent on Windows
 
-# Start CCOW vault on port 8001
+# Start CCOW vault on configured port (defaults to 8001)
+uvicorn ccow.main:app --port $(grep CCOW_VAULT_PORT .env | cut -d '=' -f2) --reload
+
+# Or explicitly:
 uvicorn ccow.main:app --port 8001 --reload
 ```
 
@@ -779,7 +914,31 @@ INFO:     Uvicorn running on http://127.0.0.1:8001
 INFO:     Application startup complete.
 ```
 
-### 9.4 Smoke Test
+**Recommended: Use a startup script**
+
+Create `scripts/start_ccow.sh`:
+
+```bash
+#!/bin/bash
+# Start the CCOW Context Vault service
+
+cd "$(dirname "$0")/.." || exit
+source .venv/bin/activate
+
+# Load port from .env or use default
+CCOW_PORT=$(grep CCOW_VAULT_PORT .env | cut -d '=' -f2)
+CCOW_PORT=${CCOW_PORT:-8001}
+
+echo "Starting CCOW Context Vault on port $CCOW_PORT..."
+uvicorn ccow.main:app --port "$CCOW_PORT" --reload
+```
+
+```bash
+chmod +x scripts/start_ccow.sh
+./scripts/start_ccow.sh
+```
+
+### 9.7 Smoke Test
 
 ```bash
 curl http://localhost:8001/ccow/health
@@ -795,6 +954,144 @@ Expected output (example):
   "timestamp": "2025-12-06T15:30:00.000Z"
 }
 ```
+
+### 9.8 Configuration Troubleshooting
+
+**Problem:** CCOW service won't start or shows port conflicts
+
+**Solution:**
+1. Check if port 8001 is already in use:
+   ```bash
+   lsof -i :8001  # macOS/Linux
+   netstat -ano | findstr :8001  # Windows
+   ```
+2. Change `CCOW_VAULT_PORT` in `.env` to a different port (e.g., `8002`)
+3. Restart the service
+
+**Problem:** med-z1 app can't connect to CCOW service
+
+**Solution:**
+1. Verify CCOW service is running: `curl http://localhost:8001/ccow/health`
+2. Check `CCOW_URL` in `.env` matches where the service is running
+3. Check `CCOW_ENABLED=true` in `.env`
+4. Review logs in med-z1 app for connection errors
+
+**Problem:** CCOW is interfering with testing
+
+**Solution:**
+- Temporarily disable: Set `CCOW_ENABLED=false` in `.env`
+- The CCOWClient will gracefully skip all operations when disabled
+
+**Problem:** Configuration not loading
+
+**Solution:**
+1. Verify `.env` file is in the project root (same directory as `config.py`)
+2. Check for syntax errors in `.env` (no spaces around `=`)
+3. Restart the application after changing `.env`
+4. Add debug logging to verify config values:
+   ```python
+   from config import CCOW_ENABLED, CCOW_URL
+   print(f"CCOW config: enabled={CCOW_ENABLED}, url={CCOW_URL}")
+   ```
+
+### 9.9 Step-by-Step Integration Checklist
+
+Follow these steps to integrate CCOW configuration into your med-z1 project:
+
+**Step 1: Update `.env` file**
+
+Edit `med-z1/.env` and add the CCOW configuration block:
+
+```bash
+# -----------------------------------------------------------
+# CCOW Context Vault Configuration
+# -----------------------------------------------------------
+CCOW_ENABLED=true
+CCOW_URL=http://localhost:8001
+CCOW_VAULT_PORT=8001
+```
+
+**Step 2: Update `config.py`**
+
+Edit `med-z1/config.py` and add the CCOW configuration section after the MinIO configuration:
+
+```python
+# -----------------------------------------------------------
+# CCOW Context Vault configuration
+# -----------------------------------------------------------
+
+CCOW_ENABLED = _get_bool("CCOW_ENABLED", default=True)
+CCOW_URL = os.getenv("CCOW_URL", "http://localhost:8001")
+CCOW_VAULT_PORT = int(os.getenv("CCOW_VAULT_PORT", "8001"))
+
+CCOW_CONFIG = {
+    "enabled": CCOW_ENABLED,
+    "url": CCOW_URL,
+    "port": CCOW_VAULT_PORT,
+}
+```
+
+**Step 3: Update `config.py` logging (optional but recommended)**
+
+Add CCOW to the startup logging:
+
+```python
+# At the bottom of config.py, in the logging block
+logger.info(f"CCOW enabled: {CCOW_ENABLED}, URL: {CCOW_URL}")
+```
+
+**Step 4: Update CCOW service to use configuration**
+
+The CCOW vault service (`ccow/main.py`) already works as-is, but you can optionally import the config for consistency:
+
+```python
+# ccow/main.py (top of file, optional)
+from config import CCOW_CONFIG
+
+# You can log it or use it for feature flags, but uvicorn controls the port via CLI
+```
+
+**Step 5: Create CCOW client utility (Section 10)**
+
+Follow Section 10.1 to create `app/utils/ccow_client.py` which will import from `config.py`.
+
+**Step 6: Verify configuration loading**
+
+Test that configuration loads correctly:
+
+```bash
+python3 -c "from config import CCOW_ENABLED, CCOW_URL, CCOW_VAULT_PORT; print(f'CCOW_ENABLED={CCOW_ENABLED}, CCOW_URL={CCOW_URL}, CCOW_VAULT_PORT={CCOW_VAULT_PORT}')"
+```
+
+Expected output:
+```
+CCOW_ENABLED=True, CCOW_URL=http://localhost:8001, CCOW_VAULT_PORT=8001
+```
+
+**Step 7: Start CCOW service and verify**
+
+```bash
+uvicorn ccow.main:app --port 8001 --reload
+```
+
+In another terminal:
+```bash
+curl http://localhost:8001/ccow/health
+```
+
+**Step 8: Wire into med-z1 routes (Section 10.2)**
+
+Follow Section 10.2 to integrate CCOW client calls into your patient routes.
+
+**Summary of Files Modified:**
+
+| File             | Change                                      |
+| ---------------- | ------------------------------------------- |
+| `.env`           | Add CCOW configuration variables            |
+| `config.py`      | Add CCOW configuration loading              |
+| `ccow/main.py`   | (No changes needed - already implemented)   |
+| Future: `app/utils/ccow_client.py` | Create client (Section 10.1)  |
+| Future: `app/routes/*.py` | Wire CCOW client into routes (Section 10.2) |
 
 ---
 
@@ -1264,15 +1561,28 @@ curl -X DELETE http://localhost:8001/ccow/active-patient \
 curl http://localhost:8001/ccow/history
 ```
 
-### 14.3 Files to Implement
+### 14.3 Files to Implement or Modify
 
-* `ccow/models.py`
-* `ccow/vault.py`
-* `ccow/main.py`
-* `app/utils/ccow_client.py`
-* `ccow/tests/test_vault.py`
-* `ccow/tests/test_api.py`
-* Updates to `config.py` and `.env`
+**Core CCOW Service (Already Implemented):**
+* `ccow/models.py` ✓
+* `ccow/vault.py` ✓
+* `ccow/main.py` ✓
+
+**Configuration (To Be Updated):**
+* `.env` – Add CCOW configuration variables
+* `config.py` – Add CCOW configuration loading and export
+
+**Integration with med-z1 (Future):**
+* `app/utils/ccow_client.py` – Create CCOW HTTP client
+* `app/routes/*.py` – Wire CCOW client into patient routes
+
+**Testing (Future):**
+* `ccow/tests/test_vault.py` – Unit tests for vault
+* `ccow/tests/test_api.py` – Integration tests for API
+* `test_vault_manual.py` ✓ – Manual testing script (already exists)
+
+**Optional:**
+* `scripts/start_ccow.sh` – Startup script for CCOW service
 
 ---
 
@@ -1295,6 +1605,7 @@ curl http://localhost:8001/ccow/history
 | Version | Date       | Author | Notes                                      |
 | ------- | ---------- | ------ | ------------------------------------------ |
 | v1      | 2025-12-06 | You    | Consolidated design for CCOW Context Vault |
+| v1.1    | 2025-12-07 | You    | Enhanced Section 9 with detailed config.py and .env integration guidance, added step-by-step checklist |
 
 ---
 

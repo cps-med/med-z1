@@ -1,6 +1,26 @@
-# -----------------------------------------------------------
+# ---------------------------------------------------------------------
 # vault.py
-# -----------------------------------------------------------
+# ---------------------------------------------------------------------
+# Thread-safe in-memory vault for CCOW patient context management.
+#
+# The ContextVault maintains the current active patient context and
+# a rolling history of context change events (set/clear actions).
+# This enables CCOW-style context synchronization across multiple
+# applications in the med-z1 ecosystem.
+#
+# Key technical considerations:
+# - Thread-safe: Uses threading.Lock for concurrent access safety
+# - In-memory storage: Fast access, but state lost on service restart
+# - Singleton pattern: Single shared vault instance (line 78)
+# - UTC timestamps: All datetime fields use UTC for consistency across
+#   distributed VA environment (multiple time zones, facilities)
+# - Rolling history: Bounded deque (max 20 entries) prevents unbounded
+#   memory growth
+#
+# Usage:
+# - Direct access: test_vault_manual.py (testing/debugging)
+# - HTTP access: ccow/main.py FastAPI endpoints (production)
+# ---------------------------------------------------------------------
 
 import threading
 from collections import deque
