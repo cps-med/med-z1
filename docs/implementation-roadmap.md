@@ -324,7 +324,7 @@ mkdir -p lake/bronze lake/silver lake/gold
 
 **Python Dependencies:**
 ```bash
-pip install boto3 polars pyarrow psycopg2-binary sqlalchemy duckdb
+pip install boto3 polars pyarrow connectorx psycopg2-binary sqlalchemy duckdb
 ```
 
 **Deliverable:** PostgreSQL running, MinIO or local filesystem ready
@@ -544,7 +544,7 @@ def extract_patient_bronze():
         f"mssql://{CDWWORK_DB_CONFIG['user']}:"
         f"{CDWWORK_DB_CONFIG['password']}@"
         f"{CDWWORK_DB_CONFIG['server']}/"
-        f"{CDWWORK_DB_CONFIG['database']}"
+        f"{CDWWORK_DB_CONFIG['name']}"
     )
 
     # Extract query
@@ -578,8 +578,8 @@ def extract_patient_bronze():
     WHERE TestPatientFlag = 'N' OR TestPatientFlag = 'Y'
     """
 
-    # Read data from source database
-    df = pl.read_database(query, conn_str)
+    # Read data from source database using URI
+    df = pl.read_database_uri(query, conn_str)
 
     # Add metadata columns
     df = df.with_columns([
@@ -962,7 +962,7 @@ def extract_patient_bronze():
     logger.info("Starting Bronze patient extraction...")
 
     # Connection string
-    conn_str = f"mssql://{CDWWORK_DB_CONFIG['user']}:{CDWWORK_DB_CONFIG['password']}@{CDWWORK_DB_CONFIG['server']}/{CDWWORK_DB_CONFIG['database']}"
+    conn_str = f"mssql://{CDWWORK_DB_CONFIG['user']}:{CDWWORK_DB_CONFIG['password']}@{CDWWORK_DB_CONFIG['server']}/{CDWWORK_DB_CONFIG['name']}"
 
     # Extract query
     query = """
@@ -998,8 +998,8 @@ def extract_patient_bronze():
        OR TestPatientFlag = 'Y'  -- But include for dev/testing
     """
 
-    # Read data
-    df = pl.read_database(query, conn_str)
+    # Read data from database using URI
+    df = pl.read_database_uri(query, conn_str)
 
     # Add metadata
     df = df.with_columns([

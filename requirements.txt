@@ -3,6 +3,7 @@ annotated-types==0.7.0
 anyio==4.12.0
 boto3==1.35.76
 click==8.3.1
+connectorx==0.3.3
 fastapi==0.123.9
 h11==0.16.0
 httptools==0.7.1
@@ -13,9 +14,11 @@ polars==1.18.0
 pyarrow==18.1.0
 pydantic==2.12.5
 pydantic_core==2.41.5
+pyodbc==5.2.0
 python-dotenv==1.2.1
 python-multipart==0.0.20
 PyYAML==6.0.3
+sqlalchemy==2.0.36
 starlette==0.50.0
 typing-inspection==0.4.2
 typing_extensions==4.15.0
