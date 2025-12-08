@@ -556,14 +556,26 @@ def extract_patient_bronze():
         PatientName,
         PatientLastName,
         PatientFirstName,
-        PatientMiddleName,
-        ICN,
-        SSN,
-        DOB,
-        Sex,
-        SourceSystemCode
+        TestPatientFlag,
+        PatientType,
+        PatientICN,
+        ScrSSN,
+        PatientSSN,
+        SSNVerificationStatus,
+        Age,
+        BirthDateTime,
+        DeceasedFlag,
+        DeathDateTime,
+        Gender,
+        SelfIdentifiedGender,
+        Religion,
+        MaritalStatus,
+        VeteranFlag,
+        ServiceConnectedFlag
+        -- Note: SourceSystemCode does not exist in the table
+        -- It will be added as metadata in the ETL process
     FROM SPatient.SPatient
-    WHERE TestPatient = 'N' OR TestPatient = 'Y'
+    WHERE TestPatientFlag = 'N' OR TestPatientFlag = 'Y'
     """
 
     # Read data from source database
@@ -628,30 +640,29 @@ def transform_patient_silver():
     df = df.with_columns([
         # Standardize field names
         pl.col("PatientSID").alias("patient_sid"),
-        pl.col("ICN").alias("icn"),
-        pl.col("SSN").alias("ssn"),
+        pl.col("PatientICN").alias("icn"),
+        pl.col("PatientSSN").alias("ssn"),
 
         # Clean name fields
         pl.col("PatientLastName").str.strip().alias("name_last"),
         pl.col("PatientFirstName").str.strip().alias("name_first"),
-        pl.col("PatientMiddleName").str.strip().alias("name_middle"),
 
         # Create display name
         (pl.col("PatientLastName").str.strip() + ", " +
          pl.col("PatientFirstName").str.strip()).alias("name_display"),
 
         # Handle dates
-        pl.col("DOB").cast(pl.Date).alias("dob"),
+        pl.col("BirthDateTime").cast(pl.Date).alias("dob"),
 
         # Calculate age
-        ((pl.lit(today).cast(pl.Date) - pl.col("DOB").cast(pl.Date)).dt.days() / 365.25)
+        ((pl.lit(today).cast(pl.Date) - pl.col("BirthDateTime").cast(pl.Date)).dt.days() / 365.25)
             .cast(pl.Int32).alias("age"),
 
         # Standardize sex
-        pl.col("Sex").str.strip().alias("sex"),
+        pl.col("Gender").str.strip().alias("sex"),
 
         # Extract SSN last 4
-        pl.col("SSN").str.slice(-4).alias("ssn_last4"),
+        pl.col("PatientSSN").str.slice(-4).alias("ssn_last4"),
 
         # Station
         pl.col("Sta3n").cast(pl.Utf8).alias("primary_station"),
@@ -962,35 +973,29 @@ def extract_patient_bronze():
         PatientName,
         PatientLastName,
         PatientFirstName,
-        PatientMiddleName,
-        Confidential,
-        TestPatient,
-        PatientStatus,
+        TestPatientFlag,
         PatientType,
-        PatientTypeCode,
-        ICN,
+        PatientICN,
         ScrSSN,
-        SSN,
-        SSNUnknown,
+        PatientSSN,
         SSNVerificationStatus,
-        Pseudo,
-        Restricted,
-        AgeInYears,
-        DOB,
-        DOD,
-        DeceasedDateTime,
-        Deceased,
-        Sex,
+        Age,
+        BirthDateTime,
+        DeceasedFlag,
+        DeathDateTime,
         Gender,
+        SelfIdentifiedGender,
         Religion,
         ReligionSID,
         MaritalStatus,
         MaritalStatusSID,
-        -- ... additional fields as needed
-        SourceSystemCode
+        VeteranFlag,
+        ServiceConnectedFlag
+        -- Note: SourceSystemCode does not exist in the table
+        -- It will be added as metadata in the ETL process
     FROM SPatient.SPatient
-    WHERE TestPatient = 'N'  -- Exclude test patients for production
-       OR TestPatient = 'Y'  -- But include for dev/testing
+    WHERE TestPatientFlag = 'N'  -- Exclude test patients for production
+       OR TestPatientFlag = 'Y'  -- But include for dev/testing
     """
 
     # Read data
@@ -1068,30 +1073,29 @@ def transform_patient_silver():
     df = df.with_columns([
         # Standardize field names
         pl.col("PatientSID").alias("patient_sid"),
-        pl.col("ICN").alias("icn"),
-        pl.col("SSN").alias("ssn"),
+        pl.col("PatientICN").alias("icn"),
+        pl.col("PatientSSN").alias("ssn"),
 
         # Clean name fields
         pl.col("PatientLastName").str.strip().alias("name_last"),
         pl.col("PatientFirstName").str.strip().alias("name_first"),
-        pl.col("PatientMiddleName").str.strip().alias("name_middle"),
 
         # Create display name
         (pl.col("PatientLastName").str.strip() + ", " +
          pl.col("PatientFirstName").str.strip()).alias("name_display"),
 
         # Handle dates
-        pl.col("DOB").cast(pl.Date).alias("dob"),
+        pl.col("BirthDateTime").cast(pl.Date).alias("dob"),
 
         # Calculate age
-        ((pl.lit(today).cast(pl.Date) - pl.col("DOB").cast(pl.Date)).dt.days() / 365.25)
+        ((pl.lit(today).cast(pl.Date) - pl.col("BirthDateTime").cast(pl.Date)).dt.days() / 365.25)
             .cast(pl.Int32).alias("age"),
 
         # Standardize sex
-        pl.col("Sex").str.strip().alias("sex"),
+        pl.col("Gender").str.strip().alias("sex"),
 
         # Extract SSN last 4
-        pl.col("SSN").str.slice(-4).alias("ssn_last4"),
+        pl.col("PatientSSN").str.slice(-4).alias("ssn_last4"),
 
         # Station
         pl.col("Sta3n").cast(pl.Utf8).alias("primary_station"),
@@ -1808,17 +1812,16 @@ UI Display (with "AI-generated" disclaimer)
 | Field | Type | Description | Source |
 |-------|------|-------------|--------|
 | `patient_key` | string | Internal key (ICN) | Derived |
-| `icn` | string | Integrated Care Number | `SPatient.SPatient.ICN` |
-| `ssn` | string | Full SSN (encrypted in prod) | `SPatient.SPatient.SSN` |
-| `ssn_last4` | string | Last 4 digits for display | Derived from SSN |
+| `icn` | string | Integrated Care Number | `SPatient.SPatient.PatientICN` |
+| `ssn` | string | Full SSN (encrypted in prod) | `SPatient.SPatient.PatientSSN` |
+| `ssn_last4` | string | Last 4 digits for display | Derived from PatientSSN |
 | `name_last` | string | Last name | `SPatient.SPatient.PatientLastName` |
 | `name_first` | string | First name | `SPatient.SPatient.PatientFirstName` |
-| `name_middle` | string | Middle name | `SPatient.SPatient.PatientMiddleName` |
 | `name_display` | string | Formatted name ("LAST, First") | Derived |
-| `dob` | date | Date of birth | `SPatient.SPatient.DOB` |
-| `age` | integer | Current age | Calculated from DOB |
-| `sex` | string | Biological sex (M/F/U) | `SPatient.SPatient.Sex` |
-| `gender` | string | Gender identity | `SPatient.SPatient.Gender` |
+| `dob` | date | Date of birth | `SPatient.SPatient.BirthDateTime` |
+| `age` | integer | Current age | Calculated from BirthDateTime |
+| `sex` | string | Biological sex (M/F/U) | `SPatient.SPatient.Gender` |
+| `gender` | string | Gender identity | `SPatient.SPatient.SelfIdentifiedGender` |
 | `primary_station` | string | Sta3n code | `SPatient.SPatient.Sta3n` |
 | `primary_station_name` | string | Facility name | Join from `Dim.Sta3n` |
 | `veteran_status` | string | "VETERAN", "NON-VETERAN", etc. | `SPatient.SPatient.PatientType` |
