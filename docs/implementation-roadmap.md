@@ -31,14 +31,14 @@ This document provides tactical, step-by-step guidance for implementing the med-
 
 **Build the smallest possible end-to-end system first:**
 
-```
-Mock SQL Server (SPatient table)
+```text
+Mock SQL Server (CDWWork.SPatient.SPatient table)
     ↓
-Bronze Layer (Parquet) - Patient demographics extract
+Bronze Layer (MinIO.med-data.Parquet) - Patient demographics extract
     ↓
-Silver Layer (Parquet) - Cleaned patient data
+Silver Layer (MinIO.med-data.Parquet) - Cleaned patient data
     ↓
-Gold Layer (Parquet) - Patient demographics view
+Gold Layer (MinIO.med-data.Parquet) - Patient demographics view
     ↓
 PostgreSQL Serving DB - patient_demographics table
     ↓
@@ -221,34 +221,32 @@ At the end of Phase 1, you will have:
 
 ### 4.3 Architecture Flow
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │ Mock SQL Server (CDWWork)                                   │
 │   └─ SPatient.SPatient table (37 patients)                  │
-└───────────────────────┬─────────────────────────────────────┘
-                        │
-                        ▼
-                ┌───────────────┐
-                │ etl/bronze_   │
-                │ patient.py    │
-                └───────┬───────┘
-                        │
-                        ▼
+└─────────────────────────┬───────────────────────────────────┘
+                          │
+                          ▼
+              ┌───────────────────────────┐
+              │   etl/bronze_patient.py   │
+              └───────────┬───────────────┘
+                          │
+                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ Bronze Layer (MinIO or local Parquet)                       │
 │   lake/bronze/patient/patient_raw.parquet                   │
 │   - Raw extract from SPatient.SPatient                      │
 │   - All columns preserved                                   │
 │   - SourceSystem, LoadDateTime added                        │
-└───────────────────────┬─────────────────────────────────────┘
-                        │
-                        ▼
-                ┌───────────────┐
-                │ etl/silver_   │
-                │ patient.py    │
-                └───────┬───────┘
-                        │
-                        ▼
+└─────────────────────────┬───────────────────────────────────┘
+                          │
+                          ▼
+              ┌───────────────────────────┐
+              │   etl/silver_patient.py   │
+              └───────────┬───────────────┘
+                          │
+                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ Silver Layer (MinIO or local Parquet)                       │
 │   lake/silver/patient/patient_cleaned.parquet               │
@@ -259,28 +257,23 @@ At the end of Phase 1, you will have:
 └───────────────────────┬─────────────────────────────────────┘
                         │
                         ▼
-                ┌───────────────┐
-                │ etl/gold_     │
-                │ patient_      │
-                │ demographics  │
-                │ .py           │
-                └───────┬───────┘
+        ┌──────────────────────────────────────┐
+        │   etl/gold_patient_demographics.py   │
+        └───────────────┬──────────────────────┘
                         │
                         ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ Gold Layer (MinIO or local Parquet)                         │
-│   lake/gold/patient_demographics/patient_demographics.parquet│
+│ lake/gold/patient_demographics/patient_demographics.parquet │
 │   - Final patient demographics view                         │
 │   - Optimized for queries                                   │
 │   - Includes facility names (joined from Dim.Sta3n)         │
 └───────────────────────┬─────────────────────────────────────┘
                         │
                         ▼
-                ┌───────────────┐
-                │ etl/load_     │
-                │ postgres_     │
-                │ patient.py    │
-                └───────┬───────┘
+        ┌───────────────────────────────────┐
+        │   etl/load_postgress_patient.py   │
+        └───────────────┬───────────────────┘
                         │
                         ▼
 ┌─────────────────────────────────────────────────────────────┐
@@ -298,26 +291,32 @@ At the end of Phase 1, you will have:
 **PostgreSQL Setup:**
 ```bash
 # Install PostgreSQL (if not already installed)
-brew install postgresql@15  # macOS
-# or use Docker
-docker run --name med-z1-postgres \
-  -e POSTGRES_PASSWORD=yourpassword \
-  -e POSTGRES_DB=medz1 \
-  -p 5432:5432 \
-  -d postgres:15
+brew install postgresql@16  # macOS
 
-# Test connection
-psql -h localhost -U postgres -d medz1
+# or use Docker
+docker run -d \
+    --name postgres16 \
+    -e POSTGRES_PASSWORD=yourpassword \
+    -p 5432:5432 \
+    -v postgres16-data:/var/lib/postgresql/data \
+    postgres:16
+
+# Test connection (if PSQL app installed on mac)
+psql -h localhost -U postgres -d postgres16
+
+# Test connection (via docker exec command)
+docker exec -it postgres16 psql -U postgres -d postgres
 ```
 
 **MinIO Setup (or use local filesystem):**
 ```bash
 # Option A: Use MinIO
-docker run --name med-z1-minio \
+docker run -d --name med-insight-minio \
   -p 9000:9000 -p 9001:9001 \
-  -e MINIO_ROOT_USER=minioadmin \
-  -e MINIO_ROOT_PASSWORD=minioadmin \
-  -d minio/minio server /data --console-address ":9001"
+  -e MINIO_ROOT_USER=admin \
+  -e MINIO_ROOT_PASSWORD=password \
+  -v $HOME/minio-data:/data \
+  quay.io/minio/minio server /data --console-address ":9001"
 
 # Option B: Use local filesystem (simpler for Phase 1)
 mkdir -p lake/bronze lake/silver lake/gold
@@ -325,10 +324,581 @@ mkdir -p lake/bronze lake/silver lake/gold
 
 **Python Dependencies:**
 ```bash
-pip install polars duckdb pyarrow psycopg2-binary sqlalchemy
+pip install boto3 polars pyarrow psycopg2-binary sqlalchemy duckdb
 ```
 
 **Deliverable:** PostgreSQL running, MinIO or local filesystem ready
+
+---
+
+#### Task 1.1.1: MinIO Storage Configuration (Option A - Recommended)
+
+**Purpose:** Configure MinIO for Parquet file storage using the medallion architecture.
+
+**Overview:**
+
+MinIO provides S3-compatible object storage that enables:
+- ✅ Scalable data lake architecture
+- ✅ Easy integration with cloud deployments (AWS S3, Azure Blob, GCS)
+- ✅ Cost-effective local development
+- ✅ Production-ready storage with versioning and lifecycle policies
+- ✅ Native support for analytics tools (DuckDB, Polars, Spark)
+
+**Bucket Structure:**
+
+The `med-z1` bucket organizes data using the medallion architecture:
+
+```text
+med-z1/
+  ├── bronze/              # Raw data from source systems
+  │   ├── cdwwork/         # CDWWork (VistA-like) data
+  │   │   ├── patient/
+  │   │   │   └── patient_raw.parquet
+  │   │   ├── encounter/
+  │   │   ├── medication/
+  │   │   └── lab/
+  │   └── cdwwork1/        # CDWWork1 (Oracle Health-like) data
+  │       ├── patient/
+  │       └── ...
+  │
+  ├── silver/              # Cleaned, harmonized data
+  │   ├── patient/
+  │   │   └── patient_cleaned.parquet
+  │   ├── encounter/
+  │   ├── medication/
+  │   └── lab/
+  │
+  ├── gold/                # Query-optimized, curated views
+  │   ├── patient_demographics/
+  │   │   └── patient_demographics.parquet
+  │   ├── medication_summary/
+  │   ├── encounter_timeline/
+  │   └── lab_results/
+  │
+  └── ai/                  # AI/ML artifacts (future use)
+      ├── embeddings/
+      ├── models/
+      └── vectors/
+```
+
+**Configuration Setup:**
+
+1. **Verify .env Configuration:**
+
+Your `.env` file should include:
+
+```bash
+# MinIO S3-compatible storage configuration
+MINIO_ENDPOINT=localhost:9000
+MINIO_ACCESS_KEY=admin
+MINIO_SECRET_KEY="admin#123#2025"
+MINIO_BUCKET_NAME=med-z1
+MINIO_USE_SSL=false
+USE_MINIO=true
+```
+
+2. **Verify config.py Settings:**
+
+The `config.py` module automatically loads MinIO configuration:
+
+```python
+from config import MINIO_CONFIG
+
+# MINIO_CONFIG contains:
+# {
+#     "endpoint": "localhost:9000",
+#     "access_key": "admin",
+#     "secret_key": "admin#123#2025",
+#     "bucket_name": "med-z1",
+#     "use_ssl": False,
+# }
+```
+
+3. **Verify MinIO Container is Running:**
+
+```bash
+# Check if MinIO is running
+docker ps | grep minio
+
+# Access MinIO admin console
+# Open browser: http://localhost:9001
+# Login with: admin / admin#123#2025
+```
+
+4. **Verify med-z1 Bucket Exists:**
+
+```bash
+# Option 1: Use MinIO admin console (http://localhost:9001)
+# Navigate to "Buckets" and verify "med-z1" exists
+
+# Option 2: Use Python
+python -c "
+from lake.minio_client import get_default_client
+client = get_default_client()
+print('MinIO client connected successfully!')
+print(f'Bucket: {client.bucket_name}')
+"
+```
+
+**Using the MinIO Client:**
+
+The `lake/minio_client.py` module provides a reusable interface for all ETL operations.
+
+**Basic Usage Examples:**
+
+```python
+# Import the MinIO client
+from lake.minio_client import MinIOClient, build_bronze_path, build_silver_path, build_gold_path
+import polars as pl
+
+# Initialize client (uses config.py settings)
+minio_client = MinIOClient()
+
+# Example 1: Write Bronze layer Parquet
+df_bronze = pl.DataFrame({
+    "PatientSID": [1, 2, 3],
+    "ICN": ["100001", "100002", "100003"],
+    "PatientName": ["DOE,JOHN", "SMITH,JANE", "JOHNSON,BOB"],
+})
+
+# Build standardized path
+bronze_path = build_bronze_path(
+    source_system="cdwwork",
+    domain="patient",
+    filename="patient_raw.parquet"
+)
+# Result: "bronze/cdwwork/patient/patient_raw.parquet"
+
+# Write to MinIO
+minio_client.write_parquet(df_bronze, bronze_path)
+
+# Example 2: Read Bronze layer Parquet
+df_bronze = minio_client.read_parquet(bronze_path)
+print(f"Read {len(df_bronze)} rows from Bronze layer")
+
+# Example 3: Write Silver layer Parquet
+df_silver = df_bronze.with_columns([
+    pl.col("PatientSID").alias("patient_sid"),
+    pl.col("ICN").alias("icn"),
+])
+
+silver_path = build_silver_path(
+    domain="patient",
+    filename="patient_cleaned.parquet"
+)
+# Result: "silver/patient/patient_cleaned.parquet"
+
+minio_client.write_parquet(df_silver, silver_path)
+
+# Example 4: Write Gold layer Parquet
+df_gold = df_silver.select([
+    pl.col("patient_sid"),
+    pl.col("icn"),
+])
+
+gold_path = build_gold_path(
+    view_name="patient_demographics",
+    filename="patient_demographics.parquet"
+)
+# Result: "gold/patient_demographics/patient_demographics.parquet"
+
+minio_client.write_parquet(df_gold, gold_path)
+
+# Example 5: Check if file exists
+if minio_client.exists(bronze_path):
+    print("Bronze file exists!")
+
+# Example 6: Read specific columns only
+df_subset = minio_client.read_parquet(
+    bronze_path,
+    columns=["PatientSID", "ICN"]
+)
+```
+
+**Complete ETL Example with MinIO:**
+
+Here's how to update the ETL pipeline to use MinIO:
+
+```python
+# etl/bronze_patient.py (MinIO version)
+
+import polars as pl
+from datetime import datetime, timezone
+import logging
+from config import CDWWORK_DB_CONFIG
+from lake.minio_client import MinIOClient, build_bronze_path
+
+logger = logging.getLogger(__name__)
+
+
+def extract_patient_bronze():
+    """Extract patient data from CDWWork to Bronze layer in MinIO."""
+
+    logger.info("Starting Bronze patient extraction...")
+
+    # Initialize MinIO client
+    minio_client = MinIOClient()
+
+    # Connection string for source database
+    conn_str = (
+        f"mssql://{CDWWORK_DB_CONFIG['user']}:"
+        f"{CDWWORK_DB_CONFIG['password']}@"
+        f"{CDWWORK_DB_CONFIG['server']}/"
+        f"{CDWWORK_DB_CONFIG['database']}"
+    )
+
+    # Extract query
+    query = """
+    SELECT
+        PatientSID,
+        PatientIEN,
+        Sta3n,
+        PatientName,
+        PatientLastName,
+        PatientFirstName,
+        PatientMiddleName,
+        ICN,
+        SSN,
+        DOB,
+        Sex,
+        SourceSystemCode
+    FROM SPatient.SPatient
+    WHERE TestPatient = 'N' OR TestPatient = 'Y'
+    """
+
+    # Read data from source database
+    df = pl.read_database(query, conn_str)
+
+    # Add metadata columns
+    df = df.with_columns([
+        pl.lit("CDWWork").alias("SourceSystem"),
+        pl.lit(datetime.now(timezone.utc)).alias("LoadDateTime"),
+    ])
+
+    # Build Bronze path
+    object_key = build_bronze_path(
+        source_system="cdwwork",
+        domain="patient",
+        filename="patient_raw.parquet"
+    )
+
+    # Write to MinIO
+    minio_client.write_parquet(df, object_key)
+
+    logger.info(
+        f"Bronze extraction complete: {len(df)} patients written to "
+        f"s3://{minio_client.bucket_name}/{object_key}"
+    )
+
+    return df
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    extract_patient_bronze()
+```
+
+```python
+# etl/silver_patient.py (MinIO version)
+
+import polars as pl
+from datetime import datetime, timezone
+import logging
+from lake.minio_client import MinIOClient, build_bronze_path, build_silver_path
+
+logger = logging.getLogger(__name__)
+
+
+def transform_patient_silver():
+    """Transform Bronze patient data to Silver layer in MinIO."""
+
+    logger.info("Starting Silver patient transformation...")
+
+    # Initialize MinIO client
+    minio_client = MinIOClient()
+
+    # Read Bronze Parquet from MinIO
+    bronze_path = build_bronze_path("cdwwork", "patient", "patient_raw.parquet")
+    df = minio_client.read_parquet(bronze_path)
+
+    # Calculate current age from DOB
+    today = datetime.now(timezone.utc).date()
+
+    # Transform and clean data
+    df = df.with_columns([
+        # Standardize field names
+        pl.col("PatientSID").alias("patient_sid"),
+        pl.col("ICN").alias("icn"),
+        pl.col("SSN").alias("ssn"),
+
+        # Clean name fields
+        pl.col("PatientLastName").str.strip().alias("name_last"),
+        pl.col("PatientFirstName").str.strip().alias("name_first"),
+        pl.col("PatientMiddleName").str.strip().alias("name_middle"),
+
+        # Create display name
+        (pl.col("PatientLastName").str.strip() + ", " +
+         pl.col("PatientFirstName").str.strip()).alias("name_display"),
+
+        # Handle dates
+        pl.col("DOB").cast(pl.Date).alias("dob"),
+
+        # Calculate age
+        ((pl.lit(today).cast(pl.Date) - pl.col("DOB").cast(pl.Date)).dt.days() / 365.25)
+            .cast(pl.Int32).alias("age"),
+
+        # Standardize sex
+        pl.col("Sex").str.strip().alias("sex"),
+
+        # Extract SSN last 4
+        pl.col("SSN").str.slice(-4).alias("ssn_last4"),
+
+        # Station
+        pl.col("Sta3n").cast(pl.Utf8).alias("primary_station"),
+
+        # Metadata
+        pl.col("SourceSystem").alias("source_system"),
+        pl.lit(datetime.now(timezone.utc)).alias("last_updated"),
+    ])
+
+    # Select final columns
+    df = df.select([
+        "patient_sid",
+        "icn",
+        "ssn",
+        "ssn_last4",
+        "name_last",
+        "name_first",
+        "name_middle",
+        "name_display",
+        "dob",
+        "age",
+        "sex",
+        "primary_station",
+        "source_system",
+        "last_updated",
+    ])
+
+    # Build Silver path
+    silver_path = build_silver_path("patient", "patient_cleaned.parquet")
+
+    # Write to MinIO
+    minio_client.write_parquet(df, silver_path)
+
+    logger.info(
+        f"Silver transformation complete: {len(df)} patients written to "
+        f"s3://{minio_client.bucket_name}/{silver_path}"
+    )
+
+    return df
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    transform_patient_silver()
+```
+
+```python
+# etl/gold_patient_demographics.py (MinIO version)
+
+import polars as pl
+from datetime import datetime, timezone
+import logging
+from lake.minio_client import MinIOClient, build_silver_path, build_gold_path
+
+logger = logging.getLogger(__name__)
+
+
+def create_gold_patient_demographics():
+    """Create Gold patient demographics view in MinIO."""
+
+    logger.info("Starting Gold patient demographics creation...")
+
+    # Initialize MinIO client
+    minio_client = MinIOClient()
+
+    # Read Silver Parquet from MinIO
+    silver_path = build_silver_path("patient", "patient_cleaned.parquet")
+    df_patient = minio_client.read_parquet(silver_path)
+
+    # Add station names (simplified for Phase 1)
+    station_names = {
+        "508": "Portland VA Medical Center",
+        "516": "Bay Pines VA Healthcare System",
+        "552": "Dayton VA Medical Center",
+    }
+
+    df_patient = df_patient.with_columns([
+        pl.col("primary_station").map_dict(station_names, default="Unknown Facility")
+            .alias("primary_station_name")
+    ])
+
+    # Create patient_key (use ICN)
+    df_patient = df_patient.with_columns([
+        pl.col("icn").alias("patient_key")
+    ])
+
+    # Final Gold schema
+    df_gold = df_patient.select([
+        "patient_key",
+        "icn",
+        "ssn",
+        "ssn_last4",
+        "name_last",
+        "name_first",
+        "name_middle",
+        "name_display",
+        "dob",
+        "age",
+        "sex",
+        "primary_station",
+        "primary_station_name",
+        "source_system",
+        "last_updated",
+    ])
+
+    # Build Gold path
+    gold_path = build_gold_path(
+        "patient_demographics",
+        "patient_demographics.parquet"
+    )
+
+    # Write to MinIO
+    minio_client.write_parquet(df_gold, gold_path)
+
+    logger.info(
+        f"Gold creation complete: {len(df_gold)} patients written to "
+        f"s3://{minio_client.bucket_name}/{gold_path}"
+    )
+
+    return df_gold
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    create_gold_patient_demographics()
+```
+
+```python
+# etl/load_postgres_patient.py (MinIO version)
+
+import polars as pl
+from sqlalchemy import create_engine
+import logging
+from config import DATABASE_URL  # PostgreSQL connection string
+from lake.minio_client import MinIOClient, build_gold_path
+
+logger = logging.getLogger(__name__)
+
+
+def load_patient_demographics_to_postgres():
+    """Load Gold patient demographics from MinIO to PostgreSQL."""
+
+    logger.info("Loading patient demographics to PostgreSQL...")
+
+    # Initialize MinIO client
+    minio_client = MinIOClient()
+
+    # Read Gold Parquet from MinIO
+    gold_path = build_gold_path(
+        "patient_demographics",
+        "patient_demographics.parquet"
+    )
+    df = minio_client.read_parquet(gold_path)
+
+    # Convert Polars to Pandas (for SQLAlchemy compatibility)
+    df_pandas = df.to_pandas()
+
+    # Create SQLAlchemy engine
+    engine = create_engine(DATABASE_URL)
+
+    # Load to PostgreSQL (truncate and reload)
+    df_pandas.to_sql(
+        "patient_demographics",
+        engine,
+        if_exists="replace",
+        index=False,
+        method="multi",
+    )
+
+    logger.info(f"Loaded {len(df)} patients to PostgreSQL")
+
+    # Verify
+    result = engine.execute("SELECT COUNT(*) FROM patient_demographics").fetchone()
+    logger.info(f"Verification: {result[0]} rows in patient_demographics table")
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    load_patient_demographics_to_postgres()
+```
+
+**Testing Your MinIO Setup:**
+
+```bash
+# 1. Install new dependencies
+pip install -r requirements.txt
+
+# 2. Test MinIO connection
+python -c "
+from lake.minio_client import MinIOClient
+import polars as pl
+
+client = MinIOClient()
+print(f'✓ Connected to MinIO at {client.endpoint}')
+print(f'✓ Using bucket: {client.bucket_name}')
+
+# Test write
+test_df = pl.DataFrame({'test': [1, 2, 3]})
+client.write_parquet(test_df, 'test/test.parquet')
+print('✓ Write test passed')
+
+# Test read
+result_df = client.read_parquet('test/test.parquet')
+print(f'✓ Read test passed: {len(result_df)} rows')
+
+# Cleanup
+client.delete('test/test.parquet')
+print('✓ All tests passed!')
+"
+
+# 3. Run Bronze extraction
+python etl/bronze_patient.py
+
+# 4. Verify in MinIO console
+# Open http://localhost:9001
+# Navigate to med-z1 bucket
+# Verify bronze/cdwwork/patient/patient_raw.parquet exists
+
+# 5. Run full pipeline
+python etl/run_patient_pipeline.py
+```
+
+**Benefits of MinIO Approach:**
+
+- **Local Development:** Works identically to production S3 storage
+- **Scalability:** Handles large datasets efficiently
+- **Analytics Integration:** DuckDB, Polars, and Spark can read directly from MinIO
+- **Versioning:** MinIO supports object versioning for audit trails
+- **Cloud Migration:** Easy migration to AWS S3, Azure Blob, or GCS
+- **Cost-Effective:** Free for local development, pay-as-you-go in cloud
+
+**When to Use MinIO vs Local Filesystem:**
+
+Use **MinIO** (Option A) if:
+- ✅ Building production-ready system
+- ✅ Need cloud deployment path
+- ✅ Working with large datasets (>1GB)
+- ✅ Need analytics tool integration
+- ✅ Want object versioning/lifecycle policies
+
+Use **Local Filesystem** (Option B) if:
+- ✅ Rapid prototyping only
+- ✅ Very small datasets (<100MB)
+- ✅ No cloud deployment plans
+- ✅ Minimal dependencies preferred
+
+**Deliverable:** MinIO configured, `lake/minio_client.py` module working, test Parquet files can be written and read
 
 ---
 
