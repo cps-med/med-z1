@@ -324,8 +324,13 @@ mkdir -p lake/bronze lake/silver lake/gold
 
 **Python Dependencies:**
 ```bash
-pip install boto3 polars pyarrow connectorx psycopg2-binary sqlalchemy duckdb
+pip install boto3 polars pyarrow sqlalchemy pyodbc psycopg2-binary duckdb
 ```
+
+**Note on Database Connectivity:**
+- We use **SQLAlchemy + pyodbc** for SQL Server connectivity (most reliable)
+- `connectorx` is available but may have Arrow compatibility issues with certain Polars versions
+- For production, SQLAlchemy provides better connection pooling and error handling
 
 **Deliverable:** PostgreSQL running, MinIO or local filesystem ready
 
@@ -525,6 +530,7 @@ Here's how to update the ETL pipeline to use MinIO:
 import polars as pl
 from datetime import datetime, timezone
 import logging
+from sqlalchemy import create_engine
 from config import CDWWORK_DB_CONFIG
 from lake.minio_client import MinIOClient, build_bronze_path
 
@@ -539,13 +545,20 @@ def extract_patient_bronze():
     # Initialize MinIO client
     minio_client = MinIOClient()
 
-    # Connection string for source database
+    # Create SQLAlchemy connection string
     conn_str = (
-        f"mssql://{CDWWORK_DB_CONFIG['user']}:"
+        f"mssql+pyodbc://{CDWWORK_DB_CONFIG['user']}:"
         f"{CDWWORK_DB_CONFIG['password']}@"
         f"{CDWWORK_DB_CONFIG['server']}/"
-        f"{CDWWORK_DB_CONFIG['name']}"
+        f"{CDWWORK_DB_CONFIG['name']}?"
+        f"driver={CDWWORK_DB_CONFIG['driver']}&"
+        f"TrustServerCertificate=yes"
     )
+
+    logger.info(f"Created DB connection string")
+
+    # Create SQLAlchemy engine
+    engine = create_engine(conn_str)
 
     # Extract query
     query = """
@@ -578,8 +591,11 @@ def extract_patient_bronze():
     WHERE TestPatientFlag = 'N' OR TestPatientFlag = 'Y'
     """
 
-    # Read data from source database using URI
-    df = pl.read_database_uri(query, conn_str)
+    # Read data using SQLAlchemy connection
+    with engine.connect() as conn:
+        df = pl.read_database(query, connection=conn)
+
+    logger.info(f"Extracted {len(df)} patients from CDWWork")
 
     # Add metadata columns
     df = df.with_columns([
@@ -644,22 +660,22 @@ def transform_patient_silver():
         pl.col("PatientSSN").alias("ssn"),
 
         # Clean name fields
-        pl.col("PatientLastName").str.strip().alias("name_last"),
-        pl.col("PatientFirstName").str.strip().alias("name_first"),
+        pl.col("PatientLastName").str.strip_chars().alias("name_last"),
+        pl.col("PatientFirstName").str.strip_chars().alias("name_first"),
 
         # Create display name
-        (pl.col("PatientLastName").str.strip() + ", " +
-         pl.col("PatientFirstName").str.strip()).alias("name_display"),
+        (pl.col("PatientLastName").str.strip_chars() + ", " +
+         pl.col("PatientFirstName").str.strip_chars()).alias("name_display"),
 
         # Handle dates
         pl.col("BirthDateTime").cast(pl.Date).alias("dob"),
 
         # Calculate age
-        ((pl.lit(today).cast(pl.Date) - pl.col("BirthDateTime").cast(pl.Date)).dt.days() / 365.25)
+        ((pl.lit(today).cast(pl.Date) - pl.col("BirthDateTime").cast(pl.Date)).dt.total_days() / 365.25)
             .cast(pl.Int32).alias("age"),
 
         # Standardize sex
-        pl.col("Gender").str.strip().alias("sex"),
+        pl.col("Gender").str.strip_chars().alias("sex"),
 
         # Extract SSN last 4
         pl.col("PatientSSN").str.slice(-4).alias("ssn_last4"),
@@ -734,13 +750,14 @@ def create_gold_patient_demographics():
 
     # Add station names (simplified for Phase 1)
     station_names = {
-        "508": "Portland VA Medical Center",
+        "508": "Atlanta VA Medical Center",
         "516": "Bay Pines VA Healthcare System",
         "552": "Dayton VA Medical Center",
+        "668": "Washington DC VA Medical Center",
     }
 
     df_patient = df_patient.with_columns([
-        pl.col("primary_station").map_dict(station_names, default="Unknown Facility")
+        pl.col("primary_station").replace_strict(station_names, default="Unknown Facility")
             .alias("primary_station_name")
     ])
 
@@ -1077,22 +1094,22 @@ def transform_patient_silver():
         pl.col("PatientSSN").alias("ssn"),
 
         # Clean name fields
-        pl.col("PatientLastName").str.strip().alias("name_last"),
-        pl.col("PatientFirstName").str.strip().alias("name_first"),
+        pl.col("PatientLastName").str.strip_chars().alias("name_last"),
+        pl.col("PatientFirstName").str.strip_chars().alias("name_first"),
 
         # Create display name
-        (pl.col("PatientLastName").str.strip() + ", " +
-         pl.col("PatientFirstName").str.strip()).alias("name_display"),
+        (pl.col("PatientLastName").str.strip_chars() + ", " +
+         pl.col("PatientFirstName").str.strip_chars()).alias("name_display"),
 
         # Handle dates
         pl.col("BirthDateTime").cast(pl.Date).alias("dob"),
 
         # Calculate age
-        ((pl.lit(today).cast(pl.Date) - pl.col("BirthDateTime").cast(pl.Date)).dt.days() / 365.25)
+        ((pl.lit(today).cast(pl.Date) - pl.col("BirthDateTime").cast(pl.Date)).dt.total_days() / 365.25)
             .cast(pl.Int32).alias("age"),
 
         # Standardize sex
-        pl.col("Gender").str.strip().alias("sex"),
+        pl.col("Gender").str.strip_chars().alias("sex"),
 
         # Extract SSN last 4
         pl.col("PatientSSN").str.slice(-4).alias("ssn_last4"),
@@ -1177,14 +1194,15 @@ def create_gold_patient_demographics():
     # Read station dimension (if you have it)
     # For Phase 1, you can hardcode station names or skip this join
     station_names = {
-        "508": "Portland VA Medical Center",
+        "508": "Atlanta VA Medical Center",
         "516": "Bay Pines VA Healthcare System",
         "552": "Dayton VA Medical Center",
+        "668": "Washington DC VA Medical Center",
     }
 
     # Add station names
     df_patient = df_patient.with_columns([
-        pl.col("primary_station").map_dict(station_names, default="Unknown Facility")
+        pl.col("primary_station").replace_strict(station_names, default="Unknown Facility")
             .alias("primary_station_name")
     ])
 

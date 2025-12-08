@@ -284,11 +284,7 @@ class MinIOClient:
 # Path Construction Utilities
 # -----------------------------------------------------------
 
-def build_bronze_path(
-    source_system: str,
-    domain: str,
-    filename: str,
-) -> str:
+def build_bronze_path(source_system: str, domain: str, filename: str) -> str:
     """
     Build a standardized Bronze layer object key.
 
@@ -307,10 +303,7 @@ def build_bronze_path(
     return f"bronze/{source_system.lower()}/{domain.lower()}/{filename}"
 
 
-def build_silver_path(
-    domain: str,
-    filename: str,
-) -> str:
+def build_silver_path(domain: str, filename: str) -> str:
     """
     Build a standardized Silver layer object key.
 
@@ -328,10 +321,7 @@ def build_silver_path(
     return f"silver/{domain.lower()}/{filename}"
 
 
-def build_gold_path(
-    view_name: str,
-    filename: str,
-) -> str:
+def build_gold_path(view_name: str, filename: str) -> str:
     """
     Build a standardized Gold layer object key.
 
@@ -349,10 +339,7 @@ def build_gold_path(
     return f"gold/{view_name.lower()}/{filename}"
 
 
-def build_ai_path(
-    subdomain: str,
-    filename: str,
-) -> str:
+def build_ai_path(subdomain: str, filename: str) -> str:
     """
     Build a standardized AI/ML layer object key.
 
