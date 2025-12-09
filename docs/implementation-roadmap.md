@@ -289,11 +289,24 @@ At the end of Phase 1, you will have:
 #### Task 1.1: Set Up Prerequisites (0.5 day)
 
 **PostgreSQL Setup:**
-```bash
-# Install PostgreSQL (if not already installed)
-brew install postgresql@16  # macOS
 
-# or use Docker
+**Overview:**
+
+PostgreSQL serves as the **serving database** for med-z1, providing low-latency access to curated Gold-layer data for the FastAPI/HTMX UI. Unlike SQL Server, PostgreSQL uses a different approach to database selection:
+
+- **SQL Server approach:** Use `USE dbname;` to switch databases within a session
+- **PostgreSQL approach:** Specify the database when connecting using the `-d` flag (no `USE` statement)
+
+For this project:
+- Default database: `postgres` (created automatically by PostgreSQL)
+- Med-z1 database: `medz1` (we will create this)
+- Password authentication: Set at Docker container creation via `POSTGRES_PASSWORD` environment variable
+- The same password applies to all databases accessed by the `postgres` user
+
+**Docker Setup:**
+
+```bash
+# Create PostgreSQL container with password
 docker run -d \
     --name postgres16 \
     -e POSTGRES_PASSWORD=yourpassword \
@@ -301,11 +314,81 @@ docker run -d \
     -v postgres16-data:/var/lib/postgresql/data \
     postgres:16
 
-# Test connection (if PSQL app installed on mac)
-psql -h localhost -U postgres -d postgres16
+# Verify container is running
+docker ps | grep postgres16
+```
 
-# Test connection (via docker exec command)
+**Create the medz1 Database:**
+
+```bash
+# Connect to the default 'postgres' database
 docker exec -it postgres16 psql -U postgres -d postgres
+
+# In the psql prompt, create the medz1 database
+CREATE DATABASE medz1;
+
+# List all databases to verify creation
+\l
+
+# Exit psql
+\q
+```
+
+**Connect to medz1 Database:**
+
+```bash
+# Connect directly to medz1 database (password will be prompted if configured)
+docker exec -it postgres16 psql -U postgres -d medz1
+
+# Alternative: Non-interactive connection (useful for scripts)
+docker exec -it postgres16 psql -U postgres -d medz1 -c "SELECT current_database();"
+```
+
+**Run SQL Scripts via Docker Exec:**
+
+```bash
+# Method 1: Pipe SQL file into docker exec (recommended)
+docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/patient_demographics.sql
+
+# Method 2: Copy file into container, then execute
+docker cp db/ddl/patient_demographics.sql postgres16:/tmp/
+docker exec -it postgres16 psql -U postgres -d medz1 -f /tmp/patient_demographics.sql
+
+# Method 3: Execute single-line SQL directly
+docker exec -it postgres16 psql -U postgres -d medz1 -c "SELECT * FROM patient_demographics LIMIT 5;"
+```
+
+**Useful Interactive psql Commands:**
+
+Once connected via `docker exec -it postgres16 psql -U postgres -d medz1`, use these commands:
+
+| Command | Description |
+|---------|-------------|
+| `\l` | List all databases |
+| `\dt` | List all tables in current database |
+| `\d table_name` | Describe table schema (columns, types, constraints) |
+| `\d+ table_name` | Describe table with additional details (indexes, size) |
+| `\di` | List all indexes |
+| `\du` | List all users/roles |
+| `\c dbname` | Connect to a different database |
+| `\q` | Quit psql |
+| `\timing` | Toggle query execution timing |
+| `\x` | Toggle expanded display (useful for wide tables) |
+| `\i filename.sql` | Execute SQL file (if file is inside container) |
+| `\?` | Show all psql commands |
+| `\h SQL_COMMAND` | Show help for SQL command (e.g., `\h CREATE TABLE`) |
+
+**Verify PostgreSQL Setup:**
+
+```bash
+# Check medz1 database exists and is accessible
+docker exec -it postgres16 psql -U postgres -d medz1 -c "\dt"
+
+# Verify patient_demographics table was created
+docker exec -it postgres16 psql -U postgres -d medz1 -c "\d patient_demographics"
+
+# Count rows (should be 0 initially)
+docker exec -it postgres16 psql -U postgres -d medz1 -c "SELECT COUNT(*) FROM patient_demographics;"
 ```
 
 **MinIO Setup (or use local filesystem):**

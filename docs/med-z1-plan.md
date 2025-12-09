@@ -1,6 +1,11 @@
 # med-z1 – Product & Technical Development Plan
 
-December 7, 2025 • Document version v1.1 (updated with CCOW integration requirements)
+December 8, 2025 • Document version v1.2
+
+**Changelog:**
+- **v1.2 (December 8, 2025):** Updated with actual implementation details - medallion architecture working, PostgreSQL setup, MinIO client, ETL pipeline complete for patient demographics, actual dependencies and project structure
+- **v1.1 (December 7, 2025):** Updated with CCOW integration requirements
+- **v1.0 (Initial):** Original strategic plan
 
 ## 1. Product Vision
 
@@ -232,6 +237,8 @@ Domain-specific pages are accessible from the side navigation, each focused and 
 
 Data freshness indicators and ETL status will be **initially treated as admin-level concerns**, not shown prominently in the clinician UI.
 
+**Implementation Reference:** See `docs/patient-topbar-redesign-spec.md` for detailed UI specifications, mockups, and code examples for the patient-aware topbar.
+
 ---
 
 ## 4. Technology Stack
@@ -245,35 +252,79 @@ Data freshness indicators and ETL status will be **initially treated as admin-le
 
 **Rationale:** Python 3.11 is chosen as the baseline for med-z1 because it offers a strong balance of performance and ecosystem stability. Many core dependencies for this project—data/ML libraries, database drivers, and AI tooling—have mature, well-tested support for 3.11, while newer Python versions can still lag slightly in compatible binary wheels and integrations. Standardizing on 3.11 reduces friction when installing and upgrading dependencies, while still benefiting from the “Faster CPython” improvements over older versions (3.9/3.10). Future upgrades to 3.12+ can be evaluated in a separate experimental environment once the full stack is known to be compatible.
 
-### 4.2 Data & Medallion
+### 4.2 Data & Medallion Architecture (Implemented)
 
-- **Source DB (development):**  
+- **Source DB (development):**
   - Mock CDW subsystem:
-    - SQL Server 2019 Docker container.
+    - SQL Server 2019 Docker container
     - Two databases:
-      - `CDWWork` for VistA-like data (mock of real CDWWORK).
-      - `CDWWork1` for new EHR–like data (mock of real CDWWORK2).
-    - Schemas and tables named to closely resemble real CDW patterns.
-    - Synthetic sample data only.
+      - `CDWWork` for VistA-like data (✅ implemented with 37 synthetic patients)
+      - `CDWWork1` for new EHR–like data (planned for future)
+    - Schemas and tables named to closely resemble real CDW patterns
+    - Synthetic sample data only (non-PHI/PII)
 
-- **Data Lake Storage:** MinIO (S3/ADLS Gen2 compatible).
-- **File Formats:** Parquet (Bronze, Silver, Gold), possible Delta format later.
-- **Data Processing:** 
-  - Polars and/or Pandas.
-  - DuckDB for querying Parquet/MinIO efficiently.
+- **Data Lake Storage:**
+  - **MinIO** (S3-compatible) running at `localhost:9000` (✅ implemented)
+  - Bucket: `med-z1`
+  - Path structure: `bronze/`, `silver/`, `gold/`, `ai/`
+  - Centralized client: `lake/minio_client.py` with reusable helper functions
+
+- **File Formats:** Parquet (Bronze, Silver, Gold)
+
+- **Data Processing:**
+  - **Polars 1.18** for DataFrame operations
+  - **SQLAlchemy 2.0 + pyodbc** for SQL Server connectivity
+  - Note: Polars 1.x API differs from 0.x (e.g., `.str.strip_chars()` vs `.str.strip()`, `.dt.total_days()` vs `.dt.days()`)
+
+- **ETL Implementation (✅ Completed for Patient Demographics):**
+  - **Bronze:** `etl/bronze_patient.py` - Extracts from SPatient.SPatient to MinIO Parquet
+  - **Silver:** `etl/silver_patient.py` - Cleans/standardizes to MinIO Parquet
+  - **Gold:** `etl/gold_patient.py` - Creates query-optimized views to MinIO Parquet
+  - **Load:** `etl/load_postgres_patient.py` - Loads Gold Parquet to PostgreSQL
+
+- **Database Connectivity:**
+  - SQLAlchemy 2.0 + pyodbc for reliable SQL Server connections
+  - Connection pooling and error handling via SQLAlchemy
+  - Note: Tried connectorx but encountered Arrow compatibility issues with Polars 1.x
 
 - **ETL Orchestration (initial):**
-  - Python scripts under `etl/` (with file names conveying Bronze/Silver/Gold roles).
-  - Option to move to Prefect, Airflow, or Azure Data Factory later.
+  - Direct Python script execution (`python -m etl.bronze_patient`)
+  - Future: Prefect, Airflow, or Azure Data Factory
 
-### 4.3 Serving Database
+### 4.3 Serving Database (Implemented)
 
-- **Preferred:** PostgreSQL
-  - Tables for patient-centric and domain-centric views built from Gold Parquet.
-  - Optional extension: **pgvector** for embeddings.
+- **Database:** PostgreSQL 16 (running in Docker) (✅ implemented)
+  - Database name: `medz1`
+  - Host: localhost:5432
+  - User: postgres
 
-- **Alternate:** SQL Server
-  - Same serving schema patterns; uses existing T-SQL expertise.
+- **Implemented Tables:**
+  - `patient_demographics` - Gold layer patient demographics (✅ production-ready)
+    - Primary key: `patient_key` (currently = ICN)
+    - Unique constraint on `icn`
+    - Indexes on: `icn`, `name_last`, `name_first`, `ssn_last4`, `primary_station`, `dob`
+    - Current state: 36 patients loaded
+
+- **DDL Scripts:** `db/ddl/patient_demographics.sql`
+
+- **Configuration:**
+  - Connection URL in `config.py`: `DATABASE_URL`
+  - Environment variables in `.env`: `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, etc.
+  - Config dict: `POSTGRES_CONFIG` with connection parameters
+
+- **Data Loading:**
+  - ETL script reads Gold Parquet from MinIO
+  - Converts Polars → Pandas → PostgreSQL via SQLAlchemy
+  - Full pipeline working (Bronze → Silver → Gold → PostgreSQL)
+
+- **Future Tables (Planned):**
+  - `patient_timeline_event` - Unified timeline across domains
+  - `patient_medication` - Medication history
+  - `patient_lab_result` - Lab results
+  - `patient_flag` - Patient safety flags
+  - Additional domain-specific tables as needed
+
+- **Optional Extension:** pgvector for embeddings (future AI/ML work)
 
 FastAPI will primarily talk to the serving DB for interactive UI work and may call specialized services that read from Gold Parquet for more complex analytics.
 
@@ -347,6 +398,8 @@ FastAPI will primarily talk to the serving DB for interactive UI work and may ca
   * Future integration: external clinical applications (CPRS, imaging viewers, pharmacy systems) can query/set context.
   * Configuration: `CCOW_BASE_URL = "http://localhost:8001"` in `.env`.
 
+**Implementation Reference:** See `docs/ccow-vault-design.md` for complete technical specification, API documentation, and usage examples.
+
 ### 4.6 AI & Agentic
 
 * **LLM/AI Access:**
@@ -372,57 +425,94 @@ FastAPI will primarily talk to the serving DB for interactive UI work and may ca
 
 ### 4.7 Tooling & Dev Experience
 
-* **IDE:** VS Code (Python, Jupyter, Docker, SQL extensions).
-* **Environment:** `venv` + `.env` with python-dotenv.
-* **Testing:** `pytest`.
-* **Linting/Formatting:** `ruff`, `black`, `mypy` (optional).
-* **Containers:** Docker/Podman for SQL Server, MinIO, PostgreSQL, optionally FastAPI app.
+* **IDE:** VS Code (Python, Jupyter, Docker, SQL extensions)
+* **Environment:** `venv` + `.env` with python-dotenv
+* **Testing:** `pytest`
+* **Linting/Formatting:** `ruff`, `black`, `mypy` (optional)
+* **Containers:** Docker for SQL Server, MinIO, PostgreSQL
+
+**Key Python Dependencies (requirements.txt):**
+- `boto3==1.35.76` - MinIO/S3 client
+- `polars==1.18.0` - DataFrame library
+- `pyarrow==18.1.0` - Parquet support
+- `sqlalchemy==2.0.36` - Database ORM
+- `pyodbc==5.2.0` - SQL Server driver
+- `psycopg2-binary` - PostgreSQL driver
+- `fastapi==0.123.9` - Web framework
+- `python-dotenv==1.2.1` - Environment configuration
+- `connectorx==0.3.3` - Available but optional (compatibility issues with Polars 1.x)
 
 ---
 
-## 5. High-Level Project Layout
-
-The initial project structure is:
+## 5. High-Level Project Layout (Current Implementation)
 
 ```text
 med-z1/
   docs/
-    med-z1-plan.md   # This plan (Document version v1 and future revisions)
-    vision.md        # Problem statement, user personas, key user stories
-    architecture.md  # Diagrams and architecture decisions
-    ai-design.md     # AI/ML, RAG, DDI use-case designs
+    med-z1-plan.md                   # This plan (Document version v1.2)
+    implementation-roadmap.md        # ✅ Tactical implementation guide
+    ccow-vault-design.md             # ✅ CCOW technical specification
+    patient-topbar-redesign-spec.md  # ✅ UI specification
+    med-z1-plan-review.md            # Document review and updates
 
-  app/               # FastAPI + HTMX + Jinja2 application code
+  app/               # FastAPI + HTMX + Jinja2 web application
     main.py
     templates/
     static/
-    README.md        # Developer setup and app-specific notes
+    README.md
 
-  ccow/              # CCOW Context Management Vault service
-    main.py          # FastAPI service for CCOW context synchronization
+  ccow/              # ✅ CCOW Context Management Vault service (IMPLEMENTED)
+    main.py          # FastAPI service on port 8001
     vault.py         # Thread-safe in-memory context vault
-    models.py        # Pydantic models for context requests/responses
-    README.md        # CCOW setup and usage instructions
+    models.py        # Pydantic models
+    README.md
 
-  etl/               # ETL scripts implementing Bronze/Silver/Gold logic
-    README.md        # Developer setup instructions and ETL/data-specific notes
+  etl/               # ✅ ETL scripts - Bronze/Silver/Gold (IMPLEMENTED)
+    bronze_patient.py         # ✅ Extract from CDWWork to Bronze Parquet
+    silver_patient.py         # ✅ Transform Bronze to Silver Parquet
+    gold_patient.py           # ✅ Create Gold patient demographics Parquet
+    load_postgres_patient.py  # ✅ Load Gold to PostgreSQL
+    README.md
 
-  lake/              # Configs/utilities for MinIO, Parquet access
-  mock/              # Mock data subsystem (mocks CDW, SDP, DDI, other)
-    sql-server/      # Microsoft SQL Server
+  lake/              # ✅ MinIO/Parquet utilities (IMPLEMENTED)
+    minio_client.py  # ✅ Reusable MinIO client with helper functions
+    __init__.py
+
+  db/                # ✅ Database DDL and migrations (IMPLEMENTED)
+    ddl/
+      patient_demographics.sql  # ✅ PostgreSQL table DDL
+    migrations/      # Future: schema migrations
+
+  mock/              # ✅ Mock CDW subsystem (IMPLEMENTED)
+    sql-server/
       cdwwork/
-        create/      # CREATE DATABASE, schemas, tables, indexes for CDWWork
-        insert/      # INSERT / BULK INSERT scripts for CDWWork synthetic data
-      cdwwork1/
-        create/      # CREATE DATABASE, schemas, tables, indexes for CDWWork1
-        insert/      # INSERT / BULK INSERT scripts for CDWWork1 synthetic data
-  ai/                # AI/ML & agentic components (create when needed)
-    README.md        #
-  db/                # Serving DB DDL, migrations, etc. (create when needed)
-  tests/             # Unit/integration tests (as you add them)
+        create/      # CREATE scripts for CDWWork
+          Spatient.Spatient.sql  # ✅ Patient demographics table
+          Dim.Sta3n.sql
+          # ... other tables
+        insert/      # INSERT scripts with synthetic data
+          SPatient.SPatient.sql  # ✅ 37 synthetic patients
+          # ... other data
+      cdwwork1/      # Future: Oracle Health-like data
+        create/
+        insert/
+
+  ai/                # AI/ML components (Future)
+    README.md
+
+  tests/             # Unit/integration tests (Future)
+
+  .venv/             # ✅ Shared Python virtual environment
+  .env               # ✅ Environment variables (single shared file)
+  config.py          # ✅ Centralized configuration module
+  requirements.txt   # ✅ Python dependencies
+  CLAUDE.md          # ✅ Developer guidance for Claude Code
+  README.md          # ✅ Project overview
 ```
 
-Note: This project will use a single, shared Python environment (`.venv/`), a single, shared python-dotenv file (`.env`), and a single, shared configuration module (`config.py). These three files are located in the project root folder.
+**Note:** ✅ indicates implemented components
+
+This project uses a single, shared Python environment (`.venv/`), a single, shared python-dotenv file (`.env`), and a single, shared configuration module (`config.py`). These three files are located in the project root folder.
 
 ### 5.3 Mock Schema Design – CDWWork (VistA-like)
 
@@ -447,6 +537,41 @@ Representative starter tables (inspired by your existing DDL):
 * `Sta3n` indicating facility/station.
 * Separate dimension tables (e.g., `Dim.Sta3n`, `Dim.State`) referenced via SIDs.
 
+**Implementation Note - Actual Field Names:**
+
+See actual schema at `mock/sql-server/cdwwork/create/Spatient.Spatient.sql` for complete field list. Key fields used in Phase 1 ETL:
+
+* **Identity fields:**
+  * `PatientSID`, `PatientIEN`, `Sta3n`
+  * `PatientICN` (not `ICN`)
+  * `PatientSSN` (not `SSN`)
+  * `ScrSSN` (scrambled SSN)
+
+* **Demographics:**
+  * `PatientName`, `PatientLastName`, `PatientFirstName`
+  * `BirthDateTime` (not `DOB`)
+  * `Gender` (not `Sex`)
+  * `Age` (calculated from BirthDateTime)
+
+* **Status flags:**
+  * `TestPatientFlag` (not `TestPatient`)
+  * `DeceasedFlag`, `DeathDateTime`
+  * `VeteranFlag`, `ServiceConnectedFlag`
+
+* **Other:**
+  * `PatientType`, `MaritalStatus`, `Religion`
+
+**Station Mappings (Implemented in Gold Layer):**
+
+```python
+station_names = {
+    "508": "Atlanta VA Medical Center",
+    "516": "Bay Pines VA Healthcare System",
+    "552": "Dayton VA Medical Center",
+    "668": "Washington DC VA Medical Center",
+}
+```
+
 ### 5.4 Mock Schema Design – CDWWork1 (Oracle Health–like)
 
 **Goal:** Mirror CDWWork conceptually but:
@@ -465,37 +590,72 @@ Representative starter tables (inspired by your existing DDL):
 * Maintain the `*SID` pattern (e.g., `PatientSID1`, `EncounterSID1`) to keep joins straightforward.
 * Use overlapping identifiers (e.g., ICN, EDIPI) so Silver can unify patient identity across CDWWork and CDWWork1.
 
-### 5.5 Serving Database Design (Conceptual)
+### 5.5 Serving Database Design (Implemented & Planned)
 
-The serving DB (PostgreSQL preferred) will expose:
+**Database:** PostgreSQL 16 (`medz1`)
 
-* **patient**
+#### ✅ Implemented Tables:
 
-  * `patient_id` (internal key)
-  * `icn`
-  * `name`, `dob`, `sex`
-  * `primary_facility`, etc.
+**`patient_demographics`** (Production-ready)
 
-* **patient_timeline_event**
+```sql
+CREATE TABLE patient_demographics (
+    patient_key VARCHAR(50) PRIMARY KEY,
+    icn VARCHAR(50) UNIQUE NOT NULL,
+    ssn VARCHAR(64),
+    ssn_last4 VARCHAR(4),
+    name_last VARCHAR(100),
+    name_first VARCHAR(100),
+    name_display VARCHAR(200),
+    dob DATE,
+    age INTEGER,
+    sex VARCHAR(1),
+    gender VARCHAR(50),
+    primary_station VARCHAR(10),
+    primary_station_name VARCHAR(200),
+    veteran_status VARCHAR(50),
+    source_system VARCHAR(20),
+    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
-  * `event_id`
-  * `patient_id`
-  * `event_type` (admission, discharge, lab, med, note, imaging, vitals, flag)
-  * `event_timestamp`
-  * `facility`
-  * `source_system` (VistA, new EHR)
-  * `summary` (short description)
-  * `details_json` (optional payload)
+-- Indexes for query optimization
+CREATE INDEX idx_patient_icn ON patient_demographics(icn);
+CREATE INDEX idx_patient_name_last ON patient_demographics(name_last);
+CREATE INDEX idx_patient_name_first ON patient_demographics(name_first);
+CREATE INDEX idx_patient_ssn_last4 ON patient_demographics(ssn_last4);
+CREATE INDEX idx_patient_station ON patient_demographics(primary_station);
+CREATE INDEX idx_patient_dob ON patient_demographics(dob);
+```
 
-* **patient_medication**
+**Current State:**
+- 36 patients loaded from Gold Parquet
+- Full ETL pipeline working (Bronze → Silver → Gold → PostgreSQL)
+- Ready for UI integration
 
-  * `med_id`
-  * `patient_id`
-  * `drug_name`
-  * `dose`, `route`, `frequency`
-  * `start_date`, `stop_date`
-  * `ordering_provider`
-  * `source_system`
+**DDL Location:** `db/ddl/patient_demographics.sql`
+
+#### 📋 Planned Tables (Future Implementation):
+
+**`patient_timeline_event`** - Unified timeline across domains
+
+* `event_id` (primary key)
+* `patient_id` (FK to patient_demographics)
+* `event_type` (admission, discharge, lab, med, note, imaging, vitals, flag)
+* `event_timestamp`
+* `facility`
+* `source_system` (VistA, new EHR)
+* `summary` (short description)
+* `details_json` (optional payload)
+
+**`patient_medication`** - Medication history
+
+* `med_id` (primary key)
+* `patient_id` (FK to patient_demographics)
+* `drug_name`
+* `dose`, `route`, `frequency`
+* `start_date`, `stop_date`
+* `ordering_provider`
+* `source_system`
 
 * **patient_lab_result**
 
@@ -532,9 +692,110 @@ This database is used by the FastAPI/HTMX app to satisfy per-patient and per-dom
 
 ---
 
-## 6. Data & Medallion Design (Conceptual)
+## 6. Development Phases & Current Status
 
-### 6.1 Bronze Layer (MinIO – `med-z1-bronze`)
+### 6.1 Current Implementation Status (as of December 8, 2025)
+
+**✅ Completed Components:**
+
+1. **Infrastructure Setup**
+   - Python 3.11 virtual environment (`.venv/`)
+   - Environment configuration (`.env`, `config.py`)
+   - Docker containers (SQL Server 2019, MinIO, PostgreSQL 16)
+
+2. **Mock CDW Database**
+   - SQL Server 2019 running CDWWork database
+   - `SPatient.SPatient` table with 37 synthetic patients
+   - Dimension tables (`Dim.Sta3n`, `Dim.State`)
+   - DDL and INSERT scripts under `mock/sql-server/cdwwork/`
+
+3. **Data Lake (MinIO)**
+   - MinIO running at localhost:9000
+   - Bucket: `med-z1`
+   - Path structure: `bronze/`, `silver/`, `gold/`, `ai/`
+   - Centralized client: `lake/minio_client.py` with helper functions
+
+4. **PostgreSQL Serving Database**
+   - Database: `medz1` created
+   - Table: `patient_demographics` with full schema and indexes
+   - 36 patients loaded from Gold layer
+   - DDL script: `db/ddl/patient_demographics.sql`
+
+5. **CCOW Context Vault Service**
+   - FastAPI service running on port 8001
+   - Thread-safe in-memory vault
+   - REST API endpoints (GET/PUT/DELETE active-patient)
+   - Full documentation in `docs/ccow-vault-design.md`
+
+6. **Complete Patient Demographics ETL Pipeline**
+   - `etl/bronze_patient.py` - Extract from SPatient.SPatient → MinIO Parquet
+   - `etl/silver_patient.py` - Clean/standardize → MinIO Parquet
+   - `etl/gold_patient.py` - Create demographics view → MinIO Parquet
+   - `etl/load_postgres_patient.py` - Load to PostgreSQL
+   - All scripts using SQLAlchemy + Polars 1.18
+
+7. **Documentation**
+   - `docs/med-z1-plan.md` (this document) - Strategic plan
+   - `docs/implementation-roadmap.md` - Tactical implementation guide
+   - `docs/ccow-vault-design.md` - CCOW technical spec
+   - `docs/patient-topbar-redesign-spec.md` - UI specification
+   - `CLAUDE.md` - Developer guidance
+
+**🚧 In Progress:**
+
+1. **FastAPI Web Application**
+   - Basic structure in `app/` directory
+   - Patient topbar UI implementation pending
+   - Integration with PostgreSQL and CCOW vault
+
+**📋 Planned (Next Phases):**
+
+1. **Patient Topbar UI** (Phase 2)
+   - Patient search functionality
+   - CCOW integration
+   - Demographics display
+
+2. **Additional Clinical Domains** (Phase 3+)
+   - Patient Flags
+   - Medications (RxOut, BCMA)
+   - Encounters/Admissions
+   - Laboratory Results
+   - Vitals, Orders, Notes, Imaging
+
+3. **AI/ML Integration** (Phase 4+)
+   - Chart overview summarization
+   - Drug-drug interaction detection
+   - Patient flag-aware risk narratives
+
+4. **Production Hardening**
+   - Authentication/authorization
+   - Comprehensive testing
+   - Performance optimization
+   - Deployment automation
+
+### 6.2 Technology Decisions Made
+
+**Database Connectivity:**
+- ✅ SQLAlchemy 2.0 + pyodbc (chosen for reliability)
+- ❌ ConnectorX (rejected due to Arrow compatibility issues with Polars 1.x)
+
+**Data Processing:**
+- ✅ Polars 1.18 (API differences from 0.x documented)
+- ✅ SQLAlchemy for database connections
+- ✅ boto3 for MinIO (S3-compatible)
+
+**Serving Database:**
+- ✅ PostgreSQL 16 (chosen over SQL Server alternative)
+
+**ETL Patterns:**
+- ✅ Direct Python module execution (`python -m etl.bronze_patient`)
+- Future: Consider Prefect/Airflow for orchestration
+
+---
+
+## 7. Data & Medallion Design (Conceptual)
+
+### 7.1 Bronze Layer (MinIO – `med-z1-bronze`)
 
 **Goal:** Land raw mock CDW data in Parquet, preserving source semantics and lineage.
 
@@ -558,12 +819,12 @@ This database is used by the FastAPI/HTMX app to satisfy per-patient and per-dom
 
 * Add metadata such as `SourceSystem`, `SourceDatabase`, and `LoadDateTime`.
 
-### 6.2 Silver Layer (MinIO – `med-z1-silver`)
+### 7.2 Silver Layer (MinIO – `med-z1-silver`)
 
 * Clean and standardize entities across CDWWork and CDWWork1.
 * Harmonize patient, meds, encounters, labs, problems, vitals, orders, and flags into consistent schemas keyed by ICN/`PatientKey`.
 
-### 6.3 Gold Layer (MinIO – `med-z1-gold`)
+### 7.3 Gold Layer (MinIO – `med-z1-gold`)
 
 * Build curated, query-friendly views:
 

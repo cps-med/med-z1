@@ -160,6 +160,32 @@ CCOW_CONFIG = {
 
 
 # -----------------------------------------------------------
+# PostgreSQL Serving Database configuration
+# -----------------------------------------------------------
+
+POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
+POSTGRES_PORT = int(os.getenv("POSTGRES_PORT", "5432"))
+POSTGRES_DB = os.getenv("POSTGRES_DB", "medz1")
+POSTGRES_USER = os.getenv("POSTGRES_USER", "postgres")
+POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "")
+
+# PostgreSQL connection URL (for SQLAlchemy)
+DATABASE_URL = (
+    f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@"
+    f"{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
+)
+
+POSTGRES_CONFIG = {
+    "host": POSTGRES_HOST,
+    "port": POSTGRES_PORT,
+    "database": POSTGRES_DB,
+    "user": POSTGRES_USER,
+    "password": POSTGRES_PASSWORD,
+    "url": DATABASE_URL,
+}
+
+
+# -----------------------------------------------------------
 # Optional logging of config (without secrets)
 # -----------------------------------------------------------
 
@@ -171,6 +197,7 @@ if __name__ != "__main__":
     logger.info(f"EXTRACT server: {EXTRACT_DB_SERVER} / DB: {EXTRACT_DB_NAME}")
     logger.info(f"MinIO endpoint: {MINIO_ENDPOINT}, bucket: {MINIO_BUCKET_NAME}")
     logger.info(f"USE_MINIO: {USE_MINIO}")
+    logger.info(f"PostgreSQL: {POSTGRES_HOST}:{POSTGRES_PORT} / DB: {POSTGRES_DB}")
     logger.info(f"ASCII extract folder: {ASCII_EXTRACT_FOLDER}")
     logger.info(f"Log directory: {LOG_DIRECTORY_PATH}")
     logger.info(f"CCOW enabled: {CCOW_ENABLED}, URL: {CCOW_URL}")
