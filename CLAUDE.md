@@ -104,13 +104,18 @@ pip install -r requirements.txt
 - CDWWork1 intentionally uses different naming conventions to exercise Silver-layer harmonization
 
 **Major Schemas in CDWWork:**
-- `Dim` (dimensions: Sta3n, State, etc.)
-- `SPatient` (patient demographics, addresses, insurance)
+- `Dim` (dimensions: Sta3n, State, PatientRecordFlag, etc.)
+- `SPatient` (patient demographics, addresses, insurance, PatientRecordFlagAssignment, PatientRecordFlagHistory)
 - `SStaff` (staff/providers)
 - `Inpat` (inpatient encounters)
 - `RxOut` (outpatient medications)
 - `BCMA` (medication administration)
-- Future: Labs, Vitals, Orders, Flags, Notes, Imaging
+- Future: Labs, Vitals, Orders, Notes, Imaging
+
+**Patient Flags Tables (added 2025-12-10):**
+- `Dim.PatientRecordFlag` - Flag definitions (National Cat I, Local Cat II)
+- `SPatient.PatientRecordFlagAssignment` - Patient → Flag assignments with review tracking
+- `SPatient.PatientRecordFlagHistory` - Audit trail with sensitive narrative text
 
 ### Web Application Architecture
 
@@ -200,6 +205,75 @@ DoD-specific views (CHCS/AHLTA) are explicitly out of scope for early versions.
 - **Single shared .env file** at project root
 - **Single shared config module:** `config.py` at project root
 - All subsystems (app, ccow, etl, ai, mock) import from this central configuration
+
+### SQL Server Scripting Patterns
+
+When creating SQL Server scripts for the mock CDW, follow these conventions:
+
+**QUOTED_IDENTIFIER Requirement:**
+- Always include `SET QUOTED_IDENTIFIER ON;` before CREATE INDEX and INSERT statements
+- Required for filtered indexes (indexes with WHERE clauses)
+- Required when inserting into tables that have filtered indexes
+- Example pattern:
+  ```sql
+  USE CDWWork;
+  GO
+
+  SET QUOTED_IDENTIFIER ON;
+  GO
+
+  CREATE INDEX IX_Example ON TableName (Column1, Column2)
+      WHERE Column1 IS NOT NULL;  -- Filtered index
+  GO
+  ```
+
+**Field Sizing:**
+- Carefully consider field sizes for categorical data
+- Example: Patient Record Flag categories are 'I' and 'II', requiring CHAR(2), not CHAR(1)
+- Test INSERT statements with actual data values to validate field sizes
+
+**Script Organization:**
+- Separate CREATE and INSERT scripts for each table
+- Location: `mock/sql-server/cdwwork/create/` and `mock/sql-server/cdwwork/insert/`
+- Use GO statements to batch commands appropriately
+- Include PRINT statements for execution feedback
+
+### Database Schema Management
+
+**PostgreSQL Serving Database:**
+
+The project uses two approaches for managing the PostgreSQL serving database schema, depending on the development phase:
+
+**Initial Development (Current Phase):**
+- **DDL Scripts:** Located in `db/ddl/`
+- Purpose: Create tables from scratch
+- Safe to drop/recreate tables (no production data)
+- Examples: `patient_demographics.sql`, `create_patient_flags_tables.sql`
+- Run directly via psql or docker exec
+
+**Production/Mature Phase (Future):**
+- **Migration Scripts:** Will be located in `db/migrations/` (when needed)
+- Purpose: Evolve schema incrementally without data loss
+- Versioned, sequential changes (e.g., `001_add_column.sql`, `002_add_index.sql`)
+- Tracks which migrations have been applied
+- Each migration typically has "up" (apply) and optionally "down" (rollback) operations
+- Common tools: Alembic (Python/SQLAlchemy), Flyway, Liquibase
+
+**When to Switch:**
+- Use DDL scripts during initial development and prototyping
+- Switch to migrations when:
+  - Database contains real data that must be preserved
+  - Multiple developers need schema synchronization
+  - Production deployment requires zero-downtime schema changes
+  - Need audit trail of all schema changes
+
+**Directory Structure:**
+```
+db/
+  ddl/           # Initial schema creation scripts (drop/create safe)
+  migrations/    # Incremental schema changes (future, when needed)
+  seeds/         # Sample/test data scripts (future, if needed)
+```
 
 ### Code Quality and Testing
 

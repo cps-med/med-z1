@@ -77,8 +77,8 @@ Patient flags are critical safety alerts displayed to clinical staff when access
 ### 2.2 Success Criteria
 
 **Data Pipeline:**
-- [ ] Mock CDW tables created and populated with sample data
-- [ ] Bronze ETL extracts all 3 tables to Parquet
+- [x] Mock CDW tables created and populated with sample data (✅ 2025-12-10)
+- [x] Bronze ETL extracts all 3 tables to Parquet (✅ 2025-12-10)
 - [ ] Silver ETL harmonizes data (minimal in single-source mock)
 - [ ] Gold ETL creates patient-centric flag view
 - [ ] PostgreSQL serving DB loaded with flag data
@@ -221,9 +221,11 @@ See `docs/patient-flags-research.md` Section 3.2 for complete DDL.
 
 **Dim.PatientRecordFlag** (12 flags)
 - PatientRecordFlagSID (PK)
-- FlagName, FlagType, FlagCategory ('I' or 'II')
+- FlagName, FlagType, FlagCategory (CHAR(2): 'I' or 'II')
 - ReviewFrequencyDays, ReviewNotificationDays
 - NationalFlagIEN or LocalFlagIEN
+
+**Note:** FlagCategory is CHAR(2) to accommodate both 'I' (Category I/National) and 'II' (Category II/Local) values.
 
 **SPatient.PatientRecordFlagAssignment** (~19 assignments across 16 patients)
 - PatientRecordFlagAssignmentSID (PK)
@@ -1443,12 +1445,20 @@ function updateFlagBadge() {
 
 ### 9.2 Day-by-Day Plan
 
-#### Day 1: Database Setup
+#### Day 1: Database Setup ✅ COMPLETED (2025-12-10)
 
 **Note:** Replace `<SA_PASSWORD>` with your SQL Server SA password in all sqlcmd commands below.
 
+**Implementation Notes:**
+- All three SQL Server CREATE scripts successfully executed
+- All three SQL Server INSERT scripts successfully executed with sample data
+- Fixed SQL Server `QUOTED_IDENTIFIER` requirement (see Appendix F)
+- Fixed `FlagCategory` field from CHAR(1) to CHAR(2) to support 'II' values
+- 12 flag definitions, 19 assignments across 16 patients, 28 history records created
+- PostgreSQL serving database tables created successfully (`patient_flags`, `patient_flag_history`)
+
 **Tasks:**
-Task 1. Execute create scripts (already created in this session)
+✅ Task 1. Execute create scripts (completed 2025-12-10)
    ```bash
    cd mock/sql-server/cdwwork/create
    sqlcmd -S localhost -U sa -P <SA_PASSWORD> -i Dim.PatientRecordFlag.sql
@@ -1456,7 +1466,7 @@ Task 1. Execute create scripts (already created in this session)
    sqlcmd -S localhost -U sa -P <SA_PASSWORD> -i SPatient.PatientRecordFlagHistory.sql
    ```  
 
-Task 2. Execute insert scripts (already created in this session)
+✅ Task 2. Execute insert scripts (completed 2025-12-10)
    ```bash
    cd mock/sql-server/cdwwork/insert
    sqlcmd -S localhost -U sa -P <SA_PASSWORD> -i Dim.PatientRecordFlag.sql
@@ -1464,7 +1474,7 @@ Task 2. Execute insert scripts (already created in this session)
    sqlcmd -S localhost -U sa -P <SA_PASSWORD> -i SPatient.PatientRecordFlagHistory.sql
    ```
 
-Task 3. Verify data
+✅ Task 3. Verify data (completed 2025-12-10)
    ```sql
    -- Check record counts
    SELECT COUNT(*) FROM Dim.PatientRecordFlag;                 -- Expect 12
@@ -1477,27 +1487,47 @@ Task 3. Verify data
    SELECT TOP 5 * FROM SPatient.PatientRecordFlagHistory ORDER BY HistoryDateTime DESC;
    ```
 
-Task 4. Create PostgreSQL tables
+✅ Task 4. Create PostgreSQL tables (completed 2025-12-10)
+
+   **Option A: Direct psql connection (if PostgreSQL is accessible on localhost):**
    ```bash
-   psql -h localhost -U postgres -d medz1 -f db/create_patient_flags_tables.sql
+   psql -h localhost -U postgres -d medz1 -f db/ddl/create_patient_flags_tables.sql
    ```
 
-#### Day 2: Bronze ETL
+   **Option B: Via Docker container (recommended for Docker-based PostgreSQL):**
+   ```bash
+   docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_flags_tables.sql
+   ```
+
+   **Verify tables created:**
+   ```bash
+   docker exec -it postgres16 psql -U postgres -d medz1 -c "\dt patient_flag*"
+   ```
+
+   **Result:** Tables `patient_flags` and `patient_flag_history` created successfully with all indexes
+
+#### Day 2: Bronze ETL ✅ COMPLETED (2025-12-10)
+
+**Implementation Notes:**
+- Created `etl/bronze_patient_flags.py` following project patterns
+- Successfully extracted all three tables to Parquet
+- Verified Parquet files in MinIO
+- All record counts match source data (12 definitions, 19 assignments, 28 history records)
 
 **Tasks:**
-1. Create `etl/bronze_patient_flags.py`
-2. Extract three tables to Parquet
-3. Verify Parquet files created
-4. Run manually, verify output:
+✅ 1. Create `etl/bronze_patient_flags.py` (completed 2025-12-10)
+✅ 2. Extract three tables to Parquet (completed 2025-12-10)
+✅ 3. Verify Parquet files created (completed 2025-12-10)
+✅ 4. Run manually, verify output (completed 2025-12-10):
    ```bash
-   python etl/bronze_patient_flags.py
+   python -m etl.bronze_patient_flags
    ls -lh lake/bronze/patient_record_flag_*/*.parquet
    ```
 
-#### Day 3: Silver and Gold ETL
+#### Day 3: Silver and Gold ETL ⏳ IN PROGRESS
 
 **Tasks:**
-1. Create `etl/silver_patient_flags.py`
+⏳ 1. Create `etl/silver_patient_flags.py`
    - Clean data, resolve Sta3n lookups
 2. Create `etl/gold_patient_flags.py`
    - Join tables, calculate review status, create patient-centric view
@@ -1918,9 +1948,57 @@ med-z1/
 - VHA Directive 2010-053 - Patient Record Flags
 - [VA VDL - PRF HL7 Specification](https://www.va.gov/vdl/documents/clinical/patient_record_flags/prfhl7is.doc)
 
+### Appendix F: SQL Server Implementation Notes
+
+#### QUOTED_IDENTIFIER Requirement
+
+**Issue:** SQL Server requires `SET QUOTED_IDENTIFIER ON` when working with filtered indexes (indexes with WHERE clauses) or other advanced features.
+
+**Solution:** All CREATE and INSERT scripts for patient flags tables include:
+```sql
+SET QUOTED_IDENTIFIER ON;
+GO
+```
+
+**Affected Scripts:**
+- `mock/sql-server/cdwwork/create/Dim.PatientRecordFlag.sql`
+- `mock/sql-server/cdwwork/create/SPatient.PatientRecordFlagAssignment.sql` (has filtered index)
+- `mock/sql-server/cdwwork/create/SPatient.PatientRecordFlagHistory.sql`
+- `mock/sql-server/cdwwork/insert/SPatient.PatientRecordFlagAssignment.sql` (inserts into table with filtered index)
+- `mock/sql-server/cdwwork/insert/SPatient.PatientRecordFlagHistory.sql`
+
+**Error Without Fix:**
+```
+Msg 1934, Level 16, State 1, Server [server_id], Line [n]
+CREATE INDEX failed because the following SET options have incorrect settings: 'QUOTED_IDENTIFIER'.
+```
+
+**Filtered Index Example:**
+```sql
+CREATE INDEX IX_PRFAssign_Review
+    ON SPatient.PatientRecordFlagAssignment (NextReviewDateTime, IsActive)
+    WHERE NextReviewDateTime IS NOT NULL;  -- WHERE clause = filtered index
+```
+
+#### FlagCategory Field Sizing
+
+**Issue:** Original design used `CHAR(1)` for `FlagCategory`, but values are 'I' (Category I) and 'II' (Category II).
+
+**Solution:** Changed to `CHAR(2)` in both tables:
+- `Dim.PatientRecordFlag.FlagCategory CHAR(2)`
+- `SPatient.PatientRecordFlagAssignment.FlagCategory CHAR(2)`
+
+**Error Without Fix:**
+```
+String or binary data would be truncated.
+```
+
 ---
 
 **End of Specification**
 
-**Document Status:** Ready for Implementation
-**Next Step:** Begin Day 1 tasks (database setup already completed in this session)
+**Document Status:** In Progress - Day 2 Complete (2025-12-10)
+**Next Step:** Day 3 - Silver and Gold ETL implementation
+**Completed:**
+- Day 1: Mock CDW database setup (SQL Server + PostgreSQL)
+- Day 2: Bronze ETL - 3 Parquet files created in MinIO
