@@ -111,11 +111,11 @@ Patient flags are critical safety alerts displayed to clinical staff when access
 ### 3.1 Completed Work
 
 Before starting Phase 3, ensure Phase 2 is complete:
--  Patient demographics ETL pipeline working
--  PostgreSQL serving DB operational
--  Patient-aware topbar functional
--  Patient selection workflow tested
--  CCOW integration working
+-  Patient demographics ETL pipeline working
+-  PostgreSQL serving DB operational
+-  Patient-aware topbar functional
+-  Patient selection workflow tested
+-  CCOW integration working
 
 ### 3.2 Environment Setup
 
@@ -1932,38 +1932,38 @@ ORDER BY total_flags DESC;
 
 ```
 med-z1/
-   docs/
-      patient-flags-research.md         # CDW research (this session)
-      patient-flags-design.md           # This specification
-   mock/sql-server/cdwwork/
-      create/
-         Dim.PatientRecordFlag.sql
-         SPatient.PatientRecordFlagAssignment.sql
-         SPatient.PatientRecordFlagHistory.sql
-      insert/
-          Dim.PatientRecordFlag.sql
-          SPatient.PatientRecordFlagAssignment.sql
-          SPatient.PatientRecordFlagHistory.sql
-   etl/
-      bronze_patient_flags.py
-      silver_patient_flags.py
-      gold_patient_flags.py
-      load_patient_flags.py
-   app/
-      db/
-         patient_flags.py
-      routes/
-         patient.py                    # Update with new endpoints
-      templates/partials/
-         patient_flags_content.html
-         flag_card.html
-      static/
-          styles.css                    # Add flag styles
-          app.js                        # Add badge update logic
-   tests/
-       test_patient_flags.py
-       test_patient_flags_api.py
-       test_patient_flags_etl.py
+ docs/
+    patient-flags-research.md         # CDW research (this session)
+    patient-flags-design.md           # This specification
+ mock/sql-server/cdwwork/
+    create/
+       Dim.PatientRecordFlag.sql
+       SPatient.PatientRecordFlagAssignment.sql
+       SPatient.PatientRecordFlagHistory.sql
+    insert/
+        Dim.PatientRecordFlag.sql
+        SPatient.PatientRecordFlagAssignment.sql
+        SPatient.PatientRecordFlagHistory.sql
+ etl/
+    bronze_patient_flags.py
+    silver_patient_flags.py
+    gold_patient_flags.py
+    load_patient_flags.py
+ app/
+    db/
+       patient_flags.py
+    routes/
+       patient.py                    # Update with new endpoints
+    templates/partials/
+       patient_flags_content.html
+       flag_card.html
+    static/
+        styles.css                    # Add flag styles
+        app.js                        # Add badge update logic
+ tests/
+     test_patient_flags.py
+     test_patient_flags_api.py
+     test_patient_flags_etl.py
 ```
 
 ### Appendix E: References
