@@ -35,7 +35,7 @@ CREATE TABLE Dim.PatientRecordFlag
     -- Flag identification
     FlagName                    NVARCHAR(100) NOT NULL,
     FlagType                    VARCHAR(30)   NULL,       -- 'CLINICAL', 'BEHAVIORAL', 'RESEARCH', 'ADMINISTRATIVE'
-    FlagCategory                CHAR(1)       NOT NULL,   -- 'I' (National) or 'II' (Local)
+    FlagCategory                CHAR(2)       NOT NULL,   -- 'I' (National) or 'II' (Local)
     FlagSourceType              CHAR(1)       NOT NULL,   -- 'N' (National file 26.15) or 'L' (Local file 26.11)
 
     -- VistA pointers
@@ -64,6 +64,10 @@ GO
 
 PRINT '';
 PRINT '==== Create Indexes ====';
+GO
+
+-- Ensure QUOTED_IDENTIFIER is ON for index creation
+SET QUOTED_IDENTIFIER ON;
 GO
 
 CREATE INDEX IX_FlagName ON Dim.PatientRecordFlag (FlagName);

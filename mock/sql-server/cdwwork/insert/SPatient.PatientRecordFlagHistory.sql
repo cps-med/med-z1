@@ -18,6 +18,10 @@ GO
 USE CDWWork;
 GO
 
+-- Ensure QUOTED_IDENTIFIER is ON (best practice)
+SET QUOTED_IDENTIFIER ON;
+GO
+
 -- Sample history records for patient flag assignments
 -- PatientRecordFlagAssignmentSID values correspond to IDENTITY values from Assignment table
 -- Assuming sequential assignment: SID 1 = first INSERT, SID 2 = second INSERT, etc.

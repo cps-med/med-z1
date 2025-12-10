@@ -1448,15 +1448,15 @@ function updateFlagBadge() {
 **Note:** Replace `<SA_PASSWORD>` with your SQL Server SA password in all sqlcmd commands below.
 
 **Tasks:**
-1.  Execute create scripts (already created in this session)
+Task 1. Execute create scripts (already created in this session)
    ```bash
    cd mock/sql-server/cdwwork/create
    sqlcmd -S localhost -U sa -P <SA_PASSWORD> -i Dim.PatientRecordFlag.sql
    sqlcmd -S localhost -U sa -P <SA_PASSWORD> -i SPatient.PatientRecordFlagAssignment.sql
    sqlcmd -S localhost -U sa -P <SA_PASSWORD> -i SPatient.PatientRecordFlagHistory.sql
-   ```
+   ```  
 
-2.  Execute insert scripts (already created in this session)
+Task 2. Execute insert scripts (already created in this session)
    ```bash
    cd mock/sql-server/cdwwork/insert
    sqlcmd -S localhost -U sa -P <SA_PASSWORD> -i Dim.PatientRecordFlag.sql
@@ -1464,7 +1464,7 @@ function updateFlagBadge() {
    sqlcmd -S localhost -U sa -P <SA_PASSWORD> -i SPatient.PatientRecordFlagHistory.sql
    ```
 
-3. Verify data
+Task 3. Verify data
    ```sql
    -- Check record counts
    SELECT COUNT(*) FROM Dim.PatientRecordFlag;                 -- Expect 12
@@ -1477,7 +1477,7 @@ function updateFlagBadge() {
    SELECT TOP 5 * FROM SPatient.PatientRecordFlagHistory ORDER BY HistoryDateTime DESC;
    ```
 
-4. Create PostgreSQL tables
+Task 4. Create PostgreSQL tables
    ```bash
    psql -h localhost -U postgres -d medz1 -f db/create_patient_flags_tables.sql
    ```

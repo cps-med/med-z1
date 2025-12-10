@@ -38,7 +38,7 @@ CREATE TABLE SPatient.PatientRecordFlagAssignment
 
     -- Denormalized flag info (for queries without joining to Dim)
     FlagName                        NVARCHAR(100) NOT NULL,
-    FlagCategory                    CHAR(1)       NOT NULL,   -- 'I' or 'II'
+    FlagCategory                    CHAR(2)       NOT NULL,   -- 'I' or 'II'
     FlagSourceType                  CHAR(1)       NOT NULL,   -- 'N' or 'L'
     NationalFlagIEN                 INT           NULL,
     LocalFlagIEN                    INT           NULL,
@@ -74,6 +74,10 @@ GO
 
 PRINT '';
 PRINT '==== Create Indexes ====';
+GO
+
+-- Ensure QUOTED_IDENTIFIER is ON for filtered indexes
+SET QUOTED_IDENTIFIER ON;
 GO
 
 -- Critical indexes for patient-centric queries

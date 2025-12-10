@@ -72,6 +72,10 @@ PRINT '';
 PRINT '==== Create Indexes ====';
 GO
 
+-- Ensure QUOTED_IDENTIFIER is ON for index creation
+SET QUOTED_IDENTIFIER ON;
+GO
+
 -- Indexes for timeline queries
 CREATE INDEX IX_PRFHist_Assignment
     ON SPatient.PatientRecordFlagHistory (PatientRecordFlagAssignmentSID, HistoryDateTime);

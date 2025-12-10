@@ -17,6 +17,10 @@ GO
 USE CDWWork;
 GO
 
+-- Ensure QUOTED_IDENTIFIER is ON for tables with filtered indexes
+SET QUOTED_IDENTIFIER ON;
+GO
+
 -- Sample assignments for several patients
 -- PatientSID values: 100001-100036 (36 total patients)
 -- Assigning flags to ~16 patients to create realistic distribution
