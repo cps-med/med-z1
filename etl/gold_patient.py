@@ -54,6 +54,7 @@ def create_gold_patient_demographics():
     # Final Gold schema
     df_gold = df_patient.select([
         "patient_key",
+        "patient_sid",      # Keep for joins with other Gold tables
         "icn",
         "ssn",
         "ssn_last4",

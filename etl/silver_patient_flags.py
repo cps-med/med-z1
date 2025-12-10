@@ -7,8 +7,7 @@
 #  - resolve Sta3n lookups to facility names
 #  - save to med-z1/silver/patient_record_flag_*
 # ---------------------------------------------------------------------
-# To run this script from the project root folder, treat it as a
-# module:
+# To run this script from the project root folder, treat as a module:
 #  $ cd med-z1
 #  $ python -m etl.silver_patient_flags
 # ---------------------------------------------------------------------
@@ -168,30 +167,40 @@ def transform_flag_assignments(minio_client, sta3n_lookup):
     ])
 
     # Resolve Sta3n lookups - Owner Site
+    owner_lookup = sta3n_lookup.select([
+        pl.col("Sta3n"),
+        pl.col("Sta3nName").alias("owner_site_name")
+    ])
     df = df.join(
-        sta3n_lookup.select(["Sta3n", "Sta3nName"]),
+        owner_lookup,
         left_on="owner_site_sta3n",
         right_on=pl.col("Sta3n").cast(pl.Utf8),
         how="left"
-    ).rename({"Sta3nName": "owner_site_name"})
+    ).drop("Sta3n")
 
     # Resolve Sta3n lookups - Originating Site
+    orig_lookup = sta3n_lookup.select([
+        pl.col("Sta3n"),
+        pl.col("Sta3nName").alias("originating_site_name")
+    ])
     df = df.join(
-        sta3n_lookup.select(["Sta3n", "Sta3nName"]),
+        orig_lookup,
         left_on="originating_site_sta3n",
         right_on=pl.col("Sta3n").cast(pl.Utf8),
-        how="left",
-        suffix="_orig"
-    ).rename({"Sta3nName_orig": "originating_site_name"})
+        how="left"
+    ).drop("Sta3n")
 
     # Resolve Sta3n lookups - Last Update Site
+    update_lookup = sta3n_lookup.select([
+        pl.col("Sta3n"),
+        pl.col("Sta3nName").alias("last_update_site_name")
+    ])
     df = df.join(
-        sta3n_lookup.select(["Sta3n", "Sta3nName"]),
+        update_lookup,
         left_on="last_update_site_sta3n",
         right_on=pl.col("Sta3n").cast(pl.Utf8),
-        how="left",
-        suffix="_update"
-    ).rename({"Sta3nName_update": "last_update_site_name"})
+        how="left"
+    ).drop("Sta3n")
 
     # Select final columns
     df = df.select([

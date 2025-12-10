@@ -29,7 +29,7 @@ DROP TABLE IF EXISTS patient_flags CASCADE;
 CREATE TABLE patient_flags (
     flag_id                 SERIAL PRIMARY KEY,
     patient_key             VARCHAR(50) NOT NULL,   -- ICN
-    assignment_id           BIGINT NOT NULL,
+    assignment_id           BIGINT NOT NULL UNIQUE, -- Unique for upserts
     flag_name               VARCHAR(100) NOT NULL,
     flag_category           VARCHAR(2) NOT NULL,    -- 'I' or 'II'
     flag_type               VARCHAR(30),
