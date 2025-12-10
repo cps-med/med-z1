@@ -1,9 +1,9 @@
 # Patient Flags Design Specification - med-z1 Phase 3
 
-**Document Version:** 1.0
-**Last Updated:** 2025-12-09
-**Phase:** Phase 3 - Patient Flags Domain Implementation
-**Duration Estimate:** 1 week (5-7 days)
+**Document Version:** 1.0  
+**Last Updated:** 2025-12-09  
+**Phase:** Phase 3 - Patient Flags Domain Implementation  
+**Duration Estimate:** 1 week (5-7 days)  
 
 ---
 
@@ -1995,10 +1995,10 @@ String or binary data would be truncated.
 
 ---
 
-**End of Specification**
+**End of Specification**  
 
-**Document Status:** In Progress - Day 2 Complete (2025-12-10)
-**Next Step:** Day 3 - Silver and Gold ETL implementation
+**Document Status:** In Progress - Day 2 Complete (2025-12-10)  
+**Next Step:** Day 3 - Silver and Gold ETL implementation  
 **Completed:**
-- Day 1: Mock CDW database setup (SQL Server + PostgreSQL)
-- Day 2: Bronze ETL - 3 Parquet files created in MinIO
+- Day 1: Mock CDW database setup (SQL Server + PostgreSQL)  
+- Day 2: Bronze ETL - 3 Parquet files created in MinIO  

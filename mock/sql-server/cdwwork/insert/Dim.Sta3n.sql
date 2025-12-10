@@ -43,5 +43,8 @@ VALUES
 (532, '(532) Canandaigua, NY (inactivated 10/1/1999)', 2, 2, 2, 'N', 528, NULL, NULL, 4, NULL, NULL, NULL, NULL, NULL, NULL),
 (647, '(647) Poplar Bluff, MO', 15, 15, 15, 'N', 657, NULL, NULL, 2, NULL, NULL, NULL, NULL, NULL, NULL),
 (500, '(500) Albany (inactivated 7/1/2000)', 2, 2, 2, 'N', 528, NULL, NULL, 4, NULL, NULL, NULL, NULL, NULL, NULL),
-(452, '(452) Wichita (inactivated 10/1/2001)', 15, 15, 15, 'N', 589, NULL, NULL, 2, NULL, NULL, NULL, NULL, NULL, NULL);
+(452, '(452) Wichita (inactivated 10/1/2001)', 15, 15, 15, 'N', 589, NULL, NULL, 2, NULL, NULL, NULL, NULL, NULL, NULL),
+(518, '(518) Northport VA Medical Center', 2, 2, 2, 'Y', NULL, 'Eastern Standard Time', 'NOR', 4, 'North Atlantic', 1, 'North Atlantic', 1, 'Northport', 57),
+(589, '(589) VA Western Colorado HCS (Wichita KS)', 15, 15, 15, 'Y', NULL, 'Central Standard Time', 'WIC', 2, 'Midwest', 3, 'Midwest', 3, 'Wichita', 226),
+(640, '(640) VA Palo Alto HCS', 21, 21, 21, 'Y', NULL, 'Pacific Standard Time', 'PAL', 1, 'Pacific', 5, 'Pacific', 5, 'Palo Alto', 97);
 GO
