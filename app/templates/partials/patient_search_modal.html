@@ -1,0 +1,60 @@
+<!-- app/templates/partials/patient_search_modal.html -->
+
+<div id="patient-search-modal" class="modal" style="display: none;">
+    <div class="modal__overlay" data-modal-close="patient-search-modal"></div>
+    <div class="modal__container">
+        <div class="modal__header">
+            <h2>Select Patient</h2>
+            <button
+                class="modal__close"
+                data-modal-close="patient-search-modal"
+                aria-label="Close"
+            >
+                &times;
+            </button>
+        </div>
+
+        <div class="modal__body">
+            <form class="patient-search-form">
+                <div class="form-group">
+                    <label for="search-query">Search by Name, ICN, or EDIPI</label>
+                    <input
+                        type="text"
+                        id="search-query"
+                        name="query"
+                        class="form-control"
+                        placeholder="Enter patient name, ICN, EDIPI..."
+                        hx-get="/api/patient/search"
+                        hx-trigger="keyup changed delay:500ms"
+                        hx-target="#search-results"
+                        hx-include="[name='search_type']"
+                        autocomplete="off"
+                    />
+                </div>
+
+                <div class="form-group">
+                    <label>Search Type</label>
+                    <div class="radio-group">
+                        <label>
+                            <input type="radio" name="search_type" value="name" checked>
+                            Name
+                        </label>
+                        <label>
+                            <input type="radio" name="search_type" value="icn">
+                            ICN
+                        </label>
+                        <label>
+                            <input type="radio" name="search_type" value="edipi">
+                            EDIPI
+                        </label>
+                    </div>
+                    <p class="form-help">Note: SSN search not available per VA policy</p>
+                </div>
+            </form>
+
+            <div id="search-results" class="search-results">
+                <p class="text-muted">Enter search criteria above</p>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,28 @@
+<!-- app/templates/partials/patient_flags_modal.html -->
+<!-- Phase 3 Placeholder Implementation -->
+
+<div id="patient-flags-modal" class="modal" style="display: none;">
+    <div class="modal__overlay" data-modal-close="patient-flags-modal"></div>
+    <div class="modal__container modal__container--large">
+        <div class="modal__header">
+            <h2>Patient Flags</h2>
+            <button
+                class="modal__close"
+                data-modal-close="patient-flags-modal"
+                aria-label="Close"
+            >
+                &times;
+            </button>
+        </div>
+
+        <div
+            class="modal__body"
+            id="patient-flags-content"
+            hx-get="/api/patient/flags-content"
+            hx-trigger="revealed"
+            hx-swap="innerHTML"
+        >
+            <p class="text-muted">Loading patient flags...</p>
+        </div>
+    </div>
+</div>

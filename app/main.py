@@ -15,6 +15,7 @@
 #   CTRL + C
 # -----------------------------------------------------------
 
+import logging
 from datetime import datetime
 from pathlib import Path
 
@@ -31,15 +32,32 @@ from config import (
     USE_MINIO,
 )
 
+# Import patient routes
+from app.routes import patient
+
+app = FastAPI(title="med-z1")
+
+# Mount static files
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+# Include routers
+app.include_router(patient.router)
+
+# Configure logging for the entire application
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+
+logger = logging.getLogger(__name__)
+
 # Base directory for this file
 BASE_DIR = Path(__file__).resolve().parent
 
-# Create the FastAPI app
-app = FastAPI()
+logger.info("med-z1 application starting up")
 
 # Templates and static dirs, using BASE_DIR
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
-app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -111,6 +129,17 @@ async def timer_page(request: Request):
         {
             "request": request,
             "active_page": "timer",
+        },
+    )
+
+
+@app.get("/patient-test", response_class=HTMLResponse)
+async def patient_test_page(request: Request):
+    """Render the patient header test page (temporary dev tool)."""
+    return templates.TemplateResponse(
+        "patient_test.html",
+        {
+            "request": request,
         },
     )
 

@@ -258,7 +258,7 @@ Data freshness indicators and ETL status will be **initially treated as admin-le
   - Mock CDW subsystem:
     - SQL Server 2019 Docker container
     - Two databases:
-      - `CDWWork` for VistA-like data (✅ implemented with 37 synthetic patients)
+      - `CDWWork` for VistA-like data (✅ implemented with 36 synthetic patients)
       - `CDWWork1` for new EHR–like data (planned for future)
     - Schemas and tables named to closely resemble real CDW patterns
     - Synthetic sample data only (non-PHI/PII)
@@ -491,7 +491,7 @@ med-z1/
           Dim.Sta3n.sql
           # ... other tables
         insert/      # INSERT scripts with synthetic data
-          SPatient.SPatient.sql  # ✅ 37 synthetic patients
+          SPatient.SPatient.sql  # ✅ 36 synthetic patients
           # ... other data
       cdwwork1/      # Future: Oracle Health-like data
         create/
@@ -705,7 +705,7 @@ This database is used by the FastAPI/HTMX app to satisfy per-patient and per-dom
 
 2. **Mock CDW Database**
    - SQL Server 2019 running CDWWork database
-   - `SPatient.SPatient` table with 37 synthetic patients
+   - `SPatient.SPatient` table with 36 synthetic patients
    - Dimension tables (`Dim.Sta3n`, `Dim.State`)
    - DDL and INSERT scripts under `mock/sql-server/cdwwork/`
 

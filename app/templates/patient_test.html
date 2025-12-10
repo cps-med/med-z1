@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Header Test - med-z1</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .patient-header {
+            border: 1px solid #e0e0e0;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+            background-color: #fff;
+        }
+        .patient-header__title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin: 0;
+            color: #1a1a1a;
+        }
+        .patient-header__subtitle {
+            font-size: 0.875rem;
+            color: #555;
+            margin: 5px 0 0 0;
+        }
+        .patient-header--empty {
+            background-color: #f8f9fa;
+        }
+        .patient-header--empty .patient-header__title {
+            color: #666;
+        }
+        .patient-header--empty .patient-header__subtitle {
+            color: #999;
+            font-style: italic;
+        }
+        .btn {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+        .btn--primary {
+            background-color: #007bff;
+            color: white;
+        }
+        .btn--primary:hover {
+            background-color: #0056b3;
+        }
+        .btn--secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        .btn--secondary:hover {
+            background-color: #545b62;
+        }
+        .info-box {
+            background-color: #e7f3ff;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .info-box code {
+            background-color: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        hr {
+            border: none;
+            border-top: 1px solid #e0e0e0;
+            margin: 30px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Patient Header HTMX Test Page</h1>
+
+    <div class="info-box">
+        <strong>ℹ️ Test Page Purpose:</strong> This page demonstrates the patient header partial
+        rendering with real HTMX data from the backend API. The header below loads dynamically
+        from <code>/api/patient/current</code> and shows the active patient from the CCOW vault.
+    </div>
+
+    <div class="test-section">
+        <h2>Patient Header Display</h2>
+
+        <div
+            id="patient-header-container"
+            hx-get="/api/patient/current"
+            hx-trigger="load"
+            hx-swap="innerHTML"
+        >
+            <div class="patient-header">
+                <p style="color: #999; font-style: italic;">Loading patient data via HTMX...</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>CCOW Integration Controls</h2>
+        <p>Test the HTMX refresh functionality:</p>
+
+        <button
+            class="btn btn--primary"
+            hx-get="/api/patient/refresh"
+            hx-target="#patient-header-container"
+            hx-swap="innerHTML"
+        >
+            🔄 Refresh Patient from CCOW
+        </button>
+
+        <button
+            class="btn btn--secondary"
+            onclick="location.reload()"
+        >
+            ↻ Reload Entire Page
+        </button>
+    </div>
+
+    <hr>
+
+    <div class="test-section">
+        <h2>💡 Testing Instructions</h2>
+
+        <h3>Test 1: No Patient Selected</h3>
+        <ol>
+            <li>Clear CCOW vault:
+                <pre style="background: #f4f4f4; padding: 10px; border-radius: 4px;"><code>curl -X DELETE http://localhost:8001/ccow/active-patient \
+  -H "Content-Type: application/json" \
+  -d '{"cleared_by": "test"}'</code></pre>
+            </li>
+            <li>Click "Refresh Patient from CCOW" button above</li>
+            <li>Should see: <strong>"No patient selected"</strong></li>
+        </ol>
+
+        <h3>Test 2: Patient Selected</h3>
+        <ol>
+            <li>Set a patient in CCOW:
+                <pre style="background: #f4f4f4; padding: 10px; border-radius: 4px;"><code>curl -X PUT http://localhost:8001/ccow/active-patient \
+  -H "Content-Type: application/json" \
+  -d '{"patient_id": "ICN100001", "set_by": "test"}'</code></pre>
+            </li>
+            <li>Click "Refresh Patient from CCOW" button above</li>
+            <li>Should see: <strong>Dooree, Adam (M, 45)</strong> with full demographics</li>
+        </ol>
+
+        <h3>Test 3: Different Patient</h3>
+        <ol>
+            <li>Set a different patient:
+                <pre style="background: #f4f4f4; padding: 10px; border-radius: 4px;"><code>curl -X PUT http://localhost:8001/ccow/active-patient \
+  -H "Content-Type: application/json" \
+  -d '{"patient_id": "ICN100002", "set_by": "test"}'</code></pre>
+            </li>
+            <li>Click "Refresh Patient from CCOW" button above</li>
+            <li>Should see: <strong>Miifaa, Barry</strong> demographics</li>
+        </ol>
+
+        <h3>Test 4: VA V-Format ICN</h3>
+        <ol>
+            <li>Set a patient with V-format ICN:
+                <pre style="background: #f4f4f4; padding: 10px; border-radius: 4px;"><code>curl -X PUT http://localhost:8001/ccow/active-patient \
+  -H "Content-Type: application/json" \
+  -d '{"patient_id": "1016V123456", "set_by": "test"}'</code></pre>
+            </li>
+            <li>Click "Refresh Patient from CCOW" button</li>
+            <li>Should display patient with V-format ICN (if exists in database)</li>
+        </ol>
+    </div>
+
+    <hr>
+
+    <div class="info-box">
+        <strong>✅ What's Working Here:</strong>
+        <ul>
+            <li>HTMX dynamic loading (<code>hx-get</code>, <code>hx-trigger="load"</code>)</li>
+            <li>Patient header partial template rendering</li>
+            <li>CCOW vault integration (get active patient)</li>
+            <li>PostgreSQL database queries (patient demographics)</li>
+            <li>Manual refresh via button click</li>
+        </ul>
+    </div>
+
+    <div style="text-align: center; color: #999; margin-top: 40px; padding: 20px; border-top: 1px solid #e0e0e0;">
+        <p><strong>Note:</strong> This is a temporary test page for Stage 1 backend verification.</p>
+        <p>Delete after completing Stage 2-4 (full topbar implementation).</p>
+    </div>
+</body>
+</html>

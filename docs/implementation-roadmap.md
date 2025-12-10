@@ -61,7 +61,7 @@ FastAPI + HTMX UI - Patient-aware topbar with search
 | Phase | Focus | Duration | Deliverable |
 |-------|-------|----------|-------------|
 | **Phase 1** | Minimal Viable Data Pipeline | 1-2 weeks | Bronze/Silver/Gold Parquet + PostgreSQL for patient demographics |
-| **Phase 2** | Topbar UI with Real Data | 1 week | Functional patient search, CCOW integration, 37 real patients |
+| **Phase 2** | Topbar UI with Real Data | 1 week | Functional patient search, CCOW integration, 36 real patients |
 | **Phase 3** | Patient Flags Domain | 1 week | Flags pipeline + "View Flags" modal working |
 | **Phase 4** | Medications Domain | 1-2 weeks | RxOut/BCMA pipeline + Medications UI page |
 | **Phase 5** | Expand & Polish | Ongoing | More domains, CDWWork1, AI/ML, production hardening |
@@ -116,7 +116,7 @@ This is the perfect first slice because:
 - ✅ Required for topbar UI (from `patient-topbar-redesign-spec.md`)
 - ✅ Relatively simple data (one main table: `SPatient.SPatient`)
 - ✅ No complex joins or aggregations
-- ✅ Already have 37 patients in mock CDW
+- ✅ Already have 36 patients in mock CDW
 - ✅ Enables CCOW integration testing
 - ✅ Foundation for all other clinical domains
 
@@ -179,7 +179,7 @@ This is the perfect first slice because:
 
 **Example Scenario:**
 - Week 1-2: Build Bronze/Silver/Gold for patient demographics + PostgreSQL
-- Week 2-3: Build topbar UI with real patient search (37 patients)
+- Week 2-3: Build topbar UI with real patient search (36 patients)
 - Week 3: Add patient flags domain
 - Week 4: Add medications domain
 - Each week: Working, demo-able features
@@ -202,7 +202,7 @@ At the end of Phase 1, you will have:
 - ✅ Silver Parquet files with cleaned, standardized patient data
 - ✅ Gold Parquet files with patient demographics view
 - ✅ PostgreSQL database with `patient_demographics` table
-- ✅ 37 patients loaded and queryable
+- ✅ 36 patients loaded and queryable
 - ✅ Python scripts to run the full pipeline end-to-end
 - ✅ Proven pattern for Bronze → Silver → Gold → PostgreSQL
 
@@ -210,7 +210,7 @@ At the end of Phase 1, you will have:
 
 **Source Table:** `SPatient.SPatient` (in mock SQL Server CDWWork database)
 
-**Patient Count:** 37 patients (from your existing insert script)
+**Patient Count:** 36 patients (from your existing insert script)
 
 **Fields Needed for Topbar UI:**
 - Patient ID (PatientSID, ICN)
@@ -224,7 +224,7 @@ At the end of Phase 1, you will have:
 ```text
 ┌─────────────────────────────────────────────────────────────┐
 │ Mock SQL Server (CDWWork)                                   │
-│   └─ SPatient.SPatient table (37 patients)                  │
+│   └─ SPatient.SPatient table (36 patients)                  │
 └─────────────────────────┬───────────────────────────────────┘
                           │
                           ▼
@@ -278,7 +278,7 @@ At the end of Phase 1, you will have:
                         ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ PostgreSQL Serving Database                                 │
-│   └─ patient_demographics table (37 rows)                   │
+│   └─ patient_demographics table (36 rows)                   │
 │      - Indexed for fast searches (ICN, name, SSN)           │
 │      - Ready for FastAPI queries                            │
 └─────────────────────────────────────────────────────────────┘
@@ -1124,13 +1124,13 @@ if __name__ == "__main__":
 **Test:**
 ```bash
 python etl/bronze_patient.py
-# Should see: "Bronze extraction complete: 37 patients written to lake/bronze/patient/patient_raw.parquet"
+# Should see: "Bronze extraction complete: 36 patients written to lake/bronze/patient/patient_raw.parquet"
 
 # Verify Parquet file
 python -c "import polars as pl; print(pl.read_parquet('lake/bronze/patient/patient_raw.parquet').head())"
 ```
 
-**Deliverable:** Bronze Parquet file with 37 patients
+**Deliverable:** Bronze Parquet file with 36 patients
 
 ---
 
@@ -1398,12 +1398,12 @@ python etl/load_postgres_patient.py
 
 # Verify in PostgreSQL
 psql -h localhost -U postgres -d medz1 -c "SELECT COUNT(*) FROM patient_demographics;"
-# Should show: 37
+# Should show: 36
 
 psql -h localhost -U postgres -d medz1 -c "SELECT icn, name_display, age, sex FROM patient_demographics LIMIT 5;"
 ```
 
-**Deliverable:** PostgreSQL `patient_demographics` table populated with 37 patients
+**Deliverable:** PostgreSQL `patient_demographics` table populated with 36 patients
 
 ---
 
@@ -1483,10 +1483,10 @@ At the end of Phase 1, verify:
 - [ ] Bronze Parquet exists: `lake/bronze/patient/patient_raw.parquet`
 - [ ] Silver Parquet exists: `lake/silver/patient/patient_cleaned.parquet`
 - [ ] Gold Parquet exists: `lake/gold/patient_demographics/patient_demographics.parquet`
-- [ ] PostgreSQL table `patient_demographics` has 37 rows
+- [ ] PostgreSQL table `patient_demographics` has 36 rows
 - [ ] Can query patients by ICN: `SELECT * FROM patient_demographics WHERE icn = '100001'`
 - [ ] Can search by name: `SELECT * FROM patient_demographics WHERE name_last ILIKE 'DOOREE%'`
-- [ ] All 37 patients have valid age, sex, ssn_last4
+- [ ] All 36 patients have valid age, sex, ssn_last4
 - [ ] Pipeline runs end-to-end without errors
 
 ---
@@ -1507,7 +1507,7 @@ At the end of Phase 2, you will have:
 - ✅ Topbar UI with patient demographics display
 - ✅ Patient search modal with real search results
 - ✅ CCOW integration (query on startup, set on selection, manual refresh)
-- ✅ All 37 patients searchable by name, SSN, ICN
+- ✅ All 36 patients searchable by name, SSN, ICN
 - ✅ Fully functional patient-aware application
 
 ### 5.2 Detailed Task Breakdown
@@ -1758,7 +1758,7 @@ Test all workflows:
 
 ### 5.3 Phase 2 Success Criteria
 
-- [ ] Can search all 37 patients by name
+- [ ] Can search all 36 patients by name
 - [ ] Can search by SSN last 4
 - [ ] Can search by ICN
 - [ ] Patient demographics display correctly in topbar
@@ -2130,7 +2130,7 @@ df_pandas.to_sql(
 ### 12.2 Milestone Demos
 
 **Milestone 1 (End of Week 2):**
-- ✅ Demo patient search with 37 real patients
+- ✅ Demo patient search with 36 real patients
 - ✅ Demo CCOW integration
 - ✅ Show end-to-end data flow diagram
 
@@ -2170,8 +2170,8 @@ df_pandas.to_sql(
 
 **Data Pipeline:**
 - [ ] Bronze → Silver → Gold → PostgreSQL runs end-to-end
-- [ ] Pipeline completes in < 5 minutes for 37 patients
-- [ ] All 37 patients have complete demographics
+- [ ] Pipeline completes in < 5 minutes for 36 patients
+- [ ] All 36 patients have complete demographics
 - [ ] No NULL values in required fields (name, DOB, sex)
 - [ ] Age calculated correctly from DOB
 - [ ] Facility names resolved correctly

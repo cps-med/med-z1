@@ -93,10 +93,18 @@ This document provides comprehensive design and implementation guidance for the 
 - Larger, bold text (similar to existing `header_title`)
 - Format: `LASTNAME, Firstname (Sex, Age)`
 
-**Line 2:** `ICN: 100001 | SSN: ***-**-6789 | DOB: 1980-01-02 | Station: 508`
+**Line 2:** `ICN: ICN100001 | SSN: ***-**-6789 | DOB: 1980-01-02 | Station: 508`
 - Smaller text (similar to existing `header_subtitle`)
+- ICN displayed as-is from database (may have "ICN" prefix or VA V-format like "1016V123456")
 - SSN masked to last 4 digits
 - Station shows code (e.g., "508") with optional facility name
+
+**Note on ICN Formats:**
+The database contains two ICN formats:
+- **Most patients (26)**: `ICN100001`, `ICN100002`, etc. (with "ICN" prefix)
+- **Some patients (10)**: `1016V123456`, `1017V234567`, etc. (VA V-format)
+
+Both formats are valid and searchable.
 
 **No Patient State:** Prominent call-to-action
 - **Line 1:** "No patient selected" (muted color, bold)
@@ -168,7 +176,7 @@ This document provides comprehensive design and implementation guidance for the 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────┐
 │  ☰  │ DOOREE, Adam (M, 45)                       │ [View Patient Flags ②]       │
-│     │ ICN: 100001 | SSN: ***-**-6789 |           │ [Select Patient]              │
+│     │ ICN: ICN100001 | SSN: ***-**-6789 |        │ [Select Patient]              │
 │     │ DOB: 1980-01-02 | Station: 508             │ [Refresh Patient]             │
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -213,10 +221,10 @@ This document provides comprehensive design and implementation guidance for the 
 │                                                     │
 │  ┌───────────────────────────────────────────────┐  │
 │  │ DOOREE, Adam (M, 45)                          │  │
-│  │ ICN: 100001 | SSN: ***-**-6789 | DOB: ...     │  │
+│  │ ICN: ICN100001 | SSN: ***-**-6789 | DOB: ...  │  │
 │  ├───────────────────────────────────────────────┤  │
 │  │ MIIFAA, Barry (F, 50)                         │  │
-│  │ ICN: 100002 | SSN: ***-**-4321 | DOB: ...     │  │
+│  │ ICN: ICN100002 | SSN: ***-**-4321 | DOB: ...  │  │
 │  └───────────────────────────────────────────────┘  │
 │                                                     │
 └─────────────────────────────────────────────────────┘
@@ -367,7 +375,7 @@ For complete patient selection flow, see [Appendix A: Data Flow Examples](#appen
 **Decision:**
 ```
 Line 1: DOOREE, Adam (M, 45)           [Bold, large]
-Line 2: ICN: 100001 | SSN: ***-**-6789 | DOB: ... | Station: 508
+Line 2: ICN: ICN100001 | SSN: ***-**-6789 | DOB: ... | Station: 508
 ```
 
 **Rationale:**
@@ -413,7 +421,7 @@ Line 2: ICN: 100001 | SSN: ***-**-6789 | DOB: ... | Station: 508
 Before starting implementation, verify:
 
 **Phase 1 Complete:**
-- [ ] PostgreSQL `patient_demographics` table exists and has 37 patients
+- [ ] PostgreSQL `patient_demographics` table exists and has 36 patients
 - [ ] Can query: `SELECT * FROM patient_demographics LIMIT 5;`
 - [ ] Gold Parquet files exist: `lake/gold/patient_demographics/patient_demographics.parquet`
 
@@ -448,7 +456,7 @@ Run these commands to verify setup:
 ```bash
 # Verify PostgreSQL connection
 docker exec -it postgres16 psql -U postgres -d medz1 -c "SELECT COUNT(*) FROM patient_demographics;"
-# Expected: 37
+# Expected: 36
 
 # Verify CCOW service
 curl http://localhost:8001/ccow/active-patient
@@ -463,7 +471,7 @@ with engine.connect() as conn:
     result = conn.execute('SELECT COUNT(*) FROM patient_demographics')
     print(f'Patient count: {result.fetchone()[0]}')
 "
-# Expected: Patient count: 37
+# Expected: Patient count: 36
 
 # Verify CCOW client
 python -c "
@@ -910,9 +918,13 @@ def get_patient_flags(icn: str) -> Dict[str, Any]:
 python -c "
 from app.db.patient import get_patient_demographics, search_patients
 
-# Test get by ICN
-patient = get_patient_demographics('100001')
+# Test get by ICN (with ICN prefix)
+patient = get_patient_demographics('ICN100001')
 print(f'Patient: {patient[\"name_display\"] if patient else \"Not found\"}')
+
+# Test with VA V-format
+patient_v = get_patient_demographics('1016V123456')
+print(f'Patient (V-format): {patient_v[\"name_display\"] if patient_v else \"Not in DB\"}')
 
 # Test search by name
 results = search_patients('DOOR', 'name')
@@ -1052,13 +1064,17 @@ from app.utils.ccow_client import ccow_client
 patient = ccow_client.get_active_patient()
 print(f'Current patient: {patient}')
 
-# Test set
-success = ccow_client.set_active_patient('100001')
+# Test set (with ICN prefix)
+success = ccow_client.set_active_patient('ICN100001')
 print(f'Set patient: {success}')
 
 # Test get again
 patient = ccow_client.get_active_patient()
 print(f'Current patient: {patient}')
+
+# Also test with VA V-format
+success = ccow_client.set_active_patient('1016V123456')
+print(f'Set patient (V-format): {success}')
 
 # Test clear
 success = ccow_client.clear_active_patient()
@@ -1312,8 +1328,11 @@ uvicorn app.main:app --reload
 # In another terminal, test endpoints
 curl http://localhost:8000/api/patient/current
 curl "http://localhost:8000/api/patient/search?query=DOOR&search_type=name"
-curl http://localhost:8000/api/patient/100001/demographics
-curl http://localhost:8000/api/patient/100001/flags
+curl http://localhost:8000/api/patient/ICN100001/demographics
+curl http://localhost:8000/api/patient/ICN100001/flags
+
+# Test with VA V-format ICN
+curl http://localhost:8000/api/patient/1016V123456/demographics
 ```
 
 ---
@@ -1419,6 +1438,7 @@ curl http://localhost:8000/api/patient/100001/flags
         {% endif %}
     </p>
 </div>
+<!-- Note: patient.icn may be "ICN100001" or "1016V123456" format -->
 
 <script>
     // Enable/update patient flags button
@@ -2049,8 +2069,12 @@ if (window.location.hostname === 'localhost' || window.location.hostname === '12
 python -c "
 from app.db.patient import get_patient_demographics, search_patients
 print('Testing get_patient_demographics...')
-p = get_patient_demographics('100001')
+p = get_patient_demographics('ICN100001')
 print(f'✓ Found patient: {p[\"name_display\"] if p else \"ERROR\"}')
+
+# Test VA V-format
+p_v = get_patient_demographics('1016V123456')
+print(f'✓ Found patient (V-format): {p_v[\"name_display\"] if p_v else \"Not in DB\"}')
 
 print('Testing search_patients...')
 results = search_patients('DOOR', 'name')
@@ -2068,7 +2092,7 @@ print(f'✓ Current patient: {patient or \"None\"}')
 # Test API endpoints (with app running)
 curl -s http://localhost:8000/api/patient/current | grep -q "patient-header" && echo "✓ /current works"
 curl -s "http://localhost:8000/api/patient/search?query=DOOR&search_type=name" | grep -q "DOOREE" && echo "✓ /search works"
-curl -s http://localhost:8000/api/patient/100001/demographics | grep -q "100001" && echo "✓ /demographics works"
+curl -s http://localhost:8000/api/patient/ICN100001/demographics | grep -q "ICN100001" && echo "✓ /demographics works"
 ```
 
 **After Stage 2 (UI):**
@@ -2104,7 +2128,8 @@ curl -s http://localhost:8000/api/patient/100001/demographics | grep -q "100001"
 - [ ] Press ESC key → Modal closes
 - [ ] Change search type radio buttons → Search re-executes with new type
 - [ ] Search by name: "DOOR" → Returns correct results
-- [ ] Search by ICN: "100001" → Returns exact match
+- [ ] Search by ICN: "ICN100001" → Returns exact match
+- [ ] Search by ICN: "1016V123456" → Returns exact match (VA V-format)
 - [ ] Search by EDIPI: (not implemented) → Shows message
 
 #### Refresh Button
@@ -2180,7 +2205,7 @@ def test_search_patients_short_query():
 
 def test_get_patient_demographics_json():
     """Test patient demographics JSON endpoint."""
-    response = client.get("/api/patient/100001/demographics")
+    response = client.get("/api/patient/ICN100001/demographics")
     # Will be 404 if patient doesn't exist, or 200 with data
     assert response.status_code in [200, 404]
     if response.status_code == 200:
@@ -2190,7 +2215,7 @@ def test_get_patient_demographics_json():
 
 def test_get_patient_flags_json():
     """Test patient flags JSON endpoint (Phase 3 placeholder)."""
-    response = client.get("/api/patient/100001/flags")
+    response = client.get("/api/patient/ICN100001/flags")
     assert response.status_code == 200
     data = response.json()
     assert "flags" in data
@@ -2458,7 +2483,7 @@ curl http://localhost:8001/ccow/active-patient
 ### 15.1 Functional Requirements
 
 **Must Have (Phase 2):**
-- [ ] Can search all 37 patients by name (case-insensitive)
+- [ ] Can search all 36 patients by name (case-insensitive)
 - [ ] Can search by ICN (exact match)
 - [ ] EDIPI search shows "not implemented" message (graceful)
 - [ ] Patient demographics display correctly in topbar
@@ -2510,7 +2535,7 @@ curl http://localhost:8001/ccow/active-patient
 
 **Phase 1 → Phase 2 Integration:**
 - [ ] PostgreSQL `patient_demographics` table is queried successfully
-- [ ] All 37 patients from Phase 1 ETL are searchable
+- [ ] All 36 patients from Phase 1 ETL are searchable
 - [ ] Data quality is good (no NULL name fields, valid ages)
 
 **CCOW Integration:**
@@ -2574,7 +2599,7 @@ cp app.js.backup app/static/app.js
 - [ ] CLAUDE.md updated if new patterns introduced
 
 **Database:**
-- [ ] PostgreSQL `patient_demographics` table has 37 patients
+- [ ] PostgreSQL `patient_demographics` table has 36 patients
 - [ ] All patients have valid data (no NULLs in required fields)
 - [ ] Indexes are present (see Phase 1 DDL)
 
@@ -2659,7 +2684,7 @@ cp app.js.backup app/static/app.js
         DOOREE, Adam (M, 45)
     </h1>
     <p class="patient-header__subtitle">
-        ICN: 100001 | SSN: ***-**-6789 | DOB: 1980-01-02 | Station: 508
+        ICN: ICN100001 | SSN: ***-**-6789 | DOB: 1980-01-02 | Station: 508
     </p>
 </div>
 <script>
@@ -2775,7 +2800,7 @@ cp app.js.backup app/static/app.js
             <span class="text-muted">(M, 45)</span>
         </div>
         <div class="search-result-item__details">
-            ICN: 100001 | SSN: ***-**-6789 | DOB: 1980-01-02 | Station: 508
+            ICN: ICN100001 | SSN: ***-**-6789 | DOB: 1980-01-02 | Station: 508
         </div>
     </div>
     <!-- More results... -->
@@ -2801,8 +2826,8 @@ cp app.js.backup app/static/app.js
 **Example Response:**
 ```json
 {
-  "patient_key": "100001",
-  "icn": "100001",
+  "patient_key": "ICN100001",
+  "icn": "ICN100001",
   "ssn_last4": "6789",
   "name_last": "DOOREE",
   "name_first": "Adam",
@@ -3025,7 +3050,7 @@ For reusable styles:
    @router.get("/search")
    async def search_patients_endpoint(query="DO", search_type="name"):
        results = search_patients("DO", "name", limit=20)
-       # Returns: [{"icn": "100001", "name_display": "DOOREE, Adam", ...}, ...]
+       # Returns: [{"icn": "ICN100001", "name_display": "DOOREE, Adam", ...}, ...]
        return templates.TemplateResponse("partials/patient_search_results.html", {...})
    ```
 
@@ -3049,7 +3074,7 @@ For reusable styles:
    <div class="search-results__list">
        <div class="search-result-item" hx-post="/api/patient/set-context" ...>
            <strong>DOOREE, Adam</strong> (M, 45)
-           ICN: 100001 | SSN: ***-**-6789 | ...
+           ICN: ICN100001 | SSN: ***-**-6789 | ...
        </div>
        <!-- More results -->
    </div>
@@ -3062,25 +3087,25 @@ For reusable styles:
    <div
        class="search-result-item"
        hx-post="/api/patient/set-context"
-       hx-vals='{"icn": "100001"}'
+       hx-vals='{"icn": "ICN100001"}'
        hx-target="#patient-header-container"
        hx-swap="innerHTML"
        data-modal-close="patient-search-modal"
    >
    ```
    - HTMX fires POST request
-   - Request: `POST /api/patient/set-context` with form data `icn=100001`
+   - Request: `POST /api/patient/set-context` with form data `icn=ICN100001`
 
 7. **Backend updates CCOW and fetches demographics**
    ```python
    # app/routes/patient.py
    @router.post("/set-context")
-   async def set_patient_context(icn="100001"):
+   async def set_patient_context(icn="ICN100001"):
        # Update CCOW vault
-       ccow_client.set_active_patient("100001")
+       ccow_client.set_active_patient("ICN100001")
 
        # Fetch from PostgreSQL
-       patient = get_patient_demographics("100001")
+       patient = get_patient_demographics("ICN100001")
 
        # Render patient header
        return templates.TemplateResponse("partials/patient_header.html", {
@@ -3091,24 +3116,25 @@ For reusable styles:
 8. **CCOW vault updated**
    ```
    PUT /ccow/active-patient
-   Body: {"patient_id": "100001", "set_by": "med-z1"}
+   Body: {"patient_id": "ICN100001", "set_by": "med-z1"}
    ```
-   - CCOW service stores: `{"patient_id": "100001", "timestamp": "...", "set_by": "med-z1"}`
+   - CCOW service stores: `{"patient_id": "ICN100001", "timestamp": "...", "set_by": "med-z1"}`
 
 9. **PostgreSQL query for full demographics**
    ```sql
    SELECT patient_key, icn, ssn_last4, name_last, name_first, ...
    FROM patient_demographics
-   WHERE icn = '100001'
+   WHERE icn = 'ICN100001'
    ```
    - Returns complete patient record
+   - Query also works with VA V-format: `WHERE icn = '1016V123456'`
 
 10. **HTMX swaps patient header**
     - Response HTML:
     ```html
     <div class="patient-header patient-header--active">
         <h1>DOOREE, Adam (M, 45)</h1>
-        <p>ICN: 100001 | SSN: ***-**-6789 | DOB: 1980-01-02 | Station: 508</p>
+        <p>ICN: ICN100001 | SSN: ***-**-6789 | DOB: 1980-01-02 | Station: 508</p>
     </div>
     <script>
         document.getElementById('btn-patient-flags').disabled = false;
@@ -3147,7 +3173,7 @@ For reusable styles:
 
 **Goal:** Get patient topbar working in 30 minutes
 
-**Prerequisites:** Phase 1 complete, PostgreSQL with 37 patients
+**Prerequisites:** Phase 1 complete, PostgreSQL with 36 patients
 
 **Steps:**
 
@@ -3287,6 +3313,6 @@ For reusable styles:
 - `CLAUDE.md` - Project-wide development guidance
 
 **Implementation support:**
-- Phase 1 complete: ETL pipeline with 37 patients in PostgreSQL
+- Phase 1 complete: ETL pipeline with 36 patients in PostgreSQL
 - Phase 2 (this document): Topbar UI with real data
 - Phase 3 (next): Patient flags full implementation
