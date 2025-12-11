@@ -97,3 +97,60 @@ VALUES
 (1014, 1014, 'PtIEN1014', 508, 1, 'HOME', '2468 Buford Highway', '', '', 'Decatur', 'DeKalb', 'GA', 415, '30032', '300320014', '', 'UNITED STATES', 1200005271, 'RETIRED'),
 (1015, 1015, 'PtIEN1015', 516, 1, 'HOME', '7890 Seminole Boulevard', '', '', 'Bay Pines', 'Pinellas', 'FL', 1792, '33708', '337080015', '', 'UNITED STATES', 1200002442, 'RETIRED');
 GO
+
+/*
+|--------------------------------------------------------------------------------
+| Insert Missing PatientAddress records
+| Added 2025-12-11 to ensure all patients have at least one address
+|--------------------------------------------------------------------------------
+*/
+
+PRINT 'Inserting Missing PatientAddress records (12 patients)';
+GO
+
+INSERT INTO SPatient.SPatientAddress
+(
+    SPatientAddressSID, PatientSID, PatientIEN, Sta3n, OrdinalNumber, AddressType, StreetAddress1,
+    StreetAddress2, StreetAddress3, City, County, [State], StateSID, Zip, Zip4, PostalCode, Country,
+    CountrySID, EmploymentStatus
+)
+VALUES
+-- PatientSID 1008: Barry Bmajor (Sta3n 516 - Bay Pines/St. Petersburg)
+(1026, 1008, 'PtIEN1008', 516, 1, 'HOME', '421 Central Avenue', '', '', 'St. Petersburg', 'Pinellas', 'FL', 1792, '33701', '337010008', '', 'UNITED STATES', 1200002442, 'EMPLOYED'),
+
+-- PatientSID 1009: Claire Cmajor (Sta3n 516 - Bay Pines/St. Petersburg)
+(1027, 1009, 'PtIEN1009', 516, 1, 'HOME', '563 4th Street North', 'Apt 12', '', 'St. Petersburg', 'Pinellas', 'FL', 1792, '33701', '337010009', '', 'UNITED STATES', 1200002442, 'RETIRED'),
+
+-- PatientSID 1010: Alexander Aminor (Sta3n 552 - Dayton)
+(1028, 1010, 'PtIEN1010', 552, 1, 'HOME', '789 Brown Street', '', '', 'Dayton', 'Montgomery', 'OH', 4963, '45402', '454020010', '', 'UNITED STATES', 1200005271, 'EMPLOYED'),
+
+-- PatientSID 1606020: ZZTEST,CCINDY (Sta3n 508 - Atlanta)
+(1029, 1606020, 'PtIEN887020', 508, 1, 'HOME', '1500 Ponce de Leon Ave', 'Unit 205', '', 'Atlanta', 'Fulton', 'GA', 415, '30307', '303070020', '', 'UNITED STATES', 1200005271, 'EMPLOYED'),
+
+-- PatientSID 1606022: ZZTEST,ABC (Sta3n 508 - Atlanta)
+(1030, 1606022, 'PtIEN887022', 508, 1, 'HOME', '2200 Emory Road', '', '', 'Decatur', 'DeKalb', 'GA', 415, '30033', '300330022', '', 'UNITED STATES', 1200005271, 'UNEMPLOYED'),
+
+-- PatientSID 1606023: ZZTEST,APPLE (Sta3n 508 - Atlanta)
+(1031, 1606023, 'PtIEN887023', 508, 1, 'HOME', '3456 Lenox Road NE', '', '', 'Atlanta', 'Fulton', 'GA', 415, '30326', '303260023', '', 'UNITED STATES', 1200005271, 'EMPLOYED'),
+
+-- PatientSID 1606024: ZZTEST,DONNA R (Sta3n 508 - Atlanta)
+(1032, 1606024, 'PtIEN887024', 508, 1, 'HOME', '675 North Avenue NE', 'Apt 8', '', 'Atlanta', 'Fulton', 'GA', 415, '30308', '303080024', '', 'UNITED STATES', 1200005271, 'EMPLOYED'),
+
+-- PatientSID 1606025: ZZ,PATIENT (Sta3n 508 - Atlanta)
+(1033, 1606025, 'PtIEN887025', 508, 1, 'HOME', '1890 Northside Drive', '', '', 'Atlanta', 'Fulton', 'GA', 415, '30318', '303180025', '', 'UNITED STATES', 1200005271, 'RETIRED'),
+
+-- PatientSID 1606027: ZZTEST,MOLLIE (Sta3n 552 - Dayton)
+(1034, 1606027, 'PtIEN887027', 552, 1, 'HOME', '1122 Wayne Avenue', 'Unit 3B', '', 'Dayton', 'Montgomery', 'OH', 4963, '45410', '454100027', '', 'UNITED STATES', 1200005271, 'EMPLOYED'),
+
+-- PatientSID 1606028: ZZTEST,CHI (Sta3n 552 - Dayton)
+(1035, 1606028, 'PtIEN887028', 552, 1, 'HOME', '234 Salem Avenue', '', '', 'Dayton', 'Montgomery', 'OH', 4963, '45406', '454060028', '', 'UNITED STATES', 1200005271, 'RETIRED'),
+
+-- PatientSID 1606029: ZZTEST PAT,FIVE (Sta3n 552 - Dayton)
+(1036, 1606029, 'PtIEN887029', 552, 1, 'HOME', '567 Wilmington Pike', '', '', 'Dayton', 'Montgomery', 'OH', 4963, '45420', '454200029', '', 'UNITED STATES', 1200005271, 'EMPLOYED'),
+
+-- PatientSID 1606030: ZZTEST,BILL (Sta3n 552 - Dayton)
+(1037, 1606030, 'PtIEN887030', 552, 1, 'HOME', '891 Far Hills Avenue', 'Apt 6C', '', 'Dayton', 'Montgomery', 'OH', 4963, '45419', '454190030', '', 'UNITED STATES', 1200005271, 'RETIRED');
+GO
+
+PRINT 'Address records added successfully - All 37 patients now have addresses';
+GO

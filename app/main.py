@@ -32,8 +32,8 @@ from config import (
     USE_MINIO,
 )
 
-# Import patient routes
-from app.routes import patient
+# Import routers
+from app.routes import patient, dashboard
 
 app = FastAPI(title="med-z1")
 
@@ -41,6 +41,7 @@ app = FastAPI(title="med-z1")
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 # Include routers
+app.include_router(dashboard.router)  # Dashboard handles / and /dashboard
 app.include_router(patient.router)
 
 # Configure logging for the entire application
@@ -60,38 +61,41 @@ logger.info("med-z1 application starting up")
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
 
-@app.get("/", response_class=HTMLResponse)
-async def index(request: Request):
-    """Render the main dashboard page."""
-    # In a real app, pull these from a database or ETL process
-    summary = {
-        "total_records": 15423,
-        "jobs_running": 3,
-        "last_run": "Today 07:32",
-        "alerts": 2,
-        # Example: surface a few config values for sanity/debug
-        "cdwwork_db_server": CDWWORK_DB_CONFIG["server"],
-        "use_minio": USE_MINIO,
-        "minio_bucket": MINIO_CONFIG["bucket_name"],
-        "cps_comment": "This is only a test..."
-    }
+# NOTE: Dashboard route (/) now handled by app.routes.dashboard
+# Old index route commented out - replaced with patient-centric dashboard
 
-    recent_activity = [
-        "Job #42 completed successfully.",
-        "New dataset 'dd_interactions_2025.parquet' loaded.",
-        "Alert resolved: Missing values in lab_results.",
-        "User 'csylvester' updated ETL configuration.",
-    ]
-
-    return templates.TemplateResponse(
-        "index.html",
-        {
-            "request": request,
-            "summary": summary,
-            "recent_activity": recent_activity,
-            "active_page": "overview",
-        },
-    )
+# @app.get("/", response_class=HTMLResponse)
+# async def index(request: Request):
+#     """Render the main dashboard page."""
+#     # In a real app, pull these from a database or ETL process
+#     summary = {
+#         "total_records": 15423,
+#         "jobs_running": 3,
+#         "last_run": "Today 07:32",
+#         "alerts": 2,
+#         # Example: surface a few config values for sanity/debug
+#         "cdwwork_db_server": CDWWORK_DB_CONFIG["server"],
+#         "use_minio": USE_MINIO,
+#         "minio_bucket": MINIO_CONFIG["bucket_name"],
+#         "cps_comment": "This is only a test..."
+#     }
+#
+#     recent_activity = [
+#         "Job #42 completed successfully.",
+#         "New dataset 'dd_interactions_2025.parquet' loaded.",
+#         "Alert resolved: Missing values in lab_results.",
+#         "User 'csylvester' updated ETL configuration.",
+#     ]
+#
+#     return templates.TemplateResponse(
+#         "index.html",
+#         {
+#             "request": request,
+#             "summary": summary,
+#             "recent_activity": recent_activity,
+#             "active_page": "overview",
+#         },
+#     )
 
 
 @app.get("/time", response_class=HTMLResponse)

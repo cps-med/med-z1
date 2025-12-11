@@ -1,0 +1,78 @@
+<!-- Patient Flags Widget Content -->
+<!-- Widget Header -->
+<div class="widget__header">
+    <div class="widget__title-group">
+        <i class="fa-solid fa-flag widget__icon"></i>
+        <h3 class="widget__title">Patient Flags</h3>
+    </div>
+    {% if overdue_count > 0 %}
+        <span class="badge badge--danger">{{ overdue_count }} Overdue</span>
+    {% elif total_count > 0 %}
+        <span class="badge badge--warning">{{ total_count }} Active</span>
+    {% endif %}
+</div>
+
+<!-- Widget Body -->
+<div class="widget__body">
+    <div class="widget-flags">
+        {% if total_count == 0 %}
+            <p class="text-muted" style="padding: 1rem; text-align: center;">No active flags</p>
+        {% else %}
+            <!-- Summary Stats -->
+            <div class="flags-summary-widget">
+                <div class="flags-stat">
+                    <div class="flags-stat__value">{{ total_count }}</div>
+                    <div class="flags-stat__label">Total Flags</div>
+                </div>
+                <div class="flags-stat-divider"></div>
+                <div class="flags-stat">
+                    <div class="flags-stat__value">{{ national_flags|length }}</div>
+                    <div class="flags-stat__label">National</div>
+                </div>
+                <div class="flags-stat-divider"></div>
+                <div class="flags-stat">
+                    <div class="flags-stat__value">{{ local_flags|length }}</div>
+                    <div class="flags-stat__label">Local</div>
+                </div>
+            </div>
+
+            <!-- Flag List (Top 3) -->
+            <div class="flags-list-widget">
+                {% for flag in active_flags[:3] %}
+                <div class="flag-item-widget">
+                    <div class="flag-item-widget__icon">
+                        <i class="fa-solid fa-flag {% if flag.review_status == 'OVERDUE' %}text-danger{% else %}text-warning{% endif %}"></i>
+                    </div>
+                    <div class="flag-item-widget__info">
+                        <div class="flag-item-widget__name">{{ flag.flag_name }}</div>
+                        <div class="flag-item-widget__meta">
+                            {{ flag.flag_category_name }}
+                            {% if flag.review_status == 'OVERDUE' %}
+                                <span class="text-danger">• Review Overdue</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+
+                {% if total_count > 3 %}
+                <div class="flag-item-widget flag-item-widget--more">
+                    <i class="fa-solid fa-ellipsis"></i>
+                    {{ total_count - 3 }} more flag{{ 's' if total_count - 3 > 1 else '' }}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- View All Link -->
+            <div class="widget-action">
+                <button
+                    class="btn btn--link btn--sm"
+                    data-modal-open="patient-flags-modal"
+                >
+                    <i class="fa-regular fa-arrow-up-right-from-square"></i>
+                    View All Flags
+                </button>
+            </div>
+        {% endif %}
+    </div>
+</div>

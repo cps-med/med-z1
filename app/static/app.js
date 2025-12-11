@@ -117,12 +117,21 @@ document.body.addEventListener('htmx:afterSwap', (e) => {
 
             // Fetch flag count and update badge
             updateFlagBadge();
+
+            // Refresh dashboard widgets if on dashboard page
+            refreshDashboardWidgets();
         } else if (flagsBtn) {
             // No patient selected - disable flags button and hide badge
             flagsBtn.disabled = true;
             const badge = document.getElementById('flags-badge');
             if (badge) {
                 badge.style.display = 'none';
+            }
+
+            // Reload dashboard page if on dashboard (to show empty state)
+            const dashboardWidgets = document.getElementById('dashboard-widgets');
+            if (dashboardWidgets) {
+                window.location.reload();
             }
         }
     }
@@ -229,6 +238,71 @@ function updateFlagBadge() {
                 badge.style.display = 'none';
             }
         });
+}
+
+/* ============================================
+   Dashboard Widget Refresh
+   ============================================ */
+
+/**
+ * Refresh all dashboard widgets when patient context changes
+ * Only runs if we're currently on the dashboard page
+ */
+function refreshDashboardWidgets() {
+    // Check if we're on the dashboard page
+    const dashboardContainer = document.querySelector('.dashboard');
+    if (!dashboardContainer) {
+        // Not on dashboard page, nothing to refresh
+        return;
+    }
+
+    const dashboardWidgets = document.getElementById('dashboard-widgets');
+
+    // If on dashboard but showing empty state, reload entire page to show widgets
+    if (!dashboardWidgets) {
+        console.log('Dashboard in empty state - reloading page to show widgets');
+        window.location.reload();
+        return;
+    }
+
+    // Dashboard is showing widgets - refresh them with new patient data
+    const icn = getCurrentPatientICN();
+    if (!icn) {
+        console.warn('Cannot refresh dashboard: no patient ICN found');
+        return;
+    }
+
+    // Update dashboard subtitle with new patient name
+    const patientHeaderTitle = document.querySelector('.patient-header__title');
+    const dashboardSubtitle = document.querySelector('.dashboard-header__subtitle');
+    if (patientHeaderTitle && dashboardSubtitle) {
+        const patientName = patientHeaderTitle.textContent.trim();
+        dashboardSubtitle.textContent = `Clinical summary for ${patientName}`;
+    }
+
+    // Find all widgets with HTMX hx-get attributes (functional widgets)
+    const widgets = dashboardWidgets.querySelectorAll('[hx-get]');
+
+    widgets.forEach(widget => {
+        const getUrl = widget.getAttribute('hx-get');
+
+        // Update the URL with the new patient ICN
+        const newUrl = getUrl.replace(/\/[^\/]+$/, `/${icn}`);
+        widget.setAttribute('hx-get', newUrl);
+
+        // Show loading spinner
+        widget.innerHTML = '<div class="widget__body"><div class="widget__spinner"></div></div>';
+
+        // Trigger HTMX request to reload the widget
+        if (window.htmx) {
+            htmx.ajax('GET', newUrl, {
+                target: widget,
+                swap: 'innerHTML'
+            });
+        }
+    });
+
+    console.log(`Dashboard refreshed for patient ${icn}: ${widgets.length} widgets reloaded`);
 }
 
 /* ============================================

@@ -6,10 +6,12 @@
 #  - save to med-z1/gold/patient_demographics
 #  - as patient_demographics.parquet
 # ---------------------------------------------------------------------
+# Updated 2025-12-11 to include address, phone, and insurance fields
+# ---------------------------------------------------------------------
 # To run this script from the project root folder, treat it as a
 # module (for now... there are other options to consider later).
 #  $ cd med-z1
-#  $ python -m etl.gold_patient_demographics
+#  $ python -m etl.gold_patient
 # ---------------------------------------------------------------------
 
 # Import dependencies
@@ -66,6 +68,13 @@ def create_gold_patient_demographics():
         "sex",
         "primary_station",
         "primary_station_name",
+        "address_street1",
+        "address_street2",
+        "address_city",
+        "address_state",
+        "address_zip",
+        "phone_primary",
+        "insurance_company_name",
         "source_system",
         "last_updated",
     ])

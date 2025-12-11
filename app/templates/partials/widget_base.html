@@ -1,0 +1,61 @@
+<!-- app/templates/partials/widget_base.html -->
+<!-- Reusable widget base template for dashboard -->
+
+{% macro widget(size='1x1', icon='fa-solid fa-square', title='Widget Title', status='', body_content='', footer_content='', widget_class='', loading=False, error='') %}
+<div class="widget widget--{{ size }} {{ widget_class }} {{ 'widget--loading' if loading else '' }}">
+    <!-- Widget Header -->
+    <div class="widget__header">
+        <div class="widget__title-group">
+            <i class="{{ icon }} widget__icon"></i>
+            <h3 class="widget__title">{{ title }}</h3>
+        </div>
+        {% if status %}
+        <span class="widget__status badge badge--{{ status.type if status.type else 'info' }}">
+            {{ status.text }}
+        </span>
+        {% endif %}
+    </div>
+
+    <!-- Widget Body -->
+    <div class="widget__body">
+        {% if loading %}
+            <!-- Loading State -->
+            <div class="widget__spinner"></div>
+        {% elif error %}
+            <!-- Error State -->
+            <div class="widget__error">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <p>{{ error }}</p>
+            </div>
+        {% else %}
+            <!-- Widget Content -->
+            {{ body_content | safe }}
+        {% endif %}
+    </div>
+
+    <!-- Widget Footer (optional) -->
+    {% if footer_content %}
+    <div class="widget__footer">
+        {{ footer_content | safe }}
+    </div>
+    {% endif %}
+</div>
+{% endmacro %}
+
+<!-- Placeholder Widget Macro -->
+{% macro placeholder_widget(size='1x1', icon='fa-solid fa-square', title='Widget Title', description='Coming soon') %}
+<div class="widget widget--{{ size }} widget--placeholder">
+    <div class="widget__header">
+        <div class="widget__title-group">
+            <i class="{{ icon }} widget__icon"></i>
+            <h3 class="widget__title">{{ title }}</h3>
+        </div>
+    </div>
+    <div class="widget__body">
+        <div class="widget__placeholder-content">
+            <p class="widget__placeholder-title">Coming Soon</p>
+            <p class="widget__placeholder-description">{{ description }}</p>
+        </div>
+    </div>
+</div>
+{% endmacro %}

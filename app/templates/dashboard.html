@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% from "partials/widget_base.html" import widget, placeholder_widget %}
+
+{% block title %}Patient Dashboard - Med-Z1{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    {% if patient %}
+        <!-- Patient-specific dashboard with widgets -->
+        <div class="dashboard-header">
+            <h1 class="dashboard-header__title">Patient Dashboard</h1>
+            <p class="dashboard-header__subtitle">
+                Clinical summary for {{ patient.name_display }}
+            </p>
+        </div>
+
+        <!-- Widget Grid -->
+        <div class="dashboard-grid" id="dashboard-widgets">
+            <!-- Demographics Widget (2x1 - Wide) -->
+            <div class="widget widget--2x1"
+                 id="widget-demographics"
+                 hx-get="/api/dashboard/widget/demographics/{{ patient.icn }}"
+                 hx-trigger="load"
+                 hx-swap="innerHTML">
+                <div class="widget__body">
+                    <div class="widget__spinner"></div>
+                </div>
+            </div>
+
+            <!-- Flags Widget (1x1 - Standard) -->
+            <div class="widget widget--1x1"
+                 id="widget-flags"
+                 hx-get="/api/dashboard/widget/flags/{{ patient.icn }}"
+                 hx-trigger="load"
+                 hx-swap="innerHTML">
+                <div class="widget__body">
+                    <div class="widget__spinner"></div>
+                </div>
+            </div>
+
+            <!-- Placeholder Widgets for Planned Domains -->
+            {{ placeholder_widget(
+                size='1x1',
+                icon='fa-solid fa-allergies',
+                title='Allergies',
+                description='Known allergies and adverse reactions'
+            ) }}
+
+            {{ placeholder_widget(
+                size='2x1',
+                icon='fa-solid fa-pills',
+                title='Medications',
+                description='Active prescriptions and medication history'
+            ) }}
+
+            {{ placeholder_widget(
+                size='1x1',
+                icon='fa-solid fa-heart-pulse',
+                title='Vitals',
+                description='Recent vital signs and trends'
+            ) }}
+
+            {{ placeholder_widget(
+                size='2x1',
+                icon='fa-solid fa-flask',
+                title='Laboratory Results',
+                description='Recent lab results and trends'
+            ) }}
+
+            {{ placeholder_widget(
+                size='1x1',
+                icon='fa-solid fa-stethoscope',
+                title='Problems/Diagnoses',
+                description='Active and historical diagnoses'
+            ) }}
+
+            {{ placeholder_widget(
+                size='1x1',
+                icon='fa-solid fa-clipboard-list',
+                title='Orders',
+                description='Recent and pending orders'
+            ) }}
+
+            {{ placeholder_widget(
+                size='1x1',
+                icon='fa-solid fa-file-lines',
+                title='Notes/Documents',
+                description='Clinical notes and documents'
+            ) }}
+
+            {{ placeholder_widget(
+                size='1x1',
+                icon='fa-solid fa-x-ray',
+                title='Radiology/Imaging',
+                description='Imaging studies and reports'
+            ) }}
+        </div>
+
+    {% else %}
+        <!-- Empty State: No patient selected -->
+        <div class="dashboard-empty">
+            <div class="dashboard-empty__icon">
+                <i class="fa-regular fa-user fa-4x"></i>
+            </div>
+            <h2 class="dashboard-empty__title">No Patient Selected</h2>
+            <p class="dashboard-empty__message">
+                Select a patient from the topbar to view their clinical summary
+            </p>
+            <button
+                class="btn btn--primary"
+                data-modal-open="patient-search-modal"
+                aria-label="Open patient search"
+            >
+                <i class="fa-solid fa-magnifying-glass"></i>
+                Select Patient
+            </button>
+        </div>
+    {% endif %}
+
+    {% if error %}
+        <!-- Error state (if any) -->
+        <div class="dashboard-error">
+            <p class="text-danger">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                Error loading dashboard: {{ error }}
+            </p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -45,6 +45,13 @@ def get_patient_demographics(icn: str) -> Optional[Dict[str, Any]]:
             sex,
             primary_station,
             primary_station_name,
+            address_street1,
+            address_street2,
+            address_city,
+            address_state,
+            address_zip,
+            phone_primary,
+            insurance_company_name,
             source_system,
             last_updated
         FROM patient_demographics
@@ -68,8 +75,15 @@ def get_patient_demographics(icn: str) -> Optional[Dict[str, Any]]:
                     "sex": result[8],
                     "primary_station": result[9],
                     "primary_station_name": result[10],
-                    "source_system": result[11],
-                    "last_updated": str(result[12]) if result[12] else None,
+                    "address_street1": result[11],
+                    "address_street2": result[12],
+                    "address_city": result[13],
+                    "address_state": result[14],
+                    "address_zip": result[15],
+                    "phone_primary": result[16],
+                    "insurance_company_name": result[17],
+                    "source_system": result[18],
+                    "last_updated": str(result[19]) if result[19] else None,
                 }
 
             return None

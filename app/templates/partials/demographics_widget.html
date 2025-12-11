@@ -1,0 +1,67 @@
+<!-- Demographics Widget Content -->
+<!-- Widget Header -->
+<div class="widget__header">
+    <div class="widget__title-group">
+        <i class="fa-solid fa-user widget__icon"></i>
+        <h3 class="widget__title">Demographics</h3>
+    </div>
+</div>
+
+<!-- Widget Body -->
+<div class="widget__body">
+    <div class="widget-demographics">
+        <!-- Primary Info -->
+        <div class="demo-section">
+            <div class="demo-row">
+                <span class="demo-label">Name:</span>
+                <span class="demo-value">{{ patient.name_display }}</span>
+            </div>
+            <div class="demo-row">
+                <span class="demo-label">DOB:</span>
+                <span class="demo-value">{{ patient.dob }} ({{ patient.age }} years old)</span>
+            </div>
+            <div class="demo-row">
+                <span class="demo-label">Gender:</span>
+                <span class="demo-value">{{ patient.sex }}</span>
+            </div>
+            <div class="demo-row">
+                <span class="demo-label">SSN:</span>
+                <span class="demo-value">***-**-{{ patient.ssn_last4 }}</span>
+            </div>
+        </div>
+
+        <!-- Contact Info -->
+        <div class="demo-section">
+            <h4 class="demo-section-title">Contact</h4>
+            {% if patient.phone_primary %}
+            <div class="demo-row">
+                <span class="demo-label">Phone:</span>
+                <span class="demo-value">{{ patient.phone_primary }}</span>
+            </div>
+            {% endif %}
+            {% if patient.address_street1 %}
+            <div class="demo-row">
+                <span class="demo-label">Address:</span>
+                <span class="demo-value">
+                    {{ patient.address_street1 }}
+                    {% if patient.address_street2 %}<br>{{ patient.address_street2 }}{% endif %}
+                    {% if patient.address_city or patient.address_state or patient.address_zip %}
+                    <br>{{ patient.address_city }}{% if patient.address_city and patient.address_state %}, {% endif %}{{ patient.address_state }} {{ patient.address_zip }}
+                    {% endif %}
+                </span>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Insurance -->
+        {% if patient.insurance_company_name %}
+        <div class="demo-section">
+            <h4 class="demo-section-title">Insurance</h4>
+            <div class="demo-row">
+                <span class="demo-label">Provider:</span>
+                <span class="demo-value">{{ patient.insurance_company_name }}</span>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>

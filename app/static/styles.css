@@ -29,10 +29,14 @@ body {
     display: flex;
     flex-direction: column;
     padding: 1rem 1.25rem;
-    transition: width 0.3s ease, padding 0.3s ease; 
-    overflow: hidden;
+    transition: width 0.3s ease, padding 0.3s ease;
+    overflow-y: auto;
+    overflow-x: hidden;
     white-space: nowrap;
-    position: relative;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
     z-index: 20;
 }
 
@@ -143,6 +147,8 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
+    margin-left: 260px;
+    transition: margin-left 0.3s ease;
 }
 
 /* --------- Top bar --------- */
@@ -203,7 +209,13 @@ body {
 .layout--sidebar-collapsed .sidebar {
     width: 64px;
     padding-inline: 0.5rem;
-    overflow: visible;
+    overflow-y: auto;
+    overflow-x: visible;
+}
+
+/* 1b. Adjust main margin when sidebar is collapsed */
+.layout--sidebar-collapsed .main {
+    margin-left: 64px;
 }
 
 /* 2. Hide the specific TEXT span, but leave the ICON span alone */
@@ -262,7 +274,7 @@ body {
 
 /* --------- Content --------- */
 .content {
-    padding: 1.5rem 1.75rem 2rem;
+    padding: 0rem 1.75rem 0rem;
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
@@ -537,6 +549,10 @@ body {
 @media (max-width: 960px) {
     .sidebar {
         display: none; /* keep it simple for now */
+    }
+
+    .main {
+        margin-left: 0; /* No sidebar on mobile, so no margin needed */
     }
 
     .topbar {
@@ -1179,5 +1195,510 @@ input:focus-visible,
 
     .flag-card {
         padding: 0.75rem;
+    }
+}
+
+/* ========================================
+   Patient Dashboard Styles
+   ======================================== */
+
+/* Dashboard Container */
+.dashboard {
+    flex: 1;
+    padding: 2rem;
+    overflow-y: auto;
+}
+
+.dashboard-header {
+    margin-bottom: 2rem;
+}
+
+.dashboard-header__title {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0 0 0.5rem 0;
+}
+
+.dashboard-header__subtitle {
+    font-size: 1rem;
+    color: #6b7280;
+    margin: 0;
+}
+
+/* Dashboard Empty State */
+.dashboard-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    text-align: center;
+    padding: 2rem;
+}
+
+.dashboard-empty__icon {
+    color: #d1d5db;
+    margin-bottom: 1.5rem;
+}
+
+.dashboard-empty__title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0 0 0.75rem 0;
+}
+
+.dashboard-empty__message {
+    font-size: 1rem;
+    color: #6b7280;
+    margin: 0 0 1.5rem 0;
+    max-width: 500px;
+}
+
+/* Dashboard Placeholder (Day 1 temporary) */
+.dashboard-placeholder {
+    background: #f9fafb;
+    border: 2px dashed #d1d5db;
+    border-radius: 0.5rem;
+    padding: 2rem;
+    text-align: center;
+    margin: 2rem 0;
+}
+
+.dashboard-placeholder .text-muted {
+    font-size: 1rem;
+    color: #6b7280;
+}
+
+/* Dashboard Grid - Responsive Layout */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+    margin-top: 1.5rem;
+}
+
+/* Widget Base Styles */
+.widget {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    min-height: 275px;
+    max-height: 275px;
+    transition: box-shadow 0.2s ease;
+}
+
+.widget:hover {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Widget Sizing */
+.widget--1x1 {
+    grid-column: span 1;
+}
+
+.widget--2x1 {
+    grid-column: span 2;
+}
+
+/* Widget Header */
+.widget__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+    flex-shrink: 0;
+}
+
+.widget__title-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.widget__icon {
+    font-size: 1.25rem;
+    color: #6b7280;
+}
+
+.widget__title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0;
+}
+
+.widget__status {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    white-space: nowrap;
+}
+
+/* Widget Body - Scrollable */
+.widget__body {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 1rem;
+    max-height: 180px;
+}
+
+/* Custom scrollbar for widget body */
+.widget__body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.widget__body::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.widget__body::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.widget__body::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Widget Footer */
+.widget__footer {
+    padding: 0.75rem 1rem;
+    border-top: 1px solid #f3f4f6;
+    font-size: 0.75rem;
+    color: #6b7280;
+    flex-shrink: 0;
+}
+
+/* Widget Loading State */
+.widget--loading .widget__body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.widget__spinner {
+    border: 3px solid #f3f4f6;
+    border-top: 3px solid #0066cc;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Widget Error State */
+.widget__error {
+    text-align: center;
+    color: #dc2626;
+}
+
+.widget__error i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.widget__error p {
+    margin: 0;
+    font-size: 0.875rem;
+}
+
+/* Widget Placeholder State */
+.widget--placeholder {
+    background: #f9fafb;
+    border-style: dashed;
+    border-color: #d1d5db;
+}
+
+.widget--placeholder:hover {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.widget__placeholder-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    height: 100%;
+    color: #9ca3af;
+}
+
+.widget__placeholder-title {
+    font-weight: 600;
+    font-size: 1rem;
+    margin: 0 0 0.5rem 0;
+}
+
+.widget__placeholder-description {
+    font-size: 0.875rem;
+    margin: 0;
+    max-width: 200px;
+}
+
+/* ============================================
+   Widget-Specific Content Styles
+   ============================================ */
+
+/* Demographics Widget */
+.widget-demographics {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    font-size: 0.875rem;
+}
+
+.demo-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.demo-section:not(:last-child) {
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.demo-section-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #6b7280;
+    margin: 0 0 0.5rem 0;
+    letter-spacing: 0.05em;
+}
+
+.demo-row {
+    display: flex;
+    gap: 0.5rem;
+    line-height: 1.5;
+}
+
+.demo-label {
+    font-weight: 500;
+    color: #6b7280;
+    min-width: 80px;
+    flex-shrink: 0;
+}
+
+.demo-value {
+    color: #111827;
+    flex: 1;
+}
+
+/* Flags Widget */
+.widget-flags {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.flags-summary-widget {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0.5rem;
+    background: #f9fafb;
+    border-radius: 0.375rem;
+}
+
+.flags-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.flags-stat__value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #111827;
+    line-height: 1;
+}
+
+.flags-stat__label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.flags-stat-divider {
+    width: 1px;
+    height: 40px;
+    background: #d1d5db;
+}
+
+.flags-list-widget {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.flag-item-widget {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.5rem;
+    background: #f9fafb;
+    border-radius: 0.375rem;
+    border-left: 3px solid #fbbf24;
+}
+
+.flag-item-widget__icon {
+    font-size: 1rem;
+    padding-top: 0.125rem;
+}
+
+.flag-item-widget__icon .text-danger {
+    color: #dc2626;
+}
+
+.flag-item-widget__icon .text-warning {
+    color: #f59e0b;
+}
+
+.flag-item-widget__info {
+    flex: 1;
+    min-width: 0;
+}
+
+.flag-item-widget__name {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: #111827;
+    margin-bottom: 0.125rem;
+}
+
+.flag-item-widget__meta {
+    font-size: 0.75rem;
+    color: #6b7280;
+}
+
+.flag-item-widget--more {
+    justify-content: center;
+    color: #6b7280;
+    font-size: 0.875rem;
+    border-left: none;
+    background: transparent;
+    border: 1px dashed #d1d5db;
+}
+
+.widget-action {
+    padding-top: 0.5rem;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: center;
+}
+
+.btn--link {
+    background: transparent;
+    border: none;
+    color: #4f46e5;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.btn--link:hover {
+    color: #4338ca;
+    text-decoration: underline;
+}
+
+.btn--sm {
+    font-size: 0.875rem;
+    padding: 0.375rem 0.75rem;
+}
+
+/* Sidebar Disabled Links */
+.sidebar__link--disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.sidebar__link--disabled:hover {
+    background: transparent;
+}
+
+/* Dashboard Responsive */
+@media (max-width: 1024px) and (min-width: 768px) {
+    /* Tablet: 2 columns */
+    .dashboard-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+
+    .widget--2x1 {
+        grid-column: span 2;  /* Wide widgets span full width */
+    }
+
+    .dashboard {
+        padding: 1.5rem;
+    }
+
+    .widget {
+        min-height: 230px;
+        max-height: 230px;
+    }
+
+    .widget__body {
+        max-height: 160px;
+    }
+}
+
+@media (max-width: 767px) {
+    /* Mobile: 1 column */
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .widget--1x1,
+    .widget--2x1 {
+        grid-column: span 1;  /* All widgets full width */
+    }
+
+    .dashboard {
+        padding: 1rem;
+    }
+
+    .dashboard-empty {
+        min-height: 300px;
+        padding: 1rem;
+    }
+
+    .widget {
+        min-height: 200px;
+        max-height: 200px;
+    }
+
+    .widget__body {
+        max-height: 130px;
+        padding: 0.75rem;
+    }
+
+    .widget__header {
+        padding: 0.75rem;
+    }
+
+    .widget__footer {
+        padding: 0.5rem 0.75rem;
     }
 }

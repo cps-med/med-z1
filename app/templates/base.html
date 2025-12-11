@@ -27,35 +27,74 @@
             </div>
 
             <nav class="sidebar__nav">
-                <a href="/" 
-                   class="sidebar__link {{ 'sidebar__link--active' if active_page == 'overview' else '' }}"
-                   data-tooltip="Overview">
-                    <i class="fa-regular fa-chart-column fa-lg"></i>
-                    <span class="sidebar__text">Overview</span>
+                <!-- Dashboard -->
+                <a href="/"
+                   class="sidebar__link {{ 'sidebar__link--active' if active_page == 'dashboard' else '' }}"
+                   data-tooltip="Dashboard">
+                    <i class="fa-solid fa-house fa-lg"></i>
+                    <span class="sidebar__text">Dashboard</span>
                 </a>
-                <a href="/htmx" 
-                   class="sidebar__link {{ 'sidebar__link--active' if active_page == 'htmx' else '' }}"
-                   data-tooltip="htmx">
-                   <i class="fa-solid fa-code fa-lg"></i>
-                    <span class="sidebar__text">htmx</span>
+
+                <!-- Clinical Domains (in order of importance) -->
+                <a href="/demographics"
+                   class="sidebar__link {{ 'sidebar__link--active' if active_page == 'demographics' else '' }}"
+                   data-tooltip="Patient Demographics">
+                    <i class="fa-solid fa-user fa-lg"></i>
+                    <span class="sidebar__text">Demographics</span>
                 </a>
-                <a href="/timer" 
-                   class="sidebar__link {{ 'sidebar__link--active' if active_page == 'timer' else '' }}"
-                   data-tooltip="Timer">
-                    <i class="fa-sharp fa-regular fa-timer fa-lg"></i>
-                    <span class="sidebar__text">Timer</span>
+                <a href="/flags"
+                   class="sidebar__link {{ 'sidebar__link--active' if active_page == 'flags' else '' }}"
+                   data-tooltip="Patient Flags">
+                    <i class="fa-solid fa-flag fa-lg"></i>
+                    <span class="sidebar__text">Flags</span>
                 </a>
-                <a href="#" class="sidebar__link" data-tooltip="Datasets">
-                    <i class="fa-regular fa-cabinet-filing fa-lg"></i>
-                    <span class="sidebar__text">Datasets</span>
+                <a href="#"
+                   class="sidebar__link sidebar__link--disabled"
+                   data-tooltip="Allergies (Coming Soon)">
+                    <i class="fa-solid fa-allergies fa-lg"></i>
+                    <span class="sidebar__text">Allergies</span>
                 </a>
-                <a href="#" class="sidebar__link" data-tooltip="Alerts">
-                    <i class="fa-regular fa-bell fa-lg"></i>
-                    <span class="sidebar__text">Alerts</span>
+                <a href="#"
+                   class="sidebar__link sidebar__link--disabled"
+                   data-tooltip="Medications (Coming Soon)">
+                    <i class="fa-solid fa-pills fa-lg"></i>
+                    <span class="sidebar__text">Medications</span>
                 </a>
-                <a href="#" class="sidebar__link" data-tooltip="Settings">
-                    <i class="fa-regular fa-gear fa-lg"></i>
-                    <span class="sidebar__text">Settings</span>
+                <a href="#"
+                   class="sidebar__link sidebar__link--disabled"
+                   data-tooltip="Vitals (Coming Soon)">
+                    <i class="fa-solid fa-heart-pulse fa-lg"></i>
+                    <span class="sidebar__text">Vitals</span>
+                </a>
+                <a href="#"
+                   class="sidebar__link sidebar__link--disabled"
+                   data-tooltip="Laboratory Results (Coming Soon)">
+                    <i class="fa-solid fa-flask fa-lg"></i>
+                    <span class="sidebar__text">Labs</span>
+                </a>
+                <a href="#"
+                   class="sidebar__link sidebar__link--disabled"
+                   data-tooltip="Problems/Diagnoses (Coming Soon)">
+                    <i class="fa-solid fa-stethoscope fa-lg"></i>
+                    <span class="sidebar__text">Problems</span>
+                </a>
+                <a href="#"
+                   class="sidebar__link sidebar__link--disabled"
+                   data-tooltip="Orders (Coming Soon)">
+                    <i class="fa-solid fa-clipboard-list fa-lg"></i>
+                    <span class="sidebar__text">Orders</span>
+                </a>
+                <a href="#"
+                   class="sidebar__link sidebar__link--disabled"
+                   data-tooltip="Notes/Documents (Coming Soon)">
+                    <i class="fa-solid fa-file-lines fa-lg"></i>
+                    <span class="sidebar__text">Notes</span>
+                </a>
+                <a href="#"
+                   class="sidebar__link sidebar__link--disabled"
+                   data-tooltip="Radiology/Imaging (Coming Soon)">
+                    <i class="fa-solid fa-x-ray fa-lg"></i>
+                    <span class="sidebar__text">Imaging</span>
                 </a>
             </nav>
 

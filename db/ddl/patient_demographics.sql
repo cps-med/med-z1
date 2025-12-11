@@ -4,6 +4,8 @@
 -- Create patient_demographics table in PostgreSQL for med-z1 serving DB
 -- This table stores Gold layer patient demographics optimized for UI queries
 -- ---------------------------------------------------------------------
+-- Updated 2025-12-11 to include address, phone, and insurance fields
+-- ---------------------------------------------------------------------
 
 -- Drop table if exists (for development - use migrations in production)
 DROP TABLE IF EXISTS patient_demographics CASCADE;
@@ -23,6 +25,20 @@ CREATE TABLE patient_demographics (
     gender VARCHAR(50),
     primary_station VARCHAR(10),
     primary_station_name VARCHAR(200),
+
+    -- Address fields (primary address)
+    address_street1 VARCHAR(100),
+    address_street2 VARCHAR(100),
+    address_city VARCHAR(100),
+    address_state VARCHAR(2),
+    address_zip VARCHAR(10),
+
+    -- Contact fields
+    phone_primary VARCHAR(20),
+
+    -- Insurance fields (primary insurance)
+    insurance_company_name VARCHAR(100),
+
     veteran_status VARCHAR(50),
     source_system VARCHAR(20),
     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -43,6 +59,12 @@ COMMENT ON COLUMN patient_demographics.icn IS 'Integrated Care Number - primary 
 COMMENT ON COLUMN patient_demographics.ssn_last4 IS 'Last 4 digits of SSN for display/verification';
 COMMENT ON COLUMN patient_demographics.name_display IS 'Formatted name for UI display (LAST, First)';
 COMMENT ON COLUMN patient_demographics.age IS 'Current age calculated from DOB';
+COMMENT ON COLUMN patient_demographics.address_street1 IS 'Primary address street line 1';
+COMMENT ON COLUMN patient_demographics.address_city IS 'Primary address city';
+COMMENT ON COLUMN patient_demographics.address_state IS 'Primary address state abbreviation';
+COMMENT ON COLUMN patient_demographics.address_zip IS 'Primary address ZIP code';
+COMMENT ON COLUMN patient_demographics.phone_primary IS 'Primary phone number (placeholder in MVP)';
+COMMENT ON COLUMN patient_demographics.insurance_company_name IS 'Primary insurance company name';
 
 -- Verify table creation
 SELECT 'patient_demographics table created successfully' AS status;
