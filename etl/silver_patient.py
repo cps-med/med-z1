@@ -94,6 +94,7 @@ def transform_patient_silver():
 
     # Select primary address for each patient
     # Logic: OrdinalNumber = 1 AND AddressType = 'HOME'
+    # Note: .unique() added to handle duplicate addresses in Bronze layer
     df_primary_address = (
         df_address
         .filter(
@@ -108,8 +109,9 @@ def transform_patient_silver():
             pl.col("State").str.strip_chars().alias("address_state"),
             pl.col("Zip").str.strip_chars().alias("address_zip"),
         ])
+        .unique(subset=["patient_sid_addr"])  # Deduplicate: one address per patient
     )
-    logger.info(f"Selected {len(df_primary_address)} primary addresses")
+    logger.info(f"Selected {len(df_primary_address)} primary addresses (after deduplication)")
 
     # Select primary insurance for each patient
     # Logic: Most recent PolicyEffectiveDate

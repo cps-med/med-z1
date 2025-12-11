@@ -1,10 +1,10 @@
 # Patient Dashboard Design Specification - med-z1
 
-**Document Version:** 1.0
+**Document Version:** 1.1
 **Last Updated:** 2025-12-11
 **Phase:** Phase 3.5 - Patient Dashboard/Home Page Implementation
 **Duration Estimate:** 3-4 days
-**Progress:** Not Started (0%)
+**Status:** Functional Implementation Complete (Days 1-3 Complete)
 
 ---
 
@@ -85,39 +85,39 @@ The **Patient Dashboard** (home page) provides a holistic, at-a-glance summary v
 ### 2.2 Success Criteria
 
 **Layout & Responsiveness:**
-- [ ] Dashboard displays 2-3 widgets horizontally on desktop (≥1024px width)
-- [ ] Dashboard displays 1 widget per row on mobile/tablet (<1024px width)
-- [ ] Topbar remains sticky during vertical scrolling
-- [ ] Sidebar navigation remains static (does not scroll with content)
-- [ ] Vertical scrolling works smoothly when widgets exceed viewport height
+- [x] Dashboard displays 2-3 widgets horizontally on desktop (≥1024px width)
+- [x] Dashboard displays 1 widget per row on mobile/tablet (<1024px width)
+- [x] Topbar remains sticky during vertical scrolling
+- [x] Sidebar navigation remains static (does not scroll with content)
+- [x] Vertical scrolling works smoothly when widgets exceed viewport height
 
 **Widget Functionality:**
-- [ ] Demographics widget displays patient name, DOB, age, ICN
-- [ ] Flags widget displays active flag count and highest severity status
-- [ ] Placeholder widgets visible for unimplemented domains
-- [ ] All widgets update when patient context changes
-- [ ] Loading indicators display when widget data fetch exceeds 1-2 seconds
+- [x] Demographics widget displays patient name, DOB, age, ICN, **address, phone, insurance** (enhanced)
+- [x] Flags widget displays active flag count and highest severity status
+- [x] Placeholder widgets visible for unimplemented domains
+- [x] All widgets update when patient context changes
+- [x] Loading indicators display when widget data fetch exceeds 1-2 seconds
 
 **Patient Context:**
-- [ ] Empty state displays "Select a patient to begin" when no patient selected
-- [ ] Dashboard automatically refreshes when patient selected via CCOW
-- [ ] Widgets clear when patient context is cleared
+- [x] Empty state displays "Select a patient to begin" when no patient selected
+- [x] Dashboard automatically refreshes when patient selected via CCOW
+- [x] Widgets clear when patient context is cleared
 
 **Navigation:**
-- [ ] Dashboard has dedicated nav item in sidebar (e.g., "Dashboard" or "Overview")
-- [ ] Clicking domain in sidebar navigates to domain-specific detail page
-- [ ] Current page highlighted in sidebar navigation
+- [x] Dashboard has dedicated nav item in sidebar (e.g., "Dashboard" or "Overview")
+- [ ] Clicking domain in sidebar navigates to domain-specific detail page (Next: Allergies, Medications)
+- [x] Current page highlighted in sidebar navigation
 
 **Performance:**
-- [ ] Dashboard page loads in <5 seconds (acceptable)
-- [ ] Dashboard page loads in <2 seconds (ideal)
-- [ ] Widget data fetches execute in parallel (not sequential)
+- [x] Dashboard page loads in <5 seconds (acceptable)
+- [x] Dashboard page loads in <2 seconds (ideal)
+- [x] Widget data fetches execute in parallel (not sequential)
 
 **Quality:**
-- [ ] Code follows established patterns from Phases 2-3
-- [ ] Responsive design tested on desktop, tablet, mobile
-- [ ] Error handling for failed widget data fetches
-- [ ] Logging for debugging widget load issues
+- [x] Code follows established patterns from Phases 2-3
+- [x] Responsive design tested on desktop, tablet, mobile
+- [x] Error handling for failed widget data fetches
+- [x] Logging for debugging widget load issues
 
 ---
 
@@ -693,33 +693,47 @@ Widgets support **vertical scrolling** for content that exceeds the widget body 
 - `app/templates/dashboard.html` - Added widget grid with 2 functional + 10 placeholder widgets
 - `app/static/app.js` - Added refreshDashboardWidgets() function for patient context changes
 
-#### Day 3: Functional Widgets Implementation
+#### Day 3: Functional Widgets Implementation ✅ COMPLETE
 
 **Tasks:**
-1. Create Demographics widget endpoint and template
-   - `GET /api/patient/{icn}/demographics-summary`
-   - `app/templates/partials/widget_demographics.html`
-2. Create Flags widget endpoint and template
-   - `GET /api/patient/{icn}/flags-summary`
-   - `app/templates/partials/widget_flags.html`
-3. Implement widget data fetching (HTMX integration)
-4. Add error handling for failed data fetches
-5. Test with multiple patients
+1. ✅ Create Demographics widget endpoint and template
+   - `GET /api/dashboard/widget/demographics/{patient_icn}`
+   - `app/templates/partials/demographics_widget.html`
+2. ✅ Create Flags widget endpoint and template
+   - `GET /api/dashboard/widget/flags/{patient_icn}`
+   - `app/templates/partials/flags_widget.html`
+3. ✅ Implement widget data fetching (HTMX integration)
+4. ✅ Add error handling for failed data fetches
+5. ✅ Test with multiple patients
+6. ✅ **BONUS**: Enhanced Demographics widget with address, phone, insurance data
+7. ✅ Fixed duplicate patient rows issue in ETL pipeline
 
 **Deliverables:**
-- Demographics widget displays patient summary
-- Flags widget displays flag count and status
-- Widgets load data when patient selected
-- Error states handled gracefully
+- ✅ Demographics widget displays patient summary (name, DOB, age, gender, SSN, address, phone, insurance)
+- ✅ Flags widget displays flag count, category breakdown, and top 3 active flags
+- ✅ Widgets load data when patient selected
+- ✅ Error states handled gracefully
+- ✅ Demographics enhancement complete (full ETL pipeline updated)
 
-**Files to Create:**
-- `app/templates/partials/widget_demographics.html`
-- `app/templates/partials/widget_flags.html`
+**Files Created:**
+- `app/templates/partials/demographics_widget.html`
+- `app/templates/partials/flags_widget.html`
+- `etl/bronze_patient_address.py`
+- `etl/bronze_patient_insurance.py`
+- `etl/bronze_insurance_company.py`
+- `mock/sql-server/cdwwork/create/Dim.InsuranceCompany.sql`
+- `mock/sql-server/cdwwork/insert/Dim.InsuranceCompany.sql`
+- `docs/demographics-enhancement-design.md`
 
-**Files to Modify:**
-- `app/routes/dashboard.py` (add widget endpoints)
-- `app/db/patient.py` (add demographics summary query if needed)
-- `app/db/patient_flags.py` (add flags summary query if needed)
+**Files Modified:**
+- `app/routes/dashboard.py` (added widget endpoints)
+- `app/db/patient.py` (updated query with address/phone/insurance fields)
+- `app/static/styles.css` (added widget content styles, optimized spacing)
+- `etl/silver_patient.py` (added address/insurance joins, deduplication fix)
+- `etl/gold_patient.py` (added new fields to Gold schema)
+- `db/ddl/patient_demographics.sql` (added address/phone/insurance columns)
+- `mock/sql-server/cdwwork/insert/SPatient.SPatientAddress.sql` (added 12 missing addresses)
+- `mock/sql-server/cdwwork/insert/SPatient.SPatientInsurance.sql` (updated with correct foreign keys)
 
 #### Day 4: Placeholder Widgets and Testing
 
@@ -1032,13 +1046,45 @@ See `docs/demographics-enhancement-design.md` for complete implementation plan, 
 
 ---
 
+## 11. Current Status and Next Steps
+
+### 11.1 Implementation Status (as of 2025-12-11)
+
+**Completed Work:**
+- ✅ Days 1-3 Complete: Dashboard framework and functional widgets
+- ✅ Demographics widget enhanced with address, phone, insurance
+- ✅ Flags widget displaying active flags with review status
+- ✅ UI spacing optimized for 16" MacBook Pro (1496 x 967)
+- ✅ ETL pipeline updated for new demographic fields
+- ✅ Duplicate patient rows issue resolved
+- ✅ Full integration tested and working
+
+**Current Configuration:**
+- Widget height: 275px
+- Widget grid gap: 1.25rem
+- Content padding: 0rem (top/bottom), 1.75rem (left/right)
+- Two full rows of widgets visible on standard laptop displays
+- 36 unique patients with complete demographic data
+
+### 11.2 Next Steps
+
+**Immediate (Next Session):**
+1. Allergies widget implementation
+2. Medications widget implementation
+3. Create dedicated domain pages (clickable from sidebar)
+
+**Future Enhancements:**
+- Implement remaining domain widgets (Vitals, Labs, Orders, Notes, etc.)
+- Add interactivity to widgets (click to navigate to detail page)
+- Performance optimization for widget data loading
+- User preference storage for layout customization
+
+---
+
 **End of Specification**
 
-**Document Status:** Days 1-3 Complete, Day 4 Pending (2025-12-11)
+**Document Status:** Days 1-3 Complete + Demographics Enhancement Complete (2025-12-11)
 **Document Version:** 1.1
-**Next Step:** Demographics Widget Enhancement (see demographics-enhancement-design.md)
-**Notes:**
-- Dashboard framework complete and functional
-- Demographics and Flags widgets operational
-- 10 placeholder widgets for future domains
-- Demographics enhancement to follow before next domain implementation
+**Related Documents:**
+- `docs/demographics-enhancement-design.md` - Complete implementation details
+- `docs/patient-flags-design.md` - Patient Flags system specification

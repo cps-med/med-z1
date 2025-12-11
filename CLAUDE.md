@@ -292,7 +292,9 @@ The project uses:
 
 For detailed information, see:
 - `docs/med-z1-plan.md` - Complete product and technical development plan (Document version v1)
+- `docs/patient-dashboard-design.md` - Dashboard and widget system specification (Document version v1.1)
 - `docs/patient-flags-design.md` - Phase 3 Patient Flags implementation specification (Document version v1.2)
+- `docs/demographics-enhancement-design.md` - Demographics widget enhancement (Document version v1.1) ✅ Complete
 - `docs/vision.md` - Problem statement, user personas, user stories (to be created)
 - `docs/architecture.md` - Diagrams and architecture decisions (to be created)
 - `docs/ai-design.md` - AI/ML, RAG, and DDI use-case designs (to be created)
