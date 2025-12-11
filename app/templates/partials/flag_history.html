@@ -1,0 +1,38 @@
+<!-- app/templates/partials/flag_history.html -->
+<!-- Narrative and history timeline for a specific flag -->
+
+<div class="flag-narrative">
+    <div class="flag-narrative__warning">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <strong>Sensitive Safety Information</strong>
+    </div>
+
+    {% if history %}
+        {% for event in history %}
+        <div class="flag-history-event">
+            <div class="flag-history-event__header">
+                <strong>{{ event.action_name }}</strong>
+                <span class="text-muted">{{ event.history_date[:10] if event.history_date else 'Unknown date' }}</span>
+            </div>
+            <div class="flag-history-event__metadata">
+                {% if event.entered_by %}
+                <p><strong>Entered by:</strong> {{ event.entered_by }}</p>
+                {% endif %}
+                {% if event.approved_by %}
+                <p><strong>Approved by:</strong> {{ event.approved_by }}</p>
+                {% endif %}
+                {% if event.event_site %}
+                <p><strong>Site:</strong> {{ event.event_site }}</p>
+                {% endif %}
+            </div>
+            {% if event.narrative %}
+            <div class="flag-history-event__narrative">
+                <p>{{ event.narrative }}</p>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    {% else %}
+        <p class="text-muted">No history records available for this flag.</p>
+    {% endif %}
+</div>

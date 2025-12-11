@@ -205,11 +205,13 @@ async def get_patient_flags_modal_content(request: Request):
         patient_id = ccow_client.get_active_patient()
 
         if not patient_id:
+            logger.warning("No patient context in CCOW when flags modal opened")
             return "<p class='text-muted'>No active patient selected</p>"
+
+        logger.info(f"Loading flags modal content for patient: {patient_id}")
 
         # Get all flags for patient
         flags = get_patient_flags(patient_id)
-        counts = get_flag_count(patient_id)
 
         if not flags:
             return "<p class='text-muted'>No flags for this patient</p>"
@@ -218,16 +220,24 @@ async def get_patient_flags_modal_content(request: Request):
         active_flags = [f for f in flags if f["is_active"]]
         inactive_flags = [f for f in flags if not f["is_active"]]
 
+        # Separate active flags by category (National=I, Local=II)
+        national_flags = [f for f in active_flags if f["flag_category"] == "I"]
+        local_flags = [f for f in active_flags if f["flag_category"] == "II"]
+
+        total_count = len(active_flags)
+
+        logger.info(f"Found {total_count} active flags for {patient_id} ({len(national_flags)} national, {len(local_flags)} local)")
+
         # Render using template
         return templates.TemplateResponse(
             "partials/patient_flags_content.html",
             {
                 "request": request,
                 "patient_icn": patient_id,
-                "flags": flags,
-                "active_flags": active_flags,
-                "inactive_flags": inactive_flags,
-                "counts": counts
+                "total_count": total_count,
+                "national_flags": national_flags,
+                "local_flags": local_flags,
+                "inactive_flags": inactive_flags
             }
         )
 
@@ -237,37 +247,64 @@ async def get_patient_flags_modal_content(request: Request):
 
 
 @router.get("/{icn}/flags/{assignment_id}/history")
-async def get_flag_history_json(icn: str, assignment_id: int):
+async def get_flag_history_endpoint(request: Request, icn: str, assignment_id: int):
     """
     Get complete history timeline for a specific flag assignment.
 
     WARNING: Returns SENSITIVE clinical narrative text.
 
+    Returns HTML for HTMX requests, JSON for API consumers.
+
     Args:
+        request: FastAPI request object
         icn: Patient ICN
         assignment_id: Flag assignment ID
 
     Returns:
-        List of history records with narrative text
+        HTML partial (for HTMX) or JSON (for API consumers)
     """
     try:
         history = get_flag_history(assignment_id, icn)
 
         if not history:
-            raise HTTPException(
-                status_code=404,
-                detail="No history found for this flag assignment"
-            )
+            # Check if HTMX request
+            is_htmx = request.headers.get("HX-Request") == "true"
+            if is_htmx:
+                return HTMLResponse("<p class='text-muted'>No history records available for this flag.</p>")
+            else:
+                raise HTTPException(
+                    status_code=404,
+                    detail="No history found for this flag assignment"
+                )
 
-        return {
-            "patient_icn": icn,
-            "assignment_id": assignment_id,
-            "history_count": len(history),
-            "history": history
-        }
+        # Check if request is from HTMX (has HX-Request header)
+        is_htmx = request.headers.get("HX-Request") == "true"
+
+        if is_htmx:
+            # Return HTML partial for HTMX
+            return templates.TemplateResponse(
+                "partials/flag_history.html",
+                {
+                    "request": request,
+                    "history": history
+                }
+            )
+        else:
+            # Return JSON for API consumers
+            return {
+                "patient_icn": icn,
+                "assignment_id": assignment_id,
+                "history_count": len(history),
+                "history": history
+            }
 
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error getting flag history for assignment {assignment_id}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        # Check if HTMX request for error response
+        is_htmx = request.headers.get("HX-Request") == "true"
+        if is_htmx:
+            return HTMLResponse(f"<p class='text-danger'>Error loading history: {str(e)}</p>")
+        else:
+            raise HTTPException(status_code=500, detail=str(e))

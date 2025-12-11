@@ -19,7 +19,7 @@
             class="modal__body"
             id="patient-flags-content"
             hx-get="/api/patient/flags-content"
-            hx-trigger="revealed"
+            hx-trigger="loadFlagsContent from:body"
             hx-swap="innerHTML"
         >
             <p class="text-muted">Loading patient flags...</p>

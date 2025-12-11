@@ -905,3 +905,279 @@ input:focus-visible,
 .search-result-item__details {
     color: #555; /* Ensures sufficient contrast */
 }
+
+/* ========================================
+   Patient Flags Styles
+   ======================================== */
+
+/* Flag Summary */
+.flags-summary {
+    background: #f8f9fa;
+    border-left: 4px solid #0066cc;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.flags-summary p {
+    margin: 0.25rem 0;
+}
+
+/* Flags Section */
+.flags-section {
+    margin-bottom: 2rem;
+}
+
+.flags-section__title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: #1f2937;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.flags-section__title--collapsible {
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+}
+
+.flags-section__title--collapsible:hover {
+    background: #f3f4f6;
+}
+
+.flags-section--inactive {
+    opacity: 0.8;
+}
+
+/* Flag Card */
+.flag-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-left: 4px solid #6b7280;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Flag type colors */
+.flag-card--clinical {
+    border-left-color: #dc2626;  /* Red */
+}
+
+.flag-card--behavioral {
+    border-left-color: #ea580c;  /* Orange */
+}
+
+.flag-card--research {
+    border-left-color: #0066cc;  /* Blue */
+}
+
+.flag-card--administrative {
+    border-left-color: #6b7280;  /* Gray */
+}
+
+.flag-card--default {
+    border-left-color: #6b7280;  /* Gray */
+}
+
+/* Review status highlights */
+.flag-card--overdue {
+    background: #fef2f2;  /* Light red tint */
+}
+
+.flag-card--due-soon {
+    background: #fffbeb;  /* Light yellow tint */
+}
+
+.flag-card--current {
+    background: #ffffff;  /* White */
+}
+
+/* Flag Card Header */
+.flag-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+}
+
+.flag-card__title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0;
+    color: #1f2937;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.flag-card__badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    white-space: nowrap;
+}
+
+/* Metadata Grid */
+.flag-card__metadata {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.flag-card__meta-item {
+    font-size: 0.875rem;
+}
+
+.flag-card__meta-item .label {
+    font-weight: 600;
+    color: #6b7280;
+}
+
+.flag-card__meta-item .value {
+    color: #1f2937;
+}
+
+/* Details/Summary */
+.flag-card__details {
+    margin-top: 0.75rem;
+    border-top: 1px solid #e5e7eb;
+    padding-top: 0.75rem;
+}
+
+.flag-card__summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: #0066cc;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+}
+
+.flag-card__summary::-webkit-details-marker {
+    display: none;
+}
+
+.flag-card__summary:hover {
+    background: #f3f4f6;
+}
+
+.flag-card__details[open] .flag-card__summary i {
+    transform: rotate(180deg);
+}
+
+.flag-card__summary i {
+    transition: transform 0.2s ease;
+}
+
+/* Narrative Display */
+.flag-narrative {
+    margin-top: 1rem;
+}
+
+.flag-narrative__warning {
+    background: #fef2f2;
+    border: 1px solid #fca5a5;
+    border-radius: 0.25rem;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #991b1b;
+    font-weight: 600;
+}
+
+.flag-history-event {
+    background: #f9fafb;
+    border-left: 3px solid #6b7280;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 0.25rem;
+}
+
+.flag-history-event:first-of-type {
+    border-left-color: #0066cc;  /* Highlight most recent */
+}
+
+.flag-history-event__header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+.flag-history-event__metadata p {
+    margin: 0.25rem 0;
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+.flag-history-event__narrative {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.25rem;
+    padding: 0.75rem;
+    margin-top: 0.75rem;
+}
+
+.flag-history-event__narrative p {
+    margin: 0;
+    line-height: 1.5;
+    color: #1f2937;
+}
+
+/* Badge Colors */
+.badge {
+    display: inline-block;
+    font-weight: 600;
+}
+
+.badge--danger {
+    background: #dc2626;
+    color: #ffffff;
+}
+
+.badge--warning {
+    background: #f59e0b;
+    color: #ffffff;
+}
+
+.badge--info {
+    background: #0066cc;
+    color: #ffffff;
+}
+
+/* Topbar flags badge (small notification badge) */
+#flags-badge {
+    margin-left: 0.5rem;
+    font-size: 0.75rem;
+    padding: 0.125rem 0.375rem;
+    border-radius: 9999px;
+}
+
+/* Responsive Design for Flags */
+@media (max-width: 768px) {
+    .flag-card__metadata {
+        grid-template-columns: 1fr;
+    }
+
+    .flag-card__header {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .flags-summary {
+        padding: 0.75rem;
+    }
+
+    .flag-card {
+        padding: 0.75rem;
+    }
+}

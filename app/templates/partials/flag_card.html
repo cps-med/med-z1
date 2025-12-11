@@ -1,0 +1,63 @@
+<!-- app/templates/partials/flag_card.html -->
+<!-- Individual flag card component -->
+
+<div class="flag-card flag-card--{{ flag.flag_type|lower if flag.flag_type else 'default' }} flag-card--{{ flag.review_status|lower|replace(' ', '-') if flag.review_status else 'unknown' }}">
+    <div class="flag-card__header">
+        <h4 class="flag-card__title">
+            {% if flag.flag_type == 'CLINICAL' %}
+                <i class="fa-solid fa-notes-medical"></i>
+            {% elif flag.flag_type == 'BEHAVIORAL' %}
+                <i class="fa-solid fa-user-shield"></i>
+            {% elif flag.flag_type == 'RESEARCH' %}
+                <i class="fa-solid fa-flask"></i>
+            {% else %}
+                <i class="fa-solid fa-flag"></i>
+            {% endif %}
+            {{ flag.flag_name }}
+        </h4>
+        {% if flag.review_status %}
+        <span class="flag-card__badge badge badge--{{ 'danger' if flag.review_status == 'OVERDUE' else 'warning' if flag.review_status == 'DUE SOON' else 'info' }}">
+            {{ flag.review_status }}
+        </span>
+        {% endif %}
+    </div>
+
+    <div class="flag-card__metadata">
+        <div class="flag-card__meta-item">
+            <span class="label">Assigned:</span>
+            <span class="value">{{ flag.assignment_date[:10] if flag.assignment_date else 'Unknown' }}</span>
+        </div>
+        {% if flag.owner_site_name %}
+        <div class="flag-card__meta-item">
+            <span class="label">Owner Site:</span>
+            <span class="value">{{ flag.owner_site_name }} ({{ flag.owner_site }})</span>
+        </div>
+        {% endif %}
+        {% if flag.next_review_date %}
+        <div class="flag-card__meta-item">
+            <span class="label">Review Due:</span>
+            <span class="value">{{ flag.next_review_date[:10] }}</span>
+        </div>
+        {% endif %}
+        {% if flag.last_action %}
+        <div class="flag-card__meta-item">
+            <span class="label">Last Action:</span>
+            <span class="value">{{ flag.last_action }} on {{ flag.last_action_date[:10] if flag.last_action_date else 'Unknown' }} by {{ flag.last_action_by }}</span>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Collapsible Details Section (lazy loaded) -->
+    <details class="flag-card__details">
+        <summary class="flag-card__summary">
+            <i class="fa-solid fa-chevron-down"></i>
+            View Safety Details & History
+        </summary>
+        <div class="flag-card__narrative"
+             hx-get="/api/patient/{{ flag.patient_key }}/flags/{{ flag.assignment_id }}/history"
+             hx-trigger="revealed once"
+             hx-swap="innerHTML">
+            <p class="text-muted">Loading details...</p>
+        </div>
+    </details>
+</div>

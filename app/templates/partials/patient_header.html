@@ -1,7 +1,7 @@
 <!-- app/templates/partials/patient_header.html -->
 
 {% if patient %}
-<div class="patient-header patient-header--active">
+<div class="patient-header patient-header--active" data-patient-icn="{{ patient.icn }}">
     <h1 class="patient-header__title">
         {{ patient.name_display }} ({{ patient.sex }}, {{ patient.age }})
     </h1>
@@ -16,25 +16,7 @@
     </p>
 </div>
 <!-- Note: patient.icn may be "ICN100001" or "1016V123456" format -->
-
-<script>
-    // Enable/update patient flags button
-    document.getElementById('btn-patient-flags').disabled = false;
-
-    // Fetch flag count and update badge (Phase 3 placeholder)
-    fetch('/api/patient/{{ patient.icn }}/flags')
-        .then(r => r.json())
-        .then(data => {
-            const badge = document.getElementById('flags-badge');
-            if (data.count > 0) {
-                badge.textContent = data.count;
-                badge.style.display = 'inline-block';
-            } else {
-                badge.style.display = 'none';
-            }
-        })
-        .catch(err => console.error('Failed to load flag count:', err));
-</script>
+<!-- Flag button enable/disable and badge update handled by app.js htmx:afterSwap event -->
 
 {% else %}
 <div class="patient-header patient-header--empty">
@@ -45,10 +27,5 @@
         Click 'Select Patient' to begin
     </p>
 </div>
-
-<script>
-    // Disable patient flags button
-    document.getElementById('btn-patient-flags').disabled = true;
-    document.getElementById('flags-badge').style.display = 'none';
-</script>
+<!-- Flag button disable handled by app.js htmx:afterSwap event -->
 {% endif %}

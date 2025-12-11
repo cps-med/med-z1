@@ -1,0 +1,56 @@
+<!-- app/templates/partials/patient_flags_content.html -->
+<!-- Content loaded into patient flags modal via HTMX -->
+
+{% if total_count == 0 %}
+    <p class="text-muted">No active flags for this patient</p>
+{% else %}
+    <!-- Summary banner -->
+    <div class="flags-summary">
+        <p><strong>{{ total_count }}</strong> active flag{{ 's' if total_count != 1 else '' }}</p>
+        <p class="text-muted">
+            {{ national_flags|length }} National (Category I) |
+            {{ local_flags|length }} Local (Category II)
+        </p>
+    </div>
+
+    <!-- National Flags Section -->
+    {% if national_flags %}
+    <div class="flags-section">
+        <h3 class="flags-section__title">
+            <i class="fa-solid fa-flag"></i>
+            National Flags (Category I)
+        </h3>
+        {% for flag in national_flags %}
+            {% include "partials/flag_card.html" %}
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Local Flags Section -->
+    {% if local_flags %}
+    <div class="flags-section">
+        <h3 class="flags-section__title">
+            <i class="fa-regular fa-flag"></i>
+            Local Flags (Category II)
+        </h3>
+        {% for flag in local_flags %}
+            {% include "partials/flag_card.html" %}
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Inactive Flags Section (if any) -->
+    {% if inactive_flags %}
+    <div class="flags-section flags-section--inactive">
+        <details>
+            <summary class="flags-section__title flags-section__title--collapsible">
+                <i class="fa-solid fa-chevron-down"></i>
+                Inactive Flags ({{ inactive_flags|length }})
+            </summary>
+            {% for flag in inactive_flags %}
+                {% include "partials/flag_card.html" %}
+            {% endfor %}
+        </details>
+    </div>
+    {% endif %}
+{% endif %}

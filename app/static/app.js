@@ -55,6 +55,11 @@ document.addEventListener('click', (e) => {
             modal.style.display = 'flex';
             document.body.style.overflow = 'hidden'; // Prevent background scroll
 
+            // If opening patient flags modal, trigger HTMX content load
+            if (modalId === 'patient-flags-modal') {
+                document.body.dispatchEvent(new CustomEvent('loadFlagsContent'));
+            }
+
             // Focus first input if exists
             const firstInput = modal.querySelector('input, button');
             if (firstInput) {
@@ -92,7 +97,7 @@ document.addEventListener('keydown', (e) => {
    HTMX Event Listeners for Modal Integration
    ============================================ */
 
-// Close modal after successful patient selection
+// Close modal after successful patient selection and update flags button
 document.body.addEventListener('htmx:afterSwap', (e) => {
     if (e.detail.target.id === 'patient-header-container') {
         // Close patient search modal if open
@@ -100,6 +105,25 @@ document.body.addEventListener('htmx:afterSwap', (e) => {
         if (searchModal && searchModal.style.display === 'flex') {
             searchModal.style.display = 'none';
             document.body.style.overflow = '';
+        }
+
+        // Check if a patient is now selected
+        const patientHeader = e.detail.target.querySelector('.patient-header--active');
+        const flagsBtn = document.getElementById('btn-patient-flags');
+
+        if (patientHeader && flagsBtn) {
+            // Patient is selected - enable flags button
+            flagsBtn.disabled = false;
+
+            // Fetch flag count and update badge
+            updateFlagBadge();
+        } else if (flagsBtn) {
+            // No patient selected - disable flags button and hide badge
+            flagsBtn.disabled = true;
+            const badge = document.getElementById('flags-badge');
+            if (badge) {
+                badge.style.display = 'none';
+            }
         }
     }
 });
@@ -129,6 +153,83 @@ document.addEventListener('keydown', (e) => {
         e.target.click();
     }
 });
+
+/* ============================================
+   Patient Flags Badge Management
+   ============================================ */
+
+/**
+ * Extract current patient ICN from the patient header
+ * @returns {string|null} Patient ICN or null if no patient selected
+ */
+function getCurrentPatientICN() {
+    const patientHeader = document.querySelector('.patient-header--active');
+    if (!patientHeader) return null;
+
+    // Extract ICN from data attribute or text content
+    const icnElement = patientHeader.querySelector('[data-patient-icn]');
+    if (icnElement) {
+        return icnElement.getAttribute('data-patient-icn');
+    }
+
+    // Fallback: extract from text content (e.g., "ICN: ICN100001")
+    const textContent = patientHeader.textContent;
+    const icnMatch = textContent.match(/ICN:\s*(ICN\d+)/);
+    if (icnMatch) {
+        return icnMatch[1];
+    }
+
+    return null;
+}
+
+/**
+ * Fetch flag count from API and update the badge display
+ */
+function updateFlagBadge() {
+    const icn = getCurrentPatientICN();
+    if (!icn) {
+        console.warn('Cannot update flag badge: no patient ICN found');
+        return;
+    }
+
+    fetch(`/api/patient/${icn}/flags`)
+        .then(res => {
+            if (!res.ok) {
+                throw new Error(`API returned ${res.status}`);
+            }
+            return res.json();
+        })
+        .then(data => {
+            const badge = document.getElementById('flags-badge');
+            if (!badge) return;
+
+            if (data.active_flags > 0) {
+                // Show badge with count
+                badge.textContent = data.active_flags;
+                badge.style.display = 'inline';
+
+                // Set badge color: red for overdue, yellow otherwise
+                if (data.overdue_count > 0) {
+                    badge.classList.add('badge--danger');
+                    badge.classList.remove('badge--warning');
+                } else {
+                    badge.classList.add('badge--warning');
+                    badge.classList.remove('badge--danger');
+                }
+            } else {
+                // Hide badge if no flags
+                badge.style.display = 'none';
+            }
+        })
+        .catch(err => {
+            console.error('Failed to fetch flag count:', err);
+            // Hide badge on error
+            const badge = document.getElementById('flags-badge');
+            if (badge) {
+                badge.style.display = 'none';
+            }
+        });
+}
 
 /* ============================================
    Debug Helpers (Development Only)
