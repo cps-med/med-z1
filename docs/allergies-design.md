@@ -3,8 +3,8 @@
 **Document Version:** 1.0
 **Date:** 2025-12-12
 **Last Updated:** 2025-12-12
-**Status:** In Progress - Day 2 Complete (Bronze ETL)
-**Implementation Phase:** Days 1-2 Complete, Day 3 (Silver ETL) Next
+**Status:** In Progress - Day 3 Complete (Silver ETL)
+**Implementation Phase:** Days 1-3 Complete, Day 4 (Gold ETL & PostgreSQL Load) Next
 
 ---
 
@@ -109,7 +109,7 @@ Each allergy record includes:
 **Data Pipeline:**
 - [x] Mock CDW tables created and populated with sample allergy data (5-15 allergies per patient with varied reactions) - **✅ Day 1 Complete**
 - [x] Bronze ETL extracts all 5 tables to Parquet - **✅ Day 2 Complete**
-- [ ] Silver ETL harmonizes data and resolves lookups (Allergen names, Reaction names, Severity) - **Day 3 Pending**
+- [x] Silver ETL harmonizes data and resolves lookups (Allergen names, Reaction names, Severity) - **✅ Day 3 Complete**
 - [ ] Gold ETL creates patient-centric allergy view with reactions aggregated - **Day 4 Pending**
 - [ ] PostgreSQL serving DB loaded with allergy data - **Day 4 Pending**
 
@@ -2810,8 +2810,8 @@ med-z1/
 ## 13. Implementation Progress
 
 **Implementation Start Date:** 2025-12-12
-**Current Status:** Days 1-2 Complete (Bronze ETL)
-**Next Step:** Day 3 - Silver ETL
+**Current Status:** Days 1-3 Complete (Silver ETL)
+**Next Step:** Day 4 - Gold ETL & PostgreSQL Load
 
 ### 13.1 Completed Work
 
@@ -2866,15 +2866,40 @@ med-z1/
 - Follows established patterns from existing Bronze ETL scripts (patient, vitals, etc.)
 - Includes metadata columns: `SourceSystem`, `LoadDateTime`
 
-### 13.2 Remaining Work
+#### Day 3: Silver ETL ✅ Complete (2025-12-12)
 
-#### Day 3: Silver ETL (Pending)
-- Create `etl/silver_patient_allergies.py`
-- Join Bronze Parquet files
-- Aggregate reactions (comma-separated strings)
-- Resolve lookups (Sta3n → facility names)
-- Add derived fields (`is_drug_allergy` flag)
-- Output to `med-z1/silver/patient_allergies/`
+**Silver ETL Script Created:**
+- ✅ `etl/silver_patient_allergies.py` - Harmonizes and enriches Bronze data
+
+**Silver Processing Steps:**
+1. Read 5 Bronze Parquet files from MinIO
+2. Clean and standardize data (strip whitespace, uppercase)
+3. Join PatientAllergy → Allergen (get standardized allergen name and type)
+4. Join PatientAllergy → Severity (get severity name and rank)
+5. Join PatientAllergyReaction → Reaction (get reaction names)
+6. Aggregate reactions per allergy (comma-separated strings)
+7. Add derived fields (`is_drug_allergy` flag)
+8. Write to Silver layer
+
+**Silver Parquet File in MinIO:**
+- ✅ `med-z1/silver/patient_allergies/patient_allergies_cleaned.parquet` (115 records)
+
+**Silver Schema:**
+- `patient_allergy_sid`, `patient_sid`, `allergen_sid`
+- `allergen_local`, `allergen_name`, `allergen_type`
+- `severity_sid`, `severity_name`, `severity_rank`
+- `reactions` (comma-separated), `reaction_count`
+- `origination_datetime`, `observed_datetime`, `historical_or_observed`
+- `originating_site_sta3n`, `comment`, `verification_status`
+- `is_drug_allergy` (derived), `source_system`, `last_updated`
+
+**Technical Notes:**
+- Uses Polars for joins and aggregations
+- Reactions aggregated using `str.concat(", ")` for display
+- Drug allergy flag enables widget prioritization
+- All lookups resolved (no dangling foreign keys)
+
+### 13.2 Remaining Work
 
 #### Day 4: Gold ETL & PostgreSQL Load (Pending)
 - Create `etl/gold_patient_allergies.py`
@@ -2894,6 +2919,6 @@ med-z1/
 
 **End of Specification**
 
-**Document Status:** In Progress - Days 1-2 Complete
-**Next Step:** Day 3 - Silver ETL (Harmonization and Aggregation)
-**Target Completion:** 5-7 additional days
+**Document Status:** In Progress - Days 1-3 Complete
+**Next Step:** Day 4 - Gold ETL & PostgreSQL Load
+**Target Completion:** 4-6 additional days
