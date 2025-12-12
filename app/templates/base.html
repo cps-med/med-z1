@@ -35,12 +35,18 @@
                     <span class="sidebar__text">Dashboard</span>
                 </a>
 
-                <!-- Clinical Domains (in order of importance) -->
+                <!-- Clinical Domains (in dashboard widget order) -->
                 <a href="/demographics"
                    class="sidebar__link {{ 'sidebar__link--active' if active_page == 'demographics' else '' }}"
                    data-tooltip="Patient Demographics">
                     <i class="fa-solid fa-user fa-lg"></i>
                     <span class="sidebar__text">Demographics</span>
+                </a>
+                <a href="/vitals"
+                   class="sidebar__link {{ 'sidebar__link--active' if active_page == 'vitals' else '' }}"
+                   data-tooltip="Patient Vital Signs">
+                    <i class="fa-solid fa-heart-pulse fa-lg"></i>
+                    <span class="sidebar__text">Vitals</span>
                 </a>
                 <a href="/flags"
                    class="sidebar__link {{ 'sidebar__link--active' if active_page == 'flags' else '' }}"
@@ -59,12 +65,6 @@
                    data-tooltip="Medications (Coming Soon)">
                     <i class="fa-solid fa-pills fa-lg"></i>
                     <span class="sidebar__text">Medications</span>
-                </a>
-                <a href="#"
-                   class="sidebar__link sidebar__link--disabled"
-                   data-tooltip="Vitals (Coming Soon)">
-                    <i class="fa-solid fa-heart-pulse fa-lg"></i>
-                    <span class="sidebar__text">Vitals</span>
                 </a>
                 <a href="#"
                    class="sidebar__link sidebar__link--disabled"

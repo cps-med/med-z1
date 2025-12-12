@@ -6,7 +6,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const layout = document.querySelector(".layout");
     const toggleBtn = document.querySelector("[data-toggle-sidebar]");
 
-    if (!layout) return;
+    if (!layout) {
+        console.error("Layout element not found!");
+        return;
+    }
 
     function toggleSidebar() {
         layout.classList.toggle("layout--sidebar-collapsed");

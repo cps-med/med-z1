@@ -1,0 +1,66 @@
+<!-- Vitals Widget Content -->
+<!-- Widget Header -->
+<div class="widget__header">
+    <div class="widget__title-group">
+        <i class="fa-solid fa-heart-pulse widget__icon"></i>
+        <h3 class="widget__title">Vital Signs</h3>
+    </div>
+    {% if vitals %}
+        {% set abnormal_vitals = vitals | selectattr('abnormal_flag', 'in', ['CRITICAL', 'HIGH', 'LOW']) | list %}
+        {% if abnormal_vitals | length > 0 %}
+            <span class="badge badge--warning">{{ abnormal_vitals | length }} Abnormal</span>
+        {% endif %}
+    {% endif %}
+</div>
+
+<!-- Widget Body -->
+<div class="widget__body">
+    <div class="widget-vitals">
+        {% if error %}
+            <p class="text-muted" style="padding: 1rem; text-align: center;">
+                <i class="fa-solid fa-circle-exclamation"></i> Error loading vitals
+            </p>
+        {% elif not has_vitals %}
+            <p class="text-muted" style="padding: 1rem; text-align: center;">No vital signs recorded</p>
+        {% else %}
+            <!-- Vitals Grid -->
+            <div class="vitals-grid">
+                {% for vital in vitals %}
+                <div class="vital-item">
+                    <div class="vital-item__header">
+                        <span class="vital-item__type">{{ vital.vital_type }}</span>
+                        {% if vital.abnormal_flag %}
+                            {% if vital.abnormal_flag == 'CRITICAL' %}
+                                <span class="badge badge--danger">{{ vital.abnormal_flag }}</span>
+                            {% elif vital.abnormal_flag == 'HIGH' %}
+                                <span class="badge badge--warning">HIGH</span>
+                            {% elif vital.abnormal_flag == 'LOW' %}
+                                <span class="badge badge--info">LOW</span>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                    <div class="vital-item__value">
+                        {{ vital.result_value }}
+                        {% if vital.unit_of_measure %}
+                            <span class="vital-item__unit">{{ vital.unit_of_measure }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="vital-item__meta">
+                        {% if vital.taken_datetime %}
+                            {{ vital.taken_datetime[:10] }}
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- View All Link -->
+            <div class="widget-action">
+                <a href="/patient/{{ icn }}/vitals" class="btn btn--link btn--sm">
+                    <i class="fa-regular fa-arrow-up-right-from-square"></i>
+                    View All Vitals
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>

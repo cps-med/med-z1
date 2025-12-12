@@ -7,8 +7,7 @@
         class="search-result-item"
         hx-post="/api/patient/set-context"
         hx-vals='{"icn": "{{ patient.icn }}"}'
-        hx-target="#patient-header-container"
-        hx-swap="innerHTML"
+        hx-on::after-request="window.location.href='/'"
         data-modal-close="patient-search-modal"
         tabindex="0"
         role="button"

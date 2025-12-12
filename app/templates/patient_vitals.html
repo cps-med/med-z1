@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+
+{% block title %}Vital Signs - {{ patient.name_display if patient else 'Med-Z1' }}{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    {% if error %}
+        <!-- Error State -->
+        <div class="page-error">
+            <div class="page-error__icon">
+                <i class="fa-solid fa-triangle-exclamation fa-3x"></i>
+            </div>
+            <h2 class="page-error__title">Error Loading Vitals</h2>
+            <p class="page-error__message">{{ error }}</p>
+            <a href="/" class="btn btn--primary">
+                <i class="fa-solid fa-house"></i>
+                Return to Dashboard
+            </a>
+        </div>
+    {% elif not patient %}
+        <!-- No Patient State -->
+        <div class="page-error">
+            <div class="page-error__icon">
+                <i class="fa-regular fa-user fa-3x"></i>
+            </div>
+            <h2 class="page-error__title">No Patient Selected</h2>
+            <p class="page-error__message">Please select a patient to view their vital signs</p>
+            <a href="/" class="btn btn--primary">
+                <i class="fa-solid fa-house"></i>
+                Return to Dashboard
+            </a>
+        </div>
+    {% else %}
+        <!-- Page Header -->
+        <div class="page-header">
+            <div class="page-header__breadcrumb">
+                <a href="/" class="breadcrumb-link">
+                    <i class="fa-solid fa-house"></i>
+                    Dashboard
+                </a>
+                <i class="fa-solid fa-chevron-right"></i>
+                <span class="breadcrumb-current">Vital Signs</span>
+            </div>
+            <div class="page-header__title-group">
+                <h1 class="page-header__title">
+                    <i class="fa-solid fa-heart-pulse"></i>
+                    Vital Signs
+                </h1>
+                <p class="page-header__subtitle">
+                    {{ patient.name_display }} ({{ patient.icn }})
+                </p>
+            </div>
+        </div>
+
+        <!-- Filters and Controls -->
+        <div class="vitals-controls">
+            <!-- Filter Pills -->
+            <div class="filter-pills">
+                <span class="filter-pills__label">Filter by Type:</span>
+                <a href="/patient/{{ patient.icn }}/vitals?sort_by={{ sort_by }}&sort_order={{ sort_order }}"
+                   class="filter-pill {% if not vital_type_filter %}filter-pill--active{% endif %}">
+                    All Vitals ({{ total_count }})
+                </a>
+                {% for abbr, count in counts.items() %}
+                    {% set type_name = {
+                        'BP': 'Blood Pressure',
+                        'T': 'Temperature',
+                        'P': 'Pulse',
+                        'R': 'Respiration',
+                        'POX': 'Pulse Ox',
+                        'PN': 'Pain',
+                        'HT': 'Height',
+                        'WT': 'Weight',
+                        'BMI': 'BMI'
+                    }.get(abbr, abbr) %}
+                    <a href="/patient/{{ patient.icn }}/vitals?vital_type={{ type_name | upper }}&sort_by={{ sort_by }}&sort_order={{ sort_order }}"
+                       class="filter-pill {% if vital_type_filter and vital_type_filter == type_name | upper %}filter-pill--active{% endif %}">
+                        {{ abbr }} ({{ count }})
+                    </a>
+                {% endfor %}
+            </div>
+
+            <!-- Sort Controls -->
+            <div class="sort-controls">
+                <span class="sort-controls__label">Sort by:</span>
+                <select class="sort-select" onchange="window.location.href=this.value">
+                    <option value="/patient/{{ patient.icn }}/vitals?{% if vital_type_filter %}vital_type={{ vital_type_filter }}&{% endif %}sort_by=taken_datetime&sort_order=desc"
+                            {% if sort_by == 'taken_datetime' and sort_order == 'desc' %}selected{% endif %}>
+                        Date (Newest First)
+                    </option>
+                    <option value="/patient/{{ patient.icn }}/vitals?{% if vital_type_filter %}vital_type={{ vital_type_filter }}&{% endif %}sort_by=taken_datetime&sort_order=asc"
+                            {% if sort_by == 'taken_datetime' and sort_order == 'asc' %}selected{% endif %}>
+                        Date (Oldest First)
+                    </option>
+                    <option value="/patient/{{ patient.icn }}/vitals?{% if vital_type_filter %}vital_type={{ vital_type_filter }}&{% endif %}sort_by=vital_type&sort_order=asc"
+                            {% if sort_by == 'vital_type' %}selected{% endif %}>
+                        Vital Type (A-Z)
+                    </option>
+                    <option value="/patient/{{ patient.icn }}/vitals?{% if vital_type_filter %}vital_type={{ vital_type_filter }}&{% endif %}sort_by=abnormal_flag&sort_order=desc"
+                            {% if sort_by == 'abnormal_flag' %}selected{% endif %}>
+                        Abnormal First
+                    </option>
+                </select>
+            </div>
+
+            <!-- View Toggle Button -->
+            <button id="view-toggle-btn" class="btn btn--secondary">
+                <i class="fa-solid fa-chart-line"></i>
+                View Charts
+            </button>
+        </div>
+
+        <!-- Grid View (Table) -->
+        <div id="grid-view">
+            {% if vitals %}
+            <div class="vitals-table-container">
+                <table class="vitals-table">
+                    <thead>
+                        <tr>
+                            <th>Date/Time</th>
+                            <th>Type</th>
+                            <th>Value</th>
+                            <th>Status</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for vital in vitals %}
+                        <tr class="vital-row {% if vital.abnormal_flag in ['CRITICAL', 'HIGH', 'LOW'] %}vital-row--abnormal{% endif %}">
+                            <!-- Date/Time -->
+                            <td class="vital-cell vital-cell--datetime">
+                                <div class="vital-datetime">
+                                    {{ vital.taken_datetime[:10] if vital.taken_datetime else '—' }}
+                                </div>
+                                <div class="vital-time">
+                                    {{ vital.taken_datetime[11:16] if vital.taken_datetime and vital.taken_datetime|length > 10 else '' }}
+                                </div>
+                            </td>
+
+                            <!-- Type -->
+                            <td class="vital-cell vital-cell--type">
+                                <div class="vital-type-label">{{ vital.vital_type }}</div>
+                                <div class="vital-abbr">({{ vital.vital_abbr }})</div>
+                            </td>
+
+                            <!-- Value -->
+                            <td class="vital-cell vital-cell--value">
+                                <div class="vital-value-display">
+                                    {{ vital.result_value }}
+                                    {% if vital.unit_of_measure %}
+                                        <span class="vital-unit">{{ vital.unit_of_measure }}</span>
+                                    {% endif %}
+                                </div>
+                                {% if vital.vital_abbr == 'BP' and vital.systolic and vital.diastolic %}
+                                    <div class="vital-subvalue">
+                                        Systolic: {{ vital.systolic }} / Diastolic: {{ vital.diastolic }}
+                                    </div>
+                                {% elif vital.metric_value and vital.numeric_value and vital.metric_value != vital.numeric_value %}
+                                    <div class="vital-subvalue">
+                                        Metric: {{ vital.metric_value }}
+                                    </div>
+                                {% endif %}
+                            </td>
+
+                            <!-- Status -->
+                            <td class="vital-cell vital-cell--status">
+                                {% if vital.abnormal_flag %}
+                                    {% if vital.abnormal_flag == 'CRITICAL' %}
+                                        <span class="badge badge--danger">CRITICAL</span>
+                                    {% elif vital.abnormal_flag == 'HIGH' %}
+                                        <span class="badge badge--warning">HIGH</span>
+                                    {% elif vital.abnormal_flag == 'LOW' %}
+                                        <span class="badge badge--info">LOW</span>
+                                    {% elif vital.abnormal_flag == 'NORMAL' %}
+                                        <span class="vital-status-normal">Normal</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="vital-status-none">—</span>
+                                {% endif %}
+                            </td>
+
+                            <!-- Details -->
+                            <td class="vital-cell vital-cell--details">
+                                {% if vital.qualifiers and vital.qualifiers != '[]' %}
+                                    <div class="vital-qualifiers">
+                                        {% if vital.qualifiers is string %}
+                                            {% set qualifiers_list = vital.qualifiers | tojson | fromjson %}
+                                        {% else %}
+                                            {% set qualifiers_list = vital.qualifiers %}
+                                        {% endif %}
+                                        {% for qual in qualifiers_list %}
+                                            <span class="qualifier-tag">
+                                                {{ qual.qualifier_name }}
+                                            </span>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                {% if vital.location %}
+                                    <div class="vital-meta">Location: {{ vital.location }}</div>
+                                {% endif %}
+                                {% if vital.entered_by %}
+                                    <div class="vital-meta">By: {{ vital.entered_by }}</div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+                <!-- Empty State -->
+                <div class="vitals-empty">
+                    <div class="vitals-empty__icon">
+                        <i class="fa-solid fa-heart-pulse fa-3x"></i>
+                    </div>
+                    <h3 class="vitals-empty__title">No Vital Signs Found</h3>
+                    <p class="vitals-empty__message">
+                        {% if vital_type_filter %}
+                            No {{ vital_type_filter }} vitals recorded for this patient.
+                            <br>
+                            <a href="/patient/{{ patient.icn }}/vitals" class="btn btn--link">View All Vitals</a>
+                        {% else %}
+                            No vital signs have been recorded for this patient.
+                        {% endif %}
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Charts View (Hidden by default) -->
+        <div id="charts-view" style="display: none;">
+            <div class="charts-grid">
+                <!-- Blood Pressure Chart -->
+                <div class="chart-container">
+                    <canvas id="chart-bp"></canvas>
+                </div>
+
+                <!-- Weight Chart -->
+                <div class="chart-container">
+                    <canvas id="chart-weight"></canvas>
+                </div>
+
+                <!-- Pain Score Chart -->
+                <div class="chart-container">
+                    <canvas id="chart-pain"></canvas>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<!-- Vitals page JavaScript -->
+<script src="/static/vitals.js"></script>
+{% endblock %}

@@ -47,7 +47,8 @@ async def get_dashboard(request: Request):
             "dashboard.html",
             {
                 "request": request,
-                "patient": patient
+                "patient": patient,
+                "active_page": "dashboard"
             }
         )
 
@@ -58,7 +59,8 @@ async def get_dashboard(request: Request):
             {
                 "request": request,
                 "patient": None,
-                "error": str(e)
+                "error": str(e),
+                "active_page": "dashboard"
             }
         )
 

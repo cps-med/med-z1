@@ -580,39 +580,22 @@ body {
 
 /* --- Tooltip Styles --- */
 
-/* Only show tooltip when sidebar is collapsed AND user hovers */
-.layout--sidebar-collapsed .sidebar__link:hover::after {
-    content: attr(data-tooltip); /* Grab the text from HTML */
-    
-    position: absolute;
-    left: 100%;              /* Position it to the right of the button */
-    top: 50%;                /* Center vertically */
-    transform: translateY(-50%); 
-    
-    margin-left: 10px;       /* Little gap from the sidebar */
-    background: #111827;     /* Dark background */
+/* Show tooltip when sidebar is collapsed and user hovers over any link */
+.layout--sidebar-collapsed .sidebar__link:hover::after,
+.layout--sidebar-collapsed .sidebar__link--active:hover::after,
+.layout--sidebar-collapsed .sidebar__link--disabled:hover::after {
+    content: attr(data-tooltip);
+    position: fixed;
+    left: 74px;  /* 64px sidebar width + 10px gap */
+    background: #111827;
     color: white;
-    padding: 0.4rem 0.8rem;
-    border-radius: 4px;
-    font-size: 0.85rem;
-    white-space: nowrap;     /* Don't let the name wrap */
-    z-index: 50;             /* Ensure it floats on top of everything */
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-    pointer-events: none;    /* Mouse clicks should go through it */
-}
-
-/* Optional: A tiny arrow pointing left at the sidebar */
-.layout--sidebar-collapsed .sidebar__link:hover::before {
-    content: "";
-    position: absolute;
-    left: 100%;
-    top: 50%;
-    transform: translateY(-50%);
-    margin-left: 4px;
-    border-width: 5px;
-    border-style: solid;
-    border-color: transparent #111827 transparent transparent;
-    z-index: 50;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    z-index: 9999;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    pointer-events: none;
 }
 
 /* ============================================
@@ -1205,7 +1188,7 @@ input:focus-visible,
 /* Dashboard Container */
 .dashboard {
     flex: 1;
-    padding: 2rem;
+    padding: 1.5rem 0;  /* Vertical padding only - horizontal alignment with topbar */
     overflow-y: auto;
 }
 
@@ -1275,8 +1258,8 @@ input:focus-visible,
 .dashboard-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 1.25rem;
-    margin-top: 1.5rem;
+    gap: 1.25rem;  /* Restored from 1.0rem - better visual breathing room */
+    margin-top: 1.5rem;  /* Restored from 0.75rem - consistent spacing */
 }
 
 /* Widget Base Styles */
@@ -1602,6 +1585,63 @@ input:focus-visible,
     justify-content: center;
 }
 
+/* Vitals Widget */
+.widget-vitals {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.vitals-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+}
+
+.vital-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    padding: 0.75rem;
+    background: #f9fafb;
+    border-radius: 0.375rem;
+    border-left: 3px solid #0066cc;
+}
+
+.vital-item__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.vital-item__type {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.vital-item__value {
+    font-size: 1.0rem;
+    font-weight: 700;
+    color: #111827;
+    line-height: 1.2;
+}
+
+.vital-item__unit {
+    font-size: 0.875rem;
+    font-weight: 400;
+    color: #6b7280;
+    margin-left: 0.25rem;
+}
+
+.vital-item__meta {
+    font-size: 0.75rem;
+    color: #9ca3af;
+}
+
 .btn--link {
     background: transparent;
     border: none;
@@ -1626,6 +1666,339 @@ input:focus-visible,
     padding: 0.375rem 0.75rem;
 }
 
+/* ============================================
+   Full Vitals Page Styles
+   ============================================ */
+
+/* Page Container */
+.page-container {
+    padding: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* Page Header */
+.page-header {
+    margin-bottom: 2rem;
+}
+
+.page-header__breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-bottom: 1rem;
+}
+
+.breadcrumb-link {
+    color: #4f46e5;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+}
+
+.breadcrumb-link:hover {
+    text-decoration: underline;
+}
+
+.breadcrumb-current {
+    color: #111827;
+    font-weight: 500;
+}
+
+.page-header__title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.page-header__title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #111827;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0;
+}
+
+.page-header__subtitle {
+    font-size: 1rem;
+    color: #6b7280;
+    margin: 0;
+}
+
+/* Vitals Controls */
+.vitals-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+}
+
+/* Filter Pills */
+.filter-pills {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+}
+
+.filter-pills__label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+}
+
+.filter-pill {
+    padding: 0.375rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-decoration: none;
+    background: #f3f4f6;
+    color: #4b5563;
+    border: 1px solid #d1d5db;
+    transition: all 0.2s ease;
+}
+
+.filter-pill:hover {
+    background: #e5e7eb;
+    border-color: #9ca3af;
+}
+
+.filter-pill--active {
+    background: #4f46e5;
+    color: #ffffff;
+    border-color: #4f46e5;
+}
+
+.filter-pill--active:hover {
+    background: #4338ca;
+    border-color: #4338ca;
+}
+
+/* Sort Controls */
+.sort-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.sort-controls__label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+}
+
+.sort-select {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    background: #ffffff;
+    color: #374151;
+    cursor: pointer;
+    transition: border-color 0.2s ease;
+}
+
+.sort-select:hover {
+    border-color: #9ca3af;
+}
+
+.sort-select:focus {
+    outline: none;
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+/* Vitals Table Container */
+.vitals-table-container {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+/* Vitals Table */
+.vitals-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.vitals-table thead {
+    background: #f9fafb;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.vitals-table th {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #374151;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.vitals-table tbody tr {
+    border-bottom: 1px solid #e5e7eb;
+    transition: background-color 0.2s ease;
+}
+
+.vitals-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.vitals-table tbody tr:hover {
+    background: #f9fafb;
+}
+
+.vital-row--abnormal {
+    background: #fef2f2;
+}
+
+.vital-row--abnormal:hover {
+    background: #fee2e2;
+}
+
+.vital-cell {
+    padding: 1rem;
+    font-size: 0.875rem;
+    color: #374151;
+    vertical-align: top;
+}
+
+/* Date/Time Cell */
+.vital-datetime {
+    font-weight: 600;
+    color: #111827;
+}
+
+.vital-time {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-top: 0.125rem;
+}
+
+/* Type Cell */
+.vital-type-label {
+    font-weight: 600;
+    color: #111827;
+}
+
+.vital-abbr {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-top: 0.125rem;
+}
+
+/* Value Cell */
+.vital-value-display {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #111827;
+}
+
+.vital-unit {
+    font-size: 0.875rem;
+    font-weight: 400;
+    color: #6b7280;
+    margin-left: 0.25rem;
+}
+
+.vital-subvalue {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
+}
+
+/* Status Cell */
+.vital-status-normal {
+    color: #10b981;
+    font-weight: 500;
+}
+
+.vital-status-none {
+    color: #9ca3af;
+}
+
+/* Details Cell */
+.vital-qualifiers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin-bottom: 0.5rem;
+}
+
+.qualifier-tag {
+    padding: 0.125rem 0.5rem;
+    background: #ede9fe;
+    color: #6b21a8;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.vital-meta {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
+}
+
+/* Empty State */
+.vitals-empty {
+    padding: 4rem 2rem;
+    text-align: center;
+}
+
+.vitals-empty__icon {
+    color: #9ca3af;
+    margin-bottom: 1rem;
+}
+
+.vitals-empty__title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #374151;
+    margin: 0 0 0.5rem 0;
+}
+
+.vitals-empty__message {
+    color: #6b7280;
+    margin: 0;
+}
+
+/* Page Error State */
+.page-error {
+    padding: 4rem 2rem;
+    text-align: center;
+}
+
+.page-error__icon {
+    color: #dc2626;
+    margin-bottom: 1rem;
+}
+
+.page-error__title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #374151;
+    margin: 0 0 0.5rem 0;
+}
+
+.page-error__message {
+    color: #6b7280;
+    margin: 0 0 1.5rem 0;
+}
+
 /* Sidebar Disabled Links */
 .sidebar__link--disabled {
     opacity: 0.5;
@@ -1635,6 +2008,12 @@ input:focus-visible,
 
 .sidebar__link--disabled:hover {
     background: transparent;
+}
+
+/* Re-enable pointer events for disabled links when sidebar is collapsed (for tooltips) */
+.layout--sidebar-collapsed .sidebar__link--disabled {
+    pointer-events: auto;
+    cursor: default;
 }
 
 /* Dashboard Responsive */
@@ -1701,4 +2080,90 @@ input:focus-visible,
     .widget__footer {
         padding: 0.5rem 0.75rem;
     }
+}
+
+/* ============================================
+   Vitals Page Chart Styles
+   ============================================ */
+
+/* Charts Grid Layout */
+.charts-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    margin-top: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+    .charts-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Chart Container */
+.chart-container {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    min-height: 350px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.chart-container canvas {
+    max-height: 300px;
+    width: 100% !important;
+}
+
+/* Chart Empty State */
+.chart-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    color: #9ca3af;
+    text-align: center;
+    padding: 2rem;
+}
+
+.chart-empty-state i {
+    color: #d1d5db;
+}
+
+.chart-empty-state p {
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+/* Chart Error State */
+.chart-error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    color: #ef4444;
+    text-align: center;
+    padding: 2rem;
+}
+
+.chart-error-state i {
+    color: #fca5a5;
+}
+
+.chart-error-state p {
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+/* View Toggle Button - Additional styling */
+#view-toggle-btn {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }

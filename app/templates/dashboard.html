@@ -16,10 +16,21 @@
 
         <!-- Widget Grid -->
         <div class="dashboard-grid" id="dashboard-widgets">
-            <!-- Demographics Widget (2x1 - Wide) -->
-            <div class="widget widget--2x1"
+            <!-- Demographics Widget (1x1 - Standard) -->
+            <div class="widget widget--1x1"
                  id="widget-demographics"
                  hx-get="/api/dashboard/widget/demographics/{{ patient.icn }}"
+                 hx-trigger="load"
+                 hx-swap="innerHTML">
+                <div class="widget__body">
+                    <div class="widget__spinner"></div>
+                </div>
+            </div>
+
+            <!-- Vitals Widget (1x1 - Standard) -->
+            <div class="widget widget--1x1"
+                 id="widget-vitals"
+                 hx-get="/api/patient/dashboard/widget/vitals/{{ patient.icn }}"
                  hx-trigger="load"
                  hx-swap="innerHTML">
                 <div class="widget__body">
@@ -38,7 +49,7 @@
                 </div>
             </div>
 
-            <!-- Placeholder Widgets for Planned Domains -->
+            <!-- Allergies Widget (1x1 - Standard) - Placeholder -->
             {{ placeholder_widget(
                 size='1x1',
                 icon='fa-solid fa-allergies',
@@ -46,6 +57,7 @@
                 description='Known allergies and adverse reactions'
             ) }}
 
+            <!-- Medications Widget (2x1 - Wide) - Placeholder -->
             {{ placeholder_widget(
                 size='2x1',
                 icon='fa-solid fa-pills',
@@ -53,13 +65,7 @@
                 description='Active prescriptions and medication history'
             ) }}
 
-            {{ placeholder_widget(
-                size='1x1',
-                icon='fa-solid fa-heart-pulse',
-                title='Vitals',
-                description='Recent vital signs and trends'
-            ) }}
-
+            <!-- Laboratory Results Widget (2x1 - Wide) - Placeholder -->
             {{ placeholder_widget(
                 size='2x1',
                 icon='fa-solid fa-flask',
@@ -67,6 +73,7 @@
                 description='Recent lab results and trends'
             ) }}
 
+            <!-- Problems/Diagnoses Widget (1x1 - Standard) - Placeholder -->
             {{ placeholder_widget(
                 size='1x1',
                 icon='fa-solid fa-stethoscope',
@@ -74,6 +81,7 @@
                 description='Active and historical diagnoses'
             ) }}
 
+            <!-- Orders Widget (1x1 - Standard) - Placeholder -->
             {{ placeholder_widget(
                 size='1x1',
                 icon='fa-solid fa-clipboard-list',
@@ -81,6 +89,7 @@
                 description='Recent and pending orders'
             ) }}
 
+            <!-- Notes/Documents Widget (1x1 - Standard) - Placeholder -->
             {{ placeholder_widget(
                 size='1x1',
                 icon='fa-solid fa-file-lines',
@@ -88,6 +97,7 @@
                 description='Clinical notes and documents'
             ) }}
 
+            <!-- Radiology/Imaging Widget (1x1 - Standard) - Placeholder -->
             {{ placeholder_widget(
                 size='1x1',
                 icon='fa-solid fa-x-ray',
