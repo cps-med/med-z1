@@ -403,6 +403,7 @@ Add fields: `address_line1`, `address_line2`, `city`, `state`, `zip`, `phone`, `
 5. Render in Demographics widget
 
 **Test Cases:**
+
 | Test Case | Description | Expected Result |
 |-----------|-------------|-----------------|
 | Patient with full data | Patient has address and insurance | All fields display |

@@ -336,7 +336,174 @@ User Views Complete Dashboard
 └─────────────────────────────────────────────────┘
 ```
 
-#### 5.2.4 Placeholder Widget Template (1x1 or 2x1)
+#### 5.2.4 Vitals Widget
+
+**Note:** Two widget size options are provided. Final selection to be made before implementation.
+
+---
+
+##### Option A: Vitals Widget 1x1 (Standard Size)
+
+**Purpose:** Display most recent vital signs measurements in compact format
+
+**Widget Size:** 1x1 (Standard)
+
+**Content:**
+- 4-6 most critical recent vitals (BP, T, P, R, POX, Pain)
+- Display format: Abbreviation, Value, Unit
+- Visual abnormal indicators (colored icons/badges for critical/abnormal values)
+- Measurement timestamp (relative: "2h ago" or absolute date/time)
+- "View All Vitals" link to full vitals page
+
+**API Endpoint:** `GET /api/dashboard/widget/vitals/{patient_icn}?size=1x1`
+
+**Example Display (Normal Values):**
+```
+┌─────────────────────────┐
+│ ❤️  Vitals              │
+├─────────────────────────┤
+│ BP          T           │
+│ 128/82      98.6°F      │
+│ 2h ago      2h ago      │
+│                         │
+│ P           R           │
+│ 72 bpm      16/min      │
+│ 2h ago      2h ago      │
+│                         │
+│ POX         Pain        │
+│ 98% ✓       2/10        │
+│ 2h ago      1d ago      │
+│                         │
+│ [View All Vitals →]     │
+└─────────────────────────┘
+```
+
+**Example Display (Abnormal Values):**
+```
+┌─────────────────────────┐
+│ ❤️  Vitals       ⚠️  1  │
+├─────────────────────────┤
+│ BP          T           │
+│ 158/95 ⚠️   99.8°F      │
+│ HIGH        1h ago      │
+│ 1h ago                  │
+│                         │
+│ P           R           │
+│ 88 bpm      18/min      │
+│ 1h ago      1h ago      │
+│                         │
+│ [View All Vitals →]     │
+└─────────────────────────┘
+```
+
+**Design Notes:**
+- Widget displays in 2-column grid (2 vitals per row)
+- Priority order: BP, T, P, R, POX, Pain, WT (shows first 4-6 available)
+- Abnormal values highlighted with:
+  - 🔴 RED background + "CRITICAL" text for critical values
+  - 🟡 YELLOW background + "HIGH"/"LOW" text for abnormal values
+  - ✓ Green checkmark for normal values
+- Widget header shows badge with count of critical/abnormal vitals
+- Empty state: "No vitals recorded" if no data available
+- Loading state: Skeleton/spinner while fetching data
+
+---
+
+##### Option B: Vitals Widget 2x1 (Wide Size)
+
+**Purpose:** Display more vitals with mini-trend indicators for key measurements
+
+**Widget Size:** 2x1 (Wide)
+
+**Content:**
+- 6-8 recent vitals (BP, T, P, R, POX, Pain, WT, HT if available)
+- Display format: Table with columns (Vital, Value, Trend, Taken)
+- Visual abnormal indicators (colored row backgrounds and inline badges)
+- **Mini-trend sparklines** for BP, Weight, and Pain (last 7 days)
+- BMI displayed if height/weight available
+- Qualifiers shown as small tags (e.g., "Sitting, L Arm")
+- "View All Vitals & Trends" link to full page
+
+**API Endpoint:** `GET /api/dashboard/widget/vitals/{patient_icn}?size=2x1`
+
+**Example Display:**
+```
+┌──────────────────────────────────────────────────────────┐
+│ ❤️  Vitals                                    ⚠️  1      │
+├──────────────────────────────────────────────────────────┤
+│ Vital    │ Value          │ Trend        │ Taken        │
+├──────────┼────────────────┼──────────────┼──────────────┤
+│ BP       │ 158/95 mmHg    │ ───/──       │ 1h ago       │
+│ Sitting, │ HIGH           │              │              │
+│ L Arm    │                │              │              │
+├──────────┼────────────────┼──────────────┼──────────────┤
+│ T        │ 98.6 °F        │ —            │ 1h ago       │
+├──────────┼────────────────┼──────────────┼──────────────┤
+│ P        │ 88 bpm         │ —            │ 1h ago       │
+├──────────┼────────────────┼──────────────┼──────────────┤
+│ R        │ 18 /min        │ —            │ 1h ago       │
+├──────────┼────────────────┼──────────────┼──────────────┤
+│ POX      │ 97 %           │ —            │ 1h ago       │
+├──────────┼────────────────┼──────────────┼──────────────┤
+│ Pain     │ 3 /10          │ ──▲─▼        │ 2h ago       │
+├──────────┼────────────────┼──────────────┼──────────────┤
+│ WT       │ 185 lb         │ ──▲──        │ 3d ago       │
+│          │ (BMI: 27.3)    │              │              │
+└──────────┴────────────────┴──────────────┴──────────────┘
+│ [View All Vitals & Trends →]                            │
+└──────────────────────────────────────────────────────────┘
+```
+
+**Design Notes:**
+- Widget displays as table with header row
+- Trend column shows mini sparkline charts (Chart.js) for BP, Pain, and Weight
+- Qualifiers displayed as small tags below vital abbreviation
+- BMI calculated and shown with weight (if height available)
+- Abnormal rows have colored backgrounds (red for critical, yellow for abnormal)
+- More information density than 1x1 option
+- Requires Chart.js library for sparklines
+
+---
+
+##### Design Comparison: Option A vs Option B
+
+| Feature | Option A (1x1) | Option B (2x1) |
+|---------|---------------|----------------|
+| **Space Used** | 1 grid cell | 2 grid cells |
+| **Vitals Shown** | 4-6 vitals | 6-8 vitals |
+| **Layout** | 2-column grid | Table format |
+| **Trends** | No | Yes (sparklines for BP, Pain, WT) |
+| **BMI** | No | Yes (if available) |
+| **Qualifiers** | No | Yes (as small tags) |
+| **Timestamp** | Below each vital | Right column |
+| **Information Density** | Lower | Higher |
+| **At-a-Glance Scanning** | Easier | More detailed |
+| **Best For** | Quick vital check | Detailed vital review |
+| **Chart.js Required** | No | Yes |
+
+**Recommendation:**
+- **Option A (1x1):** Best for standard dashboard where space is at premium and user wants quick vital status
+- **Option B (2x1):** Best when vitals are high priority and user benefits from trends and more detail without navigating away
+
+---
+
+**Data Requirements (Both Options):**
+- Source: `patient_vitals` table in PostgreSQL serving database
+- Query: Most recent measurement per vital type for patient
+- Abnormal flag logic:
+  - BP: Critical if Systolic >180 or <90, Diastolic >120 or <60; High if Systolic 140-180, Diastolic 90-120
+  - Temp: Critical if >103°F or <95°F; High if 100.5-103°F
+  - Pulse: Critical if >130 or <40; High if 100-130; Low if 40-60
+  - Respiration: Critical if >28 or <8; High if 20-28
+  - POX: Critical if <88%; Low if 88-92%
+  - Pain: High if 8-10; Moderate if 4-7
+- Trend data (Option B only): Last 7 days of measurements for BP, Pain, and Weight
+
+**Related Documentation:**
+- See `docs/vitals-design.md` for complete Vitals implementation specification (including both widget options)
+- See Section 5.1 for widget ordering (Vitals is Order #5)
+
+#### 5.2.5 Placeholder Widget Template (1x1 or 2x1)
 
 **Purpose:** Indicate planned domain not yet implemented
 
