@@ -43,6 +43,7 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 # Include routers
 app.include_router(dashboard.router)  # Dashboard handles / and /dashboard
 app.include_router(patient.router)
+app.include_router(patient.page_router)  # Patient pages (Allergies full page)
 app.include_router(vitals.router)
 app.include_router(vitals.page_router)  # Vitals full page routes
 

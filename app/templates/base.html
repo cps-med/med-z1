@@ -54,10 +54,10 @@
                     <i class="fa-solid fa-flag fa-lg"></i>
                     <span class="sidebar__text">Flags</span>
                 </a>
-                <a href="#"
-                   class="sidebar__link sidebar__link--disabled"
-                   data-tooltip="Allergies (Coming Soon)">
-                    <i class="fa-solid fa-allergies fa-lg"></i>
+                <a href="/allergies"
+                   class="sidebar__link {{ 'sidebar__link--active' if active_page == 'allergies' else '' }}"
+                   data-tooltip="Patient Allergies">
+                    <i class="fa-solid fa-capsules fa-lg"></i>
                     <span class="sidebar__text">Allergies</span>
                 </a>
                 <a href="#"

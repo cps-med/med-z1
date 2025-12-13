@@ -1,0 +1,88 @@
+<!-- Allergy Card -->
+<div class="allergy-card {% if allergy.severity == 'SEVERE' %}allergy-card--severe{% elif allergy.severity == 'MODERATE' %}allergy-card--moderate{% endif %}" role="article" aria-label="{{ allergy.allergen_standardized }} allergy">
+    <!-- Card Header -->
+    <div class="allergy-card__header">
+        <div class="allergy-card__icon-group">
+            {% if allergy.allergen_type == 'DRUG' %}
+                <i class="fa-solid fa-pills allergy-card__icon" aria-hidden="true"></i>
+            {% elif allergy.allergen_type == 'FOOD' %}
+                <i class="fa-solid fa-apple-whole allergy-card__icon" aria-hidden="true"></i>
+            {% else %}
+                <i class="fa-solid fa-leaf allergy-card__icon" aria-hidden="true"></i>
+            {% endif %}
+            <div class="allergy-card__title-group">
+                <h3 class="allergy-card__allergen">{{ allergy.allergen_standardized }}</h3>
+                <p class="allergy-card__local">{{ allergy.allergen_local }}</p>
+            </div>
+        </div>
+        <div class="allergy-card__badges">
+            {% if allergy.severity %}
+                {% if allergy.severity == 'SEVERE' %}
+                    <span class="badge badge--danger">{{ allergy.severity }}</span>
+                {% elif allergy.severity == 'MODERATE' %}
+                    <span class="badge badge--warning">{{ allergy.severity }}</span>
+                {% elif allergy.severity == 'MILD' %}
+                    <span class="badge badge--info">{{ allergy.severity }}</span>
+                {% endif %}
+            {% endif %}
+            <span class="badge badge--secondary">{{ allergy.allergen_type }}</span>
+        </div>
+    </div>
+
+    <!-- Card Body -->
+    <div class="allergy-card__body">
+        <!-- Reactions -->
+        <div class="allergy-card__section">
+            <div class="allergy-card__label">
+                <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
+                Reactions
+            </div>
+            <div class="allergy-card__value">
+                {% if allergy.reactions %}
+                    {{ allergy.reactions }}
+                {% else %}
+                    <span class="text-muted">No reactions recorded</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Metadata Row -->
+        <div class="allergy-card__metadata">
+            <div class="allergy-card__meta-item">
+                <span class="allergy-card__meta-label">Recorded:</span>
+                <span class="allergy-card__meta-value">
+                    {% if allergy.origination_date %}
+                        {{ allergy.origination_date[:10] }}
+                    {% else %}
+                        Unknown
+                    {% endif %}
+                </span>
+            </div>
+            <div class="allergy-card__meta-item">
+                <span class="allergy-card__meta-label">Type:</span>
+                <span class="allergy-card__meta-value">{{ allergy.historical_or_observed or 'N/A' }}</span>
+            </div>
+            <div class="allergy-card__meta-item">
+                <span class="allergy-card__meta-label">Facility:</span>
+                <span class="allergy-card__meta-value">{{ allergy.originating_site_name or 'Unknown' }}</span>
+            </div>
+            <div class="allergy-card__meta-item">
+                <span class="allergy-card__meta-label">Status:</span>
+                <span class="allergy-card__meta-value">{{ allergy.verification_status or 'N/A' }}</span>
+            </div>
+        </div>
+
+        <!-- Expandable Details -->
+        {% if allergy.comment %}
+        <details class="allergy-card__details">
+            <summary class="allergy-card__details-toggle" aria-label="Toggle clinical comments for {{ allergy.allergen_standardized }}">
+                <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+                View Clinical Comments
+            </summary>
+            <div class="allergy-card__comment" role="region" aria-label="Clinical comments">
+                {{ allergy.comment }}
+            </div>
+        </details>
+        {% endif %}
+    </div>
+</div>

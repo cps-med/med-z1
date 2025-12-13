@@ -296,13 +296,29 @@ function refreshDashboardWidgets() {
         // Show loading spinner
         widget.innerHTML = '<div class="widget__body"><div class="widget__spinner"></div></div>';
 
-        // Trigger HTMX request to reload the widget
-        if (window.htmx) {
-            htmx.ajax('GET', newUrl, {
-                target: widget,
-                swap: 'innerHTML'
+        // Use fetch() to reload widget content (more reliable than htmx.ajax in HTMX 1.9)
+        fetch(newUrl)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.text();
+            })
+            .then(html => {
+                widget.innerHTML = html;
+                console.log(`Widget ${widget.id} refreshed successfully`);
+            })
+            .catch(err => {
+                console.error(`Failed to refresh widget ${widget.id}:`, err);
+                widget.innerHTML = `
+                    <div class="widget__body">
+                        <p class="text-danger">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            Failed to load widget
+                        </p>
+                    </div>
+                `;
             });
-        }
     });
 
     console.log(`Dashboard refreshed for patient ${icn}: ${widgets.length} widgets reloaded`);

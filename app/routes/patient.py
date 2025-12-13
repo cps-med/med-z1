@@ -19,8 +19,15 @@ from app.db.patient_flags import (
     get_flag_history,
     get_active_flags_count
 )
+from app.db.patient_allergies import (
+    get_patient_allergies,
+    get_critical_allergies,
+    get_allergy_details,
+    get_allergy_count
+)
 
 router = APIRouter(prefix="/api/patient", tags=["patient"])
+page_router = APIRouter(tags=["patient-pages"])  # For allergies full page routes
 templates = Jinja2Templates(directory="app/templates")
 logger = logging.getLogger(__name__)
 
@@ -308,3 +315,260 @@ async def get_flag_history_endpoint(request: Request, icn: str, assignment_id: i
             return HTMLResponse(f"<p class='text-danger'>Error loading history: {str(e)}</p>")
         else:
             raise HTTPException(status_code=500, detail=str(e))
+
+
+# =========================================================================
+# Allergies Endpoints
+# =========================================================================
+
+@router.get("/{icn}/allergies")
+async def get_patient_allergies_json(icn: str):
+    """
+    Get all patient allergies as JSON.
+
+    Returns complete allergy data sorted by:
+    1. Drug allergies first
+    2. Severity rank (SEVERE > MODERATE > MILD)
+    3. Most recent date first
+
+    Args:
+        icn: Patient ICN
+
+    Returns:
+        JSON with allergy counts and full allergy list
+    """
+    try:
+        # Get all allergies for patient
+        allergies = get_patient_allergies(icn)
+
+        # Get allergy counts
+        counts = get_allergy_count(icn)
+
+        return {
+            "patient_icn": icn,
+            "total_allergies": counts["total"],
+            "drug_allergies": counts["drug"],
+            "food_allergies": counts["food"],
+            "environmental_allergies": counts["environmental"],
+            "severe_allergies": counts["severe"],
+            "allergies": allergies
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting allergies for patient {icn}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{icn}/allergies/critical")
+async def get_patient_critical_allergies_json(icn: str, limit: int = 6):
+    """
+    Get critical allergies for dashboard widget display.
+
+    Prioritizes drug allergies with highest severity.
+
+    Args:
+        icn: Patient ICN
+        limit: Maximum number of allergies to return (default 6)
+
+    Returns:
+        JSON with critical allergy list (limited)
+    """
+    try:
+        # Get critical allergies (drug first, severity desc, date desc)
+        allergies = get_critical_allergies(icn, limit=limit)
+
+        # Get counts for badge display
+        counts = get_allergy_count(icn)
+
+        return {
+            "patient_icn": icn,
+            "total_allergies": counts["total"],
+            "drug_allergies": counts["drug"],
+            "severe_allergies": counts["severe"],
+            "displayed_count": len(allergies),
+            "allergies": allergies
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting critical allergies for patient {icn}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{icn}/allergies/{allergy_sid}/details")
+async def get_allergy_details_json(icn: str, allergy_sid: int):
+    """
+    Get detailed information for a specific allergy.
+
+    Includes full details including comment field (may be large).
+
+    Args:
+        icn: Patient ICN (for security validation)
+        allergy_sid: Allergy SID (surrogate ID)
+
+    Returns:
+        JSON with complete allergy details
+    """
+    try:
+        allergy = get_allergy_details(allergy_sid, icn)
+
+        if not allergy:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Allergy {allergy_sid} not found for patient {icn}"
+            )
+
+        return allergy
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting allergy details for SID {allergy_sid}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# =========================================================================
+# Allergies Page Routes
+# =========================================================================
+
+@page_router.get("/allergies", response_class=HTMLResponse)
+async def allergies_redirect(request: Request):
+    """
+    Redirect to current patient's allergies page.
+    Gets patient from CCOW and redirects to /patient/{icn}/allergies.
+    If no patient selected, redirects to dashboard.
+    """
+    from fastapi.responses import RedirectResponse
+
+    patient_icn = ccow_client.get_active_patient()
+
+    if not patient_icn:
+        logger.warning("No active patient in CCOW for allergies page")
+        return RedirectResponse(url="/", status_code=303)
+
+    return RedirectResponse(url=f"/patient/{patient_icn}/allergies", status_code=303)
+
+
+@page_router.get("/patient/{icn}/allergies", response_class=HTMLResponse)
+async def get_allergies_page(request: Request, icn: str):
+    """
+    Full allergies page for a patient.
+
+    Shows card-based view with sections for Drug, Food, and Environmental allergies.
+
+    Args:
+        icn: Patient ICN
+
+    Returns:
+        Full HTML page with allergies cards
+    """
+    try:
+        # Get patient demographics for header
+        patient = get_patient_demographics(icn)
+
+        if not patient:
+            logger.warning(f"Patient {icn} not found")
+            return templates.TemplateResponse(
+                "allergies.html",
+                {
+                    "request": request,
+                    "patient": None,
+                    "error": "Patient not found"
+                }
+            )
+
+        # Get all allergies for patient
+        allergies = get_patient_allergies(icn)
+
+        # Get counts for summary
+        counts = get_allergy_count(icn)
+
+        # Separate allergies by type
+        drug_allergies = [a for a in allergies if a["allergen_type"] == "DRUG"]
+        food_allergies = [a for a in allergies if a["allergen_type"] == "FOOD"]
+        environmental_allergies = [a for a in allergies if a["allergen_type"] == "ENVIRONMENTAL"]
+
+        logger.info(f"Loaded allergies page for {icn}: {len(allergies)} allergies ({counts['drug']} drug, {counts['food']} food, {counts['environmental']} environmental)")
+
+        return templates.TemplateResponse(
+            "allergies.html",
+            {
+                "request": request,
+                "patient": patient,
+                "allergies": allergies,
+                "drug_allergies": drug_allergies,
+                "food_allergies": food_allergies,
+                "environmental_allergies": environmental_allergies,
+                "total_count": counts["total"],
+                "drug_count": counts["drug"],
+                "food_count": counts["food"],
+                "environmental_count": counts["environmental"],
+                "severe_count": counts["severe"],
+                "active_page": "allergies"
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Error loading allergies page for {icn}: {e}")
+        return templates.TemplateResponse(
+            "allergies.html",
+            {
+                "request": request,
+                "patient": None,
+                "error": str(e),
+                "active_page": "allergies"
+            }
+        )
+
+
+# =========================================================================
+# Allergies Widget Route
+# =========================================================================
+
+@router.get("/dashboard/widget/allergies/{icn}", response_class=HTMLResponse)
+async def get_allergies_widget(request: Request, icn: str):
+    """
+    Render allergies widget HTML partial for dashboard.
+    Returns HTMX-compatible HTML showing critical allergies (drug allergies prioritized).
+
+    Args:
+        icn: Integrated Care Number
+
+    Returns:
+        HTML partial for allergies widget
+    """
+    try:
+        # Get critical allergies (top 6, drug allergies prioritized)
+        allergies = get_critical_allergies(icn, limit=6)
+
+        # Get counts for summary stats
+        counts = get_allergy_count(icn)
+
+        return templates.TemplateResponse(
+            "partials/allergies_widget.html",
+            {
+                "request": request,
+                "icn": icn,
+                "allergies": allergies,
+                "total_count": counts["total"],
+                "drug_count": counts["drug"],
+                "severe_count": counts["severe"],
+                "displayed_count": len(allergies)
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Error rendering allergies widget for {icn}: {e}")
+        # Return error state widget
+        return templates.TemplateResponse(
+            "partials/allergies_widget.html",
+            {
+                "request": request,
+                "icn": icn,
+                "allergies": [],
+                "total_count": 0,
+                "drug_count": 0,
+                "severe_count": 0,
+                "displayed_count": 0,
+                "error": str(e)
+            }
+        )

@@ -77,6 +77,52 @@ pip install -r requirements.txt
 
 ## Architecture Highlights
 
+### Architecture Decision Records and Design Patterns
+
+**IMPORTANT:** Before implementing new features or making design decisions, consult `docs/architecture.md` for established patterns and architectural guidance.
+
+**Key Architecture Documents:**
+- **`docs/architecture.md`** - Central repository for architectural decisions, patterns, and rationale
+  - API routing patterns (when to use patient.py vs dedicated routers)
+  - Data architecture (Medallion pattern, identity resolution)
+  - Technology choices (FastAPI, HTMX, PostgreSQL)
+  - Architecture Decision Records (ADRs) documenting major decisions
+
+**When to Consult architecture.md:**
+- ✅ Before adding API endpoints for a new clinical domain
+- ✅ When deciding between routing patterns (Pattern A vs Pattern B)
+- ✅ Before making changes that affect system-wide patterns
+- ✅ When questioning why something was implemented a certain way
+- ✅ Before proposing alternative architectural approaches
+
+**When to Update architecture.md:**
+- ✅ After making a significant architectural decision
+- ✅ When establishing a new pattern that should be followed consistently
+- ✅ When rejecting an alternative approach (document why)
+- ✅ When resolving architectural inconsistencies or ambiguities
+
+**Development Workflow:**
+1. Check if architecture.md addresses your design question
+2. If pattern exists, follow it for consistency
+3. If pattern doesn't exist or doesn't fit, propose new pattern
+4. Document new architectural decisions in architecture.md as ADRs
+5. Update relevant subsystem READMEs (e.g., `app/README.md`) with practical guidance
+
+**Example: Adding a New Clinical Domain**
+```
+Question: "Should I create app/routes/medications.py or add to app/routes/patient.py?"
+
+1. Consult: docs/architecture.md Section 3 (API Routing Architecture)
+2. Decision Matrix: Does domain need full page view with complex filtering?
+   - Yes → Pattern B: Create dedicated router (like Vitals)
+   - No → Pattern A: Add to patient.py (like Flags, Allergies)
+3. Follow established pattern for consistency
+4. If neither pattern fits, document new pattern as ADR in architecture.md
+```
+
+**Consistency Over Flexibility:**
+med-z1 follows **strong, opinionated patterns** to ensure maintainability as the codebase grows. When in doubt, favor consistency with existing patterns over novel approaches, even if the novel approach seems slightly better in isolation. This reduces cognitive load for developers and makes the codebase more predictable.
+
 ### Data Architecture
 
 **Source Systems (Development):**
@@ -290,21 +336,66 @@ The project uses:
 
 ## Reference Documentation
 
-For detailed information, see:
+### Core Architecture and Planning Documents
+
+**Primary Reference (Consult First):**
+- **`docs/architecture.md`** - System architecture and routing decisions (Document version v1.0) ✅ Complete
+  - **Purpose:** Authoritative source for architectural decisions, patterns, and rationale
+  - **When to Use:** Before designing new features, when choosing between patterns, when questioning existing designs
+  - **Contents:** API routing patterns, data architecture, ADRs (Architecture Decision Records)
+  - **Living Document:** Updated when new architectural decisions are made
+
+**Product Planning:**
 - `docs/med-z1-plan.md` - Complete product and technical development plan (Document version v1)
+  - High-level roadmap, phases, feature priorities
+  - Product vision and strategic direction
+
+**Design Specifications (Feature-Specific):**
 - `docs/patient-dashboard-design.md` - Dashboard and widget system specification (Document version v1.1)
 - `docs/patient-flags-design.md` - Phase 3 Patient Flags implementation specification (Document version v1.2)
+- `docs/vitals-design.md` - Vitals implementation specification ✅ Complete
+- `docs/allergies-design.md` - Allergies implementation specification (Days 1-5 complete)
 - `docs/demographics-enhancement-design.md` - Demographics widget enhancement (Document version v1.1) ✅ Complete
+
+**Future Planning:**
 - `docs/vision.md` - Problem statement, user personas, user stories (to be created)
-- `docs/architecture.md` - Diagrams and architecture decisions (to be created)
 - `docs/ai-design.md` - AI/ML, RAG, and DDI use-case designs (to be created)
 
-Subsystem-specific README files:
-- `app/README.md` - FastAPI/HTMX application setup and guidance
+### Subsystem-Specific README Files (Practical Guidance)
+
+- **`app/README.md`** - FastAPI/HTMX application setup and routing patterns
+  - Quick reference for API routing decisions (Pattern A vs Pattern B)
+  - Code examples for implementing new domains
+  - Links to `docs/architecture.md` for detailed rationale
 - `ccow/README.md` - CCOW Context Vault setup and usage
 - `etl/README.md` - ETL setup instructions and data-specific notes
 - `mock/README.md` - Mock data subsystem overview
 - `ai/README.md` - AI/ML layer guidance
+
+### Document Hierarchy and When to Use Each
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ "Why was this decision made?" → docs/architecture.md            │
+│   (Authoritative architectural decisions and ADRs)              │
+└────────────────────────┬────────────────────────────────────────┘
+                         │
+┌────────────────────────┴────────────────────────────────────────┐
+│ "How do I implement this?" → app/README.md, etl/README.md, etc. │
+│   (Practical quick reference with code examples)                │
+└────────────────────────┬────────────────────────────────────────┘
+                         │
+┌────────────────────────┴────────────────────────────────────────┐
+│ "What was built and how?" → docs/<domain>-design.md             │
+│   (Feature-specific implementation details and context)         │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Typical Workflow:**
+1. **Planning a new feature?** → Start with `docs/architecture.md` to understand patterns
+2. **Implementing the feature?** → Check `app/README.md` for quick code examples
+3. **Documenting the feature?** → Create/update `docs/<domain>-design.md` with implementation details
+4. **Made a new architectural decision?** → Add ADR to `docs/architecture.md`
 
 ## Development Phases
 

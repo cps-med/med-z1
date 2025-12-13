@@ -1,0 +1,99 @@
+<!-- Allergies Widget Content -->
+<!-- Widget Header -->
+<div class="widget__header">
+    <div class="widget__title-group">
+        <i class="fa-solid fa-capsules widget__icon"></i>
+        <h3 class="widget__title">Allergies</h3>
+    </div>
+    {% if severe_count > 0 %}
+        <span class="badge badge--danger">{{ severe_count }} Severe</span>
+    {% elif drug_count > 0 %}
+        <span class="badge badge--warning">{{ drug_count }} Drug</span>
+    {% endif %}
+</div>
+
+<!-- Widget Body -->
+<div class="widget__body">
+    <div class="widget-allergies">
+        {% if error %}
+            <p class="text-muted" style="padding: 1rem; text-align: center;">
+                <i class="fa-solid fa-circle-exclamation"></i> Error loading allergies
+            </p>
+        {% elif total_count == 0 %}
+            <p class="text-muted" style="padding: 1rem; text-align: center;">No known allergies</p>
+        {% else %}
+            <!-- Summary Stats -->
+            <div class="allergies-summary-widget">
+                <div class="allergies-stat">
+                    <div class="allergies-stat__value">{{ total_count }}</div>
+                    <div class="allergies-stat__label">Total</div>
+                </div>
+                <div class="allergies-stat-divider"></div>
+                <div class="allergies-stat">
+                    <div class="allergies-stat__value">{{ drug_count }}</div>
+                    <div class="allergies-stat__label">Drug</div>
+                </div>
+                {% if severe_count > 0 %}
+                <div class="allergies-stat-divider"></div>
+                <div class="allergies-stat">
+                    <div class="allergies-stat__value text-danger">{{ severe_count }}</div>
+                    <div class="allergies-stat__label">Severe</div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Allergy List (Top 4-6 Critical Allergies) -->
+            <div class="allergies-list-widget">
+                {% for allergy in allergies %}
+                <div class="allergy-item-widget">
+                    <div class="allergy-item-widget__icon">
+                        {% if allergy.allergen_type == 'DRUG' %}
+                            <i class="fa-solid fa-pills {% if allergy.severity == 'SEVERE' %}text-danger{% elif allergy.severity == 'MODERATE' %}text-warning{% else %}text-muted{% endif %}"></i>
+                        {% elif allergy.allergen_type == 'FOOD' %}
+                            <i class="fa-solid fa-apple-whole {% if allergy.severity == 'SEVERE' %}text-danger{% elif allergy.severity == 'MODERATE' %}text-warning{% else %}text-muted{% endif %}"></i>
+                        {% else %}
+                            <i class="fa-solid fa-leaf {% if allergy.severity == 'SEVERE' %}text-danger{% elif allergy.severity == 'MODERATE' %}text-warning{% else %}text-muted{% endif %}"></i>
+                        {% endif %}
+                    </div>
+                    <div class="allergy-item-widget__info">
+                        <div class="allergy-item-widget__name">
+                            {{ allergy.allergen_standardized }}
+                            {% if allergy.severity %}
+                                {% if allergy.severity == 'SEVERE' %}
+                                    <span class="badge badge--danger badge--sm">{{ allergy.severity }}</span>
+                                {% elif allergy.severity == 'MODERATE' %}
+                                    <span class="badge badge--warning badge--sm">{{ allergy.severity }}</span>
+                                {% elif allergy.severity == 'MILD' %}
+                                    <span class="badge badge--info badge--sm">{{ allergy.severity }}</span>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                        <div class="allergy-item-widget__meta">
+                            {% if allergy.reactions %}
+                                {{ allergy.reactions }}
+                            {% else %}
+                                No reactions recorded
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+
+                {% if total_count > displayed_count %}
+                <div class="allergy-item-widget allergy-item-widget--more">
+                    <i class="fa-solid fa-ellipsis"></i>
+                    {{ total_count - displayed_count }} more allerg{{ 'ies' if total_count - displayed_count > 1 else 'y' }}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- View All Link -->
+            <div class="widget-action">
+                <a href="/allergies" class="btn btn--link btn--sm">
+                    <i class="fa-regular fa-arrow-up-right-from-square"></i>
+                    View All Allergies
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
