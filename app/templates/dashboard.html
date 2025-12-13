@@ -60,13 +60,16 @@
                 </div>
             </div>
 
-            <!-- Medications Widget (2x1 - Wide) - Placeholder -->
-            {{ placeholder_widget(
-                size='2x1',
-                icon='fa-solid fa-pills',
-                title='Medications',
-                description='Active prescriptions and medication history'
-            ) }}
+            <!-- Medications Widget (2x1 - Wide) -->
+            <div class="widget widget--2x1"
+                 id="widget-medications"
+                 hx-get="/api/patient/dashboard/widget/medications/{{ patient.icn }}"
+                 hx-trigger="load"
+                 hx-swap="innerHTML">
+                <div class="widget__body">
+                    <div class="widget__spinner"></div>
+                </div>
+            </div>
 
             <!-- Laboratory Results Widget (2x1 - Wide) - Placeholder -->
             {{ placeholder_widget(

@@ -1,0 +1,332 @@
+{% extends "base.html" %}
+
+{% block title %}Medications - {{ patient.name_display if patient else 'Med-Z1' }}{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    {% if error %}
+        <!-- Error State -->
+        <div class="page-error">
+            <div class="page-error__icon">
+                <i class="fa-solid fa-triangle-exclamation fa-3x"></i>
+            </div>
+            <h2 class="page-error__title">Error Loading Medications</h2>
+            <p class="page-error__message">{{ error }}</p>
+            <a href="/" class="btn btn--primary">
+                <i class="fa-solid fa-house"></i>
+                Return to Dashboard
+            </a>
+        </div>
+    {% elif not patient %}
+        <!-- No Patient State -->
+        <div class="page-error">
+            <div class="page-error__icon">
+                <i class="fa-regular fa-user fa-3x"></i>
+            </div>
+            <h2 class="page-error__title">No Patient Selected</h2>
+            <p class="page-error__message">Please select a patient to view their medications</p>
+            <a href="/" class="btn btn--primary">
+                <i class="fa-solid fa-house"></i>
+                Return to Dashboard
+            </a>
+        </div>
+    {% else %}
+        <!-- Page Header -->
+        <div class="page-header">
+            <div class="page-header__breadcrumb">
+                <a href="/" class="breadcrumb-link">
+                    <i class="fa-solid fa-house"></i>
+                    Dashboard
+                </a>
+                <i class="fa-solid fa-chevron-right"></i>
+                <span class="breadcrumb-current">Medications</span>
+            </div>
+            <div class="page-header__title-group">
+                <h1 class="page-header__title">
+                    <i class="fa-solid fa-prescription-bottle-medical"></i>
+                    Medications
+                </h1>
+                <p class="page-header__subtitle">
+                    {{ patient.name_display }} ({{ patient.icn }})
+                </p>
+            </div>
+        </div>
+
+        <!-- Summary Stats Bar -->
+        <div class="medications-summary-bar">
+            <div class="medication-stat-card">
+                <div class="medication-stat-card__value">{{ total_count }}</div>
+                <div class="medication-stat-card__label">Total Medications</div>
+            </div>
+            <div class="medication-stat-card">
+                <div class="medication-stat-card__value">{{ counts.outpatient_total or 0 }}</div>
+                <div class="medication-stat-card__label">Outpatient (RxOut)</div>
+            </div>
+            <div class="medication-stat-card">
+                <div class="medication-stat-card__value">{{ counts.inpatient_total or 0 }}</div>
+                <div class="medication-stat-card__label">Inpatient (BCMA)</div>
+            </div>
+            {% if counts.outpatient_active and counts.outpatient_active > 0 %}
+            <div class="medication-stat-card medication-stat-card--active">
+                <div class="medication-stat-card__value">{{ counts.outpatient_active }}</div>
+                <div class="medication-stat-card__label">Active</div>
+            </div>
+            {% endif %}
+            {% if (counts.outpatient_controlled or 0) + (counts.inpatient_controlled or 0) > 0 %}
+            <div class="medication-stat-card medication-stat-card--controlled">
+                <div class="medication-stat-card__value">{{ (counts.outpatient_controlled or 0) + (counts.inpatient_controlled or 0) }}</div>
+                <div class="medication-stat-card__label">Controlled Substances</div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Filters and Controls -->
+        <div class="medications-controls">
+            <!-- Date Range Filter -->
+            <div class="filter-group">
+                <span class="filter-group__label">Time Period:</span>
+                <div class="filter-pills">
+                    <a href="/patient/{{ patient.icn }}/medications?medication_type={{ medication_type_filter }}&status={{ status_filter or '' }}&days=30&sort_by={{ sort_by }}&sort_order={{ sort_order }}"
+                       class="filter-pill {% if days_filter == 30 %}filter-pill--active{% endif %}">
+                        30 Days
+                    </a>
+                    <a href="/patient/{{ patient.icn }}/medications?medication_type={{ medication_type_filter }}&status={{ status_filter or '' }}&days=90&sort_by={{ sort_by }}&sort_order={{ sort_order }}"
+                       class="filter-pill {% if days_filter == 90 %}filter-pill--active{% endif %}">
+                        90 Days
+                    </a>
+                    <a href="/patient/{{ patient.icn }}/medications?medication_type={{ medication_type_filter }}&status={{ status_filter or '' }}&days=180&sort_by={{ sort_by }}&sort_order={{ sort_order }}"
+                       class="filter-pill {% if days_filter == 180 %}filter-pill--active{% endif %}">
+                        6 Months
+                    </a>
+                    <a href="/patient/{{ patient.icn }}/medications?medication_type={{ medication_type_filter }}&status={{ status_filter or '' }}&days=365&sort_by={{ sort_by }}&sort_order={{ sort_order }}"
+                       class="filter-pill {% if days_filter == 365 %}filter-pill--active{% endif %}">
+                        1 Year
+                    </a>
+                    <a href="/patient/{{ patient.icn }}/medications?medication_type={{ medication_type_filter }}&status={{ status_filter or '' }}&days=3650&sort_by={{ sort_by }}&sort_order={{ sort_order }}"
+                       class="filter-pill {% if days_filter == 3650 %}filter-pill--active{% endif %}">
+                        All Time
+                    </a>
+                </div>
+            </div>
+
+            <!-- Medication Type Filter -->
+            <div class="filter-group">
+                <span class="filter-group__label">Type:</span>
+                <div class="filter-pills">
+                    <a href="/patient/{{ patient.icn }}/medications?medication_type=all&status={{ status_filter or '' }}&days={{ days_filter }}&sort_by={{ sort_by }}&sort_order={{ sort_order }}"
+                       class="filter-pill {% if medication_type_filter == 'all' %}filter-pill--active{% endif %}">
+                        All ({{ total_count }})
+                    </a>
+                    <a href="/patient/{{ patient.icn }}/medications?medication_type=outpatient&status={{ status_filter or '' }}&days={{ days_filter }}&sort_by={{ sort_by }}&sort_order={{ sort_order }}"
+                       class="filter-pill {% if medication_type_filter == 'outpatient' %}filter-pill--active{% endif %}">
+                        Outpatient ({{ counts.outpatient_total or 0 }})
+                    </a>
+                    <a href="/patient/{{ patient.icn }}/medications?medication_type=inpatient&status={{ status_filter or '' }}&days={{ days_filter }}&sort_by={{ sort_by }}&sort_order={{ sort_order }}"
+                       class="filter-pill {% if medication_type_filter == 'inpatient' %}filter-pill--active{% endif %}">
+                        Inpatient ({{ counts.inpatient_total or 0 }})
+                    </a>
+                </div>
+            </div>
+
+            <!-- Status Filter (for Outpatient medications) -->
+            {% if medication_type_filter in ['all', 'outpatient'] %}
+            <div class="filter-group">
+                <span class="filter-group__label">Status:</span>
+                <div class="filter-pills">
+                    <a href="/patient/{{ patient.icn }}/medications?medication_type={{ medication_type_filter }}&days={{ days_filter }}&sort_by={{ sort_by }}&sort_order={{ sort_order }}"
+                       class="filter-pill {% if not status_filter %}filter-pill--active{% endif %}">
+                        All Status
+                    </a>
+                    <a href="/patient/{{ patient.icn }}/medications?medication_type={{ medication_type_filter }}&status=ACTIVE&days={{ days_filter }}&sort_by={{ sort_by }}&sort_order={{ sort_order }}"
+                       class="filter-pill {% if status_filter == 'ACTIVE' %}filter-pill--active{% endif %}">
+                        Active ({{ counts.outpatient_active or 0 }})
+                    </a>
+                    <a href="/patient/{{ patient.icn }}/medications?medication_type={{ medication_type_filter }}&status=EXPIRED&days={{ days_filter }}&sort_by={{ sort_by }}&sort_order={{ sort_order }}"
+                       class="filter-pill {% if status_filter == 'EXPIRED' %}filter-pill--active{% endif %}">
+                        Expired
+                    </a>
+                    <a href="/patient/{{ patient.icn }}/medications?medication_type={{ medication_type_filter }}&status=DISCONTINUED&days={{ days_filter }}&sort_by={{ sort_by }}&sort_order={{ sort_order }}"
+                       class="filter-pill {% if status_filter == 'DISCONTINUED' %}filter-pill--active{% endif %}">
+                        Discontinued
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Sort Controls -->
+            <div class="filter-group">
+                <span class="filter-group__label">Sort:</span>
+                <select class="sort-select" onchange="window.location.href=this.value">
+                    <option value="/patient/{{ patient.icn }}/medications?medication_type={{ medication_type_filter }}&status={{ status_filter or '' }}&days={{ days_filter }}&sort_by=date&sort_order=desc"
+                            {% if sort_by == 'date' and sort_order == 'desc' %}selected{% endif %}>
+                        Date (Newest First)
+                    </option>
+                    <option value="/patient/{{ patient.icn }}/medications?medication_type={{ medication_type_filter }}&status={{ status_filter or '' }}&days={{ days_filter }}&sort_by=date&sort_order=asc"
+                            {% if sort_by == 'date' and sort_order == 'asc' %}selected{% endif %}>
+                        Date (Oldest First)
+                    </option>
+                    <option value="/patient/{{ patient.icn }}/medications?medication_type={{ medication_type_filter }}&status={{ status_filter or '' }}&days={{ days_filter }}&sort_by=drug_name&sort_order=asc"
+                            {% if sort_by == 'drug_name' %}selected{% endif %}>
+                        Medication Name (A-Z)
+                    </option>
+                    <option value="/patient/{{ patient.icn }}/medications?medication_type={{ medication_type_filter }}&status={{ status_filter or '' }}&days={{ days_filter }}&sort_by=type&sort_order=asc"
+                            {% if sort_by == 'type' %}selected{% endif %}>
+                        Type (Inpatient/Outpatient)
+                    </option>
+                </select>
+            </div>
+        </div>
+
+        {% if total_count == 0 %}
+            <!-- No Medications State -->
+            <div class="empty-state">
+                <div class="empty-state__icon">
+                    <i class="fa-solid fa-prescription-bottle-medical fa-3x"></i>
+                </div>
+                <h3 class="empty-state__title">No Medications Found</h3>
+                <p class="empty-state__message">
+                    {% if status_filter or medication_type_filter != 'all' or days_filter != 3650 %}
+                        Try adjusting your filters to see more medications
+                    {% else %}
+                        This patient has no documented medications
+                    {% endif %}
+                </p>
+            </div>
+        {% else %}
+            <!-- Medications Table -->
+            <div class="medications-table-container">
+                <table class="medications-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Medication</th>
+                            <th>Type</th>
+                            <th>Status/Details</th>
+                            <th>Provider</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for med in medications %}
+                        <tr class="medication-row {% if med.is_controlled %}medication-row--controlled{% endif %}">
+                            <!-- Date -->
+                            <td class="medication-cell medication-cell--date">
+                                <div class="medication-date">
+                                    {{ med.date[:10] if med.date else '—' }}
+                                </div>
+                                <div class="medication-time">
+                                    {% if med.date and med.date|length > 10 %}
+                                        {{ med.date[11:16] }}
+                                    {% endif %}
+                                </div>
+                            </td>
+
+                            <!-- Medication Name -->
+                            <td class="medication-cell medication-cell--medication">
+                                <div class="medication-name">
+                                    {{ med.drug_name_local or med.drug_name or '—' }}
+                                    {% if med.is_controlled %}
+                                        <span class="badge badge--warning badge--sm" title="Controlled Substance">
+                                            <i class="fa-solid fa-triangle-exclamation"></i>
+                                            {{ med.dea_schedule }}
+                                        </span>
+                                    {% endif %}
+                                </div>
+                                <div class="medication-details-small">
+                                    {% if med.type == 'outpatient' %}
+                                        {% if med.sig %}
+                                            {{ med.sig[:80] }}{% if med.sig|length > 80 %}...{% endif %}
+                                        {% elif med.drug_strength and med.drug_unit %}
+                                            {{ med.drug_strength }} {{ med.drug_unit }}
+                                        {% endif %}
+                                    {% else %}
+                                        {% if med.dosage %}
+                                            {{ med.dosage }}
+                                        {% endif %}
+                                        {% if med.route %}
+                                            • {{ med.route }}
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </td>
+
+                            <!-- Type -->
+                            <td class="medication-cell medication-cell--type">
+                                {% if med.type == 'outpatient' %}
+                                    <span class="badge badge--info">
+                                        <i class="fa-solid fa-house-medical"></i>
+                                        Outpatient
+                                    </span>
+                                {% else %}
+                                    <span class="badge badge--secondary">
+                                        <i class="fa-solid fa-hospital"></i>
+                                        Inpatient
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            <!-- Status/Details -->
+                            <td class="medication-cell medication-cell--status">
+                                {% if med.type == 'outpatient' %}
+                                    {% if med.status == 'ACTIVE' %}
+                                        <span class="badge badge--success">ACTIVE</span>
+                                    {% elif med.status == 'EXPIRED' %}
+                                        <span class="badge badge--secondary">EXPIRED</span>
+                                    {% elif med.status == 'DISCONTINUED' %}
+                                        <span class="badge badge--danger">DISCONTINUED</span>
+                                    {% else %}
+                                        <span class="badge badge--secondary">{{ med.status or 'UNKNOWN' }}</span>
+                                    {% endif %}
+                                    <div class="medication-meta">
+                                        {% if med.quantity %}
+                                            Qty: {{ med.quantity }}
+                                        {% endif %}
+                                        {% if med.days_supply %}
+                                            • {{ med.days_supply }} days
+                                        {% endif %}
+                                    </div>
+                                {% else %}
+                                    {% if med.action_status %}
+                                        <span class="badge badge--secondary">{{ med.action_status }}</span>
+                                    {% endif %}
+                                    <div class="medication-meta">
+                                        {% if med.action_type %}
+                                            {{ med.action_type }}
+                                        {% endif %}
+                                        {% if med.schedule %}
+                                            • {{ med.schedule }}
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                            </td>
+
+                            <!-- Provider -->
+                            <td class="medication-cell medication-cell--provider">
+                                {% if med.type == 'outpatient' %}
+                                    {{ med.provider_name or '—' }}
+                                    {% if med.pharmacy_name %}
+                                        <div class="medication-meta">{{ med.pharmacy_name }}</div>
+                                    {% endif %}
+                                {% else %}
+                                    {{ med.provider_name or med.administered_by or '—' }}
+                                    {% if med.ward_location %}
+                                        <div class="medication-meta">{{ med.ward_location }}</div>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Result Count -->
+            <div class="results-count">
+                Showing {{ total_count }} medication{{ 's' if total_count != 1 else '' }}
+                {% if days_filter < 3650 %}
+                    from the last {% if days_filter == 30 %}30 days{% elif days_filter == 90 %}90 days{% elif days_filter == 180 %}6 months{% elif days_filter == 365 %}year{% endif %}
+                {% endif %}
+            </div>
+        {% endif %}
+    {% endif %}
+</div>
+{% endblock %}

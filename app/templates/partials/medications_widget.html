@@ -1,0 +1,154 @@
+<!-- Medications Widget Content -->
+<!-- Widget Header -->
+<div class="widget__header">
+    <div class="widget__title-group">
+        <i class="fa-solid fa-prescription-bottle-medical widget__icon"></i>
+        <h3 class="widget__title">Medications</h3>
+    </div>
+    {% if counts %}
+        {% if counts.outpatient_controlled > 0 or counts.inpatient_controlled > 0 %}
+            <span class="badge badge--warning">
+                {{ counts.outpatient_controlled + counts.inpatient_controlled }} Controlled
+            </span>
+        {% elif counts.outpatient_active > 0 %}
+            <span class="badge badge--success">{{ counts.outpatient_active }} Active</span>
+        {% endif %}
+    {% endif %}
+</div>
+
+<!-- Widget Body -->
+<div class="widget__body">
+    <div class="widget-medications">
+        {% if error %}
+            <p class="text-muted" style="padding: 1rem; text-align: center;">
+                <i class="fa-solid fa-circle-exclamation"></i> Error loading medications
+            </p>
+        {% elif not has_outpatient and not has_inpatient %}
+            <p class="text-muted" style="padding: 1rem; text-align: center;">No medications recorded</p>
+        {% else %}
+            <!-- Two-Column Layout for Outpatient and Inpatient -->
+            <div class="medications-columns">
+                <!-- Left Column: Outpatient Medications -->
+                <div class="medications-column">
+                    <div class="medications-column__header">
+                        <i class="fa-solid fa-house-medical"></i>
+                        <span class="medications-column__title">Outpatient</span>
+                        {% if counts and counts.outpatient_active > 0 %}
+                            <span class="badge badge--success badge--sm">{{ counts.outpatient_active }} Active</span>
+                        {% endif %}
+                    </div>
+                    <div class="medications-column__body">
+                        {% if not has_outpatient %}
+                            <p class="text-muted" style="padding: 0.5rem; text-align: center; font-size: 0.875rem;">
+                                No outpatient medications
+                            </p>
+                        {% else %}
+                            <div class="medications-list-widget">
+                                {% for med in outpatient %}
+                                <div class="medication-item-widget">
+                                    <div class="medication-item-widget__header">
+                                        <div class="medication-item-widget__name">
+                                            {{ med.drug_name_local or med.drug_name }}
+                                            {% if med.is_controlled %}
+                                                <span class="badge badge--warning badge--sm" title="Controlled Substance">
+                                                    <i class="fa-solid fa-triangle-exclamation"></i>
+                                                    {{ med.dea_schedule }}
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                        {% if med.status %}
+                                            {% if med.status == 'ACTIVE' %}
+                                                <span class="badge badge--success badge--sm">{{ med.status }}</span>
+                                            {% elif med.status == 'EXPIRED' %}
+                                                <span class="badge badge--secondary badge--sm">{{ med.status }}</span>
+                                            {% elif med.status == 'DISCONTINUED' %}
+                                                <span class="badge badge--danger badge--sm">{{ med.status }}</span>
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
+                                    <div class="medication-item-widget__details">
+                                        {% if med.sig %}
+                                            <div class="medication-item-widget__sig">{{ med.sig }}</div>
+                                        {% endif %}
+                                        <div class="medication-item-widget__meta">
+                                            {% if med.date %}
+                                                Last fill: {{ med.date[:10] }}
+                                            {% endif %}
+                                            {% if med.quantity %}
+                                                • Qty: {{ med.quantity }}
+                                            {% endif %}
+                                            {% if med.days_supply %}
+                                                • {{ med.days_supply }} days
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Right Column: Inpatient Medications -->
+                <div class="medications-column">
+                    <div class="medications-column__header">
+                        <i class="fa-solid fa-hospital"></i>
+                        <span class="medications-column__title">Inpatient</span>
+                        {% if counts and counts.inpatient_total > 0 %}
+                            <span class="badge badge--info badge--sm">{{ counts.inpatient_total }} Recent</span>
+                        {% endif %}
+                    </div>
+                    <div class="medications-column__body">
+                        {% if not has_inpatient %}
+                            <p class="text-muted" style="padding: 0.5rem; text-align: center; font-size: 0.875rem;">
+                                No inpatient medications
+                            </p>
+                        {% else %}
+                            <div class="medications-list-widget">
+                                {% for med in inpatient %}
+                                <div class="medication-item-widget">
+                                    <div class="medication-item-widget__header">
+                                        <div class="medication-item-widget__name">
+                                            {{ med.drug_name_local or med.drug_name }}
+                                            {% if med.is_controlled %}
+                                                <span class="badge badge--warning badge--sm" title="Controlled Substance">
+                                                    <i class="fa-solid fa-triangle-exclamation"></i>
+                                                    {{ med.dea_schedule }}
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="medication-item-widget__details">
+                                        {% if med.dosage %}
+                                            <div class="medication-item-widget__dosage">{{ med.dosage }}</div>
+                                        {% endif %}
+                                        <div class="medication-item-widget__meta">
+                                            {% if med.date %}
+                                                Administered: {{ med.date[:10] }}
+                                            {% endif %}
+                                            {% if med.route %}
+                                                • {{ med.route }}
+                                            {% endif %}
+                                            {% if med.action_status %}
+                                                • {{ med.action_status }}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- View All Link -->
+            <div class="widget-action">
+                <a href="/patient/{{ icn }}/medications" class="btn btn--link btn--sm">
+                    <i class="fa-regular fa-arrow-up-right-from-square"></i>
+                    View All Medications
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>

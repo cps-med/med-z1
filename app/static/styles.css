@@ -1692,6 +1692,102 @@ input:focus-visible,
     border: 1px dashed #d1d5db;
 }
 
+/* Medications Widget */
+.widget-medications {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.medications-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.medications-column {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.medications-column__header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: #f3f4f6;
+    border-radius: 0.375rem;
+    border-left: 3px solid #0066cc;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+}
+
+.medications-column__title {
+    flex: 1;
+}
+
+.medications-column__body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.medications-list-widget {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.medication-item-widget {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    padding: 0.5rem;
+    background: #f9fafb;
+    border-radius: 0.375rem;
+    border-left: 3px solid #0066cc;
+}
+
+.medication-item-widget__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.medication-item-widget__name {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: #111827;
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    flex-wrap: wrap;
+}
+
+.medication-item-widget__details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.medication-item-widget__sig,
+.medication-item-widget__dosage {
+    font-size: 0.75rem;
+    color: #374151;
+    line-height: 1.4;
+}
+
+.medication-item-widget__meta {
+    font-size: 0.75rem;
+    color: #6b7280;
+    line-height: 1.4;
+}
+
 /* Vitals Widget */
 .widget-vitals {
     display: flex;
@@ -1779,9 +1875,9 @@ input:focus-visible,
 
 /* Page Container */
 .page-container {
-    padding: 2rem;
-    max-width: 1400px;
-    margin: 0 auto;
+    flex: 1;
+    padding: 1.5rem 0;  /* Vertical padding only - horizontal alignment with topbar */
+    overflow-y: auto;
 }
 
 /* Page Header */
@@ -2594,4 +2690,297 @@ input:focus-visible,
 .empty-state__message {
     font-size: 1rem;
     color: #6b7280;
+}
+
+/* ============================================
+   Full Medications Page Styles
+   ============================================ */
+
+/* Medications Summary Bar */
+.medications-summary-bar {
+    display: flex;
+    gap: 1rem;
+    margin: 1.5rem 0;
+    flex-wrap: wrap;
+}
+
+.medication-stat-card {
+    flex: 1;
+    min-width: 150px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    text-align: center;
+}
+
+.medication-stat-card__value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 0.25rem;
+}
+
+.medication-stat-card__label {
+    font-size: 0.875rem;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.medication-stat-card--active {
+    background: #ecfdf5;
+    border-color: #10b981;
+}
+
+.medication-stat-card--active .medication-stat-card__value {
+    color: #059669;
+}
+
+.medication-stat-card--controlled {
+    background: #fef3c7;
+    border-color: #f59e0b;
+}
+
+.medication-stat-card--controlled .medication-stat-card__value {
+    color: #d97706;
+}
+
+/* Medications Controls (Filters and Sort) */
+.medications-controls {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.filter-group__label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+    min-width: 100px;
+}
+
+.filter-pills {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.filter-pill {
+    padding: 0.5rem 1rem;
+    background: #f3f4f6;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    color: #374151;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.filter-pill:hover {
+    background: #e5e7eb;
+    border-color: #9ca3af;
+}
+
+.filter-pill--active {
+    background: #0066cc;
+    border-color: #0066cc;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.filter-pill--active:hover {
+    background: #0052a3;
+    border-color: #0052a3;
+}
+
+.sort-select {
+    padding: 0.5rem 1rem;
+    background: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    color: #374151;
+    cursor: pointer;
+    min-width: 200px;
+}
+
+.sort-select:focus {
+    outline: none;
+    border-color: #0066cc;
+    box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+/* Medications Table */
+.medications-table-container {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+}
+
+.medications-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.medications-table thead {
+    background: #f9fafb;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.medications-table th {
+    padding: 1rem;
+    text-align: left;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.medications-table tbody tr {
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.medications-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.medications-table tbody tr:hover {
+    background: #f9fafb;
+}
+
+.medication-row--controlled {
+    background: #fffbeb;
+}
+
+.medication-row--controlled:hover {
+    background: #fef3c7;
+}
+
+.medication-cell {
+    padding: 1rem;
+    vertical-align: top;
+}
+
+.medication-cell--date {
+    width: 120px;
+}
+
+.medication-cell--type {
+    width: 140px;
+}
+
+.medication-cell--status {
+    width: 180px;
+}
+
+.medication-date {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #111827;
+}
+
+.medication-time {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-top: 0.125rem;
+}
+
+.medication-name {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.medication-details-small {
+    font-size: 0.8125rem;
+    color: #6b7280;
+    line-height: 1.4;
+    margin-top: 0.25rem;
+}
+
+.medication-meta {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
+}
+
+/* Results Count */
+.results-count {
+    text-align: center;
+    padding: 1rem;
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+/* Responsive Medications Table */
+@media (max-width: 1024px) {
+    .medications-table {
+        font-size: 0.875rem;
+    }
+
+    .medication-cell {
+        padding: 0.75rem;
+    }
+
+    .medication-cell--provider {
+        display: none; /* Hide provider column on tablets */
+    }
+}
+
+@media (max-width: 768px) {
+    .medications-summary-bar {
+        gap: 0.75rem;
+    }
+
+    .medication-stat-card {
+        min-width: 120px;
+    }
+
+    .medication-stat-card__value {
+        font-size: 1.5rem;
+    }
+
+    .filter-group {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .filter-group__label {
+        min-width: auto;
+    }
+
+    /* Stack table on mobile */
+    .medications-table-container {
+        overflow-x: auto;
+    }
+
+    .medications-table {
+        min-width: 600px;
+    }
+
+    .medication-cell--status {
+        width: auto;
+    }
 }

@@ -60,9 +60,9 @@
                     <i class="fa-solid fa-capsules fa-lg"></i>
                     <span class="sidebar__text">Allergies</span>
                 </a>
-                <a href="#"
-                   class="sidebar__link sidebar__link--disabled"
-                   data-tooltip="Medications (Coming Soon)">
+                <a href="/medications"
+                   class="sidebar__link {% if active_page == 'medications' %}sidebar__link--active{% endif %}"
+                   data-tooltip="Patient Medications">
                     <i class="fa-solid fa-pills fa-lg"></i>
                     <span class="sidebar__text">Medications</span>
                 </a>
