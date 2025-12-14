@@ -6,7 +6,11 @@
 #  - save to med-z1/gold/patient_demographics
 #  - as patient_demographics.parquet
 # ---------------------------------------------------------------------
-# Updated 2025-12-11 to include address, phone, and insurance fields
+# Version History:
+#   v1.0 (2025-12-10): Initial Gold transformation
+#   v2.0 (2025-12-11): Added address, phone, and insurance fields
+#   v3.0 (2025-12-14): Added marital_status, religion, service_connected_percent,
+#                       deceased_flag, death_date (Demographics Phase 2)
 # ---------------------------------------------------------------------
 # To run this script from the project root folder, treat it as a
 # module (for now... there are other options to consider later).
@@ -53,7 +57,7 @@ def create_gold_patient_demographics():
         pl.col("icn").alias("patient_key")
     ])
 
-    # Final Gold schema
+    # Final Gold schema (v3.0 - includes Phase 2 fields)
     df_gold = df_patient.select([
         "patient_key",
         "patient_sid",      # Keep for joins with other Gold tables
@@ -75,6 +79,11 @@ def create_gold_patient_demographics():
         "address_zip",
         "phone_primary",
         "insurance_company_name",
+        "marital_status",
+        "religion",
+        "service_connected_percent",
+        "deceased_flag",
+        "death_date",
         "source_system",
         "last_updated",
     ])

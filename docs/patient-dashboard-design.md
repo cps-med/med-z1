@@ -535,6 +535,51 @@ User Views Complete Dashboard
 4. **Error:** Data fetch failed (show error message with retry option)
 5. **Placeholder:** Domain not yet implemented (show "Coming Soon")
 
+### 5.4 Widget Footer Design (Design Decision 2025-12-14)
+
+**Purpose:** Provide subtle visual breathing room at the bottom of all widgets without wasting vertical space.
+
+**Implementation Details:**
+- **Footer Type:** Minimal empty footer (standard component across all widgets)
+- **Padding:** `0.25rem` vertical (top/bottom), `1rem` horizontal (left/right)
+- **Total Height:** ~9px (8px padding + 1px border)
+- **Border:** 1px solid top border (`#f3f4f6`) for subtle visual separation
+- **Content:** Empty (provides spacing only)
+
+**Rationale:**
+- **Original footer** had `0.75rem` padding = 24px vertical space
+- **First iteration** reduced to `0.375rem` = 12px (50% reduction)
+- **Final decision** reduced to `0.25rem` = 8px (62.5% total reduction)
+- Testing confirmed this provides adequate breathing room without feeling cramped
+- Maximizes scrollable content area while maintaining professional appearance
+
+**Applied To:**
+- Vitals widget (`app/templates/partials/vitals_widget.html`)
+- Allergies widget (`app/templates/partials/allergies_widget.html`)
+- Medications widget (`app/templates/partials/medications_widget.html`)
+- Demographics widget (`app/templates/partials/demographics_widget.html`)
+
+**CSS Classes:**
+```css
+.widget__footer {
+    padding: 0.25rem 1rem;
+    border-top: 1px solid #f3f4f6;
+    flex-shrink: 0;
+    min-height: 0;  /* Allow empty footers to collapse to minimal height */
+}
+```
+
+**Widget Body Adjustments:**
+Widget body max-heights were adjusted to account for footer space:
+- Desktop: 221px (vs 180px original = +41px gain)
+- Tablet: 201px (vs 160px original = +41px gain)
+- Mobile: 171px (vs 130px original = +41px gain)
+
+**Net Result:** 23% more scrollable content area vs original design while maintaining visual comfort.
+
+**Link Placement:**
+"View All" / "View Full" links remain inside `widget__body` using the `widget-action` pattern (centered, with top border separator), not in the footer. Footer provides spacing only.
+
 ---
 
 ## 6. UI/UX Design

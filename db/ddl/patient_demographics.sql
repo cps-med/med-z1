@@ -4,7 +4,11 @@
 -- Create patient_demographics table in PostgreSQL for med-z1 serving DB
 -- This table stores Gold layer patient demographics optimized for UI queries
 -- ---------------------------------------------------------------------
--- Updated 2025-12-11 to include address, phone, and insurance fields
+-- Version History:
+--   v1.0 (2025-12-10): Initial schema with basic demographics
+--   v2.0 (2025-12-11): Added address, phone, and insurance fields
+--   v3.0 (2025-12-14): Added marital_status, religion, service_connected_percent,
+--                       deceased_flag, death_date (Demographics full page - Phase 2)
 -- ---------------------------------------------------------------------
 
 -- Drop table if exists (for development - use migrations in production)
@@ -39,6 +43,18 @@ CREATE TABLE patient_demographics (
     -- Insurance fields (primary insurance)
     insurance_company_name VARCHAR(100),
 
+    -- Additional Demographics (Phase 2)
+    marital_status VARCHAR(25),
+    religion VARCHAR(50),
+
+    -- Military Service (Phase 2)
+    service_connected_percent DECIMAL(5,2),
+
+    -- Critical Information (Phase 2)
+    deceased_flag CHAR(1),
+    death_date DATE,
+
+    -- Metadata
     veteran_status VARCHAR(50),
     source_system VARCHAR(20),
     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -65,6 +81,11 @@ COMMENT ON COLUMN patient_demographics.address_state IS 'Primary address state a
 COMMENT ON COLUMN patient_demographics.address_zip IS 'Primary address ZIP code';
 COMMENT ON COLUMN patient_demographics.phone_primary IS 'Primary phone number (placeholder in MVP)';
 COMMENT ON COLUMN patient_demographics.insurance_company_name IS 'Primary insurance company name';
+COMMENT ON COLUMN patient_demographics.marital_status IS 'Marital status (Single, Married, Divorced, Widowed, etc.)';
+COMMENT ON COLUMN patient_demographics.religion IS 'Religion for spiritual care coordination';
+COMMENT ON COLUMN patient_demographics.service_connected_percent IS 'Service connected disability percentage (0-100)';
+COMMENT ON COLUMN patient_demographics.deceased_flag IS 'Deceased flag (Y/N)';
+COMMENT ON COLUMN patient_demographics.death_date IS 'Date of death (if deceased)';
 
 -- Verify table creation
-SELECT 'patient_demographics table created successfully' AS status;
+SELECT 'patient_demographics table created successfully (v3.0 - Phase 2)' AS status;

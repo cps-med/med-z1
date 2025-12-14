@@ -220,22 +220,32 @@ med-z1 follows **strong, opinionated patterns** to ensure maintainability as the
 - Initially local (Chroma/FAISS)
 - Later: pgvector in PostgreSQL
 
-### Clinical Domains (Initial Scope)
+### Clinical Domains (Complete Scope)
 
-Focus areas for Phase 1+:
-- Admissions/Encounters (inpatient and outpatient)
-- Allergies
-- Demographics
-- Orders
-- Problems/Diagnoses
-- Medications
-- Laboratory Results
-- Notes/Documents
-- Radiology/Imaging
-- Vitals
-- Patient Flags
+**Implemented Domains (6):**
+1. ✅ Dashboard - Patient overview with clinical widgets
+2. ✅ Demographics - Full implementation (widget + dedicated page with comprehensive information)
+3. ✅ Vitals - Full implementation (widget + dedicated page with charts)
+4. ✅ Patient Flags - Modal-only implementation (topbar button, no widget/dedicated page)
+5. ✅ Allergies - Full implementation (widget + dedicated page)
+6. ✅ Medications - Full implementation (2x1 widget + dedicated page)
 
-DoD-specific views (CHCS/AHLTA) are explicitly out of scope for early versions.
+**Placeholder Domains (8):**
+7. 🚧 Encounters - Admissions and inpatient/outpatient visits (Priority: Next)
+8. 🚧 Labs - Laboratory results with trending (3x1 widget recommended)
+9. 🚧 Problems - Diagnoses and problem list
+10. 🚧 Orders - Clinical orders and requests
+11. 🚧 Notes - Clinical notes and documents
+12. 🚧 Imaging - Radiology and imaging studies
+13. 🚧 Immunizations - Vaccination history (Later Phase)
+14. 🚧 Procedures - Surgical and procedural history (Later Phase)
+
+**UI Implementation Notes:**
+- **Patient Flags**: Modal-only (accessible via topbar "View Flags" button with badge count). No dashboard widget or dedicated page per design decision 2025-12-14.
+- **Laboratory Results**: Recommended as 3x1 full-width widget to display multiple lab panels side-by-side with trend sparklines.
+- **All other domains**: Follow Pattern A (patient.py routes) or Pattern B (dedicated router) based on complexity (see `docs/architecture.md` Section 3).
+
+**DoD-specific views** (CHCS/AHLTA) are explicitly out of scope for early versions.
 
 ## Important Implementation Notes
 
@@ -355,7 +365,7 @@ The project uses:
 - `docs/patient-flags-design.md` - Phase 3 Patient Flags implementation specification (Document version v1.2)
 - `docs/vitals-design.md` - Vitals implementation specification ✅ Complete
 - `docs/allergies-design.md` - Allergies implementation specification (Days 1-5 complete)
-- `docs/demographics-enhancement-design.md` - Demographics widget enhancement (Document version v1.1) ✅ Complete
+- `docs/demographics-design.md` - Demographics full page implementation (Document version v2.2) ✅ Complete
 
 **Future Planning:**
 - `docs/vision.md` - Problem statement, user personas, user stories (to be created)

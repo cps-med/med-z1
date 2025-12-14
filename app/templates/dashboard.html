@@ -38,16 +38,13 @@
                 </div>
             </div>
 
-            <!-- Flags Widget (1x1 - Standard) -->
-            <div class="widget widget--1x1"
-                 id="widget-flags"
-                 hx-get="/api/dashboard/widget/flags/{{ patient.icn }}"
-                 hx-trigger="load"
-                 hx-swap="innerHTML">
-                <div class="widget__body">
-                    <div class="widget__spinner"></div>
-                </div>
-            </div>
+            <!-- Encounters Widget (1x1 - Standard) - Placeholder -->
+            {{ placeholder_widget(
+                size='1x1',
+                icon='fa-solid fa-hospital',
+                title='Encounters',
+                description='Recent admissions and visits'
+            ) }}
 
             <!-- Allergies Widget (1x1 - Standard) -->
             <div class="widget widget--1x1"
@@ -71,12 +68,12 @@
                 </div>
             </div>
 
-            <!-- Laboratory Results Widget (2x1 - Wide) - Placeholder -->
+            <!-- Laboratory Results Widget (3x1 - Full Width) - Placeholder -->
             {{ placeholder_widget(
-                size='2x1',
+                size='3x1',
                 icon='fa-solid fa-flask',
                 title='Laboratory Results',
-                description='Recent lab results and trends'
+                description='Recent lab panels with trends and sparklines'
             ) }}
 
             <!-- Problems/Diagnoses Widget (1x1 - Standard) - Placeholder -->
@@ -109,6 +106,22 @@
                 icon='fa-solid fa-x-ray',
                 title='Radiology/Imaging',
                 description='Imaging studies and reports'
+            ) }}
+
+            <!-- Immunizations Widget (1x1 - Standard) - Placeholder -->
+            {{ placeholder_widget(
+                size='1x1',
+                icon='fa-solid fa-syringe',
+                title='Immunizations',
+                description='Vaccination history and status'
+            ) }}
+
+            <!-- Procedures Widget (1x1 - Standard) - Placeholder -->
+            {{ placeholder_widget(
+                size='1x1',
+                icon='fa-solid fa-user-doctor',
+                title='Procedures',
+                description='Surgical and procedural history'
             ) }}
         </div>
 

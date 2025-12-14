@@ -1826,6 +1826,24 @@ Test all workflows:
 
 **Reference:** `docs/patient-flags-design.md` (v1.2)
 
+### 7.4 UI Implementation Decision (2025-12-14)
+
+**Decision:** Patient Flags will use **modal-only UI pattern** (no dashboard widget, no dedicated page)
+
+**Rationale:**
+- Flags are critical safety alerts best accessed on-demand via persistent topbar button
+- Modal provides sufficient functionality for viewing flags and history
+- Reduces dashboard clutter - flags don't need continuous visibility like vitals or allergies
+- Topbar "View Flags" button with badge count provides always-visible access
+
+**Changes Made:**
+- ❌ Removed Patient Flags widget from dashboard (previously in row 1, position 3)
+- ❌ Removed Patient Flags link from sidebar
+- ✅ Retained topbar "View Flags" button with badge count
+- ✅ Retained flags modal with full flag details and history
+
+**Impact:** Dashboard row 1, position 3 now available for Encounters widget
+
 ---
 
 ## 8. Phase 4: Vitals Domain ✅ Complete (2025-12-12)
@@ -2022,20 +2040,143 @@ Test all workflows:
 
 ---
 
-### 10.3 Future Domains (After Medications Complete)
+## 11. Phase 7a: Demographics Full Page Implementation - ✅ Complete
 
-**Next Priority Domains:**
-1. ✅ **Medications (RxOut + BCMA)** - Complete
-2. **Encounters (Inpat)** - Foundation for timeline views
-3. **Labs (LabChem)** - Demonstrates trending/charting similar to Vitals
-4. **Orders** - Complex workflow domain
-5. **Notes/Documents** - Text-heavy domain
-6. **Problems/Diagnoses** - Clinical context
+**Duration:** 4 days (actual)
+**Start Date:** 2025-12-14
+**Completion Date:** 2025-12-14
+**Status:** ✅ Complete - All Days (1-4) Implemented
 
-**Later Domains:**
-7. **Radiology/Imaging** - Integration with external viewers
-8. **Immunizations** - Patient safety and preventive care
-9. **Procedures** - Surgical and procedural history
+**Goal:** Add full demographics page with Phase 2 fields (marital status, religion, service connected %, deceased status) to complement the existing demographics widget.
+
+### 11.1 Implementation Progress
+
+**✅ Day 1 Complete (2025-12-14): Database Schema & Bronze ETL**
+- ✅ Created `etl/bronze_patient_disability.py` for SPatientDisability extraction
+- ✅ Extracted 10 disability records to Bronze Parquet
+- ✅ Updated `db/ddl/patient_demographics.sql` to v3.0 with 5 new columns:
+  - `marital_status` VARCHAR(25)
+  - `religion` VARCHAR(50)
+  - `service_connected_percent` DECIMAL(5,2)
+  - `deceased_flag` CHAR(1)
+  - `death_date` DATE
+- ✅ Executed DDL in PostgreSQL (36 patients, 27 columns total)
+- ✅ Verified Bronze Parquet row count matches source table (10 records)
+- ✅ Verified PostgreSQL schema has all new columns with correct data types
+
+**✅ Day 2 Complete (2025-12-14): Silver & Gold ETL Updates**
+- ✅ Updated `etl/silver_patient.py` to v3.0:
+  - Read Bronze patient_disability data
+  - Joined disability data to get service_connected_percent
+  - Extracted marital_status, religion, deceased_flag, death_date from existing patient Bronze
+  - Added 5 Phase 2 fields to Silver schema (23 columns total)
+- ✅ Updated `etl/gold_patient.py` to v3.0:
+  - Included 5 Phase 2 fields in Gold schema (27 columns total)
+- ✅ Ran Silver ETL successfully (36 patients, 10 service connected records joined)
+- ✅ Ran Gold ETL successfully (36 patients with all Phase 2 fields)
+- ✅ Verified all Phase 2 fields present with valid data in Parquet files
+
+**✅ Day 3 Complete (2025-12-14): PostgreSQL Load & API Endpoints**
+- ✅ Loaded updated Gold data to PostgreSQL (36 patients with 27 columns)
+- ✅ Verified Phase 2 fields in PostgreSQL with sample data:
+  - marital_status: DIVORCED, MARRIED, WIDOWED, SEPARATED
+  - religion: Christian, Muslim, Morman, Jewish
+  - service_connected_percent: 51%
+  - deceased_flag: N (for living patients)
+- ✅ Updated `app/db/patient.py::get_patient_demographics()`:
+  - Added 5 Phase 2 fields to SQL SELECT
+  - Added 5 Phase 2 fields to return dictionary
+  - Tested successfully (returns all 25 fields)
+- ✅ Created `app/routes/demographics.py` with Pattern B router:
+  - Implemented `GET /patient/{icn}/demographics` page route
+  - Implemented `GET /demographics` redirect route (placeholder)
+  - Added error handling and logging
+- ✅ Registered demographics router in `app/main.py`
+- ✅ Tested database query function (returns all Phase 2 fields correctly)
+
+**✅ Day 4 Complete (2025-12-14): Full Page Template & Styling**
+- ✅ Created `app/templates/patient_demographics.html` with 4-section layout:
+  - Personal Information (name, ICN, DOB, age, sex, marital status, religion, facility)
+  - Contact Information (phone, address)
+  - Insurance Information (primary insurance)
+  - Military Service & Eligibility (service connected %)
+- ✅ Added CSS to `app/static/styles.css` (~90 lines):
+  - Demographics page styles (.demo-section-card, .demo-grid, .demo-field)
+  - Deceased badge styles (.deceased-badge)
+  - Responsive grid (2-col desktop → 1-col mobile)
+- ✅ Updated demographics widget:
+  - Added "View Full Demographics" link using widget-action pattern
+  - Added minimal footer (0.25rem padding) for visual spacing
+  - Updated all widgets with standard minimal footer component
+- ✅ Tested full page with deceased patient (ICN1011530429) - Badge displays correctly
+- ✅ Tested with patients with/without service_connected_percent - "Not Available" displays correctly
+- ✅ Verified responsive design on all breakpoints
+
+**Widget Footer Design Decision (2025-12-14):**
+- Implemented minimal footer as standard component across all widgets
+- Footer padding: 0.25rem (62.5% reduction from original 0.75rem)
+- Total footer height: ~9px (vs original ~24px)
+- Provides subtle breathing room at bottom of widgets without feeling cramped
+- Applied to: Vitals, Allergies, Medications, Demographics widgets
+- See `docs/patient-dashboard-design.md` for detailed rationale
+
+### 11.2 Success Criteria
+
+**All Criteria Met:**
+- ✅ Complete ETL pipeline (Bronze → Silver → Gold → PostgreSQL) with Phase 2 fields
+- ✅ All Phase 2 data in PostgreSQL (36 patients with 27 columns)
+- ✅ Database query function returns all 25 fields
+- ✅ Demographics router registered and accessible (Pattern B)
+- ✅ API endpoint implemented (`GET /patient/{icn}/demographics`)
+- ✅ Full demographics page displays all 4 sections correctly
+- ✅ Deceased badge appears for deceased patients only
+- ✅ "Not Available" displays for missing optional fields
+- ✅ Widget → full page navigation works
+- ✅ Responsive design works on all screen sizes
+- ✅ Minimal footer provides visual breathing room
+
+**Design Document:** See `docs/demographics-design.md` (v2.2) for complete implementation specification.
+
+**Phase 7a Status:** ✅ Complete - Widget and Full Page Implemented
+
+---
+
+### 11.3 Future Domains (After Demographics Full Page Complete)
+
+**Phase 7: Core Clinical Domains (Priority Order)**
+1. ✅ **Medications (RxOut + BCMA)** - Complete (2025-12-13)
+2. 🚧 **Encounters (Inpat/Outpat)** - **Next Priority** - Foundation for timeline views
+   - **Scope:** Inpatient admissions, outpatient visits, ED encounters
+   - **Widget:** 1x1 - Recent encounters (last 3-6 months)
+   - **Full Page:** Chronological encounter history with diagnoses, providers, facilities
+   - **Rationale:** Foundational domain for understanding patient care timeline
+   - **UI Status:** Placeholder added to sidebar (after Vitals) and dashboard (row 1, position 3) - 2025-12-14
+3. 🚧 **Labs (LabChem)** - Demonstrates trending/charting similar to Vitals
+   - **Widget:** **3x1 (full width)** - Recent lab panels side-by-side with trend sparklines
+   - **Full Page:** Complete lab history with filtering, charting, abnormal value highlighting
+   - **UI Status:** Placeholder updated to 3x1 size - 2025-12-14
+4. 🚧 **Problems/Diagnoses** - Clinical context and problem list
+   - **Widget:** 1x1 or 2x1 - Active problems
+   - **Full Page:** Problem list with onset dates, status, providers
+5. 🚧 **Orders** - Complex workflow domain
+   - **Widget:** 1x1 or 3x1 (TBD) - Recent orders timeline
+   - **Full Page:** Order history with status tracking
+6. 🚧 **Notes/Documents** - Text-heavy domain
+   - **Widget:** 1x1 - Recent note titles/dates
+   - **Full Page:** Searchable note repository with preview/full view
+
+**Phase 8: Later Domains**
+7. 🚧 **Radiology/Imaging** - Integration with external viewers
+   - **Widget:** 1x1 - Recent imaging studies
+   - **Full Page:** Imaging history with thumbnail previews, report links
+8. 🚧 **Immunizations** - Patient safety and preventive care
+   - **Widget:** 1x1 - Recent immunizations and due vaccines
+   - **Full Page:** Complete immunization record with lot numbers, sites
+   - **UI Status:** Placeholder added to sidebar and dashboard (row 5, position 1) - 2025-12-14
+9. 🚧 **Procedures** - Surgical and procedural history
+   - **Widget:** 1x1 - Recent procedures
+   - **Full Page:** Procedure history with CPT codes, providers, outcomes
+   - **UI Status:** Placeholder added to sidebar and dashboard (row 5, position 2) - 2025-12-14
 
 ### 10.3 Proven Pattern for Each Domain
 

@@ -1288,6 +1288,10 @@ input:focus-visible,
     grid-column: span 2;
 }
 
+.widget--3x1 {
+    grid-column: span 3;
+}
+
 /* Widget Header */
 .widget__header {
     display: flex;
@@ -1328,7 +1332,7 @@ input:focus-visible,
     overflow-y: auto;
     overflow-x: hidden;
     padding: 1rem;
-    max-height: 180px;
+    max-height: 221px;  /* Adjusted for 0.25rem footer padding (~9px total) */
 }
 
 /* Custom scrollbar for widget body */
@@ -1350,13 +1354,14 @@ input:focus-visible,
     background: #a8a8a8;
 }
 
-/* Widget Footer */
+/* Widget Footer - Minimal spacing component (62.5% reduction from original) */
 .widget__footer {
-    padding: 0.75rem 1rem;
+    padding: 0.25rem 1rem;  /* Reduced from 0.75rem (original) → 0.375rem → 0.25rem */
     border-top: 1px solid #f3f4f6;
     font-size: 0.75rem;
     color: #6b7280;
     flex-shrink: 0;
+    min-height: 0;  /* Allow empty footers to collapse to minimal height */
 }
 
 /* Widget Loading State */
@@ -2227,8 +2232,9 @@ input:focus-visible,
         gap: 1rem;
     }
 
-    .widget--2x1 {
-        grid-column: span 2;  /* Wide widgets span full width */
+    .widget--2x1,
+    .widget--3x1 {
+        grid-column: span 2;  /* Wide widgets span full width on tablet */
     }
 
     .dashboard {
@@ -2236,12 +2242,12 @@ input:focus-visible,
     }
 
     .widget {
-        min-height: 230px;
-        max-height: 230px;
+        min-height: 271px;
+        max-height: 271px;
     }
 
     .widget__body {
-        max-height: 160px;
+        max-height: 201px;  /* Adjusted for 0.25rem footer padding (~9px total) */
     }
 }
 
@@ -2253,8 +2259,9 @@ input:focus-visible,
     }
 
     .widget--1x1,
-    .widget--2x1 {
-        grid-column: span 1;  /* All widgets full width */
+    .widget--2x1,
+    .widget--3x1 {
+        grid-column: span 1;  /* All widgets full width on mobile */
     }
 
     .dashboard {
@@ -2267,12 +2274,12 @@ input:focus-visible,
     }
 
     .widget {
-        min-height: 200px;
-        max-height: 200px;
+        min-height: 241px;
+        max-height: 241px;
     }
 
     .widget__body {
-        max-height: 130px;
+        max-height: 171px;  /* Adjusted for 0.25rem footer padding (~9px total) */
         padding: 0.75rem;
     }
 
@@ -2982,5 +2989,105 @@ input:focus-visible,
 
     .medication-cell--status {
         width: auto;
+    }
+}
+
+/* ============================================================================
+   DEMOGRAPHICS PAGE STYLES
+   ============================================================================ */
+
+/* Deceased Badge in Page Header */
+.deceased-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: #fee2e2;
+    border: 1px solid #fca5a5;
+    border-radius: 0.375rem;
+    color: #991b1b;
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.deceased-badge i {
+    font-size: 1rem;
+}
+
+/* Demographics Content Container */
+.demographics-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* Demographics Section Cards */
+.demo-section-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+}
+
+.demo-section-card__title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #111827;
+    margin: 0 0 1.25rem 0;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.demo-section-card__title i {
+    color: #4f46e5;
+    font-size: 1.25rem;
+}
+
+/* Demographics Field Grid (Two Columns) */
+.demo-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+}
+
+.demo-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+}
+
+.demo-field--full-width {
+    grid-column: span 2;
+}
+
+.demo-field__label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.demo-field__value {
+    font-size: 0.9375rem;
+    color: #111827;
+    line-height: 1.5;
+}
+
+/* Responsive: Mobile (single column) */
+@media (max-width: 767px) {
+    .demo-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .demo-field--full-width {
+        grid-column: span 1;
+    }
+
+    .demo-section-card {
+        padding: 1rem;
     }
 }

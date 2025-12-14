@@ -1,10 +1,41 @@
 # Patient Flags Design Specification - med-z1 Phase 3
 
-**Document Version:** 1.2
-**Last Updated:** 2025-12-11
+**Document Version:** 1.3
+**Last Updated:** 2025-12-14
 **Phase:** Phase 3 - Patient Flags Domain Implementation
 **Duration Estimate:** 1 week (5-7 days)
-**Progress:** Day 5 of 7 completed (71% - UI complete)  
+**Progress:** ✅ Complete (Modal-only implementation)
+
+---
+
+## ⚠️ UI Implementation Decision (2025-12-14)
+
+**Decision:** Patient Flags will use a **modal-only UI pattern** (no dashboard widget, no dedicated page).
+
+**What Was Implemented:**
+- ✅ Complete ETL pipeline (Bronze → Silver → Gold → PostgreSQL)
+- ✅ API endpoints for flag retrieval
+- ✅ Topbar "View Flags" button with badge count (with color coding for overdue flags)
+- ✅ Flags modal with National/Local flag categories
+- ✅ Lazy-loaded flag history with sensitive narrative text
+- ✅ Review status calculation (CURRENT, DUE SOON, OVERDUE)
+
+**What Was NOT Implemented (by design):**
+- ❌ Dashboard widget (originally planned, now removed per 2025-12-14 decision)
+- ❌ Dedicated full page view (originally planned, now removed per 2025-12-14 decision)
+- ❌ Sidebar navigation link (removed to reduce clutter)
+
+**Rationale:**
+- Flags are **critical safety alerts** best accessed on-demand via persistent topbar button
+- Modal provides **sufficient functionality** for viewing flags and history
+- **Reduces dashboard clutter** - flags don't need continuous visibility like vitals or allergies
+- Topbar "View Flags" button with badge count provides **always-visible access**
+- This is an intentional deviation from the standard widget + page pattern used for other domains
+
+**Impact:**
+- Dashboard position (row 1, column 3) now available for Encounters widget
+- Flags remain fully functional via topbar modal access
+- All originally planned features (categorization, history, review status) are intact
 
 ---
 

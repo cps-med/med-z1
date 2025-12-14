@@ -6,10 +6,15 @@
 #  - read from med-z1/bronze/cdwwork/patient_address
 #  - read from med-z1/bronze/cdwwork/patient_insurance
 #  - read from med-z1/bronze/cdwwork/insurance_company_dim
+#  - read from med-z1/bronze/cdwwork/patient_disability (Phase 2)
 #  - join and transform data
 #  - save to med-z1/silver/patient as patient_cleaned.parquet
 # ---------------------------------------------------------------------
-# Updated 2025-12-11 to include address, phone, and insurance data
+# Version History:
+#   v1.0 (2025-12-10): Initial Silver transformation
+#   v2.0 (2025-12-11): Added address, phone, and insurance data
+#   v3.0 (2025-12-14): Added marital_status, religion, service_connected_percent,
+#                       deceased_flag, death_date (Demographics Phase 2)
 # ---------------------------------------------------------------------
 # To run this script from the project root folder, treat it as a
 # module (for now... there are other options to consider later).
@@ -54,6 +59,11 @@ def transform_patient_silver():
     df_insurance_company = minio_client.read_parquet(insurance_company_path)
     logger.info(f"Bronze insurance company dimension data read: {len(df_insurance_company)} records")
 
+    # Read Bronze Patient Disability Parquet from MinIO (Phase 2)
+    disability_path = build_bronze_path("cdwwork", "patient_disability", "patient_disability_raw.parquet")
+    df_disability = minio_client.read_parquet(disability_path)
+    logger.info(f"Bronze patient disability data read: {len(df_disability)} records")
+
     # Prep to calculate current age from DOB
     today = datetime.now(timezone.utc).date()
 
@@ -87,6 +97,12 @@ def transform_patient_silver():
 
          # Station
          pl.col("Sta3n").cast(pl.Utf8).alias("primary_station"),
+
+         # Phase 2: Additional demographics
+         pl.col("MaritalStatus").str.strip_chars().alias("marital_status"),
+         pl.col("Religion").str.strip_chars().alias("religion"),
+         pl.col("DeceasedFlag").str.strip_chars().alias("deceased_flag"),
+         pl.col("DeathDateTime").cast(pl.Date).alias("death_date"),
 
          # Metadata
          pl.col("SourceSystem").alias("source_system"),
@@ -143,6 +159,18 @@ def transform_patient_silver():
     )
     logger.info("Joined insurance company names to insurance records")
 
+    # Select service connected percent from disability (Phase 2)
+    # Logic: One record per patient (most recent if multiple exist)
+    df_service_connected = (
+        df_disability
+        .select([
+            pl.col("PatientSID").alias("patient_sid_disability"),
+            pl.col("ServiceConnectedPercent").alias("service_connected_percent"),
+        ])
+        .unique(subset=["patient_sid_disability"])  # Deduplicate: one record per patient
+    )
+    logger.info(f"Selected {len(df_service_connected)} service connected records")
+
     # Join primary address to patient (left join - not all patients may have addresses)
     df = df_patient.join(
         df_primary_address,
@@ -161,13 +189,22 @@ def transform_patient_silver():
     )
     logger.info("Joined primary insurance to patient records")
 
+    # Join service connected data to patient (left join - not all patients may have disability records)
+    df = df.join(
+        df_service_connected,
+        left_on="patient_sid",
+        right_on="patient_sid_disability",
+        how="left"
+    )
+    logger.info("Joined service connected data to patient records")
+
     # Add phone placeholder (hardcoded for MVP)
     df = df.with_columns([
         pl.lit("Not available").alias("phone_primary"),
         pl.lit(datetime.now(timezone.utc)).alias("last_updated"),
     ])
 
-    # Select final columns
+    # Select final columns (v3.0 - includes Phase 2 fields)
     df = df.select([
         "patient_sid",
         "icn",
@@ -187,6 +224,11 @@ def transform_patient_silver():
         "address_zip",
         "phone_primary",
         "insurance_company_name",
+        "marital_status",
+        "religion",
+        "service_connected_percent",
+        "deceased_flag",
+        "death_date",
         "source_system",
         "last_updated",
     ])

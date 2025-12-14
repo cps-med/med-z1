@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Demographics - {{ patient.name_display }}{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="page-header__title-group">
+            <i class="fa-solid fa-user page-header__icon"></i>
+            <div>
+                <h1 class="page-header__title">Patient Demographics</h1>
+                <p class="page-header__subtitle">{{ patient.name_display }}</p>
+            </div>
+        </div>
+
+        <!-- Deceased Indicator (if applicable) -->
+        {% if patient.deceased_flag == 'Y' %}
+        <div class="deceased-badge">
+            <i class="fa-solid fa-cross"></i>
+            Deceased
+            {% if patient.death_date %}
+            - {{ patient.death_date }}
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Demographics Content -->
+    <div class="demographics-content">
+        <!-- Section 1: Personal Information -->
+        <div class="demo-section-card">
+            <h2 class="demo-section-card__title">
+                <i class="fa-solid fa-id-card"></i>
+                Personal Information
+            </h2>
+            <div class="demo-grid">
+                <div class="demo-field">
+                    <span class="demo-field__label">Full Name</span>
+                    <span class="demo-field__value">{{ patient.name_display }}</span>
+                </div>
+                <div class="demo-field">
+                    <span class="demo-field__label">ICN</span>
+                    <span class="demo-field__value">{{ patient.icn }}</span>
+                </div>
+                <div class="demo-field">
+                    <span class="demo-field__label">Date of Birth</span>
+                    <span class="demo-field__value">{{ patient.dob }} ({{ patient.age }} years old)</span>
+                </div>
+                <div class="demo-field">
+                    <span class="demo-field__label">SSN</span>
+                    <span class="demo-field__value">***-**-{{ patient.ssn_last4 }}</span>
+                </div>
+                <div class="demo-field">
+                    <span class="demo-field__label">Sex</span>
+                    <span class="demo-field__value">{{ patient.sex }}</span>
+                </div>
+                <div class="demo-field">
+                    <span class="demo-field__label">Marital Status</span>
+                    <span class="demo-field__value">{{ patient.marital_status or "Not Available" }}</span>
+                </div>
+                <div class="demo-field">
+                    <span class="demo-field__label">Religion</span>
+                    <span class="demo-field__value">{{ patient.religion or "Not Available" }}</span>
+                </div>
+                <div class="demo-field">
+                    <span class="demo-field__label">Primary Facility</span>
+                    <span class="demo-field__value">{{ patient.primary_station_name }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 2: Contact Information -->
+        <div class="demo-section-card">
+            <h2 class="demo-section-card__title">
+                <i class="fa-solid fa-address-book"></i>
+                Contact Information
+            </h2>
+            <div class="demo-grid">
+                <div class="demo-field demo-field--full-width">
+                    <span class="demo-field__label">Phone</span>
+                    <span class="demo-field__value">{{ patient.phone_primary or "Not Available" }}</span>
+                </div>
+                <div class="demo-field demo-field--full-width">
+                    <span class="demo-field__label">Address</span>
+                    <span class="demo-field__value">
+                        {% if patient.address_street1 %}
+                            {{ patient.address_street1 }}<br>
+                            {% if patient.address_street2 %}{{ patient.address_street2 }}<br>{% endif %}
+                            {{ patient.address_city }}{% if patient.address_city and patient.address_state %}, {% endif %}{{ patient.address_state }} {{ patient.address_zip }}
+                        {% else %}
+                            Not Available
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 3: Insurance Information -->
+        <div class="demo-section-card">
+            <h2 class="demo-section-card__title">
+                <i class="fa-solid fa-shield-halved"></i>
+                Insurance Information
+            </h2>
+            <div class="demo-grid">
+                <div class="demo-field">
+                    <span class="demo-field__label">Primary Insurance</span>
+                    <span class="demo-field__value">{{ patient.insurance_company_name or "Not Available" }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 4: Military Service & Eligibility -->
+        <div class="demo-section-card">
+            <h2 class="demo-section-card__title">
+                <i class="fa-solid fa-flag-usa"></i>
+                Military Service & Eligibility
+            </h2>
+            <div class="demo-grid">
+                <div class="demo-field">
+                    <span class="demo-field__label">Service Connected %</span>
+                    <span class="demo-field__value">
+                        {% if patient.service_connected_percent is not none %}
+                            {{ patient.service_connected_percent }}%
+                        {% else %}
+                            Not Available
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -52,6 +52,11 @@ def get_patient_demographics(icn: str) -> Optional[Dict[str, Any]]:
             address_zip,
             phone_primary,
             insurance_company_name,
+            marital_status,
+            religion,
+            service_connected_percent,
+            deceased_flag,
+            death_date,
             source_system,
             last_updated
         FROM patient_demographics
@@ -82,8 +87,13 @@ def get_patient_demographics(icn: str) -> Optional[Dict[str, Any]]:
                     "address_zip": result[15],
                     "phone_primary": result[16],
                     "insurance_company_name": result[17],
-                    "source_system": result[18],
-                    "last_updated": str(result[19]) if result[19] else None,
+                    "marital_status": result[18],
+                    "religion": result[19],
+                    "service_connected_percent": float(result[20]) if result[20] is not None else None,
+                    "deceased_flag": result[21],
+                    "death_date": str(result[22]) if result[22] else None,
+                    "source_system": result[23],
+                    "last_updated": str(result[24]) if result[24] else None,
                 }
 
             return None

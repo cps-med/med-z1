@@ -177,12 +177,28 @@ page_router = APIRouter(tags=["vitals-pages"])
 
 ### 3.3 Domain-Specific Routing Decisions
 
-| Domain       | Router Location    | Pattern | Full Page? | Widget? | Rationale                                    |
-|--------------|-------------------|---------|------------|---------|----------------------------------------------|
-| Demographics | `patient.py`      | A       | No         | Yes     | Core patient data, no dedicated page needed  |
-| Flags        | `patient.py`      | A       | No (modal) | Yes     | Modal overlay UX, not full page              |
-| Allergies    | `patient.py`      | A       | Planned    | Planned | API complete (Day 5), UI deferred to Day 6-7 |
-| Vitals       | `vitals.py`       | B       | Yes        | Yes     | Complex filtering/charting needs full page   |
+| Domain        | Router Location    | Pattern | Full Page? | Widget? | Rationale                                    |
+|---------------|-------------------|---------|------------|---------|----------------------------------------------|
+| Demographics  | `demographics.py` | B       | Yes        | Yes     | Full page with comprehensive patient information |
+| Flags         | `patient.py`      | A       | **No**     | **No**  | **Modal-only** via topbar button (see note below) |
+| Allergies     | `allergies.py`    | B       | Yes        | Yes     | Full implementation with dedicated page      |
+| Vitals        | `vitals.py`       | B       | Yes        | Yes     | Complex filtering/charting needs full page   |
+| Medications   | `medications.py`  | B       | Yes        | Yes     | Full implementation with 2x1 widget          |
+| Encounters    | TBD               | B (rec) | TBD        | TBD     | Planned - High priority (foundation domain)  |
+| Labs          | TBD               | B (rec) | TBD        | TBD     | Planned - 3x1 widget recommended for panels  |
+| Problems      | TBD               | A or B  | TBD        | TBD     | Planned - Pattern depends on complexity      |
+| Orders        | TBD               | B (rec) | TBD        | TBD     | Planned - Complex workflow domain            |
+| Notes         | TBD               | B (rec) | TBD        | TBD     | Planned - Text-heavy domain                  |
+| Imaging       | TBD               | B (rec) | TBD        | TBD     | Planned - May need external viewer           |
+| Immunizations | TBD               | A or B  | TBD        | TBD     | Later Phase - Pattern TBD                    |
+| Procedures    | TBD               | A or B  | TBD        | TBD     | Later Phase - Pattern TBD                    |
+
+**Important Note on Patient Flags (Design Decision 2025-12-14):**
+- Patient Flags uses a **modal-only UI pattern** accessed via topbar "View Flags" button with badge count
+- **No dashboard widget** (previously implemented, now removed)
+- **No dedicated full page** (deemed unnecessary - modal provides sufficient functionality)
+- This is an intentional deviation from the standard widget + page pattern
+- Rationale: Flags are critical safety alerts best displayed on-demand via persistent topbar access
 
 ### 3.4 Decision Matrix: When to Create a Dedicated Router
 
@@ -352,6 +368,7 @@ Keep both patterns as valid architectural choices based on domain requirements.
 - `docs/vitals-design.md` - Vitals implementation specification
 - `docs/patient-flags-design.md` - Patient Flags implementation specification
 - `docs/allergies-design.md` - Allergies implementation specification
+- `docs/demographics-design.md` - Demographics implementation specification
 - `app/README.md` - FastAPI application developer guide
 - `CLAUDE.md` - Project guidance for Claude Code assistant
 
