@@ -326,7 +326,7 @@ docker ps | grep postgres16
 
 ```bash
 # Connect to the default 'postgres' database
-docker exec -it postgres16 psql -U postgres -d postgres
+docker exec -it postgres16 psql -U postgres -d medz1
 
 # In the psql prompt, create the medz1 database
 CREATE DATABASE medz1;
@@ -2260,9 +2260,10 @@ UI Display (with "AI-generated" disclaimer)
 
 ## 11.3 Phase 8: Vista RPC Broker Simulator (Real-Time Data Layer)
 
-**Status:** 🚧 Future - Design Complete (v1.2, 2025-12-15)
+**Status:** 🚧 In Development - Phase 1 Complete (2025-12-15)
 **Duration:** 5-6 weeks (Phases 1-6 as defined in vista-rpc-broker-design.md)
 **Priority:** Medium - Addresses T-0 (today) data latency gap
+**Current Progress:** ✅ 17% complete (Phase 1 of 6 phases complete)
 
 ### Overview
 
@@ -2295,22 +2296,44 @@ UI Display (with "AI-generated" disclaimer)
 
 ### Implementation Phases
 
-| Phase | Focus | Duration | Key Deliverables |
-|-------|-------|----------|------------------|
-| **Phase 1** | Walking Skeleton | 1 week | Single site, single RPC (ORWPT PTINQ), ICN→DFN resolution |
-| **Phase 2** | Multi-Site Support | 1 week | 3 sites (200, 500, 630), site selection policy |
-| **Phase 3** | Demographics Domain | 1 week | 3 demographics RPCs, complete patient data files |
-| **Phase 4** | Vitals Domain | 1 week | 3 vitals RPCs, date-range queries, T-0/T-1 data |
-| **Phase 5** | Allergies & Medications | 1 week | 8 RPCs across 2 domains, merge/dedupe implementation |
-| **Phase 6** | Med-z1 Integration | 1 week | VistaClient, multi-site aggregation, UI "Refresh" buttons |
+| Phase | Focus | Duration | Status | Key Deliverables |
+|-------|-------|----------|--------|------------------|
+| **Phase 1** | Walking Skeleton | 1 week | ✅ Complete (Days 1-5/5) | ✅ Patient registry with real data<br>✅ DataLoader (ICN→DFN resolution)<br>✅ RPCHandler base class<br>✅ RPCRegistry infrastructure<br>✅ First RPC handler (ORWPT PTINQ)<br>✅ M-Serializer<br>✅ FastAPI integration<br>✅ 82 tests, 100% passing<br>✅ Comprehensive README.md |
+| **Phase 2** | Multi-Site Support | 1 week | ⏳ Not Started | 3 sites (200, 500, 630), site selection policy |
+| **Phase 3** | Demographics Domain | 1 week | ⏳ Not Started | 3 demographics RPCs, complete patient data files |
+| **Phase 4** | Vitals Domain | 1 week | ⏳ Not Started | 3 vitals RPCs, date-range queries, T-0/T-1 data |
+| **Phase 5** | Allergies & Medications | 1 week | ⏳ Not Started | 8 RPCs across 2 domains, merge/dedupe implementation |
+| **Phase 6** | Med-z1 Integration | 1 week | ⏳ Not Started | VistaClient, multi-site aggregation, UI "Refresh" buttons |
 
 ### Dependencies
 
 **Prerequisites:**
-- ✅ Core domains implemented (Demographics, Vitals, Allergies, Medications)
-- ✅ PostgreSQL serving database operational
-- ✅ Patient registry with ICN/DFN mappings (`mock/shared/patient_registry.json`)
-- 🚧 Realtime Overlay Service (can be Phase 6-7 enhancement)
+- ✅ Core domains implemented (Demographics, Vitals, Allergies, Medications) - Complete
+- ✅ PostgreSQL serving database operational - Complete
+- ✅ Patient registry with ICN/DFN mappings (`mock/shared/patient_registry.json`) - Complete (2025-12-15)
+- 🚧 Realtime Overlay Service (can be Phase 6-7 enhancement) - Future
+
+**Phase 1 Progress** (Completed 2025-12-15):
+- ✅ **Day 1:** Project structure + patient registry with 3 real test patients
+  - `vista/` directory structure created
+  - `mock/shared/patient_registry.json` populated with actual PostgreSQL data
+  - ICN100001 (316 records), ICN100010 (305 records), ICN100013 (312 records)
+- ✅ **Day 2:** DataLoader service implementation
+  - ICN→DFN resolution working for all 3 sites (200, 500, 630)
+  - 13 unit tests, 100% passing
+- ✅ **Day 3:** RPC handler infrastructure
+  - RPCHandler abstract base class
+  - RPCRegistry with dispatch mechanism
+  - 19 unit tests, 100% passing
+- ✅ **Day 4:** M-Serializer and first RPC handler
+  - VistA format conversion utilities (caret-delimited, FileMan dates)
+  - PatientInquiryHandler (ORWPT PTINQ) implementation
+  - 50 unit tests (34 M-Serializer + 16 handler), 100% passing
+- ✅ **Day 5:** FastAPI HTTP service and integration testing
+  - Complete HTTP API on port 8003 (`vista/app/main.py`)
+  - Multi-site support (3 sites: 200, 500, 630)
+  - Integration tests via curl (patient found, site switching, error conditions)
+  - Comprehensive documentation (`vista/README.md` - 580 lines)
 
 **Subsystem Location:**
 ```

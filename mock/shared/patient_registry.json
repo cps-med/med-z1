@@ -1,0 +1,97 @@
+{
+  "_comment": "Patient Registry - Single Source of Truth for Patient Identity",
+  "_purpose": "Maps patient ICNs (enterprise-wide identifiers) to site-specific DFNs for Vista RPC Broker simulation",
+  "_usage": [
+    "Mock CDW: SQL insert scripts reference this for patient data",
+    "Vista RPC Broker: Resolves ICN → DFN per site before executing RPCs",
+    "Future MPI Service: Can expose this data via REST API"
+  ],
+  "_customization_note": "✅ Customized with actual test patients from PostgreSQL (2025-12-15). Selected top 3 patients by clinical data richness for Vista RPC Broker simulation.",
+
+  "patients": [
+    {
+      "_note": "Patient 1 - Richest test patient (316 total records in PostgreSQL: 305 vitals, 3 allergies, 8 medications)",
+      "icn": "ICN100001",
+      "ssn": "666-12-6789",
+      "name_last": "DOOREE",
+      "name_first": "ADAM",
+      "name_middle": "",
+      "dob": "1980-01-02",
+      "sex": "M",
+      "treating_facilities": [
+        {
+          "sta3n": "200",
+          "name": "ALEXANDRIA",
+          "dfn": "100001",
+          "first_seen": "2020-01-15",
+          "last_seen": "T-7",
+          "_note": "Most recent care - primary site for this patient"
+        },
+        {
+          "sta3n": "500",
+          "name": "ANCHORAGE",
+          "dfn": "500001",
+          "first_seen": "2022-06-20",
+          "last_seen": "T-30",
+          "_note": "Occasional visits - specialty care"
+        },
+        {
+          "sta3n": "630",
+          "name": "PALO_ALTO",
+          "dfn": "630001",
+          "first_seen": "2023-03-10",
+          "last_seen": "T-180",
+          "_note": "Historical visits - less recent care"
+        }
+      ]
+    },
+    {
+      "_note": "Patient 2 - Multi-site test patient (305 total records in PostgreSQL: 301 vitals, 2 allergies, 2 medications)",
+      "icn": "ICN100010",
+      "ssn": "666-23-1010",
+      "name_last": "AMINOR",
+      "name_first": "ALEXANDER",
+      "name_middle": "",
+      "dob": "1965-07-15",
+      "sex": "M",
+      "treating_facilities": [
+        {
+          "sta3n": "200",
+          "name": "ALEXANDRIA",
+          "dfn": "100010",
+          "first_seen": "2018-05-10",
+          "last_seen": "T-14",
+          "_note": "Most recent care - primary site for this patient"
+        },
+        {
+          "sta3n": "500",
+          "name": "ANCHORAGE",
+          "dfn": "500010",
+          "first_seen": "2021-11-03",
+          "last_seen": "T-90",
+          "_note": "Secondary care site - less recent visits"
+        }
+      ]
+    },
+    {
+      "_note": "Patient 3 - Single-site test patient (312 total records in PostgreSQL: 304 vitals, 8 allergies)",
+      "icn": "ICN100013",
+      "ssn": "666-34-1013",
+      "name_last": "THOMPSON",
+      "name_first": "IRVING",
+      "name_middle": "",
+      "dob": "1948-11-05",
+      "sex": "M",
+      "treating_facilities": [
+        {
+          "sta3n": "630",
+          "name": "PALO_ALTO",
+          "dfn": "630013",
+          "first_seen": "2019-08-22",
+          "last_seen": "T-3",
+          "_note": "Single-site patient - all care at this facility only"
+        }
+      ]
+    }
+  ]
+}
