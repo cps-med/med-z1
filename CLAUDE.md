@@ -265,16 +265,16 @@ med-z1 follows **strong, opinionated patterns** to ensure maintainability as the
 
 ### Clinical Domains (Complete Scope)
 
-**Implemented Domains (6):**
+**Implemented Domains (7):**
 1. ✅ Dashboard - Patient overview with clinical widgets
 2. ✅ Demographics - Full implementation (widget + dedicated page with comprehensive information)
 3. ✅ Vitals - Full implementation (widget + dedicated page with charts)
 4. ✅ Patient Flags - Modal-only implementation (topbar button, no widget/dedicated page)
 5. ✅ Allergies - Full implementation (widget + dedicated page)
 6. ✅ Medications - Full implementation (2x1 widget + dedicated page)
+7. ✅ Encounters - Full implementation (1x1 widget + dedicated page with pagination) - **Completed 2025-12-15**
 
-**Placeholder Domains (8):**
-7. 🚧 Encounters - Admissions and inpatient/outpatient visits (Priority: Next)
+**Placeholder Domains (7):**
 8. 🚧 Labs - Laboratory results with trending (3x1 widget recommended)
 9. 🚧 Problems - Diagnoses and problem list
 10. 🚧 Orders - Clinical orders and requests
@@ -285,6 +285,7 @@ med-z1 follows **strong, opinionated patterns** to ensure maintainability as the
 
 **UI Implementation Notes:**
 - **Patient Flags**: Modal-only (accessible via topbar "View Flags" button with badge count). No dashboard widget or dedicated page per design decision 2025-12-14.
+- **Encounters**: First domain to implement pagination (ADR-005). Shows inpatient admissions only (outpatient visits deferred to Phase 2). Default page size: 20, supports 10/20/50/100 per page.
 - **Laboratory Results**: Recommended as 3x1 full-width widget to display multiple lab panels side-by-side with trend sparklines.
 - **All other domains**: Follow Pattern A (patient.py routes) or Pattern B (dedicated router) based on complexity (see `docs/architecture.md` Section 3).
 

@@ -6,12 +6,22 @@
 <div class="page-container">
     <!-- Page Header -->
     <div class="page-header">
+        <div class="page-header__breadcrumb">
+            <a href="/" class="breadcrumb-link">
+                <i class="fa-solid fa-house"></i>
+                Dashboard
+            </a>
+            <i class="fa-solid fa-chevron-right"></i>
+            <span class="breadcrumb-current">Demographics</span>
+        </div>
         <div class="page-header__title-group">
-            <i class="fa-solid fa-user page-header__icon"></i>
-            <div>
-                <h1 class="page-header__title">Patient Demographics</h1>
-                <p class="page-header__subtitle">{{ patient.name_display }}</p>
-            </div>
+            <h1 class="page-header__title">
+                <i class="fa-solid fa-user"></i>
+                Patient Demographics
+            </h1>
+            <p class="page-header__subtitle">
+                {{ patient.name_display }} ({{ patient.icn }})
+            </p>
         </div>
 
         <!-- Deceased Indicator (if applicable) -->

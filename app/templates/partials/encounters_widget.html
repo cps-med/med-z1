@@ -1,0 +1,119 @@
+<!-- Encounters Widget Content -->
+<!-- Widget Header -->
+<div class="widget__header">
+    <div class="widget__title-group">
+        <i class="fa-solid fa-hospital widget__icon"></i>
+        <h3 class="widget__title">Encounters</h3>
+    </div>
+    {% if counts and counts.active_admissions > 0 %}
+        <span class="badge badge--danger">{{ counts.active_admissions }} Active</span>
+    {% elif counts and counts.recent_encounters > 0 %}
+        <span class="badge badge--info">{{ counts.recent_encounters }} Recent</span>
+    {% endif %}
+</div>
+
+<!-- Widget Body -->
+<div class="widget__body">
+    <div class="widget-encounters">
+        {% if error %}
+            <p class="text-muted" style="padding: 1rem; text-align: center;">
+                <i class="fa-solid fa-circle-exclamation"></i> Error loading encounters
+            </p>
+        {% elif not has_encounters %}
+            <p class="text-muted" style="padding: 1rem; text-align: center;">No recent encounters</p>
+        {% else %}
+            <!-- Summary Stats -->
+            {% if counts %}
+            <div class="encounters-summary-widget">
+                <div class="encounters-stat">
+                    <div class="encounters-stat__value">{{ counts.total_encounters }}</div>
+                    <div class="encounters-stat__label">Total</div>
+                </div>
+                <div class="encounters-stat-divider"></div>
+                <div class="encounters-stat">
+                    <div class="encounters-stat__value {% if counts.active_admissions > 0 %}text-danger{% endif %}">
+                        {{ counts.active_admissions }}
+                    </div>
+                    <div class="encounters-stat__label">Active</div>
+                </div>
+                <div class="encounters-stat-divider"></div>
+                <div class="encounters-stat">
+                    <div class="encounters-stat__value">{{ counts.recent_encounters }}</div>
+                    <div class="encounters-stat__label">Recent</div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Encounters List (3-4 Most Recent) -->
+            <div class="encounters-list-widget">
+                {% for encounter in encounters %}
+                <div class="encounter-item-widget">
+                    <div class="encounter-item-widget__icon">
+                        {% if encounter.is_active %}
+                            <i class="fa-solid fa-bed-pulse text-danger" title="Active Admission"></i>
+                        {% elif encounter.discharge_disposition == 'Home' %}
+                            <i class="fa-solid fa-house-medical text-success" title="Discharged to Home"></i>
+                        {% elif encounter.discharge_disposition == 'Home with O2' %}
+                            <i class="fa-solid fa-house-medical" style="color: #0d9488;" title="Discharged to Home with Oxygen"></i>
+                        {% elif encounter.discharge_disposition in ['SNF', 'Rehab'] %}
+                            <i class="fa-solid fa-wheelchair text-info" title="Discharged to {{ encounter.discharge_disposition }}"></i>
+                        {% else %}
+                            <i class="fa-solid fa-hospital text-muted" title="Discharged"></i>
+                        {% endif %}
+                    </div>
+                    <div class="encounter-item-widget__info">
+                        <div class="encounter-item-widget__header">
+                            <span class="encounter-item-widget__date">
+                                {{ encounter.admit_datetime[:10] if encounter.admit_datetime else 'Unknown date' }}
+                            </span>
+                            {% if encounter.is_active %}
+                                <span class="badge badge--danger badge--sm">Active</span>
+                            {% elif encounter.is_extended_stay %}
+                                <span class="badge badge--warning badge--sm">Extended</span>
+                            {% else %}
+                                <span class="badge badge--secondary badge--sm">{{ encounter.admission_category }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="encounter-item-widget__facility">
+                            {{ encounter.facility_name or 'Unknown facility' }}
+                        </div>
+                        <div class="encounter-item-widget__meta">
+                            {% if encounter.is_active %}
+                                Admitted {{ encounter.total_days }} day{{ 's' if encounter.total_days != 1 else '' }} ago
+                            {% elif encounter.discharge_datetime %}
+                                Discharged {{ encounter.discharge_datetime[:10] }}
+                            {% endif %}
+                            {% if encounter.admit_diagnosis_code or encounter.discharge_diagnosis_text %}
+                                •
+                                {% if encounter.discharge_diagnosis_text %}
+                                    {{ encounter.discharge_diagnosis_text }}
+                                {% elif encounter.admit_diagnosis_code %}
+                                    {{ encounter.admit_diagnosis_code }}
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+
+                {% if counts and counts.total_encounters > encounters|length %}
+                <div class="encounter-item-widget encounter-item-widget--more">
+                    <i class="fa-solid fa-ellipsis"></i>
+                    {{ counts.total_encounters - encounters|length }} more encounter{{ 's' if (counts.total_encounters - encounters|length) > 1 else '' }}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- View All Link -->
+            <div class="widget-action">
+                <a href="/patient/{{ icn }}/encounters" class="btn btn--link btn--sm">
+                    <i class="fa-regular fa-arrow-up-right-from-square"></i>
+                    View All Encounters
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Widget Footer (minimal spacing) -->
+<div class="widget__footer"></div>

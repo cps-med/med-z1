@@ -38,13 +38,16 @@
                 </div>
             </div>
 
-            <!-- Encounters Widget (1x1 - Standard) - Placeholder -->
-            {{ placeholder_widget(
-                size='1x1',
-                icon='fa-solid fa-hospital',
-                title='Encounters',
-                description='Recent admissions and visits'
-            ) }}
+            <!-- Encounters Widget (1x1 - Standard) -->
+            <div class="widget widget--1x1"
+                 id="widget-encounters"
+                 hx-get="/api/patient/dashboard/widget/encounters/{{ patient.icn }}"
+                 hx-trigger="load"
+                 hx-swap="innerHTML">
+                <div class="widget__body">
+                    <div class="widget__spinner"></div>
+                </div>
+            </div>
 
             <!-- Allergies Widget (1x1 - Standard) -->
             <div class="widget widget--1x1"

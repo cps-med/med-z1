@@ -48,9 +48,9 @@
                     <i class="fa-solid fa-heart-pulse fa-lg"></i>
                     <span class="sidebar__text">Vitals</span>
                 </a>
-                <a href="#"
-                   class="sidebar__link sidebar__link--disabled"
-                   data-tooltip="Encounters/Admissions (Coming Soon)">
+                <a href="/encounters"
+                   class="sidebar__link {{ 'sidebar__link--active' if active_page == 'encounters' else '' }}"
+                   data-tooltip="Inpatient Encounters">
                     <i class="fa-solid fa-hospital fa-lg"></i>
                     <span class="sidebar__text">Encounters</span>
                 </a>

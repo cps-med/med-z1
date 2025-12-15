@@ -2,7 +2,8 @@
 |---------------------------------------------------------------
 | Inpat.Inpatient.sql
 |---------------------------------------------------------------
-| Create table
+| Create Inpatient Encounters table
+| Updated: 2025-12-15 for Encounters domain implementation
 |---------------------------------------------------------------
 */
 
@@ -11,71 +12,117 @@ PRINT '====            Inpat.Inpatient             ====';
 PRINT '================================================';
 GO
 
--- set the active database
+-- Set the active database
 USE CDWWork;
 GO
 
 /*
 |----------------------------------------------------------------------
-| Create Table
-| ---------------------------------------------------------------------
+| Drop existing table if needed (development environment only)
+|----------------------------------------------------------------------
 */
 
 PRINT '';
-PRINT '==== Create Table ===='
+PRINT '==== Dropping existing table if exists ====';
 GO
 
--- create Inpatient table in the Inpat schema
-CREATE TABLE Inpat.Inpatient
-(
-  InpatientSID                        BIGINT          NOT NULL,
-  PTFIEN                              VARCHAR(50)     NOT NULL,
-  Sta3n                               SMALLINT        NOT NULL,
-  PatientSID                          INT             NULL,
-  MeansTestIndicator                  VARCHAR(50)     NULL,
-  PatientFirstName                    VARCHAR(30)     NULL,
-  AdmitDateTime                       DATETIME2(0)    NULL,
-  AdmitDateSID                        INT             NULL,
-  AdmitSourceSID                      INT             NULL,
-  AdmitEligibilitySID                 INT             NULL,
-  TransferFromFacility                SMALLINT        NULL,
-  ASIHDays                            SMALLINT        NULL,
-  AdmitMASMovementTypeSID             INT             NULL,
-  AdmitFacilityMovementTypeSID        INT             NULL,
-  AdmitFromInstitutionSID             INT             NULL,
-  AdmitWardLocationSID                INT             NULL,
-  AdmitRoomBedSID                     INT             NULL,
-  AdmitDiagnosis                      VARCHAR(50)     NULL,
-  ProviderSID                         INT             NULL,
-  HeadNeckCancerFlag                  CHAR(1)         NULL,
-  IonizingRadiationFlag               CHAR(1)         NULL,
-  SHADFlag                            CHAR(1)         NULL,
-  PatientSSN                          VARCHAR(20)     NULL,
-  PseudoSSNReason                     VARCHAR(50)     NULL,
-  SSNVerificationStatus               VARCHAR(50)     NULL,
-  GovernmentEmployeeFlag              CHAR(1)         NULL,
-  SensitiveFlag                       CHAR(1)         NULL,
-  Age                                 NUMERIC(9)      NULL,
-  BirthDateTime                       DATETIME        NULL
-);
+IF OBJECT_ID('Inpat.Inpatient', 'U') IS NOT NULL
+BEGIN
+    DROP TABLE [Inpat].[Inpatient];
+    PRINT 'Table dropped successfully';
+END
+ELSE
+BEGIN
+    PRINT 'Table does not exist, proceeding to create';
+END
 GO
 
 /*
 |----------------------------------------------------------------------
-| Create Indicies
-| ---------------------------------------------------------------------
+| Create Table - Enhanced Inpatient Encounters
+|----------------------------------------------------------------------
 */
 
 PRINT '';
-PRINT '==== Create Indicies ===='
+PRINT '==== Creating table with enhanced schema ====';
 GO
 
--- create indexes for the SPatient.Patient table
-CREATE INDEX IX_InpatientSID ON Inpat.Inpatient (InpatientSID);
-CREATE INDEX IX_PatientSID ON Inpat.Inpatient (PatientSID);
-CREATE INDEX IX_Sta3n ON Inpat.Inpatient (Sta3n);
+-- Create enhanced Inpatient table with all required fields
+CREATE TABLE [Inpat].[Inpatient] (
+    -- Primary key
+    [InpatientSID] BIGINT IDENTITY(1,1) PRIMARY KEY,
+
+    -- Patient reference
+    [PatientSID] INT NOT NULL,
+
+    -- Admission details
+    [AdmitDateTime] DATETIME2(0) NOT NULL,
+    [AdmitLocationSID] INT NULL,
+    [AdmittingProviderSID] INT NULL,
+    [AdmitDiagnosisICD10] VARCHAR(20) NULL,
+
+    -- Discharge details (NULL if active admission)
+    [DischargeDateTime] DATETIME2(0) NULL,
+    [DischargeDateSID] INT NULL,
+    [DischargeWardLocationSID] INT NULL,
+    [DischargeDiagnosisICD10] VARCHAR(20) NULL,
+    [DischargeDiagnosis] VARCHAR(100) NULL,
+    [DischargeDisposition] VARCHAR(50) NULL,
+
+    -- Calculated fields
+    [LengthOfStay] INT NULL,
+    [EncounterStatus] VARCHAR(20) NULL, -- 'Active', 'Discharged'
+
+    -- Facility
+    [Sta3n] INT NOT NULL
+);
+GO
+
+PRINT 'Table created successfully';
+GO
+
+/*
+|----------------------------------------------------------------------
+| Create Indexes
+|----------------------------------------------------------------------
+*/
+
+PRINT '';
+PRINT '==== Creating indexes ====';
+GO
+
+SET QUOTED_IDENTIFIER ON;
+GO
+
+-- Index on PatientSID for patient-centric queries
+CREATE NONCLUSTERED INDEX [IX_Inpatient_PatientSID]
+    ON [Inpat].[Inpatient] ([PatientSID]);
+GO
+
+-- Composite index for common query pattern (patient encounters sorted by date)
+CREATE NONCLUSTERED INDEX [IX_Inpatient_PatientSID_AdmitDateTime]
+    ON [Inpat].[Inpatient] ([PatientSID], [AdmitDateTime] DESC);
+GO
+
+-- Index on AdmitDateTime for date range queries
+CREATE NONCLUSTERED INDEX [IX_Inpatient_AdmitDateTime]
+    ON [Inpat].[Inpatient] ([AdmitDateTime] DESC);
+GO
+
+-- Index on Sta3n for facility-based queries
+CREATE NONCLUSTERED INDEX [IX_Inpatient_Sta3n]
+    ON [Inpat].[Inpatient] ([Sta3n]);
+GO
+
+-- Index on EncounterStatus for active/discharged filtering
+CREATE NONCLUSTERED INDEX [IX_Inpatient_EncounterStatus]
+    ON [Inpat].[Inpatient] ([EncounterStatus])
+    WHERE [EncounterStatus] IS NOT NULL;
+GO
+
+PRINT 'Indexes created successfully';
 GO
 
 PRINT '';
-PRINT '==== Done ===='
+PRINT '==== Done ====';
 GO

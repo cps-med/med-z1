@@ -1,8 +1,14 @@
 # med-z1 – Product & Technical Development Plan
 
-December 8, 2025 • Document version v1.2
+December 15, 2025 • Document version v1.3
+
+> **Related Documentation:**
+> - **Tactical Implementation & Current Status:** See `implementation-roadmap.md` for detailed execution plan, current implementation status, and development phases
+> - **Architecture Decisions & Patterns:** See `architecture.md` for ADRs (Architecture Decision Records) and design patterns
+> - **Domain-Specific Specifications:** See `vitals-design.md`, `allergies-design.md`, `medications-design.md`, `patient-flags-design.md`, etc.
 
 **Changelog:**
+- **v1.3 (December 15, 2025):** Refactored to focus on strategic vision and product planning. Removed redundant technical implementation details (now in `implementation-roadmap.md`). Updated current status to reflect 6 clinical domains implemented and Vista Phase 1 complete.
 - **v1.2 (December 8, 2025):** Updated with actual implementation details - medallion architecture working, PostgreSQL setup, MinIO client, ETL pipeline complete for patient demographics, actual dependencies and project structure
 - **v1.1 (December 7, 2025):** Updated with CCOW integration requirements
 - **v1.0 (Initial):** Original strategic plan
@@ -252,117 +258,62 @@ Data freshness indicators and ETL status will be **initially treated as admin-le
 
 **Rationale:** Python 3.11 is chosen as the baseline for med-z1 because it offers a strong balance of performance and ecosystem stability. Many core dependencies for this project—data/ML libraries, database drivers, and AI tooling—have mature, well-tested support for 3.11, while newer Python versions can still lag slightly in compatible binary wheels and integrations. Standardizing on 3.11 reduces friction when installing and upgrading dependencies, while still benefiting from the “Faster CPython” improvements over older versions (3.9/3.10). Future upgrades to 3.12+ can be evaluated in a separate experimental environment once the full stack is known to be compatible.
 
-### 4.2 Data & Medallion Architecture (Implemented)
+### 4.2 Data & Medallion Architecture
 
-- **Source DB (development):**
-  - Mock CDW subsystem:
-    - SQL Server 2019 Docker container
-    - Two databases:
-      - `CDWWork` for VistA-like data (✅ implemented with 36 synthetic patients)
-      - `CDWWork1` for new EHR–like data (planned for future)
-    - Schemas and tables named to closely resemble real CDW patterns
-    - Synthetic sample data only (non-PHI/PII)
+**High-Level Approach:**
 
-- **Data Lake Storage:**
-  - **MinIO** (S3-compatible) running at `localhost:9000` (✅ implemented)
-  - Bucket: `med-z1`
-  - Path structure: `bronze/`, `silver/`, `gold/`, `ai/`
-  - Centralized client: `lake/minio_client.py` with reusable helper functions
+med-z1 implements a **medallion data architecture** (Bronze → Silver → Gold) using:
+- **Source:** Mock CDW (SQL Server) with VistA-like schemas
+- **Data Lake:** MinIO (S3-compatible) storing Parquet files
+- **Processing:** Polars for transformations, SQLAlchemy for database connectivity
+- **Serving:** PostgreSQL database optimized for low-latency patient queries
 
-- **File Formats:** Parquet (Bronze, Silver, Gold)
+**Layers:**
+- **Bronze:** Raw data from mock CDW with minimal transformation
+- **Silver:** Cleaned, harmonized data with unified patient identity (ICN)
+- **Gold:** Curated, query-optimized views ready for UI consumption
 
-- **Data Processing:**
-  - **Polars 1.18** for DataFrame operations
-  - **SQLAlchemy 2.0 + pyodbc** for SQL Server connectivity
-  - Note: Polars 1.x API differs from 0.x (e.g., `.str.strip_chars()` vs `.str.strip()`, `.dt.total_days()` vs `.dt.days()`)
+**ETL Patterns:**
+- Direct Python script execution for development (`python -m etl.bronze_patient`)
+- Future: Orchestration with Prefect, Airflow, or Azure Data Factory
 
-- **ETL Implementation (✅ Completed for Patient Demographics):**
-  - **Bronze:** `etl/bronze_patient.py` - Extracts from SPatient.SPatient to MinIO Parquet
-  - **Silver:** `etl/silver_patient.py` - Cleans/standardizes to MinIO Parquet
-  - **Gold:** `etl/gold_patient.py` - Creates query-optimized views to MinIO Parquet
-  - **Load:** `etl/load_postgres_patient.py` - Loads Gold Parquet to PostgreSQL
+> **For detailed medallion implementation, ETL patterns, code examples, and current pipeline status, see `docs/implementation-roadmap.md` Section 11.**
 
-- **Database Connectivity:**
-  - SQLAlchemy 2.0 + pyodbc for reliable SQL Server connections
-  - Connection pooling and error handling via SQLAlchemy
-  - Note: Tried connectorx but encountered Arrow compatibility issues with Polars 1.x
+### 4.3 Serving Database
 
-- **ETL Orchestration (initial):**
-  - Direct Python script execution (`python -m etl.bronze_patient`)
-  - Future: Prefect, Airflow, or Azure Data Factory
+**Database:** PostgreSQL 16 (running in Docker)
+- Database name: `medz1`
+- Optimized for low-latency per-patient queries
+- Populated from Gold layer Parquet files
 
-### 4.3 Serving Database (Implemented)
+**Design Pattern:**
+- One table per clinical domain (e.g., `patient_demographics`, `patient_vitals`, `patient_medications`)
+- Primary key: `patient_key` (ICN-based)
+- Indexes on frequently queried fields (ICN, name, SSN, dates, station)
 
-- **Database:** PostgreSQL 16 (running in Docker) (✅ implemented)
-  - Database name: `medz1`
-  - Host: localhost:5432
-  - User: postgres
+**Future Extension:** pgvector for AI/ML embeddings
 
-- **Implemented Tables:**
-  - `patient_demographics` - Gold layer patient demographics (✅ production-ready)
-    - Primary key: `patient_key` (currently = ICN)
-    - Unique constraint on `icn`
-    - Indexes on: `icn`, `name_last`, `name_first`, `ssn_last4`, `primary_station`, `dob`
-    - Current state: 36 patients loaded
-
-- **DDL Scripts:** `db/ddl/patient_demographics.sql`
-
-- **Configuration:**
-  - Connection URL in `config.py`: `DATABASE_URL`
-  - Environment variables in `.env`: `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, etc.
-  - Config dict: `POSTGRES_CONFIG` with connection parameters
-
-- **Data Loading:**
-  - ETL script reads Gold Parquet from MinIO
-  - Converts Polars → Pandas → PostgreSQL via SQLAlchemy
-  - Full pipeline working (Bronze → Silver → Gold → PostgreSQL)
-
-- **Future Tables (Planned):**
-  - `patient_timeline_event` - Unified timeline across domains
-  - `patient_medication` - Medication history
-  - `patient_lab_result` - Lab results
-  - `patient_flag` - Patient safety flags
-  - Additional domain-specific tables as needed
-
-- **Optional Extension:** pgvector for embeddings (future AI/ML work)
-
-FastAPI will primarily talk to the serving DB for interactive UI work and may call specialized services that read from Gold Parquet for more complex analytics.
+> **For complete PostgreSQL schema details, DDL scripts, and loading patterns, see `docs/implementation-roadmap.md` Section 10.**
 
 ### 4.4 Mock CDW Subsystem
 
-- **Container:** Microsoft SQL Server 2019 image (Docker).
+**Purpose:** Simulate VA Corporate Data Warehouse for local development with synthetic data only (no PHI/PII).
+
+**Implementation:**
+- **Container:** Microsoft SQL Server 2019 (Docker)
 - **Databases:**
-  - `CDWWork` – mock VistA data.
-  - `CDWWork1` – mock new EHR data.
-- **Schemas:**
-  - `Dim`, `SPatient`, `SStaff`, `Inpat`, `RxOut`, `BCMA`, and others as needed (e.g., Labs, Vitals, Orders, Flags).
+  - `CDWWork` – VistA-like data (36 synthetic patients)
+  - `CDWWork1` – Oracle Health-like data (future)
+- **Schemas:** `Dim`, `SPatient`, `SStaff`, `Inpat`, `RxOut`, `BCMA`, `Vital`, `LabChem`, etc.
 
-- **Artifacts & folder organization:**
+**Key Conventions:**
+- Surrogate primary keys: `*SID` columns (e.g., `PatientSID`, `InpatientSID`)
+- Station identifier: `Sta3n` field in most tables
+- Foreign key constraints lightweight or omitted for simplicity
 
-```text
-  mock/
-    sql-server/
-      cdwwork/
-        create/     # CREATE DATABASE, schemas, tables, indexes for CDWWork
-        insert/     # INSERT / BULK INSERT scripts for CDWWork synthetic data
-      cdwwork1/
-        create/     # CREATE DATABASE, schemas, tables, indexes for CDWWork1
-        insert/     # INSERT / BULK INSERT scripts for CDWWork1 synthetic data
-```
+**Data:** Version-controlled DDL and INSERT scripts in `mock/sql-server/cdwwork/`
 
-* This keeps the structure lean and focused on SQL Server schema and data setup needed for the mock environment.
-
-* **Key conventions:**
-
-  * Each core table has a `*SID` column (e.g., `PatientSID`, `InpatientSID`, `RxOutpatSID`, `BCMADispensedDrugSID`, `StateSID`).
-  * These `*SID` columns are treated as **surrogate primary keys**, typically with **clustered primary key constraints and supporting nonclustered indexes** on frequently filtered columns (e.g., `Sta3n`, `PatientSID`, `IssueDateTime`).
-  * Foreign key constraints may be **lightweight or omitted** in the mock environment to keep ETL simple and fast, but relationship patterns will be followed consistently.
-
-* **Usage:**
-
-  * Acts as the **source-of-truth** for development and testing.
-  * Provides stable, version-controlled "fixtures" for ETL and UI tests.
-  * CDWWork1 will mirror CDWWork conceptually but may intentionally differ in column naming and structure for some tables to exercise Silver-layer harmonization logic.
+> **For complete mock CDW schema details and conventions, see `docs/implementation-roadmap.md` Section 10.**
 
 ### 4.5 CCOW Context Management
 
@@ -442,336 +393,215 @@ FastAPI will primarily talk to the serving DB for interactive UI work and may ca
 - `python-dotenv==1.2.1` - Environment configuration
 - `connectorx==0.3.3` - Available but optional (compatibility issues with Polars 1.x)
 
+### 4.8 Vista RPC Broker - Real-Time Data Layer
+
+**Purpose:** Bridge the T-0 (today) data freshness gap that exists when relying solely on the Corporate Data Warehouse.
+
+#### The Challenge: T-0 Data Freshness Gap
+
+The VA Corporate Data Warehouse (CDW) operates on a **nightly batch update schedule**, meaning data in CDW is always **at least T-1 (yesterday's data)**. While this is acceptable for historical analysis and trending, it creates a critical gap for clinicians who need **T-0 (today's) real-time information** during active patient encounters.
+
+**Real-World Scenarios Where T-0 Data Matters:**
+
+- **Morning Vitals:** A patient's blood pressure taken at 8:00 AM today won't appear in CDW until tomorrow's batch runs. Clinicians reviewing the patient at 10:00 AM need to see those vitals now.
+- **Medication Administration:** BCMA (Bar Code Medication Administration) records from today's shift are invisible in CDW until tomorrow. Pharmacists and nurses need real-time medication administration status.
+- **New Allergies:** An allergy documented this morning during triage must be immediately visible to prescribers to prevent adverse reactions.
+- **Recent Lab Results:** Critical lab results from this morning need to be available now, not tomorrow.
+
+**Current JLV Limitation:**
+
+The existing Joint Longitudinal Viewer (JLV) attempts to solve this by making **real-time RPC calls to 140+ VistA instances** for every query, resulting in:
+- ❌ Slow performance (~20 seconds average page load)
+- ❌ High network overhead
+- ❌ Poor user experience
+- ❌ Scalability challenges
+
+med-z1's architecture addresses this with a **hybrid dual-source approach**.
+
+#### The Solution: Dual-Source Data Pattern
+
+med-z1 implements a **strategic dual-source data pattern** that leverages the best of both worlds:
+
+**Primary Source - PostgreSQL Serving Database (T-1 and earlier):**
+- Fast, indexed queries for historical data
+- Pre-aggregated Gold layer views
+- Consistent <2 second response times
+- Handles 95% of typical clinical queries
+
+**Secondary Source - Vista RPC Broker (T-0, today):**
+- Real-time queries to simulated VistA instances when needed
+- User-controlled "Refresh from VistA" button (not automatic)
+- Fetches only today's data, merged with historical PostgreSQL data
+- Targeted, on-demand freshness
+
+**How It Works:**
+
+1. **Default Behavior:** Page loads show fast PostgreSQL data (T-1 and earlier)
+2. **User Action:** Clinician clicks "Refresh from VistA" for a specific domain
+3. **Real-Time Fetch:** Vista RPC Broker queries relevant sites for T-0 data
+4. **Intelligent Merge:** System deduplicates and merges Vista + PostgreSQL results
+5. **Display:** User sees complete timeline (historical + today's data)
+
+**Performance Controls:**
+
+- **Site Selection Policy:** Default to top 3 most recent treating facilities (not all 140+ sites)
+- **Per-Domain Limits:** Vitals (2 sites), Allergies (5 sites), Medications (3 sites)
+- **Time Budget:** 15 second maximum, show partial results if incomplete
+- **User Control:** Explicit refresh action required (no automatic polling)
+
+#### User Benefits
+
+**For Clinicians:**
+- ✅ **Faster Default Experience:** Sub-2-second page loads from PostgreSQL (vs. JLV's ~20 seconds)
+- ✅ **Fresher Data When Needed:** Access to today's data with a single button click
+- ✅ **Complete Timeline:** Seamless view of historical + current data
+- ✅ **No Workflow Disruption:** Familiar "refresh" pattern from current EHR systems
+
+**For VA IT Operations:**
+- ✅ **Reduced Network Load:** 95% of queries use local PostgreSQL, not 140+ RPC calls
+- ✅ **Better Scalability:** Caching + controlled refresh vs. constant real-time queries
+- ✅ **Improved Reliability:** PostgreSQL uptime >> distributed VistA RPC availability
+
+**Strategic Advantage Over Current JLV:**
+
+med-z1 delivers both **speed** (fast PostgreSQL queries) AND **freshness** (on-demand Vista queries), solving the performance vs. currency dilemma that plagues current JLV.
+
+#### Architecture Overview
+
+**Implementation:**
+- Separate FastAPI service running on port 8003
+- HTTP-based API simulating VistA Remote Procedure Call (RPC) interface
+- Multi-site support with automatic ICN→DFN (site-specific patient ID) resolution
+- VistA-compatible response format (caret-delimited, FileMan dates)
+
+**Integration with med-z1:**
+- med-z1 web app calls Vista RPC Broker service via HTTP
+- User-triggered "Refresh from VistA" buttons in domain pages (Vitals, Medications, Allergies, etc.)
+- Transparent merge/deduplication of PostgreSQL + Vista results
+- Clear visual indicators showing data freshness and completeness
+
+**Data Flow:**
+```
+User clicks "Refresh from VistA"
+       ↓
+med-z1 app → Vista RPC Broker Service → Simulated VistA sites (JSON data)
+       ↓
+Vista returns T-0 data (caret-delimited VistA format)
+       ↓
+med-z1 merges with PostgreSQL T-1 data
+       ↓
+User sees complete timeline (deduplicated, sorted)
+```
+
+**Development Environment:**
+
+In development, the Vista RPC Broker uses **JSON-based patient data files** that simulate VistA responses. In production, it would connect to real VistA systems via broker connections.
+
+#### Implementation Status & Roadmap
+
+**✅ Phase 1 Complete (December 15, 2025):**
+- Infrastructure foundation (DataLoader, RPCHandler framework, RPCRegistry)
+- Multi-site support (3 sites: 200 ALEXANDRIA, 500 ANCHORAGE, 630 PALO ALTO)
+- First working RPC handler (ORWPT PTINQ - Patient Inquiry)
+- VistA format conversion utilities (M-Serializer)
+- Complete FastAPI HTTP service with 82 passing tests
+- Comprehensive documentation (`vista/README.md`)
+
+**📋 Planned Phases 2-6 (Future):**
+- **Phase 2:** Additional demographics RPCs, site selection policy
+- **Phase 3:** Vitals domain RPCs with date-range queries
+- **Phase 4:** Allergies domain RPCs
+- **Phase 5:** Medications domain RPCs (RxOut + BCMA)
+- **Phase 6:** med-z1 integration (VistaClient, UI "Refresh" buttons, merge/dedupe)
+
+**Timeline:**
+
+Vista RPC Broker development is planned for **after core clinical domains are implemented** (Encounters, Labs, Problems). This ensures the dual-source pattern is applied to mature, well-understood domains rather than being built alongside domain development.
+
+**Technical Documentation:**
+
+> **For detailed Vista RPC Broker technical design, RPC specifications, merge/deduplication algorithms, and implementation patterns, see:**
+> - `docs/vista-rpc-broker-design.md` (v1.3) - Complete technical specification
+> - `docs/implementation-roadmap.md` Section 11.3 - Implementation status and phases
+> - `vista/README.md` - Developer/operator guide
+
+**Configuration:**
+- Vista service URL: `VISTA_SERVICE_URL = "http://localhost:8003"` (dev environment)
+- Site registry: `vista/config/sites.json`
+- Patient data: `mock/shared/patient_registry.json`
+
 ---
 
-## 5. High-Level Project Layout (Current Implementation)
+## 5. Project Structure
+
+**High-Level Organization:**
 
 ```text
 med-z1/
-  docs/
-    med-z1-plan.md                   # This plan (Document version v1.2)
-    implementation-roadmap.md        # ✅ Tactical implementation guide
-    ccow-vault-design.md             # ✅ CCOW technical specification
-    patient-topbar-redesign-spec.md  # ✅ UI specification
-    med-z1-plan-review.md            # Document review and updates
+  app/               # FastAPI + HTMX web application (port 8000)
+  ccow/              # CCOW Context Vault service (port 8001)
+  vista/             # Vista RPC Broker simulator (port 8003)
+  etl/               # ETL scripts (Bronze/Silver/Gold transformations)
+  lake/              # MinIO client utilities
+  db/                # PostgreSQL DDL scripts
+  mock/              # Mock CDW (SQL Server schemas and data)
+  ai/                # AI/ML components (future)
+  docs/              # Design specifications and plans
+  tests/             # Unit/integration tests (future)
 
-  app/               # FastAPI + HTMX + Jinja2 web application
-    main.py
-    templates/
-    static/
-    README.md
-
-  ccow/              # ✅ CCOW Context Management Vault service (IMPLEMENTED)
-    main.py          # FastAPI service on port 8001
-    vault.py         # Thread-safe in-memory context vault
-    models.py        # Pydantic models
-    README.md
-
-  etl/               # ✅ ETL scripts - Bronze/Silver/Gold (IMPLEMENTED)
-    bronze_patient.py         # ✅ Extract from CDWWork to Bronze Parquet
-    silver_patient.py         # ✅ Transform Bronze to Silver Parquet
-    gold_patient.py           # ✅ Create Gold patient demographics Parquet
-    load_postgres_patient.py  # ✅ Load Gold to PostgreSQL
-    README.md
-
-  lake/              # ✅ MinIO/Parquet utilities (IMPLEMENTED)
-    minio_client.py  # ✅ Reusable MinIO client with helper functions
-    __init__.py
-
-  db/                # ✅ Database DDL and migrations (IMPLEMENTED)
-    ddl/
-      patient_demographics.sql  # ✅ PostgreSQL table DDL
-    migrations/      # Future: schema migrations
-
-  mock/              # ✅ Mock CDW subsystem (IMPLEMENTED)
-    sql-server/
-      cdwwork/
-        create/      # CREATE scripts for CDWWork
-          Spatient.Spatient.sql  # ✅ Patient demographics table
-          Dim.Sta3n.sql
-          # ... other tables
-        insert/      # INSERT scripts with synthetic data
-          SPatient.SPatient.sql  # ✅ 36 synthetic patients
-          # ... other data
-      cdwwork1/      # Future: Oracle Health-like data
-        create/
-        insert/
-
-  ai/                # AI/ML components (Future)
-    README.md
-
-  tests/             # Unit/integration tests (Future)
-
-  .venv/             # ✅ Shared Python virtual environment
-  .env               # ✅ Environment variables (single shared file)
-  config.py          # ✅ Centralized configuration module
-  requirements.txt   # ✅ Python dependencies
-  CLAUDE.md          # ✅ Developer guidance for Claude Code
-  README.md          # ✅ Project overview
+  .venv/             # Shared Python environment
+  .env               # Environment configuration
+  config.py          # Centralized configuration
+  requirements.txt   # Python dependencies
 ```
 
-**Note:** ✅ indicates implemented components
+**Configuration Philosophy:**
+- Single shared Python environment (`.venv/`)
+- Single shared `.env` file at project root
+- Single shared `config.py` module for all subsystems
 
-This project uses a single, shared Python environment (`.venv/`), a single, shared python-dotenv file (`.env`), and a single, shared configuration module (`config.py`). These three files are located in the project root folder.
-
-### 5.3 Mock Schema Design – CDWWork (VistA-like)
-
-Representative starter tables (inspired by your existing DDL):
-
-* **Database:** `CDWWork`
-* **Schemas & Tables:**
-
-  * `Dim.Sta3n`
-  * `Dim.State`
-  * `SPatient.SPatient`
-  * `SPatient.SPatientAddress`
-  * `SStaff.SStaff`
-  * `Inpat.Inpatient`
-  * `RxOut.RxOutpat`
-  * `BCMA.BCMADispensedDrug`
-  * Later: `LabChem.LabChem`, `LabMicro.LabMicro`, `Vital.Vital`, `Orders.Orders`, `Flag.Flag`, etc.
-
-**Key patterns:**
-
-* `*SID` columns as surrogate primary keys.
-* `Sta3n` indicating facility/station.
-* Separate dimension tables (e.g., `Dim.Sta3n`, `Dim.State`) referenced via SIDs.
-
-**Implementation Note - Actual Field Names:**
-
-See actual schema at `mock/sql-server/cdwwork/create/Spatient.Spatient.sql` for complete field list. Key fields used in Phase 1 ETL:
-
-* **Identity fields:**
-  * `PatientSID`, `PatientIEN`, `Sta3n`
-  * `PatientICN` (not `ICN`)
-  * `PatientSSN` (not `SSN`)
-  * `ScrSSN` (scrambled SSN)
-
-* **Demographics:**
-  * `PatientName`, `PatientLastName`, `PatientFirstName`
-  * `BirthDateTime` (not `DOB`)
-  * `Gender` (not `Sex`)
-  * `Age` (calculated from BirthDateTime)
-
-* **Status flags:**
-  * `TestPatientFlag` (not `TestPatient`)
-  * `DeceasedFlag`, `DeathDateTime`
-  * `VeteranFlag`, `ServiceConnectedFlag`
-
-* **Other:**
-  * `PatientType`, `MaritalStatus`, `Religion`
-
-**Station Mappings (Implemented in Gold Layer):**
-
-```python
-station_names = {
-    "508": "Atlanta VA Medical Center",
-    "516": "Bay Pines VA Healthcare System",
-    "552": "Dayton VA Medical Center",
-    "668": "Washington DC VA Medical Center",
-}
-```
-
-### 5.4 Mock Schema Design – CDWWork1 (Oracle Health–like)
-
-**Goal:** Mirror CDWWork conceptually but:
-
-* Use **slightly different naming conventions** to exercise Silver harmonization logic.
-* Optionally represent a smaller subset of facilities and patients.
-
-**Examples:**
-
-* `SPatient1.Patient` instead of `SPatient.SPatient`.
-* `Inpat1.Encounter` instead of `Inpat.Inpatient`.
-* Medication tables with similar content but different column names or structure.
-
-**Design choices:**
-
-* Maintain the `*SID` pattern (e.g., `PatientSID1`, `EncounterSID1`) to keep joins straightforward.
-* Use overlapping identifiers (e.g., ICN, EDIPI) so Silver can unify patient identity across CDWWork and CDWWork1.
-
-### 5.5 Serving Database Design (Implemented & Planned)
-
-**Database:** PostgreSQL 16 (`medz1`)
-
-#### ✅ Implemented Tables:
-
-**`patient_demographics`** (Production-ready)
-
-```sql
-CREATE TABLE patient_demographics (
-    patient_key VARCHAR(50) PRIMARY KEY,
-    icn VARCHAR(50) UNIQUE NOT NULL,
-    ssn VARCHAR(64),
-    ssn_last4 VARCHAR(4),
-    name_last VARCHAR(100),
-    name_first VARCHAR(100),
-    name_display VARCHAR(200),
-    dob DATE,
-    age INTEGER,
-    sex VARCHAR(1),
-    gender VARCHAR(50),
-    primary_station VARCHAR(10),
-    primary_station_name VARCHAR(200),
-    veteran_status VARCHAR(50),
-    source_system VARCHAR(20),
-    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Indexes for query optimization
-CREATE INDEX idx_patient_icn ON patient_demographics(icn);
-CREATE INDEX idx_patient_name_last ON patient_demographics(name_last);
-CREATE INDEX idx_patient_name_first ON patient_demographics(name_first);
-CREATE INDEX idx_patient_ssn_last4 ON patient_demographics(ssn_last4);
-CREATE INDEX idx_patient_station ON patient_demographics(primary_station);
-CREATE INDEX idx_patient_dob ON patient_demographics(dob);
-```
-
-**Current State:**
-- 36 patients loaded from Gold Parquet
-- Full ETL pipeline working (Bronze → Silver → Gold → PostgreSQL)
-- Ready for UI integration
-
-**DDL Location:** `db/ddl/patient_demographics.sql`
-
-#### 📋 Planned Tables (Future Implementation):
-
-**`patient_timeline_event`** - Unified timeline across domains
-
-* `event_id` (primary key)
-* `patient_id` (FK to patient_demographics)
-* `event_type` (admission, discharge, lab, med, note, imaging, vitals, flag)
-* `event_timestamp`
-* `facility`
-* `source_system` (VistA, new EHR)
-* `summary` (short description)
-* `details_json` (optional payload)
-
-**`patient_medication`** - Medication history
-
-* `med_id` (primary key)
-* `patient_id` (FK to patient_demographics)
-* `drug_name`
-* `dose`, `route`, `frequency`
-* `start_date`, `stop_date`
-* `ordering_provider`
-* `source_system`
-
-* **patient_lab_result**
-
-  * `lab_id`
-  * `patient_id`
-  * `test_name`
-  * `specimen`
-  * `result_value`
-  * `unit`
-  * `reference_range`
-  * `result_datetime`
-  * `abnormal_flag`
-
-* **patient_problem**, **patient_flag**, **patient_order**, **patient_vital** tables with similar patterns.
-
-This database is used by the FastAPI/HTMX app to satisfy per-patient and per-domain queries with minimal joins and predictable performance.
-
-### 5.6 Mock Data Generation
-
-* **Approach:**
-
-  * Use Python scripts to generate CSVs for each table.
-  * Load into SQL Server via:
-
-    * `BULK INSERT`,
-    * `bcp`, or
-    * SQLAlchemy-based loaders.
-
-* **Coverage:**
-
-  * Multiple patients across multiple sites (`Sta3n`).
-  * Mixture of chronic and acute conditions.
-  * Sufficient volume to test partitioning and performance (but controllable for local development).
+> **For detailed project structure, file locations, and implementation status, see `docs/implementation-roadmap.md` Section 12 and `CLAUDE.md`.**
 
 ---
 
 ## 6. Development Phases & Current Status
 
-### 6.1 Current Implementation Status (as of December 8, 2025)
+### 6.1 Current Implementation Status (as of December 15, 2025)
 
-**✅ Completed Components:**
+**✅ Infrastructure & Data Pipeline: COMPLETE**
+- Medallion architecture (Bronze/Silver/Gold) operational with MinIO
+- PostgreSQL serving database with 36 patients
+- CCOW Context Vault service (port 8001)
+- Complete ETL pipeline working for all implemented domains
 
-1. **Infrastructure Setup**
-   - Python 3.11 virtual environment (`.venv/`)
-   - Environment configuration (`.env`, `config.py`)
-   - Docker containers (SQL Server 2019, MinIO, PostgreSQL 16)
+**✅ Clinical Domains Implemented: 6 DOMAINS**
+1. **Dashboard** - Patient overview with clinical widgets (widget grid system)
+2. **Demographics** - Full implementation (2x1 widget + dedicated page with comprehensive information)
+3. **Patient Flags** - Modal-only implementation (topbar button with badge count, no dashboard widget)
+4. **Vitals** - Full implementation (1x1 widget + dedicated page with interactive charts)
+5. **Allergies** - Full implementation (1x1 widget + dedicated page)
+6. **Medications** - Full implementation (2x1 widget + dedicated page, RxOut + BCMA integration)
 
-2. **Mock CDW Database**
-   - SQL Server 2019 running CDWWork database
-   - `SPatient.SPatient` table with 36 synthetic patients
-   - Dimension tables (`Dim.Sta3n`, `Dim.State`)
-   - DDL and INSERT scripts under `mock/sql-server/cdwwork/`
+**✅ Vista RPC Broker Simulator: PHASE 1 COMPLETE**
+- Foundation for real-time data (T-0) overlay alongside PostgreSQL (T-1 historical)
+- FastAPI HTTP service (port 8003) with ICN→DFN resolution
+- Multi-site support (3 sites: 200, 500, 630)
+- First working RPC handler (ORWPT PTINQ - Patient Inquiry)
+- 82 unit tests, 100% passing
+- Comprehensive documentation (`vista/README.md`)
 
-3. **Data Lake (MinIO)**
-   - MinIO running at localhost:9000
-   - Bucket: `med-z1`
-   - Path structure: `bronze/`, `silver/`, `gold/`, `ai/`
-   - Centralized client: `lake/minio_client.py` with helper functions
+**📋 Next Priorities:**
+- **Encounters domain** (inpatient admissions, outpatient visits) - **NEXT**
+- Laboratory Results (trending and charting)
+- Problems/Diagnoses
+- Orders, Notes, Imaging
 
-4. **PostgreSQL Serving Database**
-   - Database: `medz1` created
-   - Table: `patient_demographics` with full schema and indexes
-   - 36 patients loaded from Gold layer
-   - DDL script: `db/ddl/patient_demographics.sql`
+**🔮 Future Work:**
+- AI/ML integration (chart summarization, DDI detection)
+- Vista Phase 2-6 (additional RPC handlers for real-time data)
+- Production hardening (authentication, comprehensive testing)
 
-5. **CCOW Context Vault Service**
-   - FastAPI service running on port 8001
-   - Thread-safe in-memory vault
-   - REST API endpoints (GET/PUT/DELETE active-patient)
-   - Full documentation in `docs/ccow-vault-design.md`
-
-6. **Complete Patient Demographics ETL Pipeline**
-   - `etl/bronze_patient.py` - Extract from SPatient.SPatient → MinIO Parquet
-   - `etl/silver_patient.py` - Clean/standardize → MinIO Parquet
-   - `etl/gold_patient.py` - Create demographics view → MinIO Parquet
-   - `etl/load_postgres_patient.py` - Load to PostgreSQL
-   - All scripts using SQLAlchemy + Polars 1.18
-
-7. **Documentation**
-   - `docs/med-z1-plan.md` (this document) - Strategic plan
-   - `docs/implementation-roadmap.md` - Tactical implementation guide
-   - `docs/ccow-vault-design.md` - CCOW technical spec
-   - `docs/patient-topbar-redesign-spec.md` - UI specification
-   - `CLAUDE.md` - Developer guidance
-
-**🚧 In Progress:**
-
-1. **FastAPI Web Application**
-   - Basic structure in `app/` directory
-   - Patient topbar UI implementation pending
-   - Integration with PostgreSQL and CCOW vault
-
-**📋 Planned (Next Phases):**
-
-1. **Patient Topbar UI** (Phase 2)
-   - Patient search functionality
-   - CCOW integration
-   - Demographics display
-
-2. **Additional Clinical Domains** (Phase 3+)
-   - Patient Flags
-   - Medications (RxOut, BCMA)
-   - Encounters/Admissions
-   - Laboratory Results
-   - Vitals, Orders, Notes, Imaging
-
-3. **AI/ML Integration** (Phase 4+)
-   - Chart overview summarization
-   - Drug-drug interaction detection
-   - Patient flag-aware risk narratives
-
-4. **Production Hardening**
-   - Authentication/authorization
-   - Comprehensive testing
-   - Performance optimization
-   - Deployment automation
+> **For detailed implementation status, roadmap, and technical patterns, see `docs/implementation-roadmap.md`.**
 
 ### 6.2 Technology Decisions Made
 
@@ -793,51 +623,38 @@ This database is used by the FastAPI/HTMX app to satisfy per-patient and per-dom
 
 ---
 
-## 7. Data & Medallion Design (Conceptual)
+## 7. Data Architecture - Medallion Pattern (Conceptual)
 
-### 7.1 Bronze Layer (MinIO – `med-z1-bronze`)
+med-z1 implements a **medallion data architecture** with three layers of increasing refinement:
 
-**Goal:** Land raw mock CDW data in Parquet, preserving source semantics and lineage.
+**Bronze Layer (Raw Data):**
+- Extracts raw data from mock CDW with minimal transformation
+- Preserves source semantics and lineage
+- Stored as Parquet in MinIO (`lake/bronze/`)
+- Includes metadata: `SourceSystem`, `SourceDatabase`, `LoadDateTime`
 
-**Design:**
+**Silver Layer (Cleaned & Harmonized):**
+- Cleans and standardizes data across CDWWork and CDWWork1
+- Harmonizes patient identity across systems (ICN/PatientKey)
+- Consistent schemas across clinical domains
+- Stored as Parquet in MinIO (`lake/silver/`)
 
-* Extract from `CDWWork` and `CDWWork1` with minimal transformation:
+**Gold Layer (Query-Optimized):**
+- Curated, query-friendly views for UI consumption
+- Optimized for per-patient and per-domain queries
+- Stored as Parquet in MinIO (`lake/gold/`)
+- Loaded into PostgreSQL serving database for low-latency access
 
-  * `bronze_patient`
-  * `bronze_patient_address`
-  * `bronze_encounter`
-  * `bronze_medication_outpat`
-  * `bronze_medication_bcma`
-  * `bronze_lab_result` (when added)
-  * `bronze_vital`
-  * `bronze_order`
-  * `bronze_patient_flag`
-  * `bronze_dim_sta3n`
-  * `bronze_dim_state`
+**Data Flow:**
+```
+Mock CDW (SQL Server) → Bronze → Silver → Gold → PostgreSQL Serving DB → FastAPI UI
+```
 
-* Store in MinIO as Parquet, partitioned by key dimensions (e.g., `sta3n`, `year`, `month`).
-
-* Add metadata such as `SourceSystem`, `SourceDatabase`, and `LoadDateTime`.
-
-### 7.2 Silver Layer (MinIO – `med-z1-silver`)
-
-* Clean and standardize entities across CDWWork and CDWWork1.
-* Harmonize patient, meds, encounters, labs, problems, vitals, orders, and flags into consistent schemas keyed by ICN/`PatientKey`.
-
-### 7.3 Gold Layer (MinIO – `med-z1-gold`)
-
-* Build curated, query-friendly views:
-
-  * `gold_patient_summary`
-  * `gold_patient_timeline_events`
-  * `gold_patient_medications`
-  * `gold_lab_trends`
-
-Gold remains in Parquet/Delta but is also used to populate the serving DB.
+> **For detailed Gold schemas, ETL implementation patterns, and code examples, see `docs/implementation-roadmap.md` Section 9 and Section 11.**
 
 ---
 
-## 7. Security, Privacy & Compliance (Conceptual)
+## 8. Security, Privacy & Compliance (Conceptual)
 
 * **Local development:**
 
@@ -859,9 +676,9 @@ Gold remains in Parquet/Delta but is also used to populate the serving DB.
 
 ---
 
-## 8. Development Roadmap & Milestones
+## 9. Development Roadmap & Milestones
 
-### 8.1 Phase 0 – Environment & Skeleton (1–2 weeks)
+### 9.1 Phase 0 – Environment & Skeleton (1–2 weeks)
 
 * Set up the repo with:
 
@@ -871,18 +688,18 @@ Gold remains in Parquet/Delta but is also used to populate the serving DB.
 * Implement FastAPI + Jinja2 + one HTMX interaction in `app/`.
 * Stand up Docker compose for SQL Server (mock CDW), MinIO, PostgreSQL.
 
-### 8.2 Phase 1 – Mock CDW & Bronze Extraction (2–3 weeks)
+### 9.2 Phase 1 – Mock CDW & Bronze Extraction (2–3 weeks)
 
 * Populate `mock/sql-server/cdwwork/create` and `cdwwork1/create` with DDL for key domains (Patients, Meds, Encounters, Flags).
 * Populate `mock/sql-server/cdwwork/insert` and `cdwwork1/insert` with data-load scripts for synthetic data.
 * Implement Bronze extract scripts in `etl/` (starting with Patients + Medications).
 
-### 8.3 Phase 2 – Silver & Gold Transformations in the Lake (3–5 weeks)
+### 9.3 Phase 2 – Silver & Gold Transformations in the Lake (3–5 weeks)
 
 * Implement Silver and Gold transformations for Patients, Meds, Encounters, Labs (when added), Problems, Flags.
 * Produce `gold_patient_summary` and `gold_patient_timeline_events`.
 
-### 8.4 Phase 3 – Serving DB Loading & Basic UI (3–4 weeks)
+### 9.4 Phase 3 – Serving DB Loading & Basic UI (3–4 weeks)
 
 * Load Gold into the serving DB.
 * Build patient search, patient overview, and at least one domain view (e.g., Medications) with the side-nav layout.
@@ -920,13 +737,13 @@ Gold remains in Parquet/Delta but is also used to populate the serving DB.
     * Test "Set Context" action and header refresh.
     * Test app restart with existing CCOW context (verify patient header populates correctly).
 
-### 8.5 Phase 4 – AI-Assisted Features (Experimental) (3–6 weeks)
+### 9.5 Phase 4 – AI-Assisted Features (Experimental) (3–6 weeks)
 
 * Implement chart overview summarization using Gold data.
 * Prototype DDI risk analysis based on Gold medications.
 * Experiment with patient flag–aware risk messaging.
 
-### 8.6 Phase 5 – Hardening, Observability & UX Iteration (Ongoing)
+### 9.6 Phase 5 – Hardening, Observability & UX Iteration (Ongoing)
 
 * Add logging, metrics, performance tuning.
 * Iterate on UX and accessibility.
@@ -934,7 +751,7 @@ Gold remains in Parquet/Delta but is also used to populate the serving DB.
 
 ---
 
-## 9. Assumptions & Open Questions
+## 10. Assumptions & Open Questions
 
 * Mock CDW schemas will remain reasonably stable once the initial set is defined, with incremental additions over time.
 * MinIO on local macOS is adequate to simulate ADLS Gen2/S3 patterns for early medallion work.
@@ -951,7 +768,7 @@ Gold remains in Parquet/Delta but is also used to populate the serving DB.
 
 ---
 
-## 10. Documentation & Learning Artifacts
+## 11. Documentation & Learning Artifacts
 
 Maintain documentation as part of the med-z1 repo under `docs/`:  
 
@@ -978,7 +795,7 @@ Maintain documentation as part of the med-z1 repo under `docs/`:
 
 ---
 
-## 11. Next Steps (Actionable)
+## 12. Next Steps (Actionable)
 
 1. Ensure `docs/med-z1-plan.md` (Document version v1) is saved as the current baseline plan and update it incrementally as the design evolves.
 

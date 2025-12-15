@@ -357,6 +357,85 @@ Keep both patterns as valid architectural choices based on domain requirements.
 **Decision:** Load Gold Parquet into PostgreSQL for serving database
 **Consequences:** Fast queries; SQL-friendly for developers; easy indexing
 
+### ADR-005: Pagination Pattern for Full Page Views (2025-12-15)
+**Status:** Accepted (Implemented in Encounters domain - 2025-12-15)
+**Context:** Some clinical domains (Encounters, Labs, Notes) can have 50+ records per patient, making single-page display impractical. Need consistent pagination pattern across all full page views.
+
+**Decision:** Implement simple Prev/Next pagination pattern with page size selector:
+- **Default page size:** 20 items per page
+- **Page size options:** 10, 20, 50, 100 items per page (dropdown selector)
+- **Navigation:** Previous and Next buttons (no numbered page buttons)
+- **Page indicator:** "Page X of Y (Z total items)" for context
+- **Technology:** Standard HTML links (no HTMX) for simplicity and URL shareability
+- **Conditional display:** Disabled Prev when on page 1; disabled Next when on last page
+- **URL parameters:** `?page=N&page_size=N&filter_*=true` for state preservation
+
+**Implementation Pattern:**
+```html
+<!-- Pagination Controls -->
+<div class="pagination">
+  {% if page > 1 %}
+    <a href="#"
+       hx-get="/patient/{{ patient_icn }}/encounters?page={{ page - 1 }}"
+       hx-target="#encounters-table">
+      &lt;&lt; Prev
+    </a>
+  {% endif %}
+  <span>Page {{ page }} of {{ total_pages }}</span>
+  {% if page < total_pages %}
+    <a href="#"
+       hx-get="/patient/{{ patient_icn }}/encounters?page={{ page + 1 }}"
+       hx-target="#encounters-table">
+      Next &gt;&gt;
+    </a>
+  {% endif %}
+</div>
+```
+
+**Backend Implementation:**
+```python
+# Database query with pagination
+def get_all_encounters(
+    icn: str,
+    page: int = 1,
+    per_page: int = 20
+) -> List[Dict[str, Any]]:
+    offset = (page - 1) * per_page
+    query = text(f"""
+        SELECT ...
+        FROM patient_encounters
+        WHERE patient_icn = :icn
+        ORDER BY admit_datetime DESC
+        LIMIT :per_page OFFSET :offset
+    """)
+    # Calculate total_pages = ceil(total_count / per_page)
+```
+
+**Alternatives Considered:**
+1. **Numbered page links (1, 2, 3, ...):** Rejected - adds complexity; overwhelming for 10+ pages
+2. **Infinite scroll:** Rejected - not ideal for medical data; users need discrete page boundaries
+3. **Load all data client-side:** Rejected - poor performance for 100+ records; increases page load time
+4. **"Load More" button:** Rejected - users lose ability to navigate back to specific pages
+
+**Consequences:**
+- ✅ **Positive:**
+  - Consistent UX across all domains (Encounters, Labs, Notes, Orders)
+  - Simple to implement and maintain
+  - Accessible (keyboard navigation, screen reader friendly)
+  - Performant and scalable (works for any data size)
+  - Shareable URLs (includes page state in query parameters)
+  - Page size selector allows user preference
+- ⚠️ **Trade-offs:**
+  - No direct jump to specific page (acceptable for most use cases; can add later if needed)
+  - Requires backend support for OFFSET/LIMIT queries
+- 🔮 **Future Enhancements:**
+  - Jump to page input box (useful for 10+ pages)
+  - "Showing X-Y of Z total" alternative display
+  - First/Last page buttons for very long lists
+
+**Implementation Results:** Successfully implemented in Encounters domain with 30+ records per patient. Page size selector (10/20/50/100) works well for varying data sizes. Filter state properly preserved across page navigation.
+**See:** `docs/encounters-design.md` Section 8.2
+
 ---
 
 ## Appendices
@@ -369,6 +448,7 @@ Keep both patterns as valid architectural choices based on domain requirements.
 - `docs/patient-flags-design.md` - Patient Flags implementation specification
 - `docs/allergies-design.md` - Allergies implementation specification
 - `docs/demographics-design.md` - Demographics implementation specification
+- `docs/encounters-design.md` - Encounters (Inpatient) implementation specification
 - `app/README.md` - FastAPI application developer guide
 - `CLAUDE.md` - Project guidance for Claude Code assistant
 

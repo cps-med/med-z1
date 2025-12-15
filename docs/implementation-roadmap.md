@@ -1,7 +1,11 @@
 # med-z1 Implementation Roadmap – Vertical Slice Strategy
 
 December 7, 2025 • Document version v1.1
-**Last Updated:** December 13, 2025
+**Last Updated:** December 15, 2025
+
+> **Related Documentation:**
+> - **Strategic Vision & Product Planning:** See `med-z1-plan.md` for product vision, user personas, core use cases, and UX strategy
+> - **Architecture Decisions & Patterns:** See `architecture.md` for ADRs (Architecture Decision Records) and design patterns
 
 ---
 

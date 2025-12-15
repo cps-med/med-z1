@@ -1,0 +1,249 @@
+/*
+|----------------------------------------------------------------------
+| Inpat.Inpatient.sql
+|----------------------------------------------------------------------
+| Insert test data for Encounters domain
+| Updated: 2025-12-15
+|
+| Test Data Distribution:
+| - 35 total encounters across 36 patients
+| - 5 active admissions (no discharge date)
+| - 10 recent discharges (<30 days from 2025-12-15)
+| - 15 historical discharges (30-365 days ago)
+| - 5 old discharges (>365 days ago)
+|
+| Facility Distribution:
+| - Site 508 (Atlanta): 12 encounters
+| - Site 516 (Bay Pines): 10 encounters
+| - Site 552 (Dayton): 8 encounters
+| - Site 688 (Washington DC): 5 encounters
+|
+| Edge Cases:
+| - Patient 1001: 6 admissions (frequent readmissions)
+| - Patients 1010, 1011: Same-day admit/discharge
+| - Patient 1015: Extended LOS (>30 days, active)
+| - 3 encounters with missing discharge diagnosis
+|----------------------------------------------------------------------
+*/
+
+PRINT '================================================';
+PRINT '====            Inpat.Inpatient             ====';
+PRINT '================================================';
+GO
+
+-- Set the active database
+USE CDWWork;
+GO
+
+PRINT '';
+PRINT 'Inserting 35 Inpatient Encounters';
+GO
+
+SET QUOTED_IDENTIFIER ON;
+GO
+
+/*
+|----------------------------------------------------------------------
+| ACTIVE ADMISSIONS (5 encounters - No discharge date)
+|----------------------------------------------------------------------
+*/
+INSERT INTO [Inpat].[Inpatient]
+(PatientSID, AdmitDateTime, AdmitLocationSID, AdmittingProviderSID, AdmitDiagnosisICD10,
+ DischargeDateTime, DischargeDateSID, DischargeWardLocationSID, DischargeDiagnosisICD10,
+ DischargeDiagnosis, DischargeDisposition, LengthOfStay, EncounterStatus, Sta3n)
+VALUES
+-- Active #1: Recent admission (2025-12-10) - Site 508
+(1001, '2025-12-10 14:30:00', 2001, 1001, 'I50.9',
+ NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Active', 508),
+
+-- Active #2: Recent admission (2025-12-12) - Site 516
+(1002, '2025-12-12 08:15:00', 2002, 1002, 'J18.9',
+ NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Active', 516),
+
+-- Active #3: Recent admission (2025-12-13) - Site 552
+(1003, '2025-12-13 06:00:00', 2003, 1003, 'R07.9',
+ NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Active', 552),
+
+-- Active #4: Week-old admission (2025-12-08) - Site 688
+(1004, '2025-12-08 11:20:00', 2004, 1004, 'N39.0',
+ NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Active', 688),
+
+-- Active #5: Extended LOS (>30 days, 2025-11-10) - Site 508 - EDGE CASE
+(1015, '2025-11-10 09:00:00', 2001, 1001, 'I21.9',
+ NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Active', 508);
+GO
+
+/*
+|----------------------------------------------------------------------
+| RECENT DISCHARGES (<30 days from 2025-12-15) - 10 encounters
+|----------------------------------------------------------------------
+*/
+INSERT INTO [Inpat].[Inpatient]
+(PatientSID, AdmitDateTime, AdmitLocationSID, AdmittingProviderSID, AdmitDiagnosisICD10,
+ DischargeDateTime, DischargeDateSID, DischargeWardLocationSID, DischargeDiagnosisICD10,
+ DischargeDiagnosis, DischargeDisposition, LengthOfStay, EncounterStatus, Sta3n)
+VALUES
+-- Recent Discharge #1: 3 days ago - Site 508
+(1005, '2025-12-09 07:00:00', 2001, 1001, 'K92.2',
+ '2025-12-12 16:00:00', NULL, 2001, 'K92.2', 'GI bleed, resolved', 'Home', 3, 'Discharged', 508),
+
+-- Recent Discharge #2: 5 days ago - Site 516
+(1006, '2025-12-05 10:30:00', 2002, 1002, 'I48.91',
+ '2025-12-10 14:00:00', NULL, 2002, 'I48.91', 'Atrial fibrillation with RVR', 'Home', 5, 'Discharged', 516),
+
+-- Recent Discharge #3: 7 days ago - Site 552
+(1007, '2025-12-01 13:00:00', 2003, 1003, 'J44.1',
+ '2025-12-08 11:00:00', NULL, 2003, 'J44.1', 'COPD exacerbation', 'Home with O2', 7, 'Discharged', 552),
+
+-- Recent Discharge #4: 10 days ago - Site 688
+(1008, '2025-11-30 06:45:00', 2004, 1004, 'E11.65',
+ '2025-12-05 10:00:00', NULL, 2004, 'E11.65', 'Diabetic foot ulcer', 'SNF', 5, 'Discharged', 688),
+
+-- Recent Discharge #5: 12 days ago - Site 508
+(1009, '2025-11-28 09:00:00', 2001, 1001, 'S72.001A',
+ '2025-12-03 15:00:00', NULL, 2001, 'S72.001A', 'Hip fracture, s/p ORIF', 'Rehab', 5, 'Discharged', 508),
+
+-- Recent Discharge #6: 15 days ago (same-day discharge) - Site 516 - EDGE CASE
+(1010, '2025-11-30 08:00:00', 2002, 1002, 'R10.9',
+ '2025-11-30 18:00:00', NULL, 2002, 'R10.9', 'Abdominal pain, observation', 'Home', 0, 'Discharged', 516),
+
+-- Recent Discharge #7: 18 days ago (same-day discharge) - Site 552 - EDGE CASE
+(1011, '2025-11-27 14:00:00', 2003, 1003, 'R55',
+ '2025-11-27 22:00:00', NULL, 2003, 'R55', 'Syncope, observation', 'Home', 0, 'Discharged', 552),
+
+-- Recent Discharge #8: 20 days ago - Site 688
+(1012, '2025-11-25 11:00:00', 2004, 1004, 'N18.3',
+ '2025-11-25 15:00:00', NULL, 2004, NULL, NULL, 'Home', 0, 'Discharged', 688),
+
+-- Recent Discharge #9: 25 days ago - Site 508
+(1013, '2025-11-20 16:00:00', 2001, 1001, 'G89.29',
+ '2025-11-24 10:00:00', NULL, 2001, 'G89.29', 'Chronic pain management', 'Home', 4, 'Discharged', 508),
+
+-- Recent Discharge #10: 28 days ago - Site 516
+(1014, '2025-11-17 12:00:00', 2002, 1002, 'I63.9',
+ '2025-11-22 09:00:00', NULL, 2002, 'I63.9', 'CVA with mild residual deficits', 'SNF', 5, 'Discharged', 516);
+GO
+
+/*
+|----------------------------------------------------------------------
+| HISTORICAL DISCHARGES (30-365 days ago) - 15 encounters
+|----------------------------------------------------------------------
+*/
+INSERT INTO [Inpat].[Inpatient]
+(PatientSID, AdmitDateTime, AdmitLocationSID, AdmittingProviderSID, AdmitDiagnosisICD10,
+ DischargeDateTime, DischargeDateSID, DischargeWardLocationSID, DischargeDiagnosisICD10,
+ DischargeDiagnosis, DischargeDisposition, LengthOfStay, EncounterStatus, Sta3n)
+VALUES
+-- Historical #1: 35 days ago (Patient 1001, admission #2) - Site 508
+(1001, '2025-11-08 10:00:00', 2001, 1001, 'I50.9',
+ '2025-11-10 14:00:00', NULL, 2001, 'I50.9', 'CHF exacerbation', 'Home', 2, 'Discharged', 508),
+
+-- Historical #2: 60 days ago - Site 516
+(1016, '2025-10-16 08:30:00', 2002, 1002, 'J96.01',
+ '2025-10-20 16:00:00', NULL, 2002, 'J96.01', 'Acute respiratory failure', 'Home with O2', 4, 'Discharged', 516),
+
+-- Historical #3: 90 days ago - Site 552
+(1017, '2025-09-16 14:00:00', 2003, 1003, 'K80.00',
+ '2025-09-19 11:00:00', NULL, 2003, 'K80.00', 'Cholelithiasis, s/p cholecystectomy', 'Home', 3, 'Discharged', 552),
+
+-- Historical #4: 120 days ago (Patient 1001, admission #3) - Site 508
+(1001, '2025-08-17 06:00:00', 2001, 1001, 'I48.0',
+ '2025-08-20 10:00:00', NULL, 2001, 'I48.0', 'Atrial flutter, cardioversion', 'Home', 3, 'Discharged', 508),
+
+-- Historical #5: 150 days ago - Site 688
+(1018, '2025-07-18 13:00:00', 2004, 1004, 'L03.115',
+ '2025-07-23 15:00:00', NULL, 2004, 'L03.115', 'Cellulitis of right lower extremity', 'Home', 5, 'Discharged', 688),
+
+-- Historical #6: 180 days ago - Site 508
+(1019, '2025-06-18 09:00:00', 2001, 1001, 'M54.5',
+ '2025-06-21 12:00:00', NULL, 2001, NULL, NULL, 'Home', 3, 'Discharged', 508),
+
+-- Historical #7: 210 days ago (Patient 1001, admission #4) - Site 516
+(1001, '2025-05-19 11:00:00', 2002, 1002, 'N17.9',
+ '2025-05-25 08:00:00', NULL, 2002, 'N17.9', 'Acute kidney injury', 'Home', 6, 'Discharged', 516),
+
+-- Historical #8: 240 days ago - Site 552
+(1020, '2025-04-19 07:30:00', 2003, 1003, 'F32.9',
+ '2025-04-22 14:00:00', NULL, 2003, 'F32.9', 'Major depressive disorder, stabilized', 'Home', 3, 'Discharged', 552),
+
+-- Historical #9: 270 days ago - Site 688
+(1021, '2025-03-20 15:00:00', 2004, 1004, 'G40.909',
+ '2025-03-24 10:00:00', NULL, 2004, 'G40.909', 'Seizure disorder, medication adjustment', 'Home', 4, 'Discharged', 688),
+
+-- Historical #10: 300 days ago (Patient 1001, admission #5) - Site 508
+(1001, '2025-02-18 08:00:00', 2001, 1001, 'K56.60',
+ '2025-02-23 16:00:00', NULL, 2001, 'K56.60', 'Bowel obstruction, resolved', 'Home', 5, 'Discharged', 508),
+
+-- Historical #11: 320 days ago - Site 516
+(1022, '2025-01-29 10:00:00', 2002, 1002, 'M25.511',
+ '2025-02-02 11:00:00', NULL, 2002, 'M25.511', 'Pain in right shoulder, PT', 'Home', 4, 'Discharged', 516),
+
+-- Historical #12: 340 days ago - Site 552
+(1023, '2025-01-09 12:00:00', 2003, 1003, 'R00.0',
+ '2025-01-11 09:00:00', NULL, 2003, NULL, NULL, 'Home', 2, 'Discharged', 552),
+
+-- Historical #13: 350 days ago - Site 508
+(1024, '2024-12-30 14:00:00', 2001, 1001, 'Z51.11',
+ '2025-01-03 10:00:00', NULL, 2001, 'Z51.11', 'Chemotherapy encounter', 'Home', 4, 'Discharged', 508),
+
+-- Historical #14: 355 days ago - Site 516
+(1025, '2024-12-25 06:00:00', 2002, 1002, 'T84.050A',
+ '2024-12-29 15:00:00', NULL, 2002, 'T84.050A', 'Periprosthetic osteolysis', 'Rehab', 4, 'Discharged', 516),
+
+-- Historical #15: 360 days ago (Patient 1001, admission #6) - Site 552 (frequent readmissions)
+(1001, '2024-12-20 09:00:00', 2003, 1003, 'I50.9',
+ '2024-12-24 13:00:00', NULL, 2003, 'I50.9', 'CHF exacerbation', 'Home', 4, 'Discharged', 552);
+GO
+
+/*
+|----------------------------------------------------------------------
+| OLD DISCHARGES (>365 days ago) - 5 encounters
+|----------------------------------------------------------------------
+*/
+INSERT INTO [Inpat].[Inpatient]
+(PatientSID, AdmitDateTime, AdmitLocationSID, AdmittingProviderSID, AdmitDiagnosisICD10,
+ DischargeDateTime, DischargeDateSID, DischargeWardLocationSID, DischargeDiagnosisICD10,
+ DischargeDiagnosis, DischargeDisposition, LengthOfStay, EncounterStatus, Sta3n)
+VALUES
+-- Old #1: 400 days ago - Site 508
+(1026, '2024-11-10 10:00:00', 2001, 1001, 'I25.10',
+ '2024-11-15 12:00:00', NULL, 2001, 'I25.10', 'CAD, s/p cardiac cath', 'Home', 5, 'Discharged', 508),
+
+-- Old #2: 450 days ago - Site 516
+(1027, '2024-09-21 08:00:00', 2002, 1002, 'M17.11',
+ '2024-09-25 14:00:00', NULL, 2002, 'M17.11', 'Osteoarthritis, s/p TKR', 'Rehab', 4, 'Discharged', 516),
+
+-- Old #3: 500 days ago - Site 552
+(1028, '2024-08-02 11:00:00', 2003, 1003, 'C34.90',
+ '2024-08-08 16:00:00', NULL, 2003, 'C34.90', 'Lung cancer, initiate treatment', 'Home', 6, 'Discharged', 552),
+
+-- Old #4: 550 days ago - Site 688
+(1029, '2024-06-13 09:00:00', 2004, 1004, 'I60.9',
+ '2024-06-20 11:00:00', NULL, 2004, 'I60.9', 'Subarachnoid hemorrhage, stabilized', 'SNF', 7, 'Discharged', 688),
+
+-- Old #5: 600 days ago - Site 508
+(1030, '2024-04-24 07:00:00', 2001, 1001, 'J81.0',
+ '2024-04-29 10:00:00', NULL, 2001, 'J81.0', 'Acute pulmonary edema', 'Home with O2', 5, 'Discharged', 508);
+GO
+
+PRINT '';
+PRINT '==== Inserted 35 Inpatient Encounters ====';
+PRINT 'Active Admissions: 5';
+PRINT 'Recent Discharges (<30d): 10';
+PRINT 'Historical Discharges (30-365d): 15';
+PRINT 'Old Discharges (>365d): 5';
+PRINT '';
+PRINT 'Facility Distribution:';
+PRINT '  Site 508 (Atlanta): 12 encounters';
+PRINT '  Site 516 (Bay Pines): 10 encounters';
+PRINT '  Site 552 (Dayton): 8 encounters';
+PRINT '  Site 688 (Washington DC): 5 encounters';
+PRINT '';
+PRINT '==== Edge Cases ====';
+PRINT '  Patient 1001: 6 total admissions (frequent readmissions)';
+PRINT '  Patients 1010, 1011: Same-day admit/discharge';
+PRINT '  Patient 1015: Extended LOS >30 days (active)';
+PRINT '  3 encounters with missing discharge diagnosis';
+PRINT '';
+PRINT '==== Done ====';
+GO

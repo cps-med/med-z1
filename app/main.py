@@ -33,7 +33,7 @@ from config import (
 )
 
 # Import routers
-from app.routes import patient, dashboard, vitals, medications, demographics
+from app.routes import patient, dashboard, vitals, medications, demographics, encounters
 
 app = FastAPI(title="med-z1")
 
@@ -49,6 +49,8 @@ app.include_router(vitals.page_router)  # Vitals full page routes
 app.include_router(medications.router)
 app.include_router(medications.page_router)  # Medications full page routes
 app.include_router(demographics.page_router)  # Demographics full page routes
+app.include_router(encounters.router)  # Encounters API routes
+app.include_router(encounters.page_router)  # Encounters full page routes
 
 # Configure logging for the entire application
 logging.basicConfig(
