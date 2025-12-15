@@ -77,6 +77,139 @@ async def get_vitals_page(request: Request, icn: str):
 
 ---
 
+## Real-Time Data Integration (Vista RPC Broker)
+
+### Overview
+
+Med-z1 uses a **dual-source data architecture**:
+- **PostgreSQL (T-1 and earlier):** Fast, cached historical data from CDW via ETL pipeline
+- **Vista RPC Broker (T-0, today):** Real-time queries with 1-3 second latency per site
+
+**Design Document:** `docs/vista-rpc-broker-design.md` (v1.2)
+
+### Integration Patterns
+
+**User-Controlled Refresh:**
+- Show PostgreSQL data by default (fast page loads)
+- "Refresh from VistA" button for real-time T-0 data
+- No automatic fetching (user maintains control)
+
+**Implementation:** `app/services/vista_client.py`
+
+```python
+from app.services.vista_client import VistaClient
+
+vista = VistaClient()
+
+@router.get("/patient/{icn}/vitals-realtime")
+async def get_vitals_realtime(icn: str):
+    # 1. Fetch historical from PostgreSQL (T-2 and earlier)
+    historical = await db.get_vitals(icn, days=7, exclude_today=True)
+
+    # 2. Get target sites based on treating facilities
+    target_sites = get_target_sites(icn, domain="vitals")  # Returns top 2 sites
+
+    # 3. Fetch real-time from Vista (T-0, today)
+    vista_results = await vista.call_rpc_multi_site(
+        sites=target_sites,
+        rpc_name="GMV LATEST VM",
+        params=[icn]  # ICN automatically translated to DFN per site
+    )
+
+    # 4. Parse and merge (deduplicate, prefer Vista for T-1+)
+    today_vitals = []
+    for site, response in vista_results.items():
+        if response.success:
+            parsed = vista.parse_vitals_response(response.data)
+            today_vitals.extend(parsed)
+
+    # 5. Merge with historical data (no duplicates)
+    all_vitals = merge_postgresql_and_vista_data(
+        postgresql_data=historical,
+        vista_data=today_vitals,
+        domain="vitals"
+    )
+
+    return templates.TemplateResponse("patient/vitals.html", {
+        "vitals": all_vitals,
+        "data_current_through": datetime.now().strftime("%b %d, %Y"),
+        "completeness": "complete" if all succeeded else "partial"
+    })
+```
+
+### Site Selection Policy
+
+**Default Limits** (prevents "query all 140 sites" failure mode):
+```python
+DOMAIN_SITE_LIMITS = {
+    "vitals": 2,        # Freshest data, recent care
+    "allergies": 5,     # Safety-critical, wider search
+    "medications": 3,   # Balance freshness + comprehensiveness
+    "demographics": 1,  # Typically unchanged
+    "labs": 3,          # Recent results most relevant
+    "default": 3,       # Conservative default
+}
+```
+
+**Hard Maximum:** 10 sites per query (requires explicit user action to exceed 5)
+
+### Merge/Deduplication Rules
+
+**Canonical Event Keys** (per domain):
+```python
+CANONICAL_KEYS = {
+    "vitals": ("date_time", "type", "sta3n", "vital_id"),
+    "allergies": ("allergen", "allergen_type", "sta3n", "allergy_id"),
+    "medications": ("rx_number", "sta3n"),
+}
+```
+
+**Priority Rules:**
+- Dates >= T-1: Prefer Vista (fresher, real-time)
+- Dates < T-1: Use PostgreSQL only
+- Duplicates: Keep Vista, discard PostgreSQL
+
+**Implementation:** `app/services/realtime_overlay.py` (future Phase 6-7 enhancement)
+
+### UI Pattern (HTMX)
+
+```html
+<div id="vitals-container">
+  <h3>Vitals (Last 7 Days)</h3>
+  <p class="data-freshness">Data current through: {{ data_current_through }}</p>
+
+  {% if completeness == "partial" %}
+    <p class="warning">Real-time refresh incomplete - {{ sites_responded }} of {{ sites_total }} sites responded</p>
+  {% endif %}
+
+  <button
+    hx-get="/patient/{{ patient_icn }}/vitals-realtime"
+    hx-target="#vitals-container"
+    hx-swap="outerHTML"
+    hx-indicator="#vitals-spinner"
+    class="btn-refresh">
+    Refresh from VistA
+  </button>
+
+  <div id="vitals-spinner" class="htmx-indicator">
+    🔄 Fetching real-time data from VistA sites...
+  </div>
+
+  <!-- Vitals table/chart -->
+</div>
+```
+
+### When to Implement
+
+**Prerequisites:**
+- Core domains implemented (Demographics, Vitals, Allergies, Medications)
+- Patient registry with ICN/DFN mappings created
+- Vista RPC Broker service operational (port 8003)
+
+**Timeline:** After Encounters + Labs domains complete (establishes baseline)
+
+---
+
 ## Project Structure
 
 ```

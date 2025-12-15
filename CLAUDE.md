@@ -19,11 +19,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 med-z1/
   app/           # FastAPI + HTMX + Jinja2 web application
   ccow/          # CCOW Context Management Vault service
+  vista/         # VistA RPC Broker Simulator (real-time data, T-0)
   etl/           # ETL scripts (Bronze/Silver/Gold transformations)
   mock/          # Mock data subsystem (simulates CDW, SDP, etc.)
     sql-server/  # Microsoft SQL Server schemas and data
       cdwwork/   # VistA-like mock data
       cdwwork1/  # New EHR-like mock data
+    shared/      # Shared patient registry (ICN/DFN mappings)
   ai/            # AI/ML and agentic components
   db/            # Serving DB DDL, migrations (create when needed)
   docs/          # Architecture, design docs
@@ -46,10 +48,15 @@ uvicorn app.main:app --reload
 # Run the CCOW Context Vault service (port 8001, separate terminal)
 uvicorn ccow.main:app --reload --port 8001
 
+# Run the Vista RPC Broker Simulator (port 8003, separate terminal) - Future
+# cd vista && uvicorn app.main:app --reload --port 8003
+
 # Access in browser
 # Main app: http://127.0.0.1:8000/
 # CCOW service: http://127.0.0.1:8001/
 # CCOW API docs: http://127.0.0.1:8001/docs
+# Vista service: http://127.0.0.1:8003/ (when implemented)
+# Vista API docs: http://127.0.0.1:8003/docs (when implemented)
 ```
 
 Stop servers with CTRL+C.
@@ -203,6 +210,42 @@ med-z1 follows **strong, opinionated patterns** to ensure maintainability as the
 **Integration:**
 - med-z1 web app calls CCOW when user selects patient
 - Configuration: `CCOW_BASE_URL = "http://localhost:8001"`
+
+### VistA RPC Broker Simulator (Real-Time Data Layer)
+
+**Purpose:**
+- Simulate VA VistA Remote Procedure Call (RPC) interface for real-time data (T-0, today)
+- Complement historical PostgreSQL data (T-1 and earlier) with current-day clinical data
+- Enable testing of "Refresh from VistA" UI pattern without accessing real VistA systems
+
+**Critical Architecture:**
+- **Dual-Source Data**: PostgreSQL (T-1+, fast) + Vista (T-0, 1-3s latency)
+- **ICN → DFN Resolution**: Automatic identity translation per VistA site
+- **Site Selection Policy**: Default 3 sites max, per-domain limits, hard cap of 10
+- **Merge/Dedupe**: Canonical event keys, Vista preferred for T-1+, no duplicates
+
+**Implementation:**
+- Separate FastAPI service on port 8003 (future)
+- Multi-site simulation (3 sites: Alexandria 200, Anchorage 500, Palo Alto 630)
+- JSON-based data files with T-0/T-1 relative notation (always "fresh")
+- Configurable simulated network latency (1-3 seconds)
+- Development/testing scope (Level 1 fidelity: data format only)
+
+**Key Endpoints** (future):
+- `POST /rpc/execute?site={sta3n}&icn={icn}` - Execute RPC with ICN
+- `GET /sites` - List available VistA sites
+- `GET /health` - Service health check
+
+**Integration:**
+- `app/services/vista_client.py` - HTTP client for med-z1 app
+- `app/services/realtime_overlay.py` (future) - Merge/dedupe orchestration
+- Configuration: `VISTA_SERVICE_URL = "http://localhost:8003"`
+- UI Pattern: User-controlled "Refresh from VistA" button (no auto-fetch)
+
+**Phase 1 Domains:** Demographics, Vitals, Allergies, Medications (~15 RPCs)
+
+**Design Document:** `docs/vista-rpc-broker-design.md` (v1.2)
+**Implementation Timeline:** Phase 8 (5-6 weeks, after Encounters + Labs)
 
 ### AI/ML Components
 
@@ -366,6 +409,10 @@ The project uses:
 - `docs/vitals-design.md` - Vitals implementation specification ✅ Complete
 - `docs/allergies-design.md` - Allergies implementation specification (Days 1-5 complete)
 - `docs/demographics-design.md` - Demographics full page implementation (Document version v2.2) ✅ Complete
+- `docs/vista-rpc-broker-design.md` - VistA RPC Broker Simulator specification (Document version v1.2) ✅ Design Complete
+  - Real-time data layer (T-0, today)
+  - ICN → DFN resolution, site selection policy, merge/dedupe rules
+  - 6-phase implementation plan (~5-6 weeks)
 
 **Future Planning:**
 - `docs/vision.md` - Problem statement, user personas, user stories (to be created)
@@ -375,9 +422,11 @@ The project uses:
 
 - **`app/README.md`** - FastAPI/HTMX application setup and routing patterns
   - Quick reference for API routing decisions (Pattern A vs Pattern B)
+  - Real-time data integration patterns (Vista RPC Broker)
   - Code examples for implementing new domains
   - Links to `docs/architecture.md` for detailed rationale
 - `ccow/README.md` - CCOW Context Vault setup and usage
+- `vista/README.md` - VistA RPC Broker simulator setup and RPC reference (future)
 - `etl/README.md` - ETL setup instructions and data-specific notes
 - `mock/README.md` - Mock data subsystem overview
 - `ai/README.md` - AI/ML layer guidance

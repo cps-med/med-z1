@@ -2258,6 +2258,123 @@ UI Display (with "AI-generated" disclaimer)
 
 ---
 
+## 11.3 Phase 8: Vista RPC Broker Simulator (Real-Time Data Layer)
+
+**Status:** 🚧 Future - Design Complete (v1.2, 2025-12-15)
+**Duration:** 5-6 weeks (Phases 1-6 as defined in vista-rpc-broker-design.md)
+**Priority:** Medium - Addresses T-0 (today) data latency gap
+
+### Overview
+
+**Purpose:** Simulate VA VistA Remote Procedure Call (RPC) interface to enable real-time data (T-0, today) queries alongside historical PostgreSQL data (T-1 and earlier). This addresses the architectural limitation where CDW is always at least T-1 (nightly batch updates) and provides fresher data for clinical decision-making.
+
+**Design Document:** `docs/vista-rpc-broker-design.md` (v1.2)
+
+### Key Architecture Decisions
+
+**Dual-Source Data Pattern:**
+- **PostgreSQL (T-1 and earlier):** Fast, cached, historical data via ETL pipeline
+- **Vista RPC Broker (T-0, today):** Real-time queries with 1-3 second latency per site
+- **User-Controlled Refresh:** "Refresh from VistA" button (no automatic fetching)
+
+**Critical Performance Controls:**
+- **Site Selection Policy:** Default to top 3 most recent treating facilities (Section 2.8)
+- **Per-Domain Limits:** Vitals (2 sites), Allergies (5), Medications (3), Demographics (1)
+- **Hard Maximum:** 10 sites per query, requires explicit user action to exceed default
+- **Time Budget:** 15 seconds max, show partial results if incomplete
+
+**ICN ↔ DFN Resolution:**
+- Med-z1 routes use ICN (Integrated Care Number)
+- Vista handlers receive DFN (local VistA site identifier)
+- Automatic translation at HTTP boundary (Section 2.7)
+
+**Merge/Deduplication Rules:**
+- Canonical event keys per domain (datetime + type + sta3n + id)
+- Priority: Vista data preferred for T-1 and T-0, PostgreSQL for older data
+- Deterministic deduplication across multiple site responses (Section 2.9.1)
+
+### Implementation Phases
+
+| Phase | Focus | Duration | Key Deliverables |
+|-------|-------|----------|------------------|
+| **Phase 1** | Walking Skeleton | 1 week | Single site, single RPC (ORWPT PTINQ), ICN→DFN resolution |
+| **Phase 2** | Multi-Site Support | 1 week | 3 sites (200, 500, 630), site selection policy |
+| **Phase 3** | Demographics Domain | 1 week | 3 demographics RPCs, complete patient data files |
+| **Phase 4** | Vitals Domain | 1 week | 3 vitals RPCs, date-range queries, T-0/T-1 data |
+| **Phase 5** | Allergies & Medications | 1 week | 8 RPCs across 2 domains, merge/dedupe implementation |
+| **Phase 6** | Med-z1 Integration | 1 week | VistaClient, multi-site aggregation, UI "Refresh" buttons |
+
+### Dependencies
+
+**Prerequisites:**
+- ✅ Core domains implemented (Demographics, Vitals, Allergies, Medications)
+- ✅ PostgreSQL serving database operational
+- ✅ Patient registry with ICN/DFN mappings (`mock/shared/patient_registry.json`)
+- 🚧 Realtime Overlay Service (can be Phase 6-7 enhancement)
+
+**Subsystem Location:**
+```
+vista/
+  app/
+    main.py                    # FastAPI service (port 8003)
+    services/
+      vista_server.py          # Per-site RPC handler
+      cluster.py               # Multi-site management
+      data_loader.py           # JSON data loading + ICN→DFN resolution
+      dispatcher.py            # RPC routing
+    handlers/
+      demographics.py          # ORWPT* RPCs
+      vitals.py                # GMV* RPCs
+      allergies.py             # ORQQAL* RPCs
+      medications.py           # ORWPS*, PSO* RPCs
+    utils/
+      m_serializer.py          # VistA format conversion
+      temporal.py              # T-0/T-1 date parsing
+  data/
+    sites/
+      200/, 500/, 630/         # Per-site JSON data files
+  config/
+    sites.json                 # Site registry
+```
+
+### Realtime Overlay Service (Phase 6-7 Enhancement)
+
+**Purpose:** Centralize real-time data orchestration to keep routes thin and maintainable.
+
+**Rationale:** After 2-3 domains establish the pattern, refactor common logic into:
+- `app/services/realtime_overlay.py`
+- Enforces site selection policy consistently
+- Applies merge/dedupe rules uniformly
+- Handles partial failures gracefully
+- Prevents code duplication across domain routes
+
+**API:**
+```python
+class RealtimeOverlayService:
+    async def get_domain_with_overlay(
+        icn: str, domain: str, include_realtime: bool = True
+    ) -> DomainOverlayResult
+```
+
+**Timeline:** Implement after Vista Phase 6 completes, then refactor existing "Refresh from VistA" endpoints.
+
+### Success Metrics
+
+- ✅ 90th percentile "Refresh from VistA" response time: <10 seconds
+- ✅ No domain queries >10 sites by default
+- ✅ Partial failures show clear completeness indicators
+- ✅ No duplicate data in merged PostgreSQL + Vista results
+- ✅ Med-z1 UI can fetch T-0 data on-demand for 4 domains (Demographics, Vitals, Allergies, Medications)
+
+### Open Questions
+
+1. **When to implement?** After core domains (Encounters, Labs, Problems) or sooner?
+   - **Recommendation:** After Encounters + Labs are complete (establishes broader domain coverage baseline)
+2. **Which domains get real-time support first?** All 4 Phase 1 domains or subset?
+   - **Recommendation:** Start with Vitals + Medications (highest clinical value for T-0 data)
+
+---
+
 ## 9. Gold Schema Design
 
 ### 9.1 Patient Demographics Gold Schema

@@ -1,8 +1,15 @@
 # VistA RPC Broker Simulator - Design Document
 
-**Document Version:** v1.1
-**Date:** 2025-12-14
-**Status:** Draft - Refinements in Progress
+**Document Version:** v1.2
+**Date:** 2025-12-15
+**Status:** Draft - Critical Architecture Updates Applied
+
+**Changelog v1.2** (2025-12-15):
+- ✅ Added **ICN → DFN resolution** strategy (Section 2.7) - Critical for realistic simulation
+- ✅ Added **Site Selection Policy** (Section 2.8) - Prevents regression to legacy JLV failure mode
+- ✅ Added **Merge/Deduplication Rules** (Section 2.9.1) - Ensures data quality when combining PostgreSQL + Vista
+- 🔄 Updated section numbering (2.8 → 2.9, 2.9 → 2.10, etc.)
+- 📝 Based on senior solutions architect review feedback
 
 ## 1. Overview
 
@@ -357,12 +364,179 @@ vista/data/sites/
 - Vista data files reference this for patient demographics
 - Future MPI service can expose this via API (`GET /mpi/patient/{icn}`)
 
+**ICN → DFN Resolution** (Critical for Realistic Simulation):
+
+Med-z1 routes use **ICN** as the primary patient identifier (e.g., `/api/patient/{icn}/vitals`), but real VistA RPCs are **DFN-driven** (local to each site). To maintain realism while keeping med-z1 routes clean, the Vista service must translate ICN → DFN internally:
+
+```python
+# vista/app/services/data_loader.py
+class DataLoader:
+    def __init__(self, site_sta3n: str, data_path: str):
+        self.site_sta3n = site_sta3n
+        self.patients = self._load_json(f"{data_path}/patients.json")
+        # Build ICN→DFN lookup for this site
+        self.icn_to_dfn = {
+            p["icn"]: p["dfn"]
+            for p in self.patients.get("patients", [])
+        }
+
+    def resolve_icn_to_dfn(self, icn: str) -> Optional[str]:
+        """Resolve ICN to DFN for this site. Returns None if not found."""
+        return self.icn_to_dfn.get(icn)
+
+# vista/app/services/vista_server.py
+class VistaServer:
+    async def execute_rpc(self, rpc_name: str, params: list, icn: str = None) -> str:
+        """Execute RPC, translating ICN→DFN if provided"""
+        # If ICN provided, resolve to DFN for this site
+        if icn:
+            dfn = self.data_loader.resolve_icn_to_dfn(icn)
+            if not dfn:
+                return format_rpc_error(
+                    f"Patient {icn} not found at site {self.sta3n}"
+                )
+            # Replace ICN in params with DFN for handler
+            params = [dfn if p == icn else p for p in params]
+
+        # Simulate network/processing latency
+        if settings.rpc_latency_enabled:
+            delay = random.uniform(settings.rpc_latency_min, settings.rpc_latency_max)
+            await asyncio.sleep(delay)
+
+        # Dispatch to domain handler (receives DFN, like real VistA)
+        response = await self.dispatcher.dispatch(rpc_name, params)
+        return response
+```
+
+**Contract**:
+- **Med-z1 → Vista HTTP API**: Uses ICN (e.g., `POST /rpc/execute?site=200&icn=1012853550V207686`)
+- **Vista internal handlers**: Receive DFN (like real VistA RPCs)
+- **Vista data files**: Store both ICN and DFN per patient
+
+This approach forces realistic identity complexity into the simulator while keeping med-z1's "ICN everywhere" pattern clean.
+
 **Future Enhancement**: Implement full MPI service (`mpi/` subsystem) that:
-- Exposes REST API for patient lookups
-- Returns list of treating facilities for query optimization (Section 2.6 Option B)
+- Exposes REST API for patient lookups: `GET /mpi/patient/{icn}`
+- Returns list of treating facilities for query optimization
 - Handles identity resolution (merged ICNs, duplicate records)
 
-### 2.8 Temporal Data Strategy (T-0, T-1, T-2 Date Format)
+### 2.8 Site Selection Policy (Critical Performance Control)
+
+**Decision**: Strict limits on which sites are queried for real-time data to prevent regression into legacy JLV "fan out to 140+ sites" behavior.
+
+**Rationale**:
+- The legacy JLV's primary performance problem is querying all treating facilities in real-time
+- Without explicit limits, "refresh from VistA" could silently become "query everything"
+- This policy is the **architectural firebreak** that prevents the new system from replicating the old failure mode
+
+**Default Behavior**:
+- Query **top 3 most recent treating facilities** for real-time refresh
+- Sorted by `last_seen` date (descending) from treating_facilities list
+- Ensures bounded query time regardless of patient's treatment history
+
+**Per-Domain Site Limits**:
+```python
+# Default site limits per clinical domain
+DOMAIN_SITE_LIMITS = {
+    "vitals": 2,        # Freshest data, typically recent care
+    "allergies": 5,     # Safety-critical, small payload, wider search
+    "medications": 3,   # Balance freshness + comprehensiveness
+    "demographics": 1,  # Typically unchanged, query most recent site only
+    "labs": 3,          # Recent results most relevant
+    "default": 3,       # Conservative default for new domains
+}
+```
+
+**User Override Mechanism**:
+- **Primary UX**: Per-domain "Refresh from VistA" button queries default site limit
+- **Secondary UX**: "More sites..." button opens modal with:
+  - Checkbox list of all treating facilities
+  - Hard maximum of 10 sites per query
+  - Staged refresh with progress indicator ("Querying site 2 of 5...")
+  - Hard time budget (15 seconds max, then show partial results)
+
+**Implementation**:
+```python
+# app/services/vista_client.py (or future realtime_overlay.py)
+def get_target_sites(
+    icn: str,
+    domain: str,
+    max_sites: int = None,
+    user_selected_sites: list[str] = None
+) -> list[str]:
+    """
+    Get list of sites to query for real-time data.
+
+    Args:
+        icn: Patient ICN
+        domain: Clinical domain (vitals, allergies, etc.)
+        max_sites: Override default limit (e.g., for "More sites..." action)
+        user_selected_sites: Explicit site selection from UI
+
+    Returns:
+        List of sta3n values to query, ordered by priority
+    """
+    # If user explicitly selected sites, use those (up to hard limit)
+    if user_selected_sites:
+        return user_selected_sites[:10]  # Hard limit: 10 sites
+
+    # Get treating facilities from patient registry
+    patient = get_patient_from_registry(icn)
+    treating_facilities = patient.get("treating_facilities", [])
+
+    # Sort by last_seen descending (most recent first)
+    sorted_facilities = sorted(
+        treating_facilities,
+        key=lambda x: x.get("last_seen", ""),
+        reverse=True
+    )
+
+    # Apply domain-specific limit
+    limit = max_sites or DOMAIN_SITE_LIMITS.get(domain, DOMAIN_SITE_LIMITS["default"])
+
+    return [fac["sta3n"] for fac in sorted_facilities[:limit]]
+```
+
+**API Contract Update**:
+```python
+# Med-z1 routes specify site selection strategy
+@router.get("/patient/{icn}/vitals-realtime")
+async def get_vitals_realtime(
+    icn: str,
+    max_sites: int = None,  # Optional override for "More sites..."
+    sites: str = None        # Comma-separated explicit site list
+):
+    """Fetch real-time vitals from VistA"""
+    user_selected_sites = sites.split(",") if sites else None
+
+    target_sites = get_target_sites(
+        icn=icn,
+        domain="vitals",
+        max_sites=max_sites,
+        user_selected_sites=user_selected_sites
+    )
+
+    # Call only selected sites
+    vista_results = await vista.call_rpc_multi_site(
+        sites=target_sites,
+        rpc_name="GMV LATEST VM",
+        params=[icn]  # Will be translated to DFN per site
+    )
+    ...
+```
+
+**Benefits**:
+- ✅ **Performance bounded by default** (max 3 sites × 3 seconds = 9 seconds worst case)
+- ✅ **User control without footguns** (explicit action required for wider queries)
+- ✅ **Domain-specific tuning** (safety-critical domains can query more sites)
+- ✅ **Prevents architectural regression** (impossible to accidentally query all 140+ sites)
+
+**Success Metrics**:
+- 90th percentile "Refresh from VistA" response time: <10 seconds
+- No domain should ever query >10 sites by default
+- User must take explicit action (2+ clicks) to query >5 sites
+
+### 2.9 Temporal Data Strategy (T-0, T-1, T-2 Date Format)
 
 **Decision**: Vista data files use relative date notation (T-0, T-1, T-2, etc.)
 
@@ -446,7 +620,177 @@ def parse_relative_date(relative_str: str) -> datetime:
         return datetime.combine(target_date, datetime.min.time().replace(hour=hour, minute=minute))
 ```
 
-### 2.9 Simulated Network Latency
+#### 2.9.1 Merge and Deduplication Rules (Critical Data Quality Control)
+
+**Problem**: Vista intentionally provides both T-0 (today) and T-1 (yesterday) data, and PostgreSQL also has T-1 data from CDW. Without explicit merge rules, the UI will show duplicate or contradictory values.
+
+**Solution**: Define deterministic merge semantics per domain.
+
+**Canonical Event Key**:
+
+Each clinical event must have a unique identifier composed of:
+```python
+# Domain-specific canonical keys
+CANONICAL_KEYS = {
+    "vitals": ("date_time", "type", "sta3n", "vital_id"),
+    "allergies": ("allergen", "allergen_type", "sta3n", "allergy_id"),
+    "medications": ("rx_number", "sta3n"),
+    "labs": ("specimen_date_time", "test_name", "sta3n", "lab_id"),
+}
+
+# Example for vitals:
+# Key = ("2024-12-14 09:30:00", "BLOOD PRESSURE", "200", "12345")
+```
+
+**Merge Priority Rules**:
+
+```python
+# app/services/realtime_overlay.py (or app/db/<domain>.py)
+def merge_postgresql_and_vista_data(
+    postgresql_data: list,
+    vista_data: list,
+    domain: str
+) -> list:
+    """
+    Merge PostgreSQL (historical) and Vista (real-time) data.
+
+    Rules:
+    1. For dates >= T-1: Prefer Vista (fresher, real-time)
+    2. For dates < T-1: Use PostgreSQL only (Vista doesn't have older data)
+    3. If duplicate key exists in both: Keep Vista version, log conflict
+    4. Sort final result by date descending
+    """
+    from datetime import datetime, timedelta
+
+    # Calculate T-1 boundary (yesterday at 00:00)
+    t_minus_1 = (datetime.now() - timedelta(days=1)).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+
+    # Build canonical key function
+    key_fields = CANONICAL_KEYS[domain]
+
+    def get_key(item: dict) -> tuple:
+        return tuple(item.get(field) for field in key_fields)
+
+    # Index Vista data by key for fast lookup
+    vista_by_key = {get_key(item): item for item in vista_data}
+
+    # Merge logic
+    merged = []
+    duplicates_found = []
+
+    # Add PostgreSQL data, checking for Vista overlaps
+    for pg_item in postgresql_data:
+        item_date = datetime.fromisoformat(pg_item["date_time"])
+        item_key = get_key(pg_item)
+
+        # If date >= T-1 and Vista has this key, skip PostgreSQL version
+        if item_date >= t_minus_1 and item_key in vista_by_key:
+            duplicates_found.append({
+                "key": item_key,
+                "kept": "vista",
+                "discarded": "postgresql"
+            })
+            continue  # Skip PostgreSQL version
+
+        # Otherwise, keep PostgreSQL version
+        merged.append({**pg_item, "source": "postgresql"})
+
+    # Add all Vista data (already prioritized)
+    for vista_item in vista_data:
+        merged.append({**vista_item, "source": "vista"})
+
+    # Log duplicates for debugging
+    if duplicates_found:
+        logger.info(f"Merged {domain}: {len(duplicates_found)} duplicates resolved")
+        logger.debug(f"Duplicate details: {duplicates_found}")
+
+    # Sort by date descending (most recent first)
+    merged.sort(key=lambda x: x["date_time"], reverse=True)
+
+    return merged
+```
+
+**Deduplication Within Vista Results** (multiple sites):
+
+```python
+def dedupe_vista_multi_site_results(
+    vista_results: dict[str, list],
+    domain: str
+) -> list:
+    """
+    Deduplicate results from multiple Vista sites.
+
+    Rules:
+    1. Same event at multiple sites: Keep one (arbitrary but deterministic)
+    2. Different events at same datetime: Keep all (legitimate duplicates)
+    """
+    key_fields = CANONICAL_KEYS[domain]
+
+    def get_key(item: dict) -> tuple:
+        return tuple(item.get(field) for field in key_fields)
+
+    seen_keys = set()
+    deduped = []
+
+    # Flatten all site results
+    all_items = []
+    for site, items in vista_results.items():
+        for item in items:
+            all_items.append({**item, "source_site": site})
+
+    # Dedupe by canonical key
+    for item in all_items:
+        key = get_key(item)
+        if key not in seen_keys:
+            seen_keys.add(key)
+            deduped.append(item)
+
+    return deduped
+```
+
+**UI Presentation**:
+
+```html
+<!-- Optionally show data source for transparency -->
+<div class="vital-entry" data-source="{{ vital.source }}">
+    <span class="vital-date">Dec 14, 09:30 AM</span>
+    <span class="vital-value">120/80 mm[Hg]</span>
+    {% if show_sources %}
+        <span class="source-badge">{{ vital.source }}</span>
+    {% endif %}
+</div>
+```
+
+**Benefits**:
+- ✅ **No duplicate data shown** (clean UI, prevents confusion)
+- ✅ **Deterministic merge** (same result every time, testable)
+- ✅ **Prefer freshness** (Vista data prioritized for recent dates)
+- ✅ **Audit trail** (log conflicts for debugging)
+
+**Testing**:
+```python
+# Unit test for merge logic
+def test_merge_postgresql_and_vista():
+    pg_data = [
+        {"date_time": "2024-12-13 10:00:00", "type": "BP", "sta3n": "200", "vital_id": "1"},
+        {"date_time": "2024-12-14 09:00:00", "type": "BP", "sta3n": "200", "vital_id": "2"},
+    ]
+    vista_data = [
+        {"date_time": "2024-12-14 09:00:00", "type": "BP", "sta3n": "200", "vital_id": "2"},
+        {"date_time": "2024-12-14 14:00:00", "type": "BP", "sta3n": "200", "vital_id": "3"},
+    ]
+
+    merged = merge_postgresql_and_vista_data(pg_data, vista_data, "vitals")
+
+    # Expect: 3 items (1 from pg for T-2, 2 from vista for T-0, duplicate removed)
+    assert len(merged) == 3
+    assert merged[0]["date_time"] == "2024-12-14 14:00:00"  # Most recent first
+    assert merged[0]["source"] == "vista"
+```
+
+### 2.10 Simulated Network Latency
 
 **Decision**: Configurable artificial delay (1-3 seconds) for all RPC calls
 
@@ -499,11 +843,11 @@ class VistaServer:
         return response
 ```
 
-**Med-z1 UI Integration**: Add loading spinner and "Fetching real-time data from VistA..." indicator (see Section 2.10).
+**Med-z1 UI Integration**: Add loading spinner and "Fetching real-time data from VistA..." indicator (see Section 2.11).
 
 **Testing**: Set `VISTA_RPC_LATENCY_ENABLED=false` to disable delay for unit tests.
 
-### 2.10 UI/UX Integration Pattern (Hybrid Approach)
+### 2.11 UI/UX Integration Pattern (Hybrid Approach)
 
 **Decision**: Show PostgreSQL data by default with "Refresh from VistA" button for real-time updates
 
@@ -556,10 +900,14 @@ class VistaServer:
 
 **Implementation Notes**:
 - **No automatic real-time fetching**: Avoids slow page loads, gives user control
-- **Data source hidden**: UI doesn't explicitly show "CDW" vs "VistA" labels (per Section 2.7 preference)
+- **Data source hidden**: UI doesn't explicitly show "CDW" vs "VistA" labels (preserves clean aesthetic)
 - **Freshness indicator**: "Data current through: [date]" and "Last updated: [time]"
 - **Processing feedback**: Spinner + status message during VistA queries
-- **Error handling**: If VistA call fails, show "Unable to fetch real-time data" with option to retry
+- **Partial failure transparency**: Show completeness indicator when some sites fail
+  - Success: "Data current through: Dec 14, 2025 (today, real-time)"
+  - Partial: "Data current through: Dec 14, 2025 (real-time refresh incomplete - 2 of 3 sites responded)"
+  - Failure: "Unable to fetch real-time data. [Retry]"
+- **Error handling**: Graceful degradation - show partial results with clear indicators
 
 **HTMX Implementation Example** (`app/templates/patient/vitals.html`):
 ```html
@@ -1106,21 +1454,26 @@ PEANUTS^FOOD^ANAPHYLAXIS^SEVERE^VERIFIED
 
 #### Execute RPC
 ```
-POST /rpc/execute?site={sta3n}
+POST /rpc/execute?site={sta3n}&icn={icn}
 Content-Type: application/json
 
 Request Body:
 {
   "name": "ORWPT PTINQ",
-  "params": ["100001"]
+  "params": ["1012853550V207686"]
 }
+
+Note: If 'icn' query parameter is provided, the Vista service will automatically
+resolve ICN → DFN for the specified site before executing the RPC handler.
+RPC handlers receive DFN (like real VistA), but callers use ICN.
 
 Response (200 OK):
 {
   "site": "200",
   "rpc": "ORWPT PTINQ",
   "response": "SMITH,JOHN Q^1012853550V207686^19450315^M^666-12-1234^...",
-  "timestamp": "2025-12-14T10:30:00Z"
+  "timestamp": "2025-12-14T10:30:00Z",
+  "elapsed_ms": 1234
 }
 
 Response (404 Not Found - Invalid Site):
@@ -1320,42 +1673,67 @@ class VistaClient:
 
 ### Phase 1: Walking Skeleton (Week 1)
 
-**Goal**: Single-site, single-RPC working end-to-end
+**Goal**: Single-site, single-RPC working end-to-end with ICN → DFN resolution
+
+**Critical Requirements** (from v1.2 design updates):
+- ✅ ICN → DFN resolution implemented (Section 2.7)
+- ✅ Patient registry file created with ICN/DFN mappings
 
 **Tasks**:
 1. Create `vista/` directory structure
-2. Implement `VistaServer` base class (site 200 only)
-3. Implement `RpcDispatcher` with one RPC: `ORWPT PTINQ`
-4. Implement `DataLoader` (read `patients.json`)
-5. Implement `M-Serializer` basic functions
-6. Create `vista/data/sites/200/patients.json` with 3 test patients
-7. Implement FastAPI `main.py` with `/rpc/execute` endpoint
-8. Write unit tests for dispatcher and serializer
-9. Manual testing: curl commands to verify RPC execution
+2. Create `mock/shared/patient_registry.json` with 3 test patients (ICN + DFN per site)
+3. Implement `DataLoader` with `resolve_icn_to_dfn()` method (reads `patients.json`)
+4. Implement `VistaServer` base class (site 200 only)
+   - Accept `icn` query parameter
+   - Translate ICN → DFN before dispatching to handlers
+   - Return error if ICN not found at site
+5. Implement `RpcDispatcher` with one RPC: `ORWPT PTINQ`
+6. Implement `M-Serializer` basic functions
+7. Create `vista/data/sites/200/patients.json` with 3 test patients (include both ICN and DFN)
+8. Implement FastAPI `main.py` with `/rpc/execute?site={sta3n}&icn={icn}` endpoint
+9. Write unit tests for ICN resolution, dispatcher, and serializer
+10. Manual testing: curl commands using ICN (not DFN) to verify RPC execution
 
 **Success Criteria**:
-- ✅ `POST /rpc/execute?site=200` with `ORWPT PTINQ` returns valid VistA-formatted response
+- ✅ `POST /rpc/execute?site=200&icn=1012853550V207686` returns valid VistA-formatted response
+- ✅ ICN → DFN resolution works correctly (handler receives DFN)
 - ✅ Patient data correctly loaded from JSON
 - ✅ Response format matches VistA ICD specification
+- ✅ Error returned for ICN not found at site
 
 ### Phase 2: Multi-Site Support (Week 2)
 
-**Goal**: Multiple sites (200, 500, 630) with site-specific data
+**Goal**: Multiple sites (200, 500, 630) with site-specific data and site selection policy
+
+**Critical Requirements** (from v1.2 design updates):
+- ✅ Site selection policy implemented (Section 2.8)
+- ✅ Default to top 3 most recent treating facilities
+- ✅ Per-domain site limits enforced
+- ✅ Hard maximum of 10 sites per query
 
 **Tasks**:
 1. Implement `VistaCluster` to manage multiple `VistaServer` instances
 2. Create `vista/config/sites.json`
-3. Create data files for sites 500 and 630
-4. Implement `/sites` endpoint to list available sites
-5. Implement `/health` endpoint
-6. Update `VistaServer` to load site config from `sites.json`
-7. Test RPC calls to all three sites with different patient data
+3. Update `mock/shared/patient_registry.json` with `treating_facilities` list (include `last_seen` dates)
+4. Create data files for sites 500 and 630 (patients, with ICN/DFN mappings)
+5. Implement `get_target_sites()` function in `app/services/vista_client.py` (or `app/services/`)
+   - Read treating facilities from patient registry
+   - Sort by `last_seen` descending
+   - Apply per-domain limits (`DOMAIN_SITE_LIMITS` dict)
+   - Enforce hard maximum of 10 sites
+6. Implement `/sites` endpoint to list available sites
+7. Implement `/health` endpoint
+8. Update `VistaServer` to load site config from `sites.json`
+9. Test RPC calls to all three sites with different patient data
+10. Test site selection logic with mock patients
 
 **Success Criteria**:
 - ✅ Three sites (200, 500, 630) running in single service
-- ✅ Each site has unique patient data
+- ✅ Each site has unique patient data with ICN/DFN mappings
 - ✅ `GET /sites` returns all configured sites
 - ✅ RPC calls correctly routed to appropriate site
+- ✅ Site selection policy returns correct sites based on domain and treating facilities
+- ✅ Hard maximum of 10 sites enforced even if user attempts to override
 
 ### Phase 3: Demographics Domain (Week 2-3)
 
@@ -1391,36 +1769,74 @@ class VistaClient:
 
 ### Phase 5: Allergies & Medications Domains (Week 4)
 
-**Goal**: Complete Phase 1 domain coverage
+**Goal**: Complete Phase 1 domain coverage with merge/dedupe implementation
+
+**Critical Requirements** (from v1.2 design updates):
+- ✅ Merge/deduplication rules implemented (Section 2.9.1)
+- ✅ PostgreSQL + Vista data merging logic
+- ✅ Multi-site Vista data deduplication
+- ✅ Canonical event keys per domain
 
 **Tasks**:
 1. Implement allergies RPCs (`ORQQAL LIST`, `ORQQAL DETAIL`, `ORQQAL ALLERGY MATCH`)
 2. Implement medications RPCs (`ORWPS COVER`, `ORWPS DETAIL`, `ORWPS ACTIVE`, `PSO SUPPLY`)
-3. Create `allergies.json` and `medications.json` for all sites
-4. Unit tests for both domains
-5. Integration testing: call all RPCs for a patient across all sites
+3. Create `allergies.json` and `medications.json` for all sites (include T-0 and T-1 data)
+4. Implement `merge_postgresql_and_vista_data()` function
+   - Define canonical event keys for each domain
+   - Implement merge priority rules (Vista preferred for T-1+, PostgreSQL for older)
+   - Add deduplication logic for multi-site Vista results
+5. Implement `dedupe_vista_multi_site_results()` function
+6. Add T-0/T-1 temporal data to JSON files using relative notation
+7. Unit tests for both domains
+8. Unit tests for merge/dedupe logic (test cases from Section 2.9.1)
+9. Integration testing: call all RPCs for a patient across all sites, verify no duplicates
 
 **Success Criteria**:
 - ✅ All Phase 1 RPCs (15 total) implemented and tested
 - ✅ All four domains (demographics, vitals, allergies, medications) working
+- ✅ Merge logic correctly combines PostgreSQL and Vista data without duplicates
+- ✅ T-1 overlap period handled correctly (Vista preferred over PostgreSQL)
+- ✅ Multi-site Vista results deduplicated properly
 
 ### Phase 6: Med-z1 Integration (Week 5)
 
-**Goal**: Med-z1 app successfully calls vista service
+**Goal**: Med-z1 app successfully calls vista service with UI integration
+
+**Critical Requirements** (from v1.2 design updates):
+- ✅ "Refresh from VistA" button UI pattern (Section 2.11)
+- ✅ Partial failure transparency in UI
+- ✅ Shared HTTP client with connection pooling
+- ✅ Site selection policy enforced from med-z1 side
 
 **Tasks**:
 1. Create `app/services/vista_client.py` in med-z1 app
-2. Implement `VistaClient` class with `call_rpc()` and `call_rpc_multi_site()`
+2. Implement `VistaClient` class with shared `httpx.AsyncClient`
+   - `call_rpc()` and `call_rpc_multi_site()` methods
+   - Connection pooling configuration
+   - Timeout and error handling
 3. Implement domain-specific parsers in `VistaClient`
 4. Add `VISTA_SERVICE_URL` to root `config.py`
-5. Create example route in med-z1: `/patient/{icn}/vista-demographics`
-6. Test multi-site aggregation (patient with data at multiple sites)
-7. Document integration patterns in `app/README.md`
+5. Create real-time routes for 2-3 domains:
+   - `/patient/{icn}/vitals-realtime`
+   - `/patient/{icn}/allergies-realtime`
+   - Use `get_target_sites()` for site selection
+   - Call `merge_postgresql_and_vista_data()` for data merge
+6. Add "Refresh from VistA" button to domain pages
+   - HTMX implementation with loading spinner
+   - Freshness indicator ("Data current through: [date]")
+   - Partial failure indicator ("2 of 3 sites responded")
+7. Test multi-site aggregation (patient with data at multiple sites)
+8. Test partial failure scenarios (1 site down, 2 sites respond)
+9. Document integration patterns in `app/README.md`
 
 **Success Criteria**:
-- ✅ Med-z1 app can call vista service
-- ✅ Multi-site queries return aggregated results
+- ✅ Med-z1 app can call vista service using ICN (not DFN)
+- ✅ Multi-site queries return aggregated results with no duplicates
 - ✅ Parsed responses integrate with med-z1 UI
+- ✅ "Refresh from VistA" button works on 2+ domain pages
+- ✅ Partial failures show clear UI indicators without breaking page
+- ✅ HTTP client reuses connections (no new client per request)
+- ✅ Site selection policy correctly limits sites queried
 
 ### Phase 7: Documentation & Hardening (Ongoing)
 
@@ -1558,6 +1974,179 @@ async def test_multi_site():
 asyncio.run(test_multi_site())
 ```
 
+### 9.6 Mock CDW Site Alignment
+
+**Context**: The Vista RPC Broker simulates three VistA sites: Alexandria (200), Anchorage (500), and Palo Alto (630). For realistic merge/dedupe testing, it's helpful (but not required) to have at least one test patient whose primary station in mock CDW matches a Vista site.
+
+**Key Principle**: Vista JSON data files are **independent of mock CDW**. You can create Vista data for any site regardless of CDW coverage. However, having some overlap enables testing the PostgreSQL + Vista merge logic.
+
+#### Pre-Implementation Validation
+
+**Step 1: Check what sites have data in mock CDW**
+
+```sql
+-- Find which sites have the most patient activity
+USE CDWWork;
+
+SELECT
+    d.Sta3n,
+    d.Sta3nName,
+    COUNT(DISTINCT sp.PatientSID) as patient_count,
+    COUNT(DISTINCT v.VitalSignTakenDateTime) as vitals_count,
+    COUNT(DISTINCT rx.LocalDrugSID) as meds_count
+FROM Dim.Sta3n d
+LEFT JOIN SPatient.SPatient sp ON sp.Sta3n = d.Sta3n
+LEFT JOIN Vital.VitalSign v ON v.Sta3n = d.Sta3n
+LEFT JOIN RxOut.RxOutpat rx ON rx.Sta3n = d.Sta3n
+GROUP BY d.Sta3n, d.Sta3nName
+ORDER BY patient_count DESC, vitals_count DESC;
+```
+
+**Step 2: Check which test patients exist and their primary stations**
+
+```sql
+USE CDWWork;
+
+SELECT
+    sp.PatientICN,
+    sp.PatientSID,
+    sp.Sta3n,
+    d.Sta3nName,
+    sp.PatientLastName,
+    sp.PatientFirstName,
+    COUNT(DISTINCT v.VitalSignTakenDateTime) as vitals_count,
+    COUNT(DISTINCT a.AllergyIEN) as allergies_count,
+    COUNT(DISTINCT rx.RxOutpatSID) as meds_count
+FROM SPatient.SPatient sp
+LEFT JOIN Dim.Sta3n d ON d.Sta3n = sp.Sta3n
+LEFT JOIN Vital.VitalSign v ON v.PatientSID = sp.PatientSID
+LEFT JOIN SPatient.Allergy a ON a.PatientSID = sp.PatientSID
+LEFT JOIN RxOut.RxOutpat rx ON rx.PatientSID = sp.PatientSID
+WHERE sp.PatientICN IS NOT NULL  -- Only patients with ICNs
+GROUP BY sp.PatientICN, sp.PatientSID, sp.Sta3n, d.Sta3nName,
+         sp.PatientLastName, sp.PatientFirstName
+ORDER BY vitals_count + allergies_count + meds_count DESC;
+```
+
+**Step 3: Identify your richest test patient**
+
+```sql
+-- Quick check for a specific ICN
+USE CDWWork;
+
+SELECT
+    PatientICN,
+    PatientSID,
+    Sta3n,
+    PatientLastName,
+    PatientFirstName
+FROM SPatient.SPatient
+WHERE PatientICN = '1012853550V207686';  -- Replace with your test patient's ICN
+```
+
+#### Alignment Options
+
+**Option A: Sites 200, 500, 630 have good CDW data**
+- ✅ **Action:** Use them as-is. No changes needed.
+
+**Option B: Sites 200, 500, 630 exist but have sparse CDW data**
+- ✅ **Action:** Still use them. Create rich Vista JSON data independently.
+- 📝 **Note:** Some patients may only have Vista data at certain sites (valid test scenario).
+
+**Option C: Sites 200, 500, 630 don't exist in CDW**
+- ✅ **Action (Recommended):** Update one test patient's primary station to 200.
+- ⚠️ **Alternative:** Use different sites that already have CDW data (update design doc site list).
+
+#### Updating a Patient's Primary Station (If Needed)
+
+If your richest test patient's primary station doesn't match 200, 500, or 630, you can realign:
+
+```sql
+USE CDWWork;
+
+-- Update test patient's primary station to 200 (Alexandria)
+UPDATE SPatient.SPatient
+SET Sta3n = '200'
+WHERE PatientICN = '1012853550V207686';  -- Replace with your test patient's ICN
+
+-- Verify the change
+SELECT
+    PatientICN,
+    PatientSID,
+    Sta3n,
+    PatientLastName,
+    PatientFirstName
+FROM SPatient.SPatient
+WHERE PatientICN = '1012853550V207686';
+
+-- Optional: Verify the station name
+SELECT s.Sta3n, s.Sta3nName
+FROM Dim.Sta3n s
+WHERE s.Sta3n = '200';
+```
+
+**After updating:**
+1. Re-run Bronze/Silver/Gold ETL pipeline for patient demographics
+2. Reload PostgreSQL serving database: `patient_demographics` table
+3. Verify in PostgreSQL:
+   ```sql
+   SELECT patient_icn, patient_key, name_display, primary_station, primary_station_name
+   FROM patient_demographics
+   WHERE patient_icn = '1012853550V207686';
+   ```
+
+#### Patient Registry Mapping
+
+Once you've confirmed at least one test patient has a primary station that matches a Vista site, create the patient registry:
+
+```json
+// mock/shared/patient_registry.json
+{
+  "patients": [
+    {
+      "icn": "1012853550V207686",  // Your test patient from CDW
+      "ssn": "666-12-1234",
+      "name_last": "SMITH",
+      "name_first": "JOHN",
+      "name_middle": "Q",
+      "dob": "1945-03-15",
+      "sex": "M",
+      "treating_facilities": [
+        // At least ONE should match patient's CDW Sta3n for merge/dedupe testing
+        {"sta3n": "200", "dfn": "100001", "last_seen": "T-7"},    // Recent visit
+        {"sta3n": "500", "dfn": "500234", "last_seen": "T-30"},   // 1 month ago
+        {"sta3n": "630", "dfn": "630789", "last_seen": "T-180"}   // 6 months ago
+      ]
+    }
+  ]
+}
+```
+
+#### Testing Scenarios Enabled
+
+**Scenario 1: Patient has CDW data + Vista data at site 200**
+- PostgreSQL has historical vitals (T-7 through T-2)
+- Vista has real-time vitals (T-0, T-1)
+- **Tests:** Merge/dedupe logic, T-1 overlap handling, canonical event keys
+
+**Scenario 2: Patient has Vista data only at sites 500 and 630**
+- PostgreSQL has no data for these sites
+- Vista has real-time data
+- **Tests:** Vista-only data flow, multi-site aggregation
+
+**Scenario 3: Patient has CDW data but no Vista data at some sites**
+- PostgreSQL has data
+- Vista returns "patient not found at site"
+- **Tests:** Partial failure handling, graceful degradation
+
+#### Recommendation Summary
+
+1. ✅ **Stick with sites 200, 500, 630** (design consistency, recognizable VA sites)
+2. ✅ **Run validation queries** above to check current CDW coverage
+3. ✅ **If needed:** Update one test patient's Sta3n to '200' (simple SQL UPDATE)
+4. ✅ **Create patient_registry.json** mapping existing ICNs to DFNs at each Vista site
+5. ✅ **Vista JSON data is independent** - control what exists per site regardless of CDW
+
 ---
 
 ## 10. Future Enhancements (Post-Phase 1)
@@ -1585,6 +2174,67 @@ asyncio.run(test_multi_site())
 - Patient identity resolution across sites (if patient has different DFNs at different sites)
 - Simulated network latency per site
 - Site-specific outages/errors for testing resilience
+
+### Realtime Overlay Service (Priority: Phase 6-7)
+
+**Purpose:** Centralize real-time data orchestration logic to keep route handlers thin and maintainable.
+
+**Rationale:** Based on architectural review feedback (2025-12-15), the multi-site query pattern, merge/dedupe logic, and site selection policy should not be embedded in individual route handlers. A dedicated service layer will:
+- Prevent code duplication across domains (vitals, allergies, medications, labs, etc.)
+- Enforce site selection policy consistently
+- Apply merge/dedupe rules uniformly
+- Handle partial failures gracefully
+- Simplify testing and mocking
+
+**Proposed Location:** `app/services/realtime_overlay.py`
+
+**API Design:**
+```python
+class RealtimeOverlayService:
+    """Orchestrates real-time data fetching from Vista and merging with PostgreSQL"""
+
+    async def get_domain_with_overlay(
+        icn: str,
+        domain: str,
+        days: int = 7,
+        include_realtime: bool = True,
+        max_sites: int = None,
+        user_selected_sites: list[str] = None
+    ) -> DomainOverlayResult:
+        """
+        Fetch historical data from PostgreSQL and optionally overlay real-time Vista data.
+
+        Returns:
+            DomainOverlayResult with:
+            - data: Merged and deduplicated list
+            - sources: Dict of site responses (success/failure)
+            - completeness: "complete", "partial", or "failed"
+            - timestamp: When refresh occurred
+        """
+        pass
+
+    async def refresh_domain(
+        icn: str,
+        domain: str,
+        site_policy: SitePolicy = SitePolicy.TOP_3
+    ) -> RefreshResult:
+        """Execute real-time refresh for a domain using site selection policy"""
+        pass
+```
+
+**Implementation Dependencies:**
+- Site selection policy (Section 2.8)
+- Merge/dedupe rules (Section 2.9.1)
+- ICN → DFN resolution (Section 2.7)
+- VistaClient multi-site orchestration (Section 2.6)
+
+**Benefits:**
+- ✅ Routes stay thin (consistent with med-z1 routing patterns)
+- ✅ Single place to update site limits or merge logic
+- ✅ Easier to add new domains (reuse existing service)
+- ✅ Clear separation of concerns (routing vs orchestration vs data access)
+
+**Timeline:** Implement after 2-3 domains have established the pattern (Phase 6-7), then refactor existing routes to use the service.
 
 ---
 
