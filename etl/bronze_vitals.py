@@ -104,28 +104,31 @@ def extract_vital_sign():
 
     engine = create_engine(conn_str)
 
-    # Extract query
+    # Extract query with Location JOIN
     query = """
     SELECT
-        VitalSignSID,
-        PatientSID,
-        VitalTypeSID,
-        VitalSignTakenDateTime,
-        VitalSignEnteredDateTime,
-        ResultValue,
-        NumericValue,
-        Systolic,
-        Diastolic,
-        MetricValue,
-        LocationSID,
-        EnteredByStaffSID,
-        IsInvalid,
-        EnteredInError,
-        Sta3n,
-        CreatedDateTimeUTC,
-        UpdatedDateTimeUTC
-    FROM Vital.VitalSign
-    WHERE IsInvalid = 'N' AND EnteredInError = 'N'
+        vs.VitalSignSID,
+        vs.PatientSID,
+        vs.VitalTypeSID,
+        vs.VitalSignTakenDateTime,
+        vs.VitalSignEnteredDateTime,
+        vs.ResultValue,
+        vs.NumericValue,
+        vs.Systolic,
+        vs.Diastolic,
+        vs.MetricValue,
+        vs.LocationSID,
+        loc.LocationName,
+        loc.LocationType,
+        vs.EnteredByStaffSID,
+        vs.IsInvalid,
+        vs.EnteredInError,
+        vs.Sta3n,
+        vs.CreatedDateTimeUTC,
+        vs.UpdatedDateTimeUTC
+    FROM Vital.VitalSign vs
+    LEFT JOIN Dim.Location loc ON vs.LocationSID = loc.LocationSID
+    WHERE vs.IsInvalid = 'N' AND vs.EnteredInError = 'N'
     """
 
     # Read data using SQLAlchemy connection

@@ -274,8 +274,10 @@ med-z1 follows **strong, opinionated patterns** to ensure maintainability as the
 6. ✅ Medications - Full implementation (2x1 widget + dedicated page)
 7. ✅ Encounters - Full implementation (1x1 widget + dedicated page with pagination) - **Completed 2025-12-15**
 
-**Placeholder Domains (7):**
-8. 🚧 Labs - Laboratory results with trending (3x1 widget recommended)
+**ETL Complete, UI Pending (1):**
+8. 🔧 Labs - **ETL pipeline complete** (Bronze/Silver/Gold/Load), 58 results in PostgreSQL. UI implementation pending (3x1 widget recommended) - **ETL Completed 2025-12-16**
+
+**Placeholder Domains (6):**
 9. 🚧 Problems - Diagnoses and problem list
 10. 🚧 Orders - Clinical orders and requests
 11. 🚧 Notes - Clinical notes and documents
@@ -298,6 +300,38 @@ med-z1 follows **strong, opinionated patterns** to ensure maintainability as the
 - In the UI and medallion layers, patients are keyed primarily by ICN (Integrated Care Number) and/or a derived `PatientKey`
 - Internal CDW SIDs (e.g., `InpatientSID`, `PatientSID`, `RxOutpatSID`) are technical keys for joins, not primary identity elements in the UI
 - Initial identity logic is simple: "1 ICN = 1 patient" in the mock environment (no complex merged-identity handling in early phases)
+
+### Location Field Patterns
+
+**IMPORTANT:** Clinical domains that use `Dim.Location` must follow consistent naming patterns in PostgreSQL schemas and queries.
+
+**Established Patterns (as of 2025-12-16):**
+
+1. **Vitals Domain**:
+   - Schema columns: `location_id` (INT), `location_name` (VARCHAR), `location_type` (VARCHAR)
+   - Query usage: Always SELECT all three columns
+   - Template usage: Use `location_name` for display, `location_type` for filtering
+
+2. **Laboratory Results Domain**:
+   - Schema columns: `location_id` (INT), `collection_location` (VARCHAR), `collection_location_type` (VARCHAR)
+   - Query usage: Always SELECT all three columns
+   - Template usage: Use `collection_location` for display (note: different name to reflect specimen collection)
+
+3. **Encounters Domain**:
+   - Schema columns: `admit_location_id/name/type` AND `discharge_location_id/name/type` (6 total)
+   - Query usage: Always SELECT all six columns
+   - Template usage: Both admit and discharge locations available for display
+
+**Common Mistake to Avoid:**
+- ❌ **DO NOT** use single `location` column - always use three columns (id, name, type)
+- ❌ **DO NOT** SELECT only the ID column - always include name and type for display
+- ✅ **DO** update both schema DDL AND query layer when adding location support
+- ✅ **DO** verify queries work after schema changes (prevents "column does not exist" errors)
+
+**Root-Level Fix Philosophy:**
+- Fix location data in source INSERT scripts (e.g., `Vital.VitalSign.sql`, `Chem.LabChem.sql`)
+- Do NOT use post-load UPDATE scripts (patch/fix pattern)
+- Ensure database can be rebuilt from scratch on new developer machines
 
 ### Configuration Management
 

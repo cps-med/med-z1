@@ -135,6 +135,8 @@ def transform_inpatient_gold():
         # Admission info
         "admit_datetime",
         "admit_location_id",
+        "admit_location_name",
+        "admit_location_type",
         "admit_diagnosis_code",
         "admitting_provider_id",
         "admitting_provider_name",
@@ -143,6 +145,8 @@ def transform_inpatient_gold():
         "discharge_datetime",
         "discharge_date_id",
         "discharge_location_id",
+        "discharge_location_name",
+        "discharge_location_type",
         "discharge_diagnosis_code",
         "discharge_diagnosis_text",
         "discharge_disposition",

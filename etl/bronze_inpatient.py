@@ -38,25 +38,33 @@ def extract_inpatient():
 
     engine = create_engine(conn_str)
 
-    # Extract query - get all inpatient encounters
+    # Extract query - get all inpatient encounters with location details
     query = """
     SELECT
-        InpatientSID,
-        PatientSID,
-        AdmitDateTime,
-        AdmitLocationSID,
-        AdmittingProviderSID,
-        AdmitDiagnosisICD10,
-        DischargeDateTime,
-        DischargeDateSID,
-        DischargeWardLocationSID,
-        DischargeDiagnosisICD10,
-        DischargeDiagnosis,
-        DischargeDisposition,
-        LengthOfStay,
-        EncounterStatus,
-        Sta3n
-    FROM Inpat.Inpatient
+        inp.InpatientSID,
+        inp.PatientSID,
+        inp.AdmitDateTime,
+        inp.AdmitLocationSID,
+        inp.AdmittingProviderSID,
+        inp.AdmitDiagnosisICD10,
+        inp.DischargeDateTime,
+        inp.DischargeDateSID,
+        inp.DischargeWardLocationSID,
+        inp.DischargeDiagnosisICD10,
+        inp.DischargeDiagnosis,
+        inp.DischargeDisposition,
+        inp.LengthOfStay,
+        inp.EncounterStatus,
+        inp.Sta3n,
+        -- Admit location details
+        admit_loc.LocationName AS AdmitLocationName,
+        admit_loc.LocationType AS AdmitLocationType,
+        -- Discharge location details
+        discharge_loc.LocationName AS DischargeLocationName,
+        discharge_loc.LocationType AS DischargeLocationType
+    FROM Inpat.Inpatient inp
+    LEFT JOIN Dim.Location admit_loc ON inp.AdmitLocationSID = admit_loc.LocationSID
+    LEFT JOIN Dim.Location discharge_loc ON inp.DischargeWardLocationSID = discharge_loc.LocationSID
     """
 
     # Read data using SQLAlchemy connection

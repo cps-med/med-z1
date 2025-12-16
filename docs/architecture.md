@@ -184,8 +184,8 @@ page_router = APIRouter(tags=["vitals-pages"])
 | Allergies     | `allergies.py`    | B       | Yes        | Yes     | Full implementation with dedicated page      |
 | Vitals        | `vitals.py`       | B       | Yes        | Yes     | Complex filtering/charting needs full page   |
 | Medications   | `medications.py`  | B       | Yes        | Yes     | Full implementation with 2x1 widget          |
-| Encounters    | TBD               | B (rec) | TBD        | TBD     | Planned - High priority (foundation domain)  |
-| Labs          | TBD               | B (rec) | TBD        | TBD     | Planned - 3x1 widget recommended for panels  |
+| Encounters    | `encounters.py`   | B       | Yes        | Yes     | **Complete** - First domain with pagination  |
+| Labs          | TBD               | B (rec) | TBD        | TBD     | **ETL Complete** - UI implementation pending |
 | Problems      | TBD               | A or B  | TBD        | TBD     | Planned - Pattern depends on complexity      |
 | Orders        | TBD               | B (rec) | TBD        | TBD     | Planned - Complex workflow domain            |
 | Notes         | TBD               | B (rec) | TBD        | TBD     | Planned - Text-heavy domain                  |
@@ -312,6 +312,193 @@ Keep both patterns as valid architectural choices based on domain requirements.
 - Used for joins within Bronze/Silver layers only
 - **Not exposed in UI or API responses**
 
+### 4.3 Location Field Patterns
+
+**IMPORTANT:** Clinical domains that use `Dim.Location` reference data must follow a consistent three-column pattern for location fields.
+
+#### 4.3.1 Standard Location Field Structure
+
+All domains that reference location data must store three pieces of information:
+1. **Location ID** - Foreign key to `Dim.Location` (e.g., `LocationSID`)
+2. **Location Name** - Denormalized location name for display (e.g., "Medicine Ward 5A")
+3. **Location Type** - Denormalized location type for context (e.g., "Inpatient", "Laboratory")
+
+**Why Three Columns?**
+- **Performance:** Avoids JOIN with `Dim.Location` for every query
+- **Simplicity:** Templates can directly reference `location_name` without lookups
+- **Resilience:** Query layer remains functional even if dimension table changes
+- **Consistency:** Uniform pattern across all clinical domains
+
+#### 4.3.2 Domain-Specific Implementations
+
+**Vitals Domain:**
+```sql
+-- PostgreSQL Schema (db/ddl/create_patient_vitals_table.sql)
+CREATE TABLE patient_vitals (
+    vital_id                    SERIAL PRIMARY KEY,
+    patient_key                 VARCHAR(50) NOT NULL,
+    -- ... other columns ...
+    location_id                 INTEGER,              -- LocationSID
+    location_name               VARCHAR(100),         -- "MEDICINE WARD 5A"
+    location_type               VARCHAR(50),          -- "Inpatient"
+    -- ... other columns ...
+);
+
+-- Query Layer (app/db/vitals.py)
+SELECT
+    vital_id, patient_key, vital_type,
+    location_id, location_name, location_type,  -- All three columns
+    -- ... other columns ...
+FROM patient_vitals
+WHERE patient_key = :icn;
+
+-- Template Usage (app/templates/patient_vitals.html)
+{% if vital.location_name %}
+    <div class="vital-meta">Location: {{ vital.location_name }}</div>
+{% endif %}
+```
+
+**Laboratory Results Domain:**
+```sql
+-- PostgreSQL Schema (db/ddl/create_patient_labs_table.sql)
+CREATE TABLE patient_labs (
+    lab_id                      SERIAL PRIMARY KEY,
+    patient_key                 VARCHAR(50) NOT NULL,
+    -- ... other columns ...
+    location_id                 INTEGER,              -- LocationSID
+    collection_location         VARCHAR(100),         -- "Laboratory - Main Lab"
+    collection_location_type    VARCHAR(50),          -- "Laboratory"
+    -- ... other columns ...
+);
+
+-- Gold Transformation (etl/gold_labs.py)
+df_gold = df_silver.join(
+    df_location,
+    left_on="location_sid",
+    right_on="location_sid",
+    how="left"
+).select([
+    pl.col("location_sid").alias("location_id"),
+    pl.col("location_name").alias("collection_location"),
+    pl.col("location_type").alias("collection_location_type"),
+    # ... other columns ...
+])
+```
+
+**Encounters Domain:**
+```sql
+-- PostgreSQL Schema (db/ddl/create_patient_encounters_table.sql)
+-- Note: Encounters has TWO locations (admit + discharge)
+CREATE TABLE patient_encounters (
+    encounter_id                SERIAL PRIMARY KEY,
+    patient_key                 VARCHAR(50) NOT NULL,
+    -- Admit location
+    admit_location_id           INTEGER,
+    admit_location_name         VARCHAR(100),
+    admit_location_type         VARCHAR(50),
+    -- Discharge location
+    discharge_location_id       INTEGER,
+    discharge_location_name     VARCHAR(100),
+    discharge_location_type     VARCHAR(50),
+    -- ... other columns ...
+);
+
+-- Query Layer (app/db/encounters.py)
+SELECT
+    encounter_id, patient_key,
+    admit_location_id, admit_location_name, admit_location_type,
+    discharge_location_id, discharge_location_name, discharge_location_type,
+    -- ... other columns ...
+FROM patient_encounters
+WHERE patient_key = :icn;
+```
+
+#### 4.3.3 Common Mistakes and Fixes
+
+**❌ Mistake 1: Using Single `location` Column**
+```sql
+-- WRONG - old pattern, causes query/schema mismatches
+SELECT location FROM patient_vitals;  -- Column doesn't exist
+```
+
+**✅ Fix: Always SELECT All Three Columns**
+```sql
+-- CORRECT
+SELECT location_id, location_name, location_type FROM patient_vitals;
+```
+
+**❌ Mistake 2: Selecting Only ID Column**
+```sql
+-- WRONG - defeats purpose of denormalization
+SELECT location_id FROM patient_vitals;  -- Need name for display
+```
+
+**✅ Fix: SELECT All Three Even If Not Immediately Needed**
+```sql
+-- CORRECT - future-proof for template changes
+SELECT location_id, location_name, location_type FROM patient_vitals;
+```
+
+**❌ Mistake 3: Updating Schema Without Updating Queries**
+```sql
+-- Schema changed from single 'location' to three columns
+-- But queries still reference old column name
+SELECT location FROM patient_vitals;  -- Error: column doesn't exist
+```
+
+**✅ Fix: Update Schema, Queries, Templates Together**
+1. Update DDL script: Add three columns, remove old column
+2. Update query layer: SELECT all three columns, update row parsing indices
+3. Update templates: Reference `location_name` instead of `location`
+4. Rerun ETL pipeline: Regenerate data with new structure
+5. Test all views: Widget, full page, API endpoints
+
+#### 4.3.4 Root-Level Fix Philosophy
+
+**When fixing location field issues:**
+- ✅ **DO** update source INSERT scripts in `mock/sql-server/cdwwork/insert/`
+- ✅ **DO** ensure database can be rebuilt from scratch
+- ✅ **DO** rerun full ETL pipeline after source data changes
+- ❌ **DO NOT** use temporary UPDATE/patch scripts (violates rebuild-from-scratch principle)
+- ❌ **DO NOT** leave obsolete scripts in repository
+
+**Example: Labs Domain Location Fix (2025-12-16)**
+```bash
+# Step 1: Update source INSERT script with LocationSID values
+# File: mock/sql-server/cdwwork/insert/Chem.LabChem.sql
+INSERT INTO [Chem].[LabChem]
+([PatientSID], [LabTestSID], ..., [LocationSID], [Sta3n], ...)
+VALUES (1001, 1, ..., 33, 508, ...);  -- LocationSID added
+
+# Step 2: Rebuild mock database from scratch
+docker exec -i sqlserver bash -c "/opt/mssql-tools18/bin/sqlcmd ..."
+
+# Step 3: Rerun ETL pipeline (Bronze → Silver → Gold → Load)
+python -m etl.bronze_labs
+python -m etl.silver_labs
+python -m etl.gold_labs
+python -m etl.load_labs
+
+# Result: 58 lab results with proper location fields in PostgreSQL
+```
+
+#### 4.3.5 Implementation Checklist
+
+When implementing location fields for a new domain:
+
+- [ ] **Schema (DDL):** Define three columns: `*_id`, `*_name`, `*_type`
+- [ ] **Source Data:** Ensure INSERT scripts populate LocationSID
+- [ ] **Bronze ETL:** Extract LocationSID from source
+- [ ] **Silver ETL:** Join with `Dim.Location` to get name/type
+- [ ] **Gold ETL:** Include all three columns in final output
+- [ ] **PostgreSQL Load:** Map to schema columns correctly
+- [ ] **Query Layer:** SELECT all three columns in all queries
+- [ ] **Row Parsing:** Update dictionary indices after adding columns
+- [ ] **Templates:** Reference `*_name` for display, not old single column
+- [ ] **Testing:** Verify widget, full page, and API endpoints render location
+
+**See Also:** ADR-006 (Location Field Patterns)
+
 ---
 
 ## 5. Authentication and Authorization
@@ -435,6 +622,49 @@ def get_all_encounters(
 
 **Implementation Results:** Successfully implemented in Encounters domain with 30+ records per patient. Page size selector (10/20/50/100) works well for varying data sizes. Filter state properly preserved across page navigation.
 **See:** `docs/encounters-design.md` Section 8.2
+
+### ADR-006: Location Field Patterns (2025-12-16)
+**Status:** Accepted
+**Context:** Clinical domains (Vitals, Labs, Encounters) reference `Dim.Location` for location data. Initial implementations used inconsistent patterns (single `location` column vs. three-column structure), causing query/schema mismatches and UI rendering failures.
+
+**Problem:** After Encounters domain was enhanced with location fields, Vitals UI broke because queries still referenced old single `location` column while schema had been changed to three columns (`location_id`, `location_name`, `location_type`). This caused SQL errors and empty widget displays.
+
+**Decision:** Standardize on **three-column location pattern** for all domains:
+1. **`*_id`** - Foreign key to `Dim.Location` (e.g., `location_id`, `admit_location_id`)
+2. **`*_name`** - Denormalized location name for display (e.g., `location_name`, `collection_location`)
+3. **`*_type`** - Denormalized location type for context (e.g., `location_type`, `collection_location_type`)
+
+**Rationale:**
+1. **Performance:** Avoids JOIN with `Dim.Location` on every query (denormalized name/type)
+2. **Simplicity:** Templates can directly reference `location_name` without lookups
+3. **Consistency:** Uniform pattern across all clinical domains reduces cognitive load
+4. **Resilience:** Query layer remains functional even if dimension table structure changes
+
+**Implementation Requirements:**
+- All domains MUST SELECT all three columns in queries (even if not immediately displayed)
+- Schema changes MUST be accompanied by query layer and template updates
+- Source data fixes MUST be applied at root level (INSERT scripts, not UPDATE patches)
+- Full ETL pipeline MUST be rerun after source data changes
+
+**Consequences:**
+- ✅ **Positive:**
+  - Prevents future query/schema mismatches
+  - Consistent pattern simplifies onboarding new developers
+  - Clear checklist for implementing location fields in new domains
+  - Templates future-proof (can add location display without query changes)
+- ⚠️ **Trade-offs:**
+  - Slight data duplication (denormalized name/type)
+  - Requires discipline to update schema, queries, templates together
+- ⚠️ **Migration Required:**
+  - Existing domains (Vitals, Encounters) updated to follow pattern
+  - Labs domain implemented with pattern from day one
+
+**Alternatives Considered:**
+1. **Single `location` VARCHAR column** - Rejected: Lost referential integrity, no type information
+2. **ID-only with JOINs** - Rejected: Poor performance, added query complexity
+3. **Domain-specific patterns** - Rejected: Inconsistency causes maintenance burden
+
+**See:** Section 4.3 (Location Field Patterns) for detailed implementation guidance
 
 ---
 

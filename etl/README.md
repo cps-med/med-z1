@@ -67,11 +67,11 @@ python -m etl.gold_patient_flags
 python -m etl.load_patient_flags
 ```
 
-### Vitals (✅ Days 1-3 Complete)
+### Vitals (✅ Complete)
 - **bronze_vitals.py** ✅ - Extract vitals, types, qualifiers from CDWWork (4 tables)
 - **silver_vitals.py** ✅ - Clean, join, aggregate qualifiers as JSON
-- **gold_vitals.py** (Pending) - Add BMI calculation, abnormal flags, patient-centric view
-- **load_vitals.py** (Pending) - Load into PostgreSQL patient_vitals table
+- **gold_vitals.py** ✅ - Add BMI calculation, abnormal flags, patient-centric view
+- **load_vitals.py** ✅ - Load into PostgreSQL patient_vitals table
 
 **Run:**
 ```bash
@@ -81,14 +81,55 @@ python -m etl.bronze_vitals
 # Silver: Clean and join (7,801 vitals, 19 columns)
 python -m etl.silver_vitals
 
-# Gold: Add business logic (TBD)
+# Gold: Add business logic (8,730 vitals with BMI, flags)
 python -m etl.gold_vitals
 
-# Load: Insert into PostgreSQL (TBD)
+# Load: Insert into PostgreSQL (8,730 vitals)
 python -m etl.load_vitals
 ```
 
-**Status:** Bronze and Silver complete (2025-12-12). Gold and Load pending Day 4 implementation.
+**Status:** ✅ Complete (2025-12-13). All 4 pipeline stages operational.
+
+### Laboratory Results (✅ ETL Complete - 2025-12-16)
+- **bronze_labs.py** ✅ - Extract lab tests, results from CDWWork (2 tables: Dim.LabTest, Chem.LabChem)
+- **silver_labs.py** ✅ - Clean, join, calculate reference range bounds, abnormal/critical flags
+- **gold_labs.py** ✅ - Add patient ICN resolution, facility names, enriched metadata
+- **load_labs.py** ✅ - Load into PostgreSQL patient_labs table
+
+**Run:**
+```bash
+# Bronze: Extract 2 tables (17 test types, 58 lab results)
+python -m etl.bronze_labs
+
+# Silver: Clean and join (58 lab results, 27 columns with parsed ranges)
+python -m etl.silver_labs
+
+# Gold: Add patient identity and facility enrichment (58 results, 34 columns)
+python -m etl.gold_labs
+
+# Load: Insert into PostgreSQL (58 lab results)
+python -m etl.load_labs
+```
+
+**Key Features:**
+- Three-column location pattern: `location_id`, `collection_location`, `collection_location_type`
+- Reference range parsing: Extracts low/high numeric bounds from text (e.g., "135 - 145" → 135.0, 145.0)
+- Abnormal flag detection: `H` (High), `L` (Low), `H*` (Critical High), `L*` (Critical Low), `PANIC`
+- LOINC code support: Standard lab test identifiers
+- Panel grouping: Accession number links results from same specimen/panel
+- Specimen type tracking: "Serum", "Whole Blood", etc.
+
+**Lab Panels Implemented:**
+- Basic Metabolic Panel (BMP): Sodium, Potassium, Chloride, CO2, BUN, Creatinine, Glucose
+- Lipid Panel: Total Cholesterol, HDL, LDL, Triglycerides
+- Complete Blood Count (CBC): WBC, RBC, Hemoglobin, Hematocrit, Platelets
+
+**Data Volume:** 58 lab results across 36 synthetic patients (3 facilities: Sta3n 508, 516, 552)
+
+**Status:** ✅ ETL Complete (2025-12-16). UI implementation pending.
+
+**Important Note - Location Field Pattern:**
+This domain was the first to implement the standardized three-column location pattern from day one. All location references include ID, name, and type for consistency with Vitals and Encounters domains. See `docs/architecture.md` Section 4.3 for detailed pattern documentation.
 
 ## Prerequisites
 
@@ -248,4 +289,5 @@ if __name__ == "__main__":
 
 ---
 
-**Last Updated:** 2025-12-12
+**Last Updated:** 2025-12-16
+**Recent Changes:** Added Laboratory Results ETL documentation (complete Bronze/Silver/Gold/Load pipeline). Updated Vitals status to fully complete. Documented location field pattern standardization.

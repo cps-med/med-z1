@@ -13,6 +13,8 @@ CREATE TABLE patient_encounters (
     -- Admission details
     admit_datetime          TIMESTAMP NOT NULL,         -- Admission date/time
     admit_location_id       INTEGER,                    -- Ward/Location SID at admission
+    admit_location_name     VARCHAR(100),               -- Ward/Location name at admission
+    admit_location_type     VARCHAR(50),                -- Location type (Inpatient, Emergency, etc.)
     admit_diagnosis_code    VARCHAR(20),                -- ICD-10 admission diagnosis
     admitting_provider_id   INTEGER,                    -- Provider SID
     admitting_provider_name VARCHAR(200),               -- Provider full name
@@ -21,6 +23,8 @@ CREATE TABLE patient_encounters (
     discharge_datetime      TIMESTAMP,                  -- Discharge date/time (NULL if active)
     discharge_date_id       INTEGER,                    -- Discharge date dimension SID
     discharge_location_id   INTEGER,                    -- Ward/Location SID at discharge
+    discharge_location_name VARCHAR(100),               -- Ward/Location name at discharge
+    discharge_location_type VARCHAR(50),                -- Location type at discharge
     discharge_diagnosis_code VARCHAR(20),               -- ICD-10 discharge diagnosis
     discharge_diagnosis_text VARCHAR(100),              -- Discharge diagnosis description
     discharge_disposition   VARCHAR(50),                -- e.g., "Home", "SNF", "Rehab", "AMA"
@@ -69,6 +73,13 @@ CREATE INDEX idx_patient_encounters_recent
 -- Index for facility queries
 CREATE INDEX idx_patient_encounters_facility
     ON patient_encounters (sta3n, admit_datetime DESC);
+
+-- Indexes for location type filtering
+CREATE INDEX idx_patient_encounters_admit_location_type
+    ON patient_encounters (admit_location_type);
+
+CREATE INDEX idx_patient_encounters_discharge_location_type
+    ON patient_encounters (discharge_location_type);
 
 -- Comments
 COMMENT ON TABLE patient_encounters IS 'Patient inpatient encounters (admissions) from Gold layer';

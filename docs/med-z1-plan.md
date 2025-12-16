@@ -1,6 +1,6 @@
 # med-z1 – Product & Technical Development Plan
 
-December 15, 2025 • Document version v1.3
+December 16, 2025 • Document version v1.4
 
 > **Related Documentation:**
 > - **Tactical Implementation & Current Status:** See `implementation-roadmap.md` for detailed execution plan, current implementation status, and development phases
@@ -8,6 +8,7 @@ December 15, 2025 • Document version v1.3
 > - **Domain-Specific Specifications:** See `vitals-design.md`, `allergies-design.md`, `medications-design.md`, `patient-flags-design.md`, etc.
 
 **Changelog:**
+- **v1.4 (December 16, 2025):** Updated current status to reflect 7 clinical domains implemented (added Encounters). Noted Laboratory Results ETL completion (UI implementation pending). Updated "Next Priorities" section.
 - **v1.3 (December 15, 2025):** Refactored to focus on strategic vision and product planning. Removed redundant technical implementation details (now in `implementation-roadmap.md`). Updated current status to reflect 6 clinical domains implemented and Vista Phase 1 complete.
 - **v1.2 (December 8, 2025):** Updated with actual implementation details - medallion architecture working, PostgreSQL setup, MinIO client, ETL pipeline complete for patient demographics, actual dependencies and project structure
 - **v1.1 (December 7, 2025):** Updated with CCOW integration requirements
@@ -566,7 +567,7 @@ med-z1/
 
 ## 6. Development Phases & Current Status
 
-### 6.1 Current Implementation Status (as of December 15, 2025)
+### 6.1 Current Implementation Status (as of December 16, 2025)
 
 **✅ Infrastructure & Data Pipeline: COMPLETE**
 - Medallion architecture (Bronze/Silver/Gold) operational with MinIO
@@ -574,13 +575,14 @@ med-z1/
 - CCOW Context Vault service (port 8001)
 - Complete ETL pipeline working for all implemented domains
 
-**✅ Clinical Domains Implemented: 6 DOMAINS**
+**✅ Clinical Domains Implemented: 7 DOMAINS**
 1. **Dashboard** - Patient overview with clinical widgets (widget grid system)
 2. **Demographics** - Full implementation (2x1 widget + dedicated page with comprehensive information)
 3. **Patient Flags** - Modal-only implementation (topbar button with badge count, no dashboard widget)
 4. **Vitals** - Full implementation (1x1 widget + dedicated page with interactive charts)
 5. **Allergies** - Full implementation (1x1 widget + dedicated page)
 6. **Medications** - Full implementation (2x1 widget + dedicated page, RxOut + BCMA integration)
+7. **Encounters** - Full implementation (1x1 widget + dedicated page with pagination, inpatient admissions only)
 
 **✅ Vista RPC Broker Simulator: PHASE 1 COMPLETE**
 - Foundation for real-time data (T-0) overlay alongside PostgreSQL (T-1 historical)
@@ -590,9 +592,11 @@ med-z1/
 - 82 unit tests, 100% passing
 - Comprehensive documentation (`vista/README.md`)
 
+**🔧 ETL Complete, UI Pending:**
+- **Laboratory Results** - Complete Bronze/Silver/Gold/Load pipeline (58 lab results in PostgreSQL), UI implementation pending
+
 **📋 Next Priorities:**
-- **Encounters domain** (inpatient admissions, outpatient visits) - **NEXT**
-- Laboratory Results (trending and charting)
+- Laboratory Results UI (trending and charting widgets/pages)
 - Problems/Diagnoses
 - Orders, Notes, Imaging
 

@@ -77,6 +77,230 @@ async def get_vitals_page(request: Request, icn: str):
 
 ---
 
+## Query Layer Patterns
+
+### Location Field Pattern (IMPORTANT - 2025-12-16)
+
+**Problem:** Clinical domains that reference `Dim.Location` for location data must follow a consistent three-column pattern. Query/schema mismatches cause UI rendering failures.
+
+**Standard Pattern:** All domains MUST store and SELECT three columns for location fields:
+1. **`*_id`** - Foreign key to `Dim.Location` (e.g., `location_id`, `admit_location_id`)
+2. **`*_name`** - Denormalized location name (e.g., `location_name`, `collection_location`)
+3. **`*_type`** - Denormalized location type (e.g., `location_type`, `collection_location_type`)
+
+**Why?**
+- **Performance:** Avoids JOIN with `Dim.Location` on every query
+- **Simplicity:** Templates reference `location_name` directly without lookups
+- **Consistency:** Uniform pattern across all domains reduces errors
+
+### Code Examples
+
+#### ✅ CORRECT: Vitals Query (app/db/vitals.py)
+```python
+def get_patient_vitals(icn: str, limit: int = 100):
+    query = text("""
+        SELECT
+            vital_id,
+            patient_key,
+            vital_type,
+            vital_abbr,
+            taken_datetime,
+            result_value,
+            unit_of_measure,
+            location_id,        -- All three columns
+            location_name,      -- required
+            location_type,      --
+            entered_by,
+            abnormal_flag
+        FROM patient_vitals
+        WHERE patient_key = :icn
+        ORDER BY taken_datetime DESC
+        LIMIT :limit
+    """)
+
+    with engine.connect() as conn:
+        results = conn.execute(query, {"icn": icn, "limit": limit}).fetchall()
+
+        vitals = []
+        for row in results:
+            vitals.append({
+                "vital_id": row[0],
+                "patient_key": row[1],
+                "vital_type": row[2],
+                "vital_abbr": row[3],
+                "taken_datetime": str(row[4]) if row[4] else None,
+                "result_value": row[5],
+                "unit_of_measure": row[6],
+                "location_id": row[7],       # Index matches SELECT order
+                "location_name": row[8],     #
+                "location_type": row[9],     #
+                "entered_by": row[10],       # Shifted indices after adding columns
+                "abnormal_flag": row[11],    #
+            })
+
+        return vitals
+```
+
+#### ✅ CORRECT: Labs Query (app/db/labs.py - future)
+```python
+def get_patient_labs(icn: str, limit: int = 100):
+    query = text("""
+        SELECT
+            lab_id,
+            patient_key,
+            lab_test_name,
+            result_value,
+            result_numeric,
+            result_unit,
+            abnormal_flag,
+            collection_datetime,
+            location_id,                    -- All three columns
+            collection_location,            -- Domain-specific name
+            collection_location_type,       -- Domain-specific name
+            specimen_type
+        FROM patient_labs
+        WHERE patient_key = :icn
+        ORDER BY collection_datetime DESC
+        LIMIT :limit
+    """)
+
+    with engine.connect() as conn:
+        results = conn.execute(query, {"icn": icn, "limit": limit}).fetchall()
+
+        labs = []
+        for row in results:
+            labs.append({
+                "lab_id": row[0],
+                "patient_key": row[1],
+                "lab_test_name": row[2],
+                "result_value": row[3],
+                "result_numeric": row[4],
+                "result_unit": row[5],
+                "abnormal_flag": row[6],
+                "collection_datetime": str(row[7]) if row[7] else None,
+                "location_id": row[8],
+                "collection_location": row[9],
+                "collection_location_type": row[10],
+                "specimen_type": row[11],
+            })
+
+        return labs
+```
+
+#### ✅ CORRECT: Encounters Query (app/db/encounters.py)
+```python
+def get_patient_encounters(icn: str):
+    # Note: Encounters has TWO locations (admit + discharge)
+    query = text("""
+        SELECT
+            encounter_id,
+            patient_key,
+            inpatient_id,
+            admit_datetime,
+            admit_location_id,          -- Admit location (3 columns)
+            admit_location_name,        --
+            admit_location_type,        --
+            discharge_datetime,
+            discharge_location_id,      -- Discharge location (3 columns)
+            discharge_location_name,    --
+            discharge_location_type,    --
+            encounter_status
+        FROM patient_encounters
+        WHERE patient_key = :icn
+        ORDER BY admit_datetime DESC
+    """)
+
+    with engine.connect() as conn:
+        results = conn.execute(query, {"icn": icn}).fetchall()
+
+        encounters = []
+        for row in results:
+            encounters.append({
+                "encounter_id": row[0],
+                "patient_key": row[1],
+                "inpatient_id": row[2],
+                "admit_datetime": str(row[3]) if row[3] else None,
+                "admit_location_id": row[4],
+                "admit_location_name": row[5],
+                "admit_location_type": row[6],
+                "discharge_datetime": str(row[7]) if row[7] else None,
+                "discharge_location_id": row[8],
+                "discharge_location_name": row[9],
+                "discharge_location_type": row[10],
+                "encounter_status": row[11],
+            })
+
+        return encounters
+```
+
+#### ❌ WRONG: Selecting Only ID Column
+```python
+# DO NOT DO THIS
+query = text("""
+    SELECT
+        vital_id,
+        patient_key,
+        location_id  -- ❌ Missing name and type
+    FROM patient_vitals
+    WHERE patient_key = :icn
+""")
+# Problem: Template can't display location name, defeating denormalization purpose
+```
+
+#### ❌ WRONG: Using Old Single Column
+```python
+# DO NOT DO THIS
+query = text("""
+    SELECT
+        vital_id,
+        patient_key,
+        location  -- ❌ Column doesn't exist (old pattern)
+    FROM patient_vitals
+    WHERE patient_key = :icn
+""")
+# Problem: SQL error "column 'location' does not exist"
+```
+
+### Template Usage
+
+```html
+<!-- app/templates/patient_vitals.html -->
+{% for vital in vitals %}
+  <tr>
+    <td>{{ vital.taken_datetime[:10] }}</td>
+    <td>{{ vital.vital_type }}</td>
+    <td>{{ vital.result_value }} {{ vital.unit_of_measure }}</td>
+    <td>
+      {% if vital.location_name %}
+        {{ vital.location_name }}
+        <span class="location-type">({{ vital.location_type }})</span>
+      {% endif %}
+    </td>
+  </tr>
+{% endfor %}
+```
+
+### When Schema Changes Require Query Updates
+
+**Checklist when adding location fields to existing domain:**
+1. ✅ **Update DDL** in `db/ddl/create_<domain>_table.sql` (add 3 columns)
+2. ✅ **Update ETL Gold/Load** scripts to populate all 3 columns
+3. ✅ **Update all queries** in `app/db/<domain>.py` to SELECT all 3 columns
+4. ✅ **Update row parsing** logic (adjust dictionary indices after new columns)
+5. ✅ **Update templates** to reference `*_name` instead of old column
+6. ✅ **Rerun ETL pipeline** (Bronze → Silver → Gold → Load)
+7. ✅ **Test all views** (widget, full page, API endpoints)
+
+**Example Real Bug (Vitals - 2025-12-16):**
+- Schema changed from single `location` VARCHAR to three columns
+- Queries still referenced old column name → SQL error
+- Empty widget displays ("No vitals found") despite 8,730 records in database
+- Fix: Updated 3 query functions + 1 template reference
+
+**See Also:** `docs/architecture.md` Section 4.3 (Location Field Patterns) for complete architectural guidance
+
+---
+
 ## Real-Time Data Integration (Vista RPC Broker)
 
 ### Overview

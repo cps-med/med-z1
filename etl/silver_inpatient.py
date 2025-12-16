@@ -160,6 +160,8 @@ def transform_inpatient_silver():
         # Admission details
         pl.col("AdmitDateTime").alias("admit_datetime"),
         pl.col("AdmitLocationSID").alias("admit_location_id"),
+        pl.col("AdmitLocationName").alias("admit_location_name"),
+        pl.col("AdmitLocationType").alias("admit_location_type"),
         pl.col("AdmittingProviderSID").alias("admitting_provider_id"),
         pl.col("AdmitDiagnosisICD10").str.strip_chars().alias("admit_diagnosis_code"),
 
@@ -167,6 +169,8 @@ def transform_inpatient_silver():
         pl.col("DischargeDateTime").alias("discharge_datetime"),
         pl.col("DischargeDateSID").alias("discharge_date_id"),
         pl.col("DischargeWardLocationSID").alias("discharge_location_id"),
+        pl.col("DischargeLocationName").alias("discharge_location_name"),
+        pl.col("DischargeLocationType").alias("discharge_location_type"),
         pl.col("DischargeDiagnosisICD10").str.strip_chars().alias("discharge_diagnosis_code"),
         pl.col("DischargeDiagnosis").str.strip_chars().alias("discharge_diagnosis_text"),
         pl.col("DischargeDisposition").str.strip_chars().alias("discharge_disposition"),
@@ -243,6 +247,8 @@ def transform_inpatient_silver():
         # Admission info
         "admit_datetime",
         "admit_location_id",
+        "admit_location_name",
+        "admit_location_type",
         "admit_diagnosis_code",
         "admitting_provider_id",
         "admitting_provider_name",
@@ -251,6 +257,8 @@ def transform_inpatient_silver():
         "discharge_datetime",
         "discharge_date_id",
         "discharge_location_id",
+        "discharge_location_name",
+        "discharge_location_type",
         "discharge_diagnosis_code",
         "discharge_diagnosis_text",
         "discharge_disposition",

@@ -206,6 +206,11 @@ def transform_vitals_silver():
         # Metric conversions (already calculated in Bronze)
         pl.col("MetricValue").alias("metric_value"),
 
+        # Location info
+        pl.col("LocationSID").alias("location_id"),
+        pl.col("LocationName").alias("location_name"),
+        pl.col("LocationType").alias("location_type"),
+
         # Station info
         pl.col("Sta3n").cast(pl.Utf8).alias("sta3n"),
         pl.col("facility_name").alias("facility_name"),
@@ -242,6 +247,9 @@ def transform_vitals_silver():
         "unit_of_measure",
         "category",
         "qualifiers",
+        "location_id",
+        "location_name",
+        "location_type",
         "sta3n",
         "facility_name",
         "source_system",

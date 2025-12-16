@@ -62,6 +62,8 @@ def load_encounters_to_postgresql():
         # Admission details
         pl.col("admit_datetime"),
         pl.col("admit_location_id").cast(pl.Int32),
+        pl.col("admit_location_name"),
+        pl.col("admit_location_type"),
         pl.col("admit_diagnosis_code"),
         pl.col("admitting_provider_id").cast(pl.Int32),
         pl.col("admitting_provider_name"),
@@ -70,6 +72,8 @@ def load_encounters_to_postgresql():
         pl.col("discharge_datetime"),
         pl.col("discharge_date_id").cast(pl.Int32),
         pl.col("discharge_location_id").cast(pl.Int32),
+        pl.col("discharge_location_name"),
+        pl.col("discharge_location_type"),
         pl.col("discharge_diagnosis_code"),
         pl.col("discharge_diagnosis_text"),
         pl.col("discharge_disposition"),

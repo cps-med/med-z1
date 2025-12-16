@@ -1,15 +1,15 @@
 # ---------------------------------------------------------------------
-# load_vitals.py
+# load_labs.py
 # ---------------------------------------------------------------------
-# Load Gold vitals data into PostgreSQL serving database
-#  - Read Gold: vitals_final.parquet
+# Load Gold labs data into PostgreSQL serving database
+#  - Read Gold: labs_final.parquet
 #  - Transform to match PostgreSQL schema
-#  - Load into patient_vitals table
-#  - Use upsert (ON CONFLICT) to handle re-runs
+#  - Load into patient_labs table
+#  - Use truncate/load for now (upsert in future phases)
 # ---------------------------------------------------------------------
 # To run this script from the project root folder:
 #  $ cd med-z1
-#  $ python -m etl.load_vitals
+#  $ python -m etl.load_labs
 # ---------------------------------------------------------------------
 
 import polars as pl
@@ -21,72 +21,71 @@ from lake.minio_client import MinIOClient, build_gold_path
 logger = logging.getLogger(__name__)
 
 
-def load_vitals_to_postgresql():
-    """Load Gold vitals data into PostgreSQL serving database."""
+def load_labs_to_postgresql():
+    """Load Gold labs data into PostgreSQL serving database."""
 
     logger.info("=" * 70)
-    logger.info("Starting PostgreSQL load for vitals")
+    logger.info("Starting PostgreSQL load for laboratory results")
     logger.info("=" * 70)
 
     # Initialize MinIO client
     minio_client = MinIOClient()
 
     # ==================================================================
-    # Step 1: Load Gold vitals
+    # Step 1: Load Gold labs
     # ==================================================================
-    logger.info("Step 1: Loading Gold vitals...")
+    logger.info("Step 1: Loading Gold labs...")
 
-    gold_path = build_gold_path("vitals", "vitals_final.parquet")
+    gold_path = build_gold_path("labs", "labs_final.parquet")
     df = minio_client.read_parquet(gold_path)
-    logger.info(f"  - Loaded {len(df)} vitals from Gold layer")
+    logger.info(f"  - Loaded {len(df)} lab results from Gold layer")
 
     # ==================================================================
     # Step 2: Transform to match PostgreSQL schema
     # ==================================================================
     logger.info("Step 2: Transforming to match PostgreSQL schema...")
 
-    # For calculated BMI records that have NULL vital_sign_id, generate synthetic IDs
-    # starting from a high number (100000+) to avoid conflicts with real IDs
-    max_real_vital_sign_id = df.filter(pl.col("vital_sign_id").is_not_null()).select(pl.col("vital_sign_id").max())[0, 0]
-    logger.info(f"  - Max real vital_sign_id: {max_real_vital_sign_id}")
-
-    # Generate synthetic IDs for BMI records
-    df = df.with_columns([
-        pl.when(pl.col("vital_sign_id").is_null())
-            .then(100000 + pl.int_range(pl.len()).over("vital_sign_id"))  # Start at 100000
-            .otherwise(pl.col("vital_sign_id"))
-            .alias("vital_sign_id")
-    ])
-
-    # Select and rename columns to match patient_vitals table schema
-    # Note: patient_vitals table has these columns:
-    #   vital_id (auto), patient_key, vital_sign_id, vital_type, vital_abbr,
-    #   taken_datetime, entered_datetime, result_value, numeric_value,
-    #   systolic, diastolic, metric_value, unit_of_measure, qualifiers,
-    #   location_id, location_name, location_type, entered_by, abnormal_flag, bmi, last_updated
+    # Select and rename columns to match patient_labs table schema
+    # Note: patient_labs table has these columns:
+    #   lab_id (auto), patient_key, lab_chem_sid, lab_test_sid, lab_test_name,
+    #   lab_test_code, loinc_code, panel_name, accession_number,
+    #   result_value, result_numeric, result_unit, abnormal_flag, is_abnormal, is_critical,
+    #   ref_range_text, ref_range_low, ref_range_high,
+    #   collection_datetime, result_datetime,
+    #   location_id, collection_location, collection_location_type,
+    #   specimen_type, sta3n, performing_lab_sid, ordering_provider_sid,
+    #   vista_package, last_updated
     df_pg = df.select([
-        pl.col("vital_sign_id"),
+        pl.col("lab_chem_sid"),
         pl.col("patient_key"),
-        pl.col("vital_type"),
-        pl.col("vital_abbr"),
-        pl.col("taken_datetime"),
-        pl.col("entered_datetime"),
+        pl.col("lab_test_sid"),
+        pl.col("lab_test_name"),
+        pl.col("lab_test_code"),
+        pl.col("loinc_code"),
+        pl.col("panel_name"),
+        pl.col("accession_number"),
         pl.col("result_value"),
-        pl.col("numeric_value"),
-        pl.col("systolic").cast(pl.Int32),  # PostgreSQL expects INTEGER
-        pl.col("diastolic").cast(pl.Int32),  # PostgreSQL expects INTEGER
-        pl.col("metric_value"),
-        pl.col("unit_of_measure"),
-        pl.col("qualifiers"),  # Already JSON string, will be cast to JSONB
-        pl.col("location_id").cast(pl.Int32),
-        pl.col("location_name"),
-        pl.col("location_type"),
-        pl.lit(None).cast(pl.Utf8).alias("entered_by"),  # Not in Gold layer
+        pl.col("result_numeric"),
+        pl.col("result_unit"),
         pl.col("abnormal_flag"),
-        pl.lit(None).cast(pl.Float64).alias("bmi"),  # BMI is in vitals as separate rows, not a column
+        pl.col("is_abnormal"),
+        pl.col("is_critical"),
+        pl.col("ref_range_text"),
+        pl.col("ref_range_low"),
+        pl.col("ref_range_high"),
+        pl.col("collection_datetime"),
+        pl.col("result_datetime"),
+        pl.col("location_id").cast(pl.Int32),
+        pl.col("collection_location"),
+        pl.col("collection_location_type"),
+        pl.col("specimen_type"),
+        pl.col("sta3n"),
+        pl.col("performing_lab_sid").cast(pl.Int32),
+        pl.col("ordering_provider_sid").cast(pl.Int32),
+        pl.col("vista_package"),
     ])
 
-    logger.info(f"  - Prepared {len(df_pg)} vitals for PostgreSQL (including {df.filter(pl.col('vital_abbr') == 'BMI').shape[0]} BMI records)")
+    logger.info(f"  - Prepared {len(df_pg)} lab results for PostgreSQL")
 
     # ==================================================================
     # Step 3: Create PostgreSQL connection
@@ -107,10 +106,10 @@ def load_vitals_to_postgresql():
     # ==================================================================
     # Step 4: Truncate existing data (for now)
     # ==================================================================
-    logger.info("Step 4: Truncating existing patient_vitals table...")
+    logger.info("Step 4: Truncating existing patient_labs table...")
 
     with engine.connect() as conn:
-        conn.execute(text("TRUNCATE TABLE patient_vitals;"))
+        conn.execute(text("TRUNCATE TABLE patient_labs;"))
         conn.commit()
 
     logger.info("  - Table truncated")
@@ -125,7 +124,7 @@ def load_vitals_to_postgresql():
 
     # Write to PostgreSQL
     df_pandas.to_sql(
-        "patient_vitals",
+        "patient_labs",
         engine,
         if_exists="append",
         index=False,
@@ -133,7 +132,7 @@ def load_vitals_to_postgresql():
         chunksize=1000
     )
 
-    logger.info(f"  - Loaded {len(df_pandas)} vitals into patient_vitals table")
+    logger.info(f"  - Loaded {len(df_pandas)} lab results into patient_labs table")
 
     # ==================================================================
     # Step 6: Verify data
@@ -141,22 +140,34 @@ def load_vitals_to_postgresql():
     logger.info("Step 6: Verifying data...")
 
     with engine.connect() as conn:
-        result = conn.execute(text("SELECT COUNT(*) FROM patient_vitals;"))
+        result = conn.execute(text("SELECT COUNT(*) FROM patient_labs;"))
         count = result.scalar()
-        logger.info(f"  - Verified: {count} rows in patient_vitals table")
+        logger.info(f"  - Verified: {count} rows in patient_labs table")
 
         # Get sample data
         result = conn.execute(text("""
-            SELECT patient_key, vital_type, result_value, abnormal_flag, taken_datetime
-            FROM patient_vitals
+            SELECT patient_key, lab_test_name, result_value, abnormal_flag,
+                   collection_location, collection_datetime
+            FROM patient_labs
             LIMIT 5;
         """))
         logger.info("  - Sample records:")
         for row in result:
             logger.info(f"    {row}")
 
+        # Count by location
+        result = conn.execute(text("""
+            SELECT collection_location, COUNT(*) as count
+            FROM patient_labs
+            GROUP BY collection_location
+            ORDER BY count DESC;
+        """))
+        logger.info("  - Results by collection location:")
+        for row in result:
+            logger.info(f"    {row[0]}: {row[1]} results")
+
     logger.info("=" * 70)
-    logger.info(f"PostgreSQL load complete: {count} vitals loaded")
+    logger.info(f"PostgreSQL load complete: {count} lab results loaded")
     logger.info("=" * 70)
 
     return count
@@ -167,4 +178,4 @@ if __name__ == "__main__":
         level=logging.INFO,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     )
-    load_vitals_to_postgresql()
+    load_labs_to_postgresql()

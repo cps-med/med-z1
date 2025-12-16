@@ -59,7 +59,9 @@ def get_patient_vitals(
             metric_value,
             unit_of_measure,
             qualifiers,
-            location,
+            location_id,
+            location_name,
+            location_type,
             entered_by,
             abnormal_flag,
             bmi
@@ -94,10 +96,12 @@ def get_patient_vitals(
                     "metric_value": float(row[11]) if row[11] is not None else None,
                     "unit_of_measure": row[12],
                     "qualifiers": row[13],  # Already JSONB
-                    "location": row[14],
-                    "entered_by": row[15],
-                    "abnormal_flag": row[16],
-                    "bmi": float(row[17]) if row[17] is not None else None,
+                    "location_id": row[14],
+                    "location_name": row[15],
+                    "location_type": row[16],
+                    "entered_by": row[17],
+                    "abnormal_flag": row[18],
+                    "bmi": float(row[19]) if row[19] is not None else None,
                 })
 
             return vitals
@@ -134,7 +138,9 @@ def get_recent_vitals(icn: str) -> Dict[str, Any]:
             metric_value,
             unit_of_measure,
             qualifiers,
-            location,
+            location_id,
+            location_name,
+            location_type,
             entered_by,
             abnormal_flag,
             bmi
@@ -165,10 +171,12 @@ def get_recent_vitals(icn: str) -> Dict[str, Any]:
                     "metric_value": float(row[11]) if row[11] is not None else None,
                     "unit_of_measure": row[12],
                     "qualifiers": row[13],  # Already JSONB
-                    "location": row[14],
-                    "entered_by": row[15],
-                    "abnormal_flag": row[16],
-                    "bmi": float(row[17]) if row[17] is not None else None,
+                    "location_id": row[14],
+                    "location_name": row[15],
+                    "location_type": row[16],
+                    "entered_by": row[17],
+                    "abnormal_flag": row[18],
+                    "bmi": float(row[19]) if row[19] is not None else None,
                 }
 
             return recent_vitals
@@ -211,7 +219,9 @@ def get_vital_type_history(
             metric_value,
             unit_of_measure,
             qualifiers,
-            location,
+            location_id,
+            location_name,
+            location_type,
             entered_by,
             abnormal_flag,
             bmi
@@ -246,10 +256,12 @@ def get_vital_type_history(
                     "metric_value": float(row[11]) if row[11] is not None else None,
                     "unit_of_measure": row[12],
                     "qualifiers": row[13],  # Already JSONB
-                    "location": row[14],
-                    "entered_by": row[15],
-                    "abnormal_flag": row[16],
-                    "bmi": float(row[17]) if row[17] is not None else None,
+                    "location_id": row[14],
+                    "location_name": row[15],
+                    "location_type": row[16],
+                    "entered_by": row[17],
+                    "abnormal_flag": row[18],
+                    "bmi": float(row[19]) if row[19] is not None else None,
                 })
 
             return history

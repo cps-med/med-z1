@@ -20,7 +20,9 @@ CREATE TABLE patient_vitals (
     metric_value            DECIMAL(10,2),              -- Converted value (temp in C, weight in kg)
     unit_of_measure         VARCHAR(20),                -- "mmHg", "F", "lb", etc.
     qualifiers              JSONB,                      -- Store as JSON array
-    location                VARCHAR(100),               -- Hospital location name
+    location_id             INTEGER,                    -- LocationSID
+    location_name           VARCHAR(100),               -- Hospital location name
+    location_type           VARCHAR(50),                -- Location type (Outpatient, Inpatient, etc.)
     entered_by              VARCHAR(100),               -- Staff name
     abnormal_flag           VARCHAR(20),                -- 'CRITICAL', 'HIGH', 'LOW', 'NORMAL'
     bmi                     DECIMAL(5,2),               -- Calculated BMI (if WT and HT available)
@@ -42,6 +44,10 @@ CREATE INDEX idx_patient_vitals_recent
 CREATE INDEX idx_patient_vitals_abnormal
     ON patient_vitals (abnormal_flag, taken_datetime DESC)
     WHERE abnormal_flag IN ('CRITICAL', 'HIGH');
+
+-- Index for location type filtering
+CREATE INDEX idx_patient_vitals_location_type
+    ON patient_vitals (location_type);
 
 -- Comments
 COMMENT ON TABLE patient_vitals IS 'Patient vital signs data from Gold layer';
