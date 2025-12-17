@@ -160,6 +160,21 @@ CCOW_CONFIG = {
 
 
 # -----------------------------------------------------------
+# VistA RPC Broker Simulator configuration
+# -----------------------------------------------------------
+
+VISTA_ENABLED = _get_bool("VISTA_ENABLED", default=True)
+VISTA_SERVICE_URL = os.getenv("VISTA_SERVICE_URL", "http://localhost:8003")
+VISTA_TIMEOUT = int(os.getenv("VISTA_TIMEOUT", "30"))  # seconds
+
+VISTA_CONFIG = {
+    "enabled": VISTA_ENABLED,
+    "service_url": VISTA_SERVICE_URL,
+    "timeout": VISTA_TIMEOUT,
+}
+
+
+# -----------------------------------------------------------
 # PostgreSQL Serving Database configuration
 # -----------------------------------------------------------
 
@@ -201,3 +216,4 @@ if __name__ != "__main__":
     logger.info(f"ASCII extract folder: {ASCII_EXTRACT_FOLDER}")
     logger.info(f"Log directory: {LOG_DIRECTORY_PATH}")
     logger.info(f"CCOW enabled: {CCOW_ENABLED}, URL: {CCOW_URL}")
+    logger.info(f"Vista enabled: {VISTA_ENABLED}, URL: {VISTA_SERVICE_URL}")

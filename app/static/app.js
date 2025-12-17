@@ -202,10 +202,9 @@ function getCurrentPatientICN() {
     const patientHeader = document.querySelector('.patient-header--active');
     if (!patientHeader) return null;
 
-    // Extract ICN from data attribute or text content
-    const icnElement = patientHeader.querySelector('[data-patient-icn]');
-    if (icnElement) {
-        return icnElement.getAttribute('data-patient-icn');
+    // Check the element itself for data attribute
+    if (patientHeader.hasAttribute('data-patient-icn')) {
+        return patientHeader.getAttribute('data-patient-icn');
     }
 
     // Fallback: extract from text content (e.g., "ICN: ICN100001")

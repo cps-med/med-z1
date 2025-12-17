@@ -48,15 +48,15 @@ uvicorn app.main:app --reload
 # Run the CCOW Context Vault service (port 8001, separate terminal)
 uvicorn ccow.main:app --reload --port 8001
 
-# Run the Vista RPC Broker Simulator (port 8003, separate terminal) - Future
-# cd vista && uvicorn app.main:app --reload --port 8003
+# Run the Vista RPC Broker Simulator (port 8003, separate terminal)
+uvicorn vista.app.main:app --reload --port 8003
 
 # Access in browser
 # Main app: http://127.0.0.1:8000/
 # CCOW service: http://127.0.0.1:8001/
 # CCOW API docs: http://127.0.0.1:8001/docs
-# Vista service: http://127.0.0.1:8003/ (when implemented)
-# Vista API docs: http://127.0.0.1:8003/docs (when implemented)
+# Vista service: http://127.0.0.1:8003/
+# Vista API docs: http://127.0.0.1:8003/docs
 ```
 
 Stop servers with CTRL+C.
