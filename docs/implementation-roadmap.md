@@ -2155,10 +2155,16 @@ Test all workflows:
    - **Full Page:** Chronological encounter history with diagnoses, providers, facilities
    - **Rationale:** Foundational domain for understanding patient care timeline
    - **UI Status:** Placeholder added to sidebar (after Vitals) and dashboard (row 1, position 3) - 2025-12-14
-3. 🚧 **Labs (LabChem)** - Demonstrates trending/charting similar to Vitals
-   - **Widget:** **3x1 (full width)** - Recent lab panels side-by-side with trend sparklines
-   - **Full Page:** Complete lab history with filtering, charting, abnormal value highlighting
-   - **UI Status:** Placeholder updated to 3x1 size - 2025-12-14
+3. ✅ **Labs (LabChem)** - Table view complete, charting deferred
+   - **Widget:** **3x1 (full width)** - Recent lab panels side-by-side with trend placeholders
+   - **Full Page:** Complete lab history with filtering, sorting, abnormal value highlighting
+   - **Implementation Status (2025-12-16):**
+     - ✅ Widget: 3x1 hybrid layout (lab panels + trending section with placeholder indicators)
+     - ✅ Full Page: Table view with filtering, sorting, panel grouping
+     - ✅ Data Infrastructure: Trending data queries and 90-day history working
+     - ✅ Sidebar link activated and functional
+     - ⏸️ Charting: Chart.js sparklines deferred due to HTMX timing issues (see lab-results-design.md v1.1)
+     - Future: Implement charting on full page (non-HTMX) or via HTMX event listeners
 4. 🚧 **Problems/Diagnoses** - Clinical context and problem list
    - **Widget:** 1x1 or 2x1 - Active problems
    - **Full Page:** Problem list with onset dates, status, providers

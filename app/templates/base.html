@@ -66,10 +66,10 @@
                     <i class="fa-solid fa-pills fa-lg"></i>
                     <span class="sidebar__text">Medications</span>
                 </a>
-                <a href="#"
-                   class="sidebar__link sidebar__link--disabled"
-                   data-tooltip="Laboratory Results (Coming Soon)">
-                    <i class="fa-solid fa-flask fa-lg"></i>
+                <a href="/labs"
+                   class="sidebar__link {{ 'sidebar__link--active' if active_page == 'labs' else '' }}"
+                   data-tooltip="Laboratory Results">
+                    <i class="fa-solid fa-flask-vial fa-lg"></i>
                     <span class="sidebar__text">Labs</span>
                 </a>
                 <a href="#"

@@ -11,6 +11,8 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from typing import Optional
 import logging
+import asyncio
+from datetime import datetime, timedelta
 
 from app.db.vitals import (
     get_patient_vitals,
@@ -251,6 +253,11 @@ async def get_vitals_page(
 
         logger.info(f"Loaded vitals page for {icn}: {len(vitals)} vitals, filter={vital_type}, sort={sort_by} {sort_order}")
 
+        # Calculate data freshness (yesterday's date for PostgreSQL data)
+        yesterday = datetime.now() - timedelta(days=1)
+        data_current_through = yesterday.strftime("%b %d, %Y")
+        data_freshness_label = "yesterday"
+
         return templates.TemplateResponse(
             "patient_vitals.html",
             {
@@ -262,7 +269,10 @@ async def get_vitals_page(
                 "sort_by": sort_by,
                 "sort_order": sort_order,
                 "total_count": len(vitals),
-                "active_page": "vitals"
+                "active_page": "vitals",
+                "data_current_through": data_current_through,
+                "data_freshness_label": data_freshness_label,
+                "vista_refreshed": False,
             }
         )
 
@@ -275,5 +285,121 @@ async def get_vitals_page(
                 "patient": None,
                 "error": str(e),
                 "active_page": "vitals"
+            }
+        )
+
+
+@page_router.get("/patient/{icn}/vitals/realtime", response_class=HTMLResponse)
+async def get_vitals_realtime(
+    request: Request,
+    icn: str,
+    vital_type: Optional[str] = None,
+    sort_by: Optional[str] = Query("taken_datetime", regex="^(taken_datetime|vital_type|abnormal_flag)$"),
+    sort_order: Optional[str] = Query("desc", regex="^(asc|desc)$")
+):
+    """
+    VistA real-time refresh endpoint.
+
+    Fetches today's vitals from VistA sites and merges with historical PostgreSQL data.
+    Returns only the page content div (for HTMX swap).
+
+    Args:
+        icn: Patient ICN
+        vital_type: Optional filter by vital type
+        sort_by: Column to sort by
+        sort_order: Sort order (asc or desc)
+
+    Returns:
+        HTML partial containing vitals content (filters + table)
+    """
+    try:
+        logger.info(f"VistA realtime refresh requested for {icn}")
+
+        # Get patient demographics for page title
+        patient = get_patient_demographics(icn)
+        if not patient:
+            logger.warning(f"Patient {icn} not found during realtime refresh")
+            patient = {"icn": icn, "name_display": "Unknown Patient"}
+
+        # Simulate VistA RPC call delay (2 seconds) - makes loading spinner visible
+        # Remove this when real VistA service is integrated
+        await asyncio.sleep(2)
+
+        # TODO: When VistA service is ready, fetch real-time data:
+        # from app.services.vista_client import VistaClient
+        # vista = VistaClient()
+        # vista_results = await vista.call_rpc_multi_site(
+        #     sites=["200", "500", "630"],
+        #     rpc_name="GMV LATEST VM",
+        #     params=[icn, "1"]  # "1" = today's vitals only
+        # )
+
+        # For now: Get historical data from PostgreSQL (same as initial load)
+        # In production, this would merge PostgreSQL (T-1 and earlier) + VistA (T-0)
+        vitals = get_patient_vitals(icn, limit=500, vital_type=vital_type)
+        counts = get_vital_counts(icn)
+
+        # Sort vitals (same logic as initial page load)
+        reverse = (sort_order == "desc")
+        if sort_by == "taken_datetime":
+            vitals = sorted(vitals, key=lambda v: v.get("taken_datetime") or "", reverse=reverse)
+        elif sort_by == "vital_type":
+            vitals = sorted(vitals, key=lambda v: v.get("vital_type") or "", reverse=reverse)
+        elif sort_by == "abnormal_flag":
+            flag_order = {"CRITICAL": 4, "HIGH": 3, "LOW": 2, "NORMAL": 1, None: 0}
+            vitals = sorted(vitals, key=lambda v: flag_order.get(v.get("abnormal_flag"), 0), reverse=reverse)
+
+        # Calculate data freshness (today's date after VistA refresh)
+        now = datetime.now()
+        data_current_through = now.strftime("%b %d, %Y")
+        last_updated = now.strftime("%I:%M %p")
+
+        logger.info(f"VistA refresh complete for {icn}: {len(vitals)} vitals (simulated)")
+
+        # Return only the content portion (for HTMX outerHTML swap)
+        # Note: This returns the refresh area + out-of-band freshness update
+        return templates.TemplateResponse(
+            "partials/vitals_refresh_area.html",
+            {
+                "request": request,
+                "patient": patient,
+                "vitals": vitals,
+                "counts": counts,
+                "vital_type_filter": vital_type,
+                "sort_by": sort_by,
+                "sort_order": sort_order,
+                "total_count": len(vitals),
+                "vista_refreshed": True,
+                "data_current_through": data_current_through,
+                "last_updated": last_updated,
+                # TODO: Add partial success handling when VistA is integrated
+                # "vista_success_rate": f"{successful_sites} of {total_sites} sites"
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Error in VistA realtime refresh for {icn}: {e}")
+        # Get patient info for error state
+        try:
+            patient = get_patient_demographics(icn)
+            if not patient:
+                patient = {"icn": icn, "name_display": "Unknown Patient"}
+        except:
+            patient = {"icn": icn, "name_display": "Unknown Patient"}
+
+        # Return error state fragment
+        return templates.TemplateResponse(
+            "partials/vitals_refresh_area.html",
+            {
+                "request": request,
+                "patient": patient,
+                "vitals": [],
+                "counts": {},
+                "total_count": 0,
+                "sort_by": "taken_datetime",
+                "sort_order": "desc",
+                "vital_type_filter": None,
+                "error": f"Unable to fetch real-time data: {str(e)}",
+                "vista_refreshed": False,
             }
         )

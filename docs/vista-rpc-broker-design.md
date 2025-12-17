@@ -1,13 +1,21 @@
 # VistA RPC Broker Simulator - Design Document
 
-**Document Version:** v1.3
-**Date:** 2025-12-15
+**Document Version:** v1.4
+**Date:** 2025-12-16
 **Status:** In Development - Phase 1 Foundation Complete
 
 **📝 Documentation Update Policy:**
 When updating this design document with implementation progress or design changes, also update:
 - `vista/README.md` - Practical guide (API examples, endpoints, test coverage, capabilities)
 - `docs/implementation-roadmap.md` Section 11.3 - Phase 8 progress tracking
+
+**Changelog v1.4** (2025-12-16):
+- ✅ Updated Section 2.11 (UI/UX Integration Pattern) with finalized UI specifications
+- ✅ Added Section 2.11.1 - Detailed button placement and layout specifications
+- ✅ Resolved open UI/UX questions from Section 11
+- ✅ Documented implementation scope: Full clinical domain pages only (Phase 1)
+- ✅ Deferred features: Dashboard widgets, keyboard shortcuts (future phases)
+- 📝 Created Vitals page mockup showing exact button placement and layout
 
 **Changelog v1.3** (2025-12-15):
 - ✅ Updated Section 8 (Implementation Plan) with Phase 1 actual implementation details
@@ -862,122 +870,429 @@ class VistaServer:
 
 ### 2.11 UI/UX Integration Pattern (Hybrid Approach)
 
-**Decision**: Show PostgreSQL data by default with "Refresh from VistA" button for real-time updates
+**Decision**: Show PostgreSQL data by default with user-controlled "Refresh from VistA" button for real-time updates
 
-**User Experience Flow**:
+**Implementation Scope (Phase 1)**:
+- ✅ **Full clinical domain pages only** (e.g., Vitals, Labs, Medications, Allergies)
+- ✅ Implemented on pages with dedicated routes (completed domains only)
+- ❌ **Not on dashboard widgets** (deferred to future phase)
+- ❌ **Not on Demographics page** (static data, no time-sensitive updates)
+- 📝 **Keyboard shortcuts**: Documented for future implementation, not Phase 1
+
+**Site Selection Default**:
+- **All available sites** queried by default (no manual site picker in Phase 1)
+- **Date range**: "today" or "now" (real-time, T-0 data only)
+- **Timeout**: 5 seconds per site (prevent indefinite waits)
+- **Partial success handling**: Show results from successful sites if some fail
+
+---
+
+#### 2.11.1 Button Placement and Layout Specification
+
+**Location**: Right-justified at the same vertical level as breadcrumbs
+
+**Layout Options**:
+
+**Option A: Single Line Layout** (Preferred for pages with space):
+```
+┌────────────────────────────────────────────────────────────────────┐
+│ Dashboard > Vital Signs          Data current through: Dec 13, 2025│
+│                                  (yesterday)  [Refresh from VistA] │
+└────────────────────────────────────────────────────────────────────┘
+```
+
+**Option B: Two-Line Layout** (For narrower viewports or long page titles):
+```
+┌────────────────────────────────────────────────────────────────────┐
+│ Dashboard > Vital Signs                                            │
+│                       Data current through: Dec 13, 2025 (yesterday)│
+│                                              [Refresh from VistA]  │
+└────────────────────────────────────────────────────────────────────┘
+```
+
+**Typography**:
+- Breadcrumb font: Standard med-z1 breadcrumb style (typically `text-sm` or `0.875rem`)
+- Freshness message: **Same font and size as breadcrumbs** (maintains visual hierarchy)
+- Button: Secondary style with icon (standard med-z1 secondary button)
+
+**Accessibility**:
+- **Tab order**: Button is next focusable element immediately after breadcrumb links
+- **Keyboard navigation**: Button activatable via Enter or Space
+- **ARIA labels**: `aria-label="Refresh data from VistA sites"` for screen readers
+- **Focus indicator**: Standard med-z1 focus ring (visible keyboard focus)
+
+---
+
+#### 2.11.2 User Experience Flow
 
 1. **Initial Page Load** (Fast, <1 second):
    ```
-   Patient: SMITH, JOHN (ICN: 1012853550V207686)
+   ┌──────────────────────────────────────────────────────────────────┐
+   │ Dashboard > Vital Signs    Data current through: Dec 13, 2025   │
+   │                            (yesterday)  [🔄 Refresh from VistA] │
+   └──────────────────────────────────────────────────────────────────┘
 
    Vitals (Last 7 Days)
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   Data current through: Dec 13, 2025 (yesterday)
-
-   [Refresh from VistA] button
 
    Blood Pressure:
    Dec 7:  120/80
    Dec 8:  118/76
    Dec 9:  122/82
-   ...
+   Dec 10: 125/84
+   Dec 11: 119/77
+   Dec 12: 121/79
    Dec 13: 120/78
    ```
 
-2. **User Clicks "Refresh from VistA"** (Processing indicator appears):
+   **What user sees**:
+   - Fast page load from PostgreSQL (historical data through yesterday)
+   - Clear indicator: "Data current through: Dec 13, 2025 (yesterday)"
+   - Button enabled and ready to click
+
+2. **User Clicks "Refresh from VistA"** (Processing, 1-5 seconds):
    ```
+   ┌──────────────────────────────────────────────────────────────────┐
+   │ Dashboard > Vital Signs     🔄 Fetching real-time data...        │
+   │                                     [Refresh from VistA] (disabled)│
+   └──────────────────────────────────────────────────────────────────┘
+
    Vitals (Last 7 Days)
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   🔄 Fetching real-time data from VistA sites...
-
-   [Processing spinner]
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   [Spinner animation or loading indicator]
    ```
 
-3. **After 1-3 seconds** (Real-time data merged):
+   **What happens**:
+   - Button becomes disabled (prevents duplicate requests)
+   - Freshness message replaced with loading indicator
+   - HTMX sends async request to VistA refresh endpoint
+   - Backend queries all configured VistA sites for today's data
+
+3. **After 1-5 seconds** (Success - Real-time data merged):
    ```
+   ┌──────────────────────────────────────────────────────────────────┐
+   │ Dashboard > Vital Signs    Data current through: Dec 14, 2025   │
+   │                  (today, real-time) Last updated: 2:34 PM       │
+   │                                     [🔄 Refresh from VistA]     │
+   └──────────────────────────────────────────────────────────────────┘
+
    Vitals (Last 7 Days)
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   Data current through: Dec 14, 2025 (today, real-time)
-   Last updated: 2:34 PM
-
-   [Refresh from VistA] button (enabled again)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
    Blood Pressure:
-   Dec 7:  120/80           (CDW)
-   Dec 8:  118/76           (CDW)
+   Dec 7:  120/80
+   Dec 8:  118/76
    ...
-   Dec 13: 120/78           (CDW)
-   Dec 14: 118/74 ← NEW    (VistA Site 200, today 9:30 AM)
-   Dec 14: 122/80 ← NEW    (VistA Site 200, today 2:15 PM)
+   Dec 13: 120/78
+   Dec 14: 118/74  ← NEW (Site 200, 9:30 AM)
+   Dec 14: 122/80  ← NEW (Site 200, 2:15 PM)
    ```
 
-**Implementation Notes**:
-- **No automatic real-time fetching**: Avoids slow page loads, gives user control
-- **Data source hidden**: UI doesn't explicitly show "CDW" vs "VistA" labels (preserves clean aesthetic)
-- **Freshness indicator**: "Data current through: [date]" and "Last updated: [time]"
-- **Processing feedback**: Spinner + status message during VistA queries
-- **Partial failure transparency**: Show completeness indicator when some sites fail
-  - Success: "Data current through: Dec 14, 2025 (today, real-time)"
-  - Partial: "Data current through: Dec 14, 2025 (real-time refresh incomplete - 2 of 3 sites responded)"
-  - Failure: "Unable to fetch real-time data. [Retry]"
-- **Error handling**: Graceful degradation - show partial results with clear indicators
+   **What user sees**:
+   - Updated freshness: "Data current through: Dec 14, 2025 (today, real-time)"
+   - Timestamp: "Last updated: 2:34 PM"
+   - New data rows appear (today's vitals from VistA)
+   - Button re-enabled for future refreshes
 
-**HTMX Implementation Example** (`app/templates/patient/vitals.html`):
+4. **Partial Success** (Some sites failed):
+   ```
+   ┌──────────────────────────────────────────────────────────────────┐
+   │ Dashboard > Vital Signs    Data current through: Dec 14, 2025   │
+   │         (real-time refresh incomplete - 2 of 3 sites responded) │
+   │                                     [🔄 Refresh from VistA]     │
+   └──────────────────────────────────────────────────────────────────┘
+   ```
+
+   **User feedback**:
+   - Clear indication that not all sites responded
+   - Shows available data (graceful degradation)
+   - Button remains enabled for retry
+
+5. **Failure** (All sites failed or timeout):
+   ```
+   ┌──────────────────────────────────────────────────────────────────┐
+   │ Dashboard > Vital Signs    Unable to fetch real-time data       │
+   │                            [Retry] [View details]               │
+   └──────────────────────────────────────────────────────────────────┘
+   ```
+
+   **Error handling**:
+   - Clear error message
+   - Retry button (attempts refresh again)
+   - Optional "View details" link (shows which sites failed, technical details)
+
+---
+
+#### 2.11.3 Implementation Notes
+
+**No automatic real-time fetching**:
+- Avoids slow initial page loads (always fast from PostgreSQL)
+- Gives user full control over when to query VistA
+- Prevents unnecessary VistA load for users who don't need real-time data
+
+**Data source transparency**:
+- UI does NOT explicitly label rows as "CDW" vs "VistA" (preserves clean aesthetic)
+- Freshness indicator provides sufficient context
+- Users understand: clicking button = getting today's data
+
+**Freshness indicators**:
+- "Data current through: [date]" - Primary indicator
+- "Last updated: [time]" - Shown after successful refresh
+- "(yesterday)" vs "(today, real-time)" - Contextual labels
+
+**Processing feedback**:
+- Spinner + status message during VistA queries
+- Button disabled to prevent duplicate requests
+- Clear visual feedback that work is in progress
+
+**Error handling philosophy**:
+- **Graceful degradation**: Show partial results when possible
+- **Clear transparency**: Tell user exactly what succeeded/failed
+- **Easy retry**: Keep button enabled (or show explicit Retry button)
+- **Technical details available**: "View details" link for debugging
+
+**Deferred features** (future phases):
+- Dashboard widget "Refresh" buttons (Phase 2+)
+- Keyboard shortcuts (e.g., `Shift+R` for refresh)
+- Auto-refresh on page focus (optional, UX decision pending)
+- Site selection UI (manual picker for power users)
+
+---
+
+#### 2.11.4 HTMX Implementation Example
+
+**Template Structure** (`app/templates/patient/vitals.html`):
+
 ```html
-<div id="vitals-container">
-  <h3>Vitals (Last 7 Days)</h3>
-  <p class="data-freshness">Data current through: {{ data_current_through }}</p>
+{% extends "base.html" %}
 
-  <button
-    hx-get="/patient/{{ patient_icn }}/vitals-realtime"
-    hx-target="#vitals-container"
-    hx-swap="outerHTML"
-    hx-indicator="#vitals-spinner"
-    class="btn-refresh">
-    Refresh from VistA
-  </button>
+{% block content %}
+<div class="page-header">
+  <!-- Breadcrumbs (left-aligned) -->
+  <nav aria-label="breadcrumb" class="breadcrumb-nav">
+    <a href="/dashboard?icn={{ patient_icn }}">Dashboard</a>
+    <span class="breadcrumb-separator">></span>
+    <span class="breadcrumb-current">Vital Signs</span>
+  </nav>
 
-  <div id="vitals-spinner" class="htmx-indicator">
-    🔄 Fetching real-time data from VistA sites...
+  <!-- Freshness indicator + Refresh button (right-aligned) -->
+  <div id="vista-refresh-controls" class="vista-controls">
+    {% if vista_refreshed %}
+      <span class="data-freshness">
+        Data current through: {{ data_current_through }} (today, real-time)
+        <span class="last-updated">Last updated: {{ last_updated }}</span>
+      </span>
+    {% else %}
+      <span class="data-freshness">
+        Data current through: {{ data_current_through }} (yesterday)
+      </span>
+    {% endif %}
+
+    <button
+      hx-get="/patient/{{ patient_icn }}/vitals-realtime"
+      hx-target="#vitals-page-content"
+      hx-swap="outerHTML"
+      hx-indicator="#vista-loading"
+      aria-label="Refresh data from VistA sites"
+      class="btn btn-secondary vista-refresh-btn">
+      <i class="fa-solid fa-rotate"></i> Refresh from VistA
+    </button>
+
+    <div id="vista-loading" class="htmx-indicator">
+      <i class="fa-solid fa-spinner fa-spin"></i> Fetching real-time data...
+    </div>
   </div>
-
-  <!-- Vitals table/chart -->
 </div>
+
+<div id="vitals-page-content">
+  <h2>Vitals (Last 7 Days)</h2>
+
+  <!-- Vitals table/chart content -->
+  <table class="vitals-table">
+    {% for vital in vitals %}
+      <tr>
+        <td>{{ vital.date }}</td>
+        <td>{{ vital.blood_pressure }}</td>
+        <td>{{ vital.heart_rate }}</td>
+        <!-- ... -->
+      </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}
 ```
 
-**Backend Route** (`app/routes/patient.py`):
-```python
-@router.get("/patient/{patient_icn}/vitals-realtime")
-async def get_vitals_realtime(patient_icn: str):
-    # Fetch historical from PostgreSQL (T-7 to T-2)
-    historical = await db.get_vitals(patient_icn, days=7, exclude_today=True)
+**CSS Styling** (`app/static/styles.css`):
 
-    # Fetch real-time from VistA (T-0, today)
-    vista = VistaClient()
-    vista_results = await vista.call_rpc_multi_site(
-        sites=["200", "500", "630"],
-        rpc_name="GMV LATEST VM",
-        params=[patient_icn, "1"]  # Get today's vitals only
+```css
+/* Page header with breadcrumbs and Vista controls */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.breadcrumb-nav {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.breadcrumb-separator {
+  margin: 0 0.5rem;
+}
+
+.breadcrumb-current {
+  color: #111827;
+  font-weight: 500;
+}
+
+/* Vista refresh controls (right-aligned) */
+.vista-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.875rem;
+}
+
+.data-freshness {
+  color: #6b7280;
+}
+
+.last-updated {
+  margin-left: 0.5rem;
+  font-style: italic;
+}
+
+.vista-refresh-btn {
+  white-space: nowrap;
+}
+
+/* Two-line layout for narrow viewports */
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .vista-controls {
+    flex-direction: column;
+    align-items: flex-end;
+    width: 100%;
+  }
+}
+
+/* HTMX loading indicator */
+.htmx-indicator {
+  display: none;
+  color: #3b82f6;
+  font-size: 0.875rem;
+}
+
+.htmx-request .htmx-indicator {
+  display: inline-block;
+}
+
+.htmx-request .vista-refresh-btn {
+  opacity: 0.5;
+  pointer-events: none;
+}
+```
+
+**Backend Route** (`app/routes/vitals.py` or `app/routes/patient.py`):
+
+```python
+from datetime import datetime
+from fastapi import APIRouter, Request
+from app.services.vista_client import VistaClient
+from app.db import vitals as db_vitals
+from app.templates import templates
+
+router = APIRouter()
+
+@router.get("/patient/{patient_icn}/vitals")
+async def get_vitals_page(request: Request, patient_icn: str):
+    """Initial page load - fast PostgreSQL data only (T-1 and earlier)"""
+    # Fetch historical vitals (through yesterday)
+    vitals = await db_vitals.get_vitals(patient_icn, days=7)
+
+    # Calculate data freshness (yesterday's date)
+    yesterday = datetime.now() - timedelta(days=1)
+
+    return templates.TemplateResponse("patient/vitals.html", {
+        "request": request,
+        "patient_icn": patient_icn,
+        "vitals": vitals,
+        "data_current_through": yesterday.strftime("%b %d, %Y"),
+        "vista_refreshed": False,  # Initial load = no Vista data yet
+    })
+
+
+@router.get("/patient/{patient_icn}/vitals-realtime")
+async def get_vitals_realtime(request: Request, patient_icn: str):
+    """Refresh button clicked - fetch real-time Vista data (T-0, today)"""
+    # Step 1: Fetch historical from PostgreSQL (T-7 to T-2)
+    historical = await db_vitals.get_vitals(
+        patient_icn,
+        days=7,
+        exclude_today=True
     )
 
-    # Parse and merge
+    # Step 2: Fetch real-time from VistA (T-0, today only)
+    vista = VistaClient()
+    vista_results = await vista.call_rpc_multi_site(
+        sites=["200", "500", "630"],  # Query all configured sites
+        rpc_name="GMV LATEST VM",
+        params=[patient_icn, "1"]  # "1" = today's vitals only
+    )
+
+    # Step 3: Parse Vista responses and collect today's vitals
     today_vitals = []
+    successful_sites = 0
+    total_sites = len(vista_results)
+
     for site, response in vista_results.items():
         if response.success:
+            successful_sites += 1
             parsed = vista.parse_vitals_response(response.data)
             today_vitals.extend(parsed)
 
-    # Combine historical + today
+    # Step 4: Combine historical + today (merge/dedupe per Section 2.9.1)
     all_vitals = historical + today_vitals
 
+    # Step 5: Render updated page with freshness indicators
     return templates.TemplateResponse("patient/vitals.html", {
         "request": request,
         "patient_icn": patient_icn,
         "vitals": all_vitals,
         "data_current_through": datetime.now().strftime("%b %d, %Y"),
-        "last_updated": datetime.now().strftime("%I:%M %p")
+        "vista_refreshed": True,  # Flag: Vista data was fetched
+        "last_updated": datetime.now().strftime("%I:%M %p"),
+        "vista_success_rate": f"{successful_sites} of {total_sites} sites responded"
+            if successful_sites < total_sites else None,  # Show partial success warning
     })
 ```
+
+**Key Implementation Details**:
+
+1. **Dual Routes**:
+   - `/vitals` - Initial page load (fast, PostgreSQL only)
+   - `/vitals-realtime` - HTMX refresh endpoint (slower, includes Vista)
+
+2. **Freshness Calculation**:
+   - Initial load: "Data current through: Dec 13, 2025 (yesterday)"
+   - After Vista refresh: "Data current through: Dec 14, 2025 (today, real-time)"
+
+3. **Partial Success Handling**:
+   - Template conditionally shows warning if `vista_success_rate` is set
+   - Example: "real-time refresh incomplete - 2 of 3 sites responded"
+
+4. **Template Logic**:
+   - `vista_refreshed` flag determines which freshness message to show
+   - `last_updated` only displayed after successful Vista refresh
 
 ---
 
@@ -2301,6 +2616,31 @@ class RealtimeOverlayService:
 
 ## 11. Open Questions
 
+### 11.1 Resolved Questions
+
+~~1. **UI/UX: Button Placement and Layout**~~ ✅ **RESOLVED** (2025-12-16, v1.4)
+   - **Decision**: Right-justified at breadcrumb level
+   - **Layout**: Single-line preferred, two-line for narrow viewports
+   - **Typography**: Same font/size as breadcrumbs
+   - **Details**: See Section 2.11.1
+
+~~2. **UI/UX: Implementation Scope**~~ ✅ **RESOLVED** (2025-12-16, v1.4)
+   - **Decision**: Full clinical domain pages only (Phase 1)
+   - **Deferred**: Dashboard widgets, keyboard shortcuts (future phases)
+   - **Details**: See Section 2.11 (Implementation Scope)
+
+~~3. **UI/UX: Site Selection Default**~~ ✅ **RESOLVED** (2025-12-16, v1.4)
+   - **Decision**: Query all available sites by default
+   - **Date Range**: "today" or "now" (T-0 data only)
+   - **Details**: See Section 2.11 (Site Selection Default)
+
+~~4. **UI/UX: Tab Order and Accessibility**~~ ✅ **RESOLVED** (2025-12-16, v1.4)
+   - **Decision**: Button is next focusable element after breadcrumbs
+   - **ARIA Labels**: Explicit labels for screen readers
+   - **Details**: See Section 2.11.1 (Accessibility)
+
+### 11.2 Remaining Open Questions
+
 1. **Patient Data Overlap**: Should the same patient (same ICN) exist at multiple sites, or should each site have unique patients?
    - **Recommendation**: Same patients at multiple sites (more realistic for testing)
 
@@ -2312,6 +2652,12 @@ class RealtimeOverlayService:
 
 4. **Docker Deployment**: Should vista be added to docker-compose.yml alongside SQL Server, MinIO, etc.?
    - **Recommendation**: Yes, but optional for Phase 1 (manual uvicorn fine for initial development)
+
+5. **Caching Strategy**: Should med-z1 cache Vista responses? If so, for how long?
+   - **Recommendation**: TBD - evaluate after initial implementation (consider 5-minute TTL for T-0 data)
+
+6. **Rate Limiting**: Should Vista service implement rate limiting to simulate real-world throttling?
+   - **Recommendation**: TBD - defer until load testing phase
 
 ---
 

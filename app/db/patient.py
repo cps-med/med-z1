@@ -75,7 +75,7 @@ def get_patient_demographics(icn: str) -> Optional[Dict[str, Any]]:
                     "name_last": result[3],
                     "name_first": result[4],
                     "name_display": result[5],
-                    "dob": str(result[6]) if result[6] else None,
+                    "dob": result[6].strftime("%Y-%m-%d") if result[6] else None,
                     "age": result[7],
                     "sex": result[8],
                     "primary_station": result[9],

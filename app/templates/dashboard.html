@@ -10,7 +10,7 @@
         <div class="dashboard-header">
             <h1 class="dashboard-header__title">Patient Dashboard</h1>
             <p class="dashboard-header__subtitle">
-                Clinical summary for {{ patient.name_display }}
+                {{ patient.name_display }} ({{ patient.icn }})&nbsp;&nbsp;|&nbsp;&nbsp;{{ patient.dob }}&nbsp;&nbsp;|&nbsp;&nbsp;{{ patient.primary_station }}{% if patient.primary_station_name %} ({{ patient.primary_station_name }}){% endif %}
             </p>
         </div>
 
@@ -71,13 +71,16 @@
                 </div>
             </div>
 
-            <!-- Laboratory Results Widget (3x1 - Full Width) - Placeholder -->
-            {{ placeholder_widget(
-                size='3x1',
-                icon='fa-solid fa-flask',
-                title='Laboratory Results',
-                description='Recent lab panels with trends and sparklines'
-            ) }}
+            <!-- Laboratory Results Widget (3x1 - Full Width) -->
+            <div class="widget widget--3x1"
+                 id="widget-labs"
+                 hx-get="/api/patient/dashboard/widget/labs/{{ patient.icn }}"
+                 hx-trigger="load"
+                 hx-swap="innerHTML">
+                <div class="widget__body">
+                    <div class="widget__spinner"></div>
+                </div>
+            </div>
 
             <!-- Problems/Diagnoses Widget (1x1 - Standard) - Placeholder -->
             {{ placeholder_widget(

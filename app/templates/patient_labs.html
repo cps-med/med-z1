@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+
+{% block title %}Laboratory Results - {{ patient.name_display if patient else 'Med-Z1' }}{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    {% if error %}
+        <!-- Error State -->
+        <div class="page-error">
+            <div class="page-error__icon">
+                <i class="fa-solid fa-triangle-exclamation fa-3x"></i>
+            </div>
+            <h2 class="page-error__title">Error Loading Lab Results</h2>
+            <p class="page-error__message">{{ error }}</p>
+            <a href="/" class="btn btn--primary">
+                <i class="fa-solid fa-house"></i>
+                Return to Dashboard
+            </a>
+        </div>
+    {% elif not patient %}
+        <!-- No Patient State -->
+        <div class="page-error">
+            <div class="page-error__icon">
+                <i class="fa-regular fa-user fa-3x"></i>
+            </div>
+            <h2 class="page-error__title">No Patient Selected</h2>
+            <p class="page-error__message">Please select a patient to view their laboratory results</p>
+            <a href="/" class="btn btn--primary">
+                <i class="fa-solid fa-house"></i>
+                Return to Dashboard
+            </a>
+        </div>
+    {% else %}
+        <!-- Page Header -->
+        <div class="page-header">
+            <div class="page-header__breadcrumb">
+                <a href="/" class="breadcrumb-link">
+                    <i class="fa-solid fa-house"></i>
+                    Dashboard
+                </a>
+                <i class="fa-solid fa-chevron-right"></i>
+                <span class="breadcrumb-current">Laboratory Results</span>
+            </div>
+            <div class="page-header__title-group">
+                <h1 class="page-header__title">
+                    <i class="fa-solid fa-flask-vial"></i>
+                    Laboratory Results
+                </h1>
+                <p class="page-header__subtitle">
+                    {{ patient.name_display }} ({{ patient.icn }})&nbsp;&nbsp;|&nbsp;&nbsp;{{ patient.dob }}&nbsp;&nbsp;|&nbsp;&nbsp;{{ patient.primary_station }}{% if patient.primary_station_name %} ({{ patient.primary_station_name }}){% endif %}
+                </p>
+            </div>
+        </div>
+
+        <!-- Summary Stats Card -->
+        {% if counts %}
+        <div class="labs-summary-card">
+            <div class="labs-summary-stat">
+                <div class="labs-summary-stat__value">{{ total_count }}</div>
+                <div class="labs-summary-stat__label">Total Results</div>
+            </div>
+            <div class="labs-summary-stat">
+                <div class="labs-summary-stat__value">{{ counts | length }}</div>
+                <div class="labs-summary-stat__label">Lab Panels</div>
+            </div>
+            <div class="labs-summary-stat">
+                <div class="labs-summary-stat__value {% if abnormal_count > 0 %}text-danger{% endif %}">
+                    {{ abnormal_count }}
+                </div>
+                <div class="labs-summary-stat__label">Abnormal Results</div>
+            </div>
+            <div class="labs-summary-stat">
+                <div class="labs-summary-stat__value">
+                    {% if labs %}{{ labs[0].collection_datetime[:10] if labs[0].collection_datetime else 'N/A' }}{% else %}N/A{% endif %}
+                </div>
+                <div class="labs-summary-stat__label">Most Recent</div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Filters and Controls -->
+        <div class="labs-controls">
+            <!-- Filter Pills: Panel Type -->
+            <div class="filter-pills">
+                <span class="filter-pills__label">Panel:</span>
+                <a href="/patient/{{ patient.icn }}/labs?{% if abnormal_only %}abnormal_only=true&{% endif %}{% if days %}days={{ days }}&{% endif %}sort_by={{ sort_by }}&sort_order={{ sort_order }}"
+                   class="filter-pill {% if not panel_filter %}filter-pill--active{% endif %}">
+                    All Panels ({{ total_count }})
+                </a>
+                {% for panel_name, count in counts.items() %}
+                    <a href="/patient/{{ patient.icn }}/labs?panel_filter={{ panel_name }}&{% if abnormal_only %}abnormal_only=true&{% endif %}{% if days %}days={{ days }}&{% endif %}sort_by={{ sort_by }}&sort_order={{ sort_order }}"
+                       class="filter-pill {% if panel_filter == panel_name %}filter-pill--active{% endif %}">
+                        {{ panel_name }} ({{ count }})
+                    </a>
+                {% endfor %}
+            </div>
+
+            <!-- Secondary Filters -->
+            <div class="filter-pills">
+                <span class="filter-pills__label">Filter:</span>
+                <a href="/patient/{{ patient.icn }}/labs?{% if panel_filter %}panel_filter={{ panel_filter }}&{% endif %}{% if days %}days={{ days }}&{% endif %}sort_by={{ sort_by }}&sort_order={{ sort_order }}"
+                   class="filter-pill {% if not abnormal_only %}filter-pill--active{% endif %}">
+                    All Results
+                </a>
+                <a href="/patient/{{ patient.icn }}/labs?abnormal_only=true&{% if panel_filter %}panel_filter={{ panel_filter }}&{% endif %}{% if days %}days={{ days }}&{% endif %}sort_by={{ sort_by }}&sort_order={{ sort_order }}"
+                   class="filter-pill {% if abnormal_only %}filter-pill--active{% endif %}">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    Abnormal Only
+                </a>
+            </div>
+
+            <!-- Sort Controls -->
+            <div class="sort-controls">
+                <span class="sort-controls__label">Sort by:</span>
+                <select class="sort-select" onchange="window.location.href=this.value">
+                    {% set base_params = '' %}
+                    {% if panel_filter %}{% set base_params = base_params ~ 'panel_filter=' ~ panel_filter ~ '&' %}{% endif %}
+                    {% if abnormal_only %}{% set base_params = base_params ~ 'abnormal_only=true&' %}{% endif %}
+                    {% if days %}{% set base_params = base_params ~ 'days=' ~ days ~ '&' %}{% endif %}
+
+                    <option value="/patient/{{ patient.icn }}/labs?{{ base_params }}sort_by=collection_datetime&sort_order=desc"
+                            {% if sort_by == 'collection_datetime' and sort_order == 'desc' %}selected{% endif %}>
+                        Date (Newest First)
+                    </option>
+                    <option value="/patient/{{ patient.icn }}/labs?{{ base_params }}sort_by=collection_datetime&sort_order=asc"
+                            {% if sort_by == 'collection_datetime' and sort_order == 'asc' %}selected{% endif %}>
+                        Date (Oldest First)
+                    </option>
+                    <option value="/patient/{{ patient.icn }}/labs?{{ base_params }}sort_by=lab_test_name&sort_order=asc"
+                            {% if sort_by == 'lab_test_name' %}selected{% endif %}>
+                        Test Name (A-Z)
+                    </option>
+                    <option value="/patient/{{ patient.icn }}/labs?{{ base_params }}sort_by=abnormal_flag&sort_order=desc"
+                            {% if sort_by == 'abnormal_flag' %}selected{% endif %}>
+                        Abnormal First
+                    </option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Lab Results Table -->
+        {% if labs %}
+        <div class="labs-table-container">
+            <table class="labs-table">
+                <thead>
+                    <tr>
+                        <th class="labs-table__header">Date/Time</th>
+                        <th class="labs-table__header">Panel</th>
+                        <th class="labs-table__header">Test</th>
+                        <th class="labs-table__header">Result</th>
+                        <th class="labs-table__header">Flag</th>
+                        <th class="labs-table__header">Reference Range</th>
+                        <th class="labs-table__header">Location</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for lab in labs %}
+                    <tr class="labs-table__row {% if lab.is_abnormal %}labs-table__row--abnormal{% endif %}">
+                        <!-- Date/Time -->
+                        <td class="labs-table__cell labs-table__cell--datetime">
+                            <div class="lab-datetime">
+                                <span class="lab-datetime__date">
+                                    {{ lab.collection_datetime[:10] if lab.collection_datetime else 'N/A' }}
+                                </span>
+                                <span class="lab-datetime__time">
+                                    {{ lab.collection_datetime[11:16] if lab.collection_datetime and lab.collection_datetime|length > 16 else '' }}
+                                </span>
+                            </div>
+                        </td>
+
+                        <!-- Panel -->
+                        <td class="labs-table__cell">
+                            <span class="lab-panel-name">
+                                {{ lab.panel_name if lab.panel_name else 'Individual Test' }}
+                            </span>
+                        </td>
+
+                        <!-- Test Name -->
+                        <td class="labs-table__cell labs-table__cell--test">
+                            <span class="lab-test-name">{{ lab.lab_test_name }}</span>
+                            {% if lab.loinc_code %}
+                                <span class="lab-loinc">LOINC: {{ lab.loinc_code }}</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Result Value -->
+                        <td class="labs-table__cell labs-table__cell--result">
+                            <div class="lab-result">
+                                <span class="lab-result__value {% if lab.is_abnormal %}lab-result__value--abnormal{% endif %}">
+                                    {{ lab.result_value }}
+                                </span>
+                                {% if lab.result_unit %}
+                                    <span class="lab-result__unit">{{ lab.result_unit }}</span>
+                                {% endif %}
+                            </div>
+                        </td>
+
+                        <!-- Abnormal Flag -->
+                        <td class="labs-table__cell labs-table__cell--flag">
+                            {% if lab.abnormal_flag %}
+                                {% if lab.abnormal_flag == 'H' %}
+                                    <span class="badge badge--sm badge--warning">H</span>
+                                {% elif lab.abnormal_flag == 'L' %}
+                                    <span class="badge badge--sm badge--info">L</span>
+                                {% elif lab.abnormal_flag in ['H*', 'PANIC'] %}
+                                    <span class="badge badge--sm badge--danger">{{ lab.abnormal_flag }}</span>
+                                {% else %}
+                                    <span class="badge badge--sm badge--warning">{{ lab.abnormal_flag }}</span>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+
+                        <!-- Reference Range -->
+                        <td class="labs-table__cell labs-table__cell--range">
+                            {% if lab.ref_range_text %}
+                                <span class="lab-ref-range">{{ lab.ref_range_text }}</span>
+                            {% elif lab.ref_range_low and lab.ref_range_high %}
+                                <span class="lab-ref-range">{{ lab.ref_range_low }} - {{ lab.ref_range_high }}</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Location -->
+                        <td class="labs-table__cell labs-table__cell--location">
+                            {% if lab.collection_location %}
+                                <span class="lab-location">{{ lab.collection_location }}</span>
+                            {% elif lab.sta3n %}
+                                <span class="lab-location">Sta3n: {{ lab.sta3n }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+            <!-- Empty State -->
+            <div class="labs-empty">
+                <div class="labs-empty__icon">
+                    <i class="fa-solid fa-flask-vial fa-3x"></i>
+                </div>
+                <h3 class="labs-empty__title">No Lab Results Found</h3>
+                <p class="labs-empty__message">
+                    {% if panel_filter or abnormal_only or days %}
+                        No results match your current filters. Try adjusting your filter criteria.
+                    {% else %}
+                        This patient has no recorded laboratory results.
+                    {% endif %}
+                </p>
+                {% if panel_filter or abnormal_only or days %}
+                    <a href="/patient/{{ patient.icn }}/labs" class="btn btn--secondary">
+                        <i class="fa-solid fa-filter-circle-xmark"></i>
+                        Clear Filters
+                    </a>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        <!-- Trending Chart Section - Temporarily disabled for troubleshooting -->
+        <!--
+        {% if labs and labs | length > 0 %}
+        <div class="labs-trending-chart-section">
+            <p>Trend charting coming soon</p>
+        </div>
+        {% endif %}
+        -->
+
+    {% endif %}
+</div>
+{% endblock %}

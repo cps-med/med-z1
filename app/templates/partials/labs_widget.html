@@ -1,0 +1,131 @@
+<!-- Laboratory Results Widget Content (3x1 Full Width) -->
+<!-- Widget Header -->
+<div class="widget__header">
+    <div class="widget__title-group">
+        <i class="fa-solid fa-flask-vial widget__icon"></i>
+        <h3 class="widget__title">Laboratory Results</h3>
+    </div>
+    {% if panels %}
+        {% set abnormal_count = namespace(value=0) %}
+        {% for panel in panels %}
+            {% for result in panel.results %}
+                {% if result.is_abnormal %}
+                    {% set abnormal_count.value = abnormal_count.value + 1 %}
+                {% endif %}
+            {% endfor %}
+        {% endfor %}
+        {% if abnormal_count.value > 0 %}
+            <span class="badge badge--warning">{{ abnormal_count.value }} Abnormal</span>
+        {% endif %}
+    {% endif %}
+</div>
+
+<!-- Widget Body -->
+<div class="widget__body">
+    <div class="widget-labs">
+        {% if error %}
+            <p class="text-muted" style="padding: 1rem; text-align: center;">
+                <i class="fa-solid fa-circle-exclamation"></i> Error loading lab results
+            </p>
+        {% elif not has_labs %}
+            <p class="text-muted" style="padding: 1rem; text-align: center;">No lab results recorded</p>
+        {% else %}
+            <!-- 3x1 Hybrid Layout: Panels (Left 2/3) + Trending (Right 1/3) -->
+            <div class="labs-hybrid-layout">
+
+                <!-- Left Section: Recent Lab Panels (2/3 width) -->
+                <div class="labs-panels-section">
+                    {% for panel in panels %}
+                    <div class="lab-panel-card">
+                        <div class="lab-panel-card__header">
+                            <h4 class="lab-panel-card__title">{{ panel.panel_name }}</h4>
+                            <span class="lab-panel-card__date">
+                                {% if panel.collection_datetime %}
+                                    {{ panel.collection_datetime[:10] }}
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="lab-panel-card__body">
+                            {% for result in panel.results[:5] %}
+                            <div class="lab-result-row">
+                                <span class="lab-result-row__name">{{ result.lab_test_name }}</span>
+                                <div class="lab-result-row__value-group">
+                                    <span class="lab-result-row__value {% if result.is_abnormal %}lab-result-row__value--abnormal{% endif %}">
+                                        {{ result.result_value }}
+                                        {% if result.result_unit %}
+                                            <span class="lab-result-row__unit">{{ result.result_unit }}</span>
+                                        {% endif %}
+                                    </span>
+                                    {% if result.abnormal_flag %}
+                                        {% if result.abnormal_flag == 'H' %}
+                                            <span class="badge badge--sm badge--warning">H</span>
+                                        {% elif result.abnormal_flag == 'L' %}
+                                            <span class="badge badge--sm badge--info">L</span>
+                                        {% elif result.abnormal_flag in ['H*', 'PANIC'] %}
+                                            <span class="badge badge--sm badge--danger">{{ result.abnormal_flag }}</span>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                            {% if panel.results | length > 5 %}
+                            <div class="lab-panel-card__more">
+                                +{{ panel.results | length - 5 }} more tests
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Right Section: Trending Sparklines (1/3 width) -->
+                <div class="labs-trending-section">
+                    <h4 class="labs-trending-section__title">Trending (90 Days)</h4>
+                    {% if trending %}
+                        {% for test_name, data_points in trending.items() %}
+                        <div class="trend-item">
+                            <div class="trend-item__header">
+                                <span class="trend-item__name">{{ test_name }}</span>
+                                {% if data_points | length > 0 %}
+                                    {% set latest = data_points[-1] %}
+                                    <span class="trend-item__value {% if latest.abnormal_flag %}trend-item__value--abnormal{% endif %}">
+                                        {{ latest.result_numeric }}
+                                        {% if latest.result_unit %}
+                                            <span class="trend-item__unit">{{ latest.result_unit }}</span>
+                                        {% endif %}
+                                    </span>
+                                {% endif %}
+                            </div>
+                            <div class="trend-item__sparkline">
+                                {% if data_points | length >= 2 %}
+                                    <!-- Placeholder for future chart implementation -->
+                                    <span class="text-muted sparkline-placeholder">
+                                        <i class="fa-solid fa-chart-line"></i>
+                                        {{ data_points | length }} points
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted sparkline-no-data">Limited data</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted" style="font-size: 0.85rem; padding: 0.5rem;">No trending data available</p>
+                    {% endif %}
+                </div>
+
+            </div>
+
+            <!-- View All Link -->
+            <div class="widget-action">
+                <a href="/patient/{{ icn }}/labs" class="btn btn--link btn--sm">
+                    <i class="fa-regular fa-arrow-up-right-from-square"></i>
+                    View All Lab Results
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Widget Footer (minimal spacing) -->
+<div class="widget__footer"></div>

@@ -47,7 +47,7 @@
                     Inpatient Encounters
                 </h1>
                 <p class="page-header__subtitle">
-                    {{ patient.name_display }} ({{ patient.icn }})
+                    {{ patient.name_display }} ({{ patient.icn }})&nbsp;&nbsp;|&nbsp;&nbsp;{{ patient.dob }}&nbsp;&nbsp;|&nbsp;&nbsp;{{ patient.primary_station }}{% if patient.primary_station_name %} ({{ patient.primary_station_name }}){% endif %}
                 </p>
             </div>
         </div>

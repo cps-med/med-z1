@@ -31,25 +31,61 @@
             </a>
         </div>
     {% else %}
-        <!-- Page Header -->
-        <div class="page-header">
-            <div class="page-header__breadcrumb">
-                <a href="/" class="breadcrumb-link">
+        <!-- Page Header with VistA Refresh Controls -->
+        <div class="page-header-breadcrumb">
+            <!-- Breadcrumbs (left-aligned) -->
+            <nav aria-label="breadcrumb" class="breadcrumb-nav">
+                <a href="/?icn={{ patient.icn }}" class="breadcrumb-link">
                     <i class="fa-solid fa-house"></i>
                     Dashboard
                 </a>
-                <i class="fa-solid fa-chevron-right"></i>
+                <i class="fa-solid fa-chevron-right breadcrumb-separator"></i>
                 <span class="breadcrumb-current">Vital Signs</span>
+            </nav>
+
+            <!-- VistA Refresh Controls (right-aligned) -->
+            <div id="vista-refresh-controls" class="vista-controls">
+                <span class="data-freshness" id="freshness-message">
+                    {% if vista_refreshed %}
+                        Data current through: {{ data_current_through }} (today)
+                        <span class="last-updated">Last updated: {{ last_updated }}</span>
+                    {% else %}
+                        Data current through: {{ data_current_through }}{% if data_freshness_label %} ({{ data_freshness_label }}){% endif %}
+                    {% endif %}
+                </span>
+
+                {% if not vista_refreshed or True %}
+                <button
+                    type="button"
+                    hx-get="/patient/{{ patient.icn }}/vitals/realtime{% if vital_type_filter %}?vital_type={{ vital_type_filter }}{% endif %}"
+                    hx-target="#vista-refresh-area"
+                    hx-swap="outerHTML"
+                    hx-indicator="#vista-loading"
+                    aria-label="Refresh data from VistA sites"
+                    class="btn btn--secondary vista-refresh-btn"
+                    onclick="console.log('Button clicked!')">
+                    <i class="fa-solid fa-rotate"></i> Refresh from VistA
+                </button>
+                {% endif %}
+
+                <div id="vista-loading" class="htmx-indicator">
+                    <i class="fa-solid fa-spinner fa-spin"></i> Fetching data...
+                </div>
             </div>
-            <div class="page-header__title-group">
-                <h1 class="page-header__title">
-                    <i class="fa-solid fa-heart-pulse"></i>
-                    Vital Signs
-                </h1>
-                <p class="page-header__subtitle">
-                    {{ patient.name_display }} ({{ patient.icn }})
-                </p>
-            </div>
+        </div>
+
+        <!-- Vista Refresh Area - includes controls and content for HTMX swap -->
+        <div id="vista-refresh-area">
+
+        <!-- Page Title Section -->
+        <div class="page-header__title-group">
+            <h1 class="page-header__title">
+                <i class="fa-solid fa-heart-pulse"></i>
+                Vital Signs
+            </h1>
+            <p class="page-header__subtitle">
+                {{ patient.name_display }} ({{ patient.icn }})&nbsp;&nbsp;|&nbsp;&nbsp;{{ patient.dob }}&nbsp;&nbsp;|&nbsp;&nbsp;{{ patient.primary_station }}{% if patient.primary_station_name %} ({{ patient.primary_station_name }}){% endif %}
+            </p>
         </div>
 
         <!-- Filters and Controls -->
@@ -246,6 +282,8 @@
                 </div>
             </div>
         </div>
+
+        </div> <!-- End vista-refresh-area -->
     {% endif %}
 </div>
 {% endblock %}
@@ -254,5 +292,5 @@
 <!-- Chart.js CDN -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <!-- Vitals page JavaScript -->
-<script src="/static/vitals.js"></script>
+<script src="/static/vitals.js?v=4"></script>
 {% endblock %}

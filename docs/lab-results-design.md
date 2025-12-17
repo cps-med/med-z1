@@ -2228,29 +2228,56 @@ new Chart(ctx, {
 
 ---
 
-### Day 7: Full Page UI - Graph View
+### Day 7: Chart.js Integration (DEFERRED) ⏸️
 
-**Tasks:**
-1. Create `app/templates/partials/labs_graph.html`:
-   - Test selection dropdown
-   - Chart.js line chart with reference range lines
-   - Data point coloring by abnormal flag
-   - Hover tooltips
-2. Integrate graph section into `app/templates/patient_labs.html`
-3. Test graph rendering:
-   - Test selection and graph update
-   - Reference range lines display correctly
-   - Abnormal flag coloring
-   - Hover tooltips show correct values
-4. Test graph + table synchronization (date range filter applies to both)
+**Original Plan:** Implement Chart.js sparklines in widget and full-page trending charts
+
+**What Was Attempted:**
+1. Added Chart.js 4.4.1 library to `base.html`
+2. Implemented sparkline canvases in widget trending section
+3. Created JavaScript initialization with Chart.js line charts
+4. Added CSS styling for chart containers
+5. Implemented safeguards against re-initialization
+
+**Issues Encountered:**
+- **HTMX Content Swapping Timing**: Widget is loaded dynamically via HTMX, causing chart initialization/destruction conflicts
+- **Chart Lifecycle Management**: Inline scripts in HTMX partials execute unpredictably during content swaps
+- **Unreliable Display**: Charts would appear briefly then disappear, or work only after multiple hard refreshes
+- **Global State Issues**: Safeguards prevented over-initialization but couldn't solve DOM destruction problem
+
+**Root Cause:**
+Chart.js requires stable DOM elements for canvas rendering. When HTMX swaps widget content, canvases are destroyed and recreated, but the inline script's global flag prevents re-execution. This creates orphaned Chart.js instances referencing destroyed DOM elements.
+
+**Decision: Revert to Simple Placeholders**
+- Restored simple text-based trend indicators: `<i class="fa-solid fa-chart-line"></i> X points`
+- Removed Chart.js library (not being used)
+- Removed all chart initialization JavaScript
+- Updated CSS to style placeholder indicators
+- All trending **data infrastructure remains intact** (queries, data points, etc.)
+
+**Rationale:**
+- Widget sparklines are **nice-to-have**, not critical functionality
+- Lab results table data is fully functional and provides core value
+- Charting can be implemented more reliably on **full Labs page** (no HTMX complexity)
+- Proper solution requires HTMX event listeners in base template, not inline scripts
+- Time better spent on other clinical domains
 
 **Deliverables:**
-- [ ] `app/templates/partials/labs_graph.html`
-- [ ] Graph integration in full page template
-- [ ] Chart.js configuration and styling
-- [ ] Graph + table filter synchronization verified
+- [x] Trending data queries (working)
+- [x] Widget trending section layout (working)
+- [x] Simple placeholder indicators (reverted to this)
+- [ ] ~~Chart.js sparklines~~ (deferred)
+- [ ] ~~Full-page trending chart~~ (deferred)
 
-**Time Estimate:** 4-5 hours
+**Future Implementation Path** (when revisited):
+1. Move chart initialization to separate static JS file: `app/static/js/labs-charts.js`
+2. Use HTMX event listeners in base template: `htmx:afterSwap` event
+3. Implement on full Labs page first (simpler, no HTMX widget complexity)
+4. Consider using `hx-preserve` attribute to prevent canvas destruction
+5. Or implement as separate chart modal/view (non-HTMX)
+
+**Time Spent:** 3-4 hours (troubleshooting)
+**Status:** ✅ Reverted to stable baseline, trending data infrastructure complete
 
 ---
 
@@ -2849,6 +2876,7 @@ FROM Dim.LabTest;
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | v1.0 | 2025-12-16 | Claude Code | Initial design document for Laboratory Results (Chemistry) Phase 1. 3x1 widget (hybrid layout), simultaneous table + graph full page view, 90-day default, 20/page pagination. |
+| v1.1 | 2025-12-16 | Claude Code | Updated Day 7 to document Chart.js sparkline attempt and decision to defer charting due to HTMX content swapping issues. Reverted to simple placeholder indicators. Trending data infrastructure complete and functional. |
 
 ---
 

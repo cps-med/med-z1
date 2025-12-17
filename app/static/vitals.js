@@ -9,22 +9,16 @@ let weightChart = null;
 let painChart = null;
 
 /**
- * Get current patient ICN from the page URL
- * @returns {string|null} Patient ICN or null
- */
-function getCurrentPatientICN() {
-    const path = window.location.pathname;
-    const match = path.match(/\/patient\/([^\/]+)\/vitals/);
-    return match ? match[1] : null;
-}
-
-/**
  * Initialize all charts when page loads
  */
 function initializeCharts() {
     console.log('Initializing vitals charts...');
 
-    const patientICN = getCurrentPatientICN();
+    // Extract ICN directly from URL
+    const path = window.location.pathname;
+    const match = path.match(/\/patient\/([^\/]+)\/vitals/);
+    const patientICN = match ? match[1] : null;
+
     if (!patientICN) {
         console.error('No patient ICN found in URL');
         return;
