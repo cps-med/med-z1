@@ -12,6 +12,17 @@
     <!-- HTMX -->
     <!-- The /timer link did not work properly with v2.x, so sticking with 1.9.12  -->
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+
+    <!-- Prevent sidebar FOUC: Apply saved state before page renders -->
+    <script>
+        (function() {
+            const savedState = localStorage.getItem('med-z1-sidebar-collapsed');
+            if (savedState === 'true') {
+                // Add class to html element temporarily
+                document.documentElement.classList.add('sidebar-init-collapsed');
+            }
+        })();
+    </script>
 </head>
 <body>
 <div class="layout">

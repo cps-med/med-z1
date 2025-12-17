@@ -30,7 +30,7 @@ med-z1/
   db/            # Serving DB DDL, migrations (create when needed)
   docs/          # Architecture, design docs
   lake/          # MinIO/Parquet access configs (create when needed)
-  tests/         # Unit/integration tests (create when needed)
+  scripts/       # All testing, debugging, and utility scripts (both ad-hoc and formal tests)
 ```
 
 ## Common Development Commands
@@ -412,9 +412,17 @@ db/
 ### Code Quality and Testing
 
 The project uses:
-- `pytest` for testing
+- `pytest` for testing (configured in `pytest.ini` with cache relocated to `.cache/pytest`)
 - `ruff`, `black`, `mypy` for linting and formatting (optional)
 - Docker/Podman for SQL Server, MinIO, PostgreSQL containers
+
+**Script Organization:**
+- **`scripts/`** - All testing, debugging, and utility scripts (consolidated approach for simplicity)
+  - Place all scripts here, not in project root
+  - **Formal pytest tests:** Use `test_*.py` naming convention for automated tests
+  - **Ad-hoc utilities:** Use descriptive names (e.g., `minio_test.py`, `update_vitals_locations.py`)
+  - Examples: pytest test suites, MinIO connection tests, manual CCOW vault tests, Parquet file readers, data update utilities
+  - Run tests with: `pytest scripts/` or configure `testpaths = scripts` in `pytest.ini`
 
 ### Security and Privacy
 

@@ -20,6 +20,7 @@ med-output/sample/
 # Python
 pycache/ *.pyc
 __pycache__/
+.cache/
 
 #Logs
 *.Log

@@ -4,7 +4,15 @@
 <div class="patient-header patient-header--active" data-patient-icn="{{ patient.icn }}">
     <h1 class="patient-header__title">
         {{ patient.name_display }} ({{ patient.sex }}, {{ patient.age }})
+        {% if patient.deceased_flag == 'Y' %}
+        <span class="deceased-indicator" title="Deceased{% if patient.death_date %} - {{ patient.death_date }}{% endif %}">
+            • deceased
+        </span>
+        {% endif %}
     </h1>
+    <p class="patient-header__subtitle">
+        {{ patient.icn }}&nbsp;&nbsp;|&nbsp;&nbsp;***-**-{{ patient.ssn_last4 }}&nbsp;&nbsp;|&nbsp;&nbsp;{{ patient.dob }}&nbsp;&nbsp;|&nbsp;&nbsp;{{ patient.primary_station }}{% if patient.primary_station_name %} ({{ patient.primary_station_name }}){% endif %}
+    </p>
 </div>
 <!-- Note: patient.icn may be "ICN100001" or "1016V123456" format -->
 <!-- Flag button enable/disable and badge update handled by app.js htmx:afterSwap event -->

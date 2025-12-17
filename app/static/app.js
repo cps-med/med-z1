@@ -11,9 +11,33 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
     }
 
+    // Sidebar state management with localStorage
+    const SIDEBAR_STATE_KEY = 'med-z1-sidebar-collapsed';
+
     function toggleSidebar() {
         layout.classList.toggle("layout--sidebar-collapsed");
+
+        // Save state to localStorage
+        const isCollapsed = layout.classList.contains("layout--sidebar-collapsed");
+        localStorage.setItem(SIDEBAR_STATE_KEY, isCollapsed ? 'true' : 'false');
     }
+
+    // Restore saved sidebar state on page load
+    function restoreSidebarState() {
+        const savedState = localStorage.getItem(SIDEBAR_STATE_KEY);
+
+        if (savedState === 'true') {
+            layout.classList.add("layout--sidebar-collapsed");
+        }
+
+        // Remove temporary init class from html element (used to prevent FOUC)
+        document.documentElement.classList.remove('sidebar-init-collapsed');
+
+        // If savedState is null (first visit) or 'false', sidebar stays expanded (default)
+    }
+
+    // Apply saved state immediately on page load
+    restoreSidebarState();
 
     // Click on the hamburger button
     if (toggleBtn) {
@@ -24,7 +48,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Keyboard shortcut: Cmd+B (macOS) or Ctrl+B (Win/Linux)
     document.addEventListener("keydown", (event) => {
-        // Don’t hijack the shortcut when user is typing in a form field
+        // Don't hijack the shortcut when user is typing in a form field
         const tag = event.target.tagName.toLowerCase();
         if (
             tag === "input" ||
