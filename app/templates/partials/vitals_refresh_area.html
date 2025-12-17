@@ -146,6 +146,14 @@
                         {% else %}
                             <span class="vital-status-none">—</span>
                         {% endif %}
+                        {# Show Vista badge for real-time data #}
+                        {% if vital.source == 'vista' and vital.source_site %}
+                            <div class="mt-1">
+                                <span class="badge badge--success" title="Real-time data from VistA Site {{ vital.source_site }}">
+                                    <i class="fa-solid fa-bolt"></i> Site {{ vital.source_site }}
+                                </span>
+                            </div>
+                        {% endif %}
                     </td>
 
                     <!-- Details -->

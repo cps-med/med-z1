@@ -6,5 +6,6 @@ Domain-specific RPC handler implementations.
 """
 
 from .demographics import PatientInquiryHandler
+from .vitals import LatestVitalsHandler
 
-__all__ = ["PatientInquiryHandler"]
+__all__ = ["PatientInquiryHandler", "LatestVitalsHandler"]

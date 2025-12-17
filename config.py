@@ -167,10 +167,18 @@ VISTA_ENABLED = _get_bool("VISTA_ENABLED", default=True)
 VISTA_SERVICE_URL = os.getenv("VISTA_SERVICE_URL", "http://localhost:8003")
 VISTA_TIMEOUT = int(os.getenv("VISTA_TIMEOUT", "30"))  # seconds
 
+# Simulated network/processing latency (to mimic real VistA RPC calls)
+VISTA_RPC_LATENCY_ENABLED = _get_bool("VISTA_RPC_LATENCY_ENABLED", default=True)
+VISTA_RPC_LATENCY_MIN = float(os.getenv("VISTA_RPC_LATENCY_MIN", "1.0"))  # seconds
+VISTA_RPC_LATENCY_MAX = float(os.getenv("VISTA_RPC_LATENCY_MAX", "3.0"))  # seconds
+
 VISTA_CONFIG = {
     "enabled": VISTA_ENABLED,
     "service_url": VISTA_SERVICE_URL,
     "timeout": VISTA_TIMEOUT,
+    "rpc_latency_enabled": VISTA_RPC_LATENCY_ENABLED,
+    "rpc_latency_min": VISTA_RPC_LATENCY_MIN,
+    "rpc_latency_max": VISTA_RPC_LATENCY_MAX,
 }
 
 

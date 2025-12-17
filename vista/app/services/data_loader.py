@@ -9,6 +9,7 @@ import json
 import logging
 from pathlib import Path
 from typing import Optional, Dict, Any, List
+from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 
@@ -160,3 +161,132 @@ class DataLoader:
             True if patient is registered at this site, False otherwise
         """
         return icn in self.icn_to_dfn
+
+    def get_patient_by_icn(self, icn: str) -> Optional[Dict[str, Any]]:
+        """
+        Get patient information including site-specific DFN.
+
+        Args:
+            icn: Integrated Care Number
+
+        Returns:
+            Dictionary with patient info including DFN for this site, or None if not registered
+        """
+        # Check if patient is registered at this site
+        dfn = self.resolve_icn_to_dfn(icn)
+        if not dfn:
+            return None
+
+        # Get full patient info from registry
+        patient_info = self.get_patient_info(icn)
+        if not patient_info:
+            return None
+
+        # Add site-specific DFN to patient info
+        return {
+            **patient_info,
+            "dfn": dfn,
+            "site_sta3n": self.site_sta3n
+        }
+
+    @staticmethod
+    def parse_t_notation_to_fileman(t_notation: str) -> str:
+        """
+        Parse T-notation date/time to FileMan format.
+
+        T-notation format: "T-N.HHMM" where N is days offset from today
+        Examples:
+            "T-0.0845" = Today at 08:45
+            "T-1.1030" = Yesterday at 10:30
+            "T-7.1400" = 7 days ago at 14:00
+
+        FileMan format: YYYMMDD.HHMM where YYY = year - 1700
+        Examples:
+            "3251217.0845" = December 17, 2025 at 08:45
+
+        Args:
+            t_notation: T-notation string (e.g., "T-0.0845")
+
+        Returns:
+            FileMan format string (e.g., "3251217.0845")
+        """
+        try:
+            # Split on '.' to get date offset and time
+            parts = t_notation.split('.')
+            if len(parts) != 2:
+                logger.warning(f"Invalid T-notation format: {t_notation}")
+                return t_notation  # Return as-is if not T-notation
+
+            date_part = parts[0]  # e.g., "T-0"
+            time_part = parts[1]  # e.g., "0845"
+
+            # Check if date part starts with "T-"
+            if not date_part.startswith("T-"):
+                # Not T-notation, return as-is (already in FileMan format)
+                return t_notation
+
+            # Extract offset (days ago)
+            offset_str = date_part[2:]  # Remove "T-" prefix
+            days_offset = int(offset_str)
+
+            # Calculate target date (today - offset)
+            target_date = datetime.now() - timedelta(days=days_offset)
+
+            # Convert to FileMan date format: YYYMMDD
+            # YYY = year - 1700
+            yyy = target_date.year - 1700
+            mm = target_date.month
+            dd = target_date.day
+
+            # Format as YYYMMDD.HHMM
+            fileman_date = f"{yyy:03d}{mm:02d}{dd:02d}.{time_part}"
+
+            logger.debug(f"Converted T-notation {t_notation} → FileMan {fileman_date}")
+            return fileman_date
+
+        except (ValueError, IndexError) as e:
+            logger.warning(f"Failed to parse T-notation '{t_notation}': {e}")
+            return t_notation  # Return as-is if parsing fails
+
+    def load_vitals(self) -> Optional[Dict[str, Any]]:
+        """
+        Load vitals data for this site from JSON file.
+
+        Supports both FileMan format and T-notation for date_time fields.
+        T-notation dates are automatically converted to today's equivalent FileMan format.
+
+        Returns:
+            Dictionary with vitals data, or None if file not found
+
+        File location: vista/app/data/sites/{sta3n}/vitals.json
+        """
+        try:
+            # Construct path to vitals data file
+            # Assume structure: vista/app/data/sites/{sta3n}/vitals.json
+            vista_root = Path(__file__).parent.parent
+            vitals_path = vista_root / "data" / "sites" / self.site_sta3n / "vitals.json"
+
+            if not vitals_path.exists():
+                logger.warning(f"Vitals data file not found: {vitals_path}")
+                return None
+
+            with open(vitals_path, 'r') as f:
+                vitals_data = json.load(f)
+
+            # Convert T-notation dates to FileMan format
+            vitals_list = vitals_data.get("vitals", [])
+            for vital in vitals_list:
+                if "date_time" in vital:
+                    original = vital["date_time"]
+                    converted = self.parse_t_notation_to_fileman(original)
+                    vital["date_time"] = converted
+
+            logger.debug(f"Loaded vitals data from {vitals_path}")
+            return vitals_data
+
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON in vitals data file: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Error loading vitals data: {e}")
+            return None

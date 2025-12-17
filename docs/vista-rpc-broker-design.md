@@ -1,13 +1,30 @@
 # VistA RPC Broker Simulator - Design Document
 
-**Document Version:** v1.6
+**Document Version:** v1.7
 **Date:** 2025-12-17
-**Status:** Phase 1 COMPLETE - Ready for Phase 2
+**Status:** Phase 1 & 2 COMPLETE - Ready for Phase 3 (Merge/Dedupe Logic)
 
 **📝 Documentation Update Policy:**
 When updating this design document with implementation progress or design changes, also update:
 - `vista/README.md` - Practical guide (API examples, endpoints, test coverage, capabilities)
 - `docs/implementation-roadmap.md` Section 11.3 - Phase 8 progress tracking
+
+**Changelog v1.7** (2025-12-17):
+- ✅ **Phase 2 COMPLETE** - Multi-Site Support fully implemented
+- ✅ Created `app/services/vista_client.py` (310 lines) - HTTP client with intelligent site selection
+- ✅ Implemented `get_target_sites()` with domain-specific limits (vitals=2, allergies=5, medications=3, demographics=1, labs=3)
+- ✅ Implemented T-notation date parsing (T-0, T-7, T-30, etc.)
+- ✅ Implemented hard maximum enforcement (10 sites architectural firebreak)
+- ✅ Created comprehensive unit tests: 42 tests in `app/tests/test_vista_client.py` (100% pass rate)
+- ✅ Created usage examples: `app/services/vista_client_example.py` (7 integration patterns)
+- ✅ Created manual testing script: `app/services/test_vista_manual.py` (7 test scenarios)
+- ✅ Created manual testing guide: `vista/MANUAL_TESTING.md` (comprehensive curl/Python/browser testing)
+- ✅ Added Section 2.12 - Architectural Philosophy (Why MPI Doesn't Track Domain Data)
+- ✅ Updated `.env` with VISTA_CONFIG variables
+- ✅ Updated `config.py` with VISTA_SERVICE_URL, VISTA_TIMEOUT, VISTA_ENABLED
+- ✅ Updated `CLAUDE.md` with correct Vista service startup command
+- 📝 **Total test coverage: ~136 tests (94 Vista + 42 VistaClient), 100% pass rate**
+- 🎯 **Phase 2 fully complete - ready for Phase 3 (Merge/Dedupe Logic)**
 
 **Changelog v1.6** (2025-12-17):
 - ✅ **Phase 1 Days 4-5 COMPLETE** - Full walking skeleton operational
@@ -2328,9 +2345,11 @@ class VistaClient:
 - ✅ Multi-site queries functional
 - ✅ Service operational on port 8003
 
-### Phase 2: Multi-Site Support (Week 2)
+### Phase 2: Multi-Site Support (Week 2) - ✅ COMPLETE (Days 6-7)
 
 **Goal**: Multiple sites (200, 500, 630) with site-specific data and site selection policy
+
+**Status**: ✅ **Phase 2 FULLY COMPLETE** - Intelligent site selection, comprehensive testing, manual testing guide (2025-12-17)
 
 **Critical Requirements** (from v1.2 design updates):
 - ✅ Site selection policy implemented (Section 2.8)
@@ -2338,21 +2357,51 @@ class VistaClient:
 - ✅ Per-domain site limits enforced
 - ✅ Hard maximum of 10 sites per query
 
-**Tasks**:
-1. Implement `VistaCluster` to manage multiple `VistaServer` instances
-2. Create `vista/config/sites.json`
-3. Update `mock/shared/patient_registry.json` with `treating_facilities` list (include `last_seen` dates)
-4. Create data files for sites 500 and 630 (patients, with ICN/DFN mappings)
-5. Implement `get_target_sites()` function in `app/services/vista_client.py` (or `app/services/`)
-   - Read treating facilities from patient registry
-   - Sort by `last_seen` descending
-   - Apply per-domain limits (`DOMAIN_SITE_LIMITS` dict)
-   - Enforce hard maximum of 10 sites
-6. Implement `/sites` endpoint to list available sites
-7. Implement `/health` endpoint
-8. Update `VistaServer` to load site config from `sites.json`
-9. Test RPC calls to all three sites with different patient data
-10. Test site selection logic with mock patients
+**Tasks** (Actual Implementation):
+
+**Day 6 (2025-12-17):**
+1. ✅ Implemented `app/services/vista_client.py` (310 lines) - HTTP client for Vista service
+   - VistaClient class with httpx.AsyncClient
+   - `get_target_sites()` with intelligent site selection
+   - `_get_patient_treating_facilities()` reads from patient_registry.json
+   - `_parse_t_notation()` converts T-0, T-7, T-30 to datetime
+   - `call_rpc()` for single-site RPC calls
+   - `call_rpc_multi_site()` for parallel multi-site queries
+   - `get_vista_client()` singleton getter
+2. ✅ Implemented DOMAIN_SITE_LIMITS configuration
+   - vitals: 2, allergies: 5, medications: 3, demographics: 1, labs: 3, default: 3
+   - Hard maximum: 10 sites (architectural firebreak)
+3. ✅ Updated `config.py` with VISTA_CONFIG (VISTA_ENABLED, VISTA_SERVICE_URL, VISTA_TIMEOUT)
+4. ✅ Updated `.env` with Vista configuration variables
+5. ✅ Created `app/services/vista_client_example.py` - 7 usage patterns for FastAPI routes
+
+**Day 7 (2025-12-17):**
+6. ✅ Created comprehensive unit tests: `app/tests/test_vista_client.py` (42 tests, 100% pass)
+   - T-notation parsing (8 tests)
+   - Get treating facilities (3 tests)
+   - Site selection basic (4 tests)
+   - Domain-specific limits (6 tests)
+   - Hard maximum enforcement (3 tests)
+   - User-selected sites (4 tests)
+   - Override tests (3 tests)
+   - Edge cases (5 tests)
+   - Configuration validation (9 tests)
+7. ✅ Created manual testing script: `app/services/test_vista_manual.py` (7 end-to-end scenarios)
+8. ✅ Created comprehensive manual testing guide: `vista/MANUAL_TESTING.md`
+   - curl commands (9 test cases)
+   - Python integration tests
+   - Browser-based testing (OpenAPI docs)
+   - Test data reference tables
+   - Troubleshooting guide
+9. ✅ Fixed negative max_sites edge case (added validation: `limit = max(0, limit)`)
+10. ✅ End-to-end integration testing with actual Vista service (all tests passing)
+11. ✅ Added Section 2.12 - Architectural Philosophy (Why MPI Doesn't Track Domain Data)
+12. ✅ Updated `CLAUDE.md` with correct Vista service startup command
+
+**Test Coverage**:
+- Vista service tests: 94 tests (100% pass rate)
+- VistaClient tests: 42 tests (100% pass rate)
+- **Total: 136 tests across both subsystems**
 
 **Success Criteria**:
 - ✅ Three sites (200, 500, 630) running in single service
@@ -2361,8 +2410,127 @@ class VistaClient:
 - ✅ RPC calls correctly routed to appropriate site
 - ✅ Site selection policy returns correct sites based on domain and treating facilities
 - ✅ Hard maximum of 10 sites enforced even if user attempts to override
+- ✅ Comprehensive test coverage (42 unit tests + 7 manual test scenarios)
+- ✅ End-to-end integration verified with actual Vista service
+- ✅ Documentation complete (usage examples, manual testing guide, architectural philosophy)
 
-### Phase 3: Demographics Domain (Week 2-3)
+### Phase 3: MVP - End-to-End Vitals Integration (Week 3) - ✅ COMPLETE (2025-12-17)
+
+**Goal**: Deliver working "Refresh from VistA" feature with minimal viable implementation
+
+**Status**: ✅ **Phase 3 MVP FULLY COMPLETE** - End-to-end vitals integration with green site badges, T-notation dates, and merge/deduplication (2025-12-17)
+
+**Approach**: Simplified MVP path to get interactive UI working quickly, validate design, then iterate.
+
+**Rationale**:
+- Agile/MVP methodology: Deliver working software early
+- Validate architecture with real end-to-end flow
+- Get user feedback before building extensive infrastructure
+- ~6 hours to working feature vs. ~15 hours for full sequential approach
+
+**Tasks** (Actual Implementation):
+
+**Step 1: Implement ONE Vitals RPC** (~1-2 hours) - ✅ COMPLETE
+1. ✅ Created `vista/app/handlers/vitals.py` (146 lines)
+   - Implemented `LatestVitalsHandler` for GMV LATEST VM RPC
+   - Returns vitals in VistA format: `TYPE^VALUE^UNITS^DATE_TIME^ENTERED_BY`
+   - Full ICN → DFN resolution and patient lookup
+   - Comprehensive error handling and logging
+2. ✅ Created `vista/app/data/sites/200/vitals.json` (15 vitals, 3 patients)
+3. ✅ Created `vista/app/data/sites/500/vitals.json` (15 vitals, 3 patients)
+4. ✅ Created `vista/app/data/sites/630/vitals.json` (20 vitals, 4 patients)
+5. ✅ Registered `GMV LATEST VM` RPC in all three site registries
+6. ✅ Created comprehensive unit tests: `vista/tests/test_vitals_handler.py`
+7. ✅ Tested with curl: All 3 sites returning correct vitals data
+
+**Step 2: Implement Merge Logic with Deduplication** (~2-3 hours) - ✅ COMPLETE
+1. ✅ Created `app/services/realtime_overlay.py` (318 lines)
+   - Implemented `merge_vitals_data()` - Merges PostgreSQL + Vista vitals
+   - Implemented `parse_vista_vitals()` - Parses VistA caret-delimited format
+   - Implemented `create_canonical_key()` - Deduplication keys (type|datetime|location)
+   - Implemented `parse_fileman_datetime()` - FileMan to Python datetime conversion
+   - Vista data preferred for T-1+ duplicates (fresher data)
+   - PostgreSQL data used for older historical vitals
+   - Source metadata tagging (`source="vista"` or `"postgresql"`)
+   - Comprehensive merge statistics returned
+2. ✅ Created `app/tests/test_realtime_overlay.py` (comprehensive test suite)
+   - ✅ FileMan datetime parsing tests
+   - ✅ Vista vitals parsing tests
+   - ✅ Canonical key generation tests
+   - ✅ Merge logic tests (PG-only, Vista-only, both sources)
+   - ✅ Deduplication tests (Vista preferred for conflicts)
+   - ✅ Multi-site Vista deduplication tests
+3. ✅ All tests passing
+
+**Step 3: Add UI Integration with Site Badges** (~2-3 hours) - ✅ COMPLETE
+1. ✅ Added new route to `app/routes/vitals.py`:
+   - `GET /patient/{icn}/vitals-realtime` endpoint (async)
+   - Calls `vista_client.call_rpc_multi_site()` for sites 200, 500
+   - Calls `merge_vitals_data()` to combine PostgreSQL + Vista
+   - Returns HTMX partial with merged vitals table
+   - Comprehensive error handling and logging
+2. ✅ Updated `app/templates/vitals.html`:
+   - Added "Refresh from VistA" button in topbar with HTMX
+   - `hx-get="/patient/{{ icn }}/vitals-realtime"`
+   - `hx-target="#vista-refresh-area"` (swap content area)
+   - `hx-indicator=".htmx-indicator"` (show loading spinner)
+   - Added data freshness indicator ("Last updated: 4:02 PM")
+3. ✅ Created `app/templates/partials/vitals_refresh_area.html`
+   - Full vitals table with filters, sort controls, view toggle
+   - Green Vista badges: "⚡ Site 200" and "⚡ Site 500"
+   - Loading spinner during fetch
+4. ✅ Added CSS styles to `app/static/styles.css`:
+   - `badge--success` class (green background #16a34a, white text)
+5. ✅ Manual end-to-end testing:
+   - ✅ Click button → See loading spinner
+   - ✅ Vista queries sites 200, 500 (vitals domain limit = 2)
+   - ✅ Table updates with merged data (305 PG + 10 Vista = 315 total)
+   - ✅ T-0 vitals appear at top with today's date (2025-12-17)
+   - ✅ Green badges visible: "⚡ Site 200" and "⚡ Site 500"
+   - ✅ Location and "Entered By" fields populated correctly
+
+**Bonus: T-Notation Date System** - ✅ COMPLETE
+- ✅ Added `parse_t_notation_to_fileman()` in `vista/app/services/data_loader.py`
+- ✅ Supports relative date notation: `T-0.0845` (today at 08:45), `T-1.1030` (yesterday at 10:30)
+- ✅ Automatic conversion to FileMan format based on current date
+- ✅ Updated all three vitals.json files to use T-notation
+- ✅ No daily manual updates required - dates always appear fresh
+
+**Success Criteria** (All Complete):
+- ✅ GMV LATEST VM RPC implemented and tested (146 lines + unit tests)
+- ✅ Merge logic combines PostgreSQL + Vista data (318 lines)
+- ✅ Canonical key deduplication prevents duplicate vitals
+- ✅ "Refresh from VistA" button works in UI
+- ✅ Loading spinner shows during fetch (HTMX indicator)
+- ✅ Merged data displays correctly (T-0 at top, sorted by date desc)
+- ✅ Green site badges show Vista data source ("⚡ Site 200", "⚡ Site 500")
+- ✅ End-to-end flow validated: UI → VistaClient → Vista RPC → Merge → Display
+- ✅ **BONUS**: T-notation date system for automatic date freshness
+
+**Test Results**:
+- Vitals before refresh: 305 (PostgreSQL only)
+- Vitals after refresh: 315 (305 PG + 10 Vista)
+- Sites queried: 200 (Alexandria), 500 (Anchorage)
+- Deduplication working: No duplicate vitals in merged view
+- Green badges visible: ✅ Yes
+- Performance: ~1-2 second response time for Vista refresh
+
+**What's NOT in MVP** (Can add later):
+- ❌ Additional vitals RPCs (GMV EXTRACT REC, GMV MANAGER)
+- ❌ Other domains (allergies, medications)
+- ❌ Caching/session persistence
+- ❌ Partial failure UI indicators (show "2 of 3 sites responded")
+- ❌ Site selection override UI (manual site picker)
+
+**Next Steps After MVP**:
+After Phase 3 MVP is working, choose enhancement path:
+- **Option A**: Polish vitals (add more RPCs, date-range queries)
+- **Option B**: Add more domains (allergies, medications, labs)
+- **Option C**: Enhance UI (caching, site selection modal, error handling)
+
+---
+
+### Phase 3a (Optional): Demographics Domain - Future Enhancement
 
 **Goal**: Complete demographics RPC coverage
 
@@ -2377,9 +2545,9 @@ class VistaClient:
 - ✅ All 3 demographics RPCs implemented and tested
 - ✅ Responses match VistA format per ICD
 
-### Phase 4: Vitals Domain (Week 3)
+### Phase 4 (Optional): Additional Vitals RPCs - Future Enhancement
 
-**Goal**: Vitals RPC coverage with date-range queries
+**Goal**: Extend vitals RPC coverage beyond MVP (date-range queries, additional endpoints)
 
 **Tasks**:
 1. Implement `GMV LATEST VM` RPC
@@ -2394,9 +2562,9 @@ class VistaClient:
 - ✅ Date-range filtering works correctly
 - ✅ Multi-line vitals responses formatted correctly
 
-### Phase 5: Allergies & Medications Domains (Week 4)
+### Phase 5 (Optional): Enhanced Merge/Dedupe + Additional Domains - Future Enhancement
 
-**Goal**: Complete Phase 1 domain coverage with merge/dedupe implementation
+**Goal**: Enhance merge logic with canonical keys and add allergies/medications domains
 
 **Critical Requirements** (from v1.2 design updates):
 - ✅ Merge/deduplication rules implemented (Section 2.9.1)
@@ -2425,9 +2593,11 @@ class VistaClient:
 - ✅ T-1 overlap period handled correctly (Vista preferred over PostgreSQL)
 - ✅ Multi-site Vista results deduplicated properly
 
-### Phase 6: Med-z1 Integration (Week 5)
+### Phase 6 (Optional): Advanced UI Features - Future Enhancement
 
-**Goal**: Med-z1 app successfully calls vista service with UI integration
+**Goal**: Extend UI integration beyond MVP (caching, site selection modal, partial failure handling)
+
+**Note**: Core UI integration ("Refresh from VistA" button) is completed in Phase 3 MVP. This phase adds polish and advanced features.
 
 **Critical Requirements** (from v1.2 design updates):
 - ✅ "Refresh from VistA" button UI pattern (Section 2.11)

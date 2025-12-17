@@ -6,6 +6,9 @@
 # ---------------------------------------------------------------------
 
 import logging
+import asyncio
+import random
+import sys
 from typing import List, Dict, Any, Optional
 from pathlib import Path
 
@@ -14,7 +17,13 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from vista.app.services import DataLoader, RPCRegistry, RPCExecutionError
-from vista.app.handlers import PatientInquiryHandler
+from vista.app.handlers import PatientInquiryHandler, LatestVitalsHandler
+
+# Add project root to Python path for config import
+project_root = Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, str(project_root))
+
+from config import VISTA_CONFIG
 
 # Configure logging
 logging.basicConfig(
@@ -87,8 +96,9 @@ def initialize_site(sta3n: str) -> Dict[str, Any]:
     registry = RPCRegistry()
 
     # Register RPC handlers
-    # TODO: In Phase 2-5, register additional handlers here
+    # TODO: In Phase 3-5, register additional handlers here
     registry.register(PatientInquiryHandler())
+    registry.register(LatestVitalsHandler())
 
     logger.info(
         f"Site {sta3n} initialized: "
@@ -216,6 +226,14 @@ async def execute_rpc(
     }
 
     try:
+        # Simulate network/processing latency (mimics real VistA RPC calls)
+        if VISTA_CONFIG.get("rpc_latency_enabled", True):
+            latency_min = VISTA_CONFIG.get("rpc_latency_min", 1.0)
+            latency_max = VISTA_CONFIG.get("rpc_latency_max", 3.0)
+            delay = random.uniform(latency_min, latency_max)
+            logger.debug(f"Simulating {delay:.2f}s latency for {site}:{request.name}")
+            await asyncio.sleep(delay)
+
         # Execute RPC via registry
         response = registry.dispatch(
             rpc_name=request.name,

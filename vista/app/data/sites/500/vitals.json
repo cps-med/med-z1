@@ -1,0 +1,126 @@
+{
+  "site_sta3n": "500",
+  "site_name": "Anchorage VA Medical Center",
+  "vitals": [
+    {
+      "dfn": "200001",
+      "type": "BLOOD PRESSURE",
+      "value": "135/85",
+      "units": "mmHg",
+      "date_time": "T-0.0915",
+      "entered_by": "NURSE,JENNIFER"
+    },
+    {
+      "dfn": "200001",
+      "type": "TEMPERATURE",
+      "value": "98.2",
+      "units": "F",
+      "date_time": "T-0.0915",
+      "entered_by": "NURSE,JENNIFER"
+    },
+    {
+      "dfn": "200001",
+      "type": "PULSE",
+      "value": "74",
+      "units": "/min",
+      "date_time": "T-0.0915",
+      "entered_by": "NURSE,JENNIFER"
+    },
+    {
+      "dfn": "200001",
+      "type": "RESPIRATION",
+      "value": "16",
+      "units": "/min",
+      "date_time": "T-0.0915",
+      "entered_by": "NURSE,JENNIFER"
+    },
+    {
+      "dfn": "200001",
+      "type": "PULSE OXIMETRY",
+      "value": "96",
+      "units": "%",
+      "date_time": "T-0.0915",
+      "entered_by": "NURSE,JENNIFER"
+    },
+    {
+      "dfn": "200002",
+      "type": "BLOOD PRESSURE",
+      "value": "122/78",
+      "units": "mmHg",
+      "date_time": "T-0.1045",
+      "entered_by": "NURSE,ROBERT"
+    },
+    {
+      "dfn": "200002",
+      "type": "TEMPERATURE",
+      "value": "98.8",
+      "units": "F",
+      "date_time": "T-0.1045",
+      "entered_by": "NURSE,ROBERT"
+    },
+    {
+      "dfn": "200002",
+      "type": "PULSE",
+      "value": "70",
+      "units": "/min",
+      "date_time": "T-0.1045",
+      "entered_by": "NURSE,ROBERT"
+    },
+    {
+      "dfn": "200002",
+      "type": "RESPIRATION",
+      "value": "15",
+      "units": "/min",
+      "date_time": "T-0.1045",
+      "entered_by": "NURSE,ROBERT"
+    },
+    {
+      "dfn": "200002",
+      "type": "PULSE OXIMETRY",
+      "value": "98",
+      "units": "%",
+      "date_time": "T-0.1045",
+      "entered_by": "NURSE,ROBERT"
+    },
+    {
+      "dfn": "500001",
+      "type": "BLOOD PRESSURE",
+      "value": "130/84",
+      "units": "mmHg",
+      "date_time": "T-0.1300",
+      "entered_by": "NURSE,DAVID"
+    },
+    {
+      "dfn": "500001",
+      "type": "TEMPERATURE",
+      "value": "98.5",
+      "units": "F",
+      "date_time": "T-0.1300",
+      "entered_by": "NURSE,DAVID"
+    },
+    {
+      "dfn": "500001",
+      "type": "PULSE",
+      "value": "78",
+      "units": "/min",
+      "date_time": "T-0.1300",
+      "entered_by": "NURSE,DAVID"
+    },
+    {
+      "dfn": "500001",
+      "type": "RESPIRATION",
+      "value": "17",
+      "units": "/min",
+      "date_time": "T-0.1300",
+      "entered_by": "NURSE,DAVID"
+    },
+    {
+      "dfn": "500001",
+      "type": "PULSE OXIMETRY",
+      "value": "97",
+      "units": "%",
+      "date_time": "T-0.1300",
+      "entered_by": "NURSE,DAVID"
+    }
+  ]
+}

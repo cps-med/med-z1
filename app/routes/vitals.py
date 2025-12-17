@@ -321,23 +321,52 @@ async def get_vitals_realtime(
             logger.warning(f"Patient {icn} not found during realtime refresh")
             patient = {"icn": icn, "name_display": "Unknown Patient"}
 
-        # Simulate VistA RPC call delay (2 seconds) - makes loading spinner visible
-        # Remove this when real VistA service is integrated
-        await asyncio.sleep(2)
+        # Fetch real-time data from VistA
+        from app.services.vista_client import VistaClient
+        from app.services.realtime_overlay import merge_vitals_data
 
-        # TODO: When VistA service is ready, fetch real-time data:
-        # from app.services.vista_client import VistaClient
-        # vista = VistaClient()
-        # vista_results = await vista.call_rpc_multi_site(
-        #     sites=["200", "500", "630"],
-        #     rpc_name="GMV LATEST VM",
-        #     params=[icn, "1"]  # "1" = today's vitals only
-        # )
+        vista_client = VistaClient()
 
-        # For now: Get historical data from PostgreSQL (same as initial load)
-        # In production, this would merge PostgreSQL (T-1 and earlier) + VistA (T-0)
-        vitals = get_patient_vitals(icn, limit=500, vital_type=vital_type)
-        counts = get_vital_counts(icn)
+        # Get target sites for vitals (limit 2 sites per domain policy)
+        target_sites = vista_client.get_target_sites(icn, domain="vitals")
+        logger.info(f"Querying {len(target_sites)} VistA sites for vitals: {target_sites}")
+
+        # Call GMV LATEST VM RPC at all target sites
+        vista_results_raw = await vista_client.call_rpc_multi_site(
+            sites=target_sites,
+            rpc_name="GMV LATEST VM",
+            params=[icn]
+        )
+
+        # Extract successful responses (site -> response string)
+        vista_results = {}
+        for site, response in vista_results_raw.items():
+            if response.get("success"):
+                vista_results[site] = response.get("response", "")
+            else:
+                logger.warning(f"Vista RPC failed at site {site}: {response.get('error')}")
+
+        # Get historical data from PostgreSQL (T-1 and earlier)
+        pg_vitals = get_patient_vitals(icn, limit=500, vital_type=None)  # Get all types for merge
+
+        # Merge PostgreSQL + Vista data
+        vitals, merge_stats = merge_vitals_data(pg_vitals, vista_results, icn)
+
+        logger.info(
+            f"Merge complete: {merge_stats['total_merged']} vitals "
+            f"({merge_stats['pg_count']} PG + {merge_stats['vista_count']} Vista)"
+        )
+
+        # Apply vital_type filter AFTER merge (if specified)
+        if vital_type:
+            vitals = [v for v in vitals if v.get("vital_type") == vital_type]
+
+        # Recalculate counts from merged data
+        counts = {}
+        for vital in vitals:
+            abbr = vital.get("vital_abbr")
+            if abbr:
+                counts[abbr] = counts.get(abbr, 0) + 1
 
         # Sort vitals (same logic as initial page load)
         reverse = (sort_order == "desc")
@@ -354,7 +383,15 @@ async def get_vitals_realtime(
         data_current_through = now.strftime("%b %d, %Y")
         last_updated = now.strftime("%I:%M %p")
 
-        logger.info(f"VistA refresh complete for {icn}: {len(vitals)} vitals (simulated)")
+        # Calculate Vista success rate
+        successful_sites = len(vista_results)
+        total_sites_attempted = len(target_sites)
+        vista_success_rate = f"{successful_sites} of {total_sites_attempted} sites" if total_sites_attempted > 0 else "no sites"
+
+        logger.info(
+            f"VistA refresh complete for {icn}: {len(vitals)} vitals "
+            f"({vista_success_rate} successful)"
+        )
 
         # Return only the content portion (for HTMX outerHTML swap)
         # Note: This returns the refresh area + out-of-band freshness update
@@ -372,8 +409,9 @@ async def get_vitals_realtime(
                 "vista_refreshed": True,
                 "data_current_through": data_current_through,
                 "last_updated": last_updated,
-                # TODO: Add partial success handling when VistA is integrated
-                # "vista_success_rate": f"{successful_sites} of {total_sites} sites"
+                "vista_success_rate": vista_success_rate,
+                "vista_sites": target_sites,
+                "merge_stats": merge_stats,
             }
         )
 

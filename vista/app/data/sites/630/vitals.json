@@ -1,0 +1,166 @@
+{
+  "site_sta3n": "630",
+  "site_name": "Palo Alto VA Medical Center",
+  "vitals": [
+    {
+      "dfn": "300001",
+      "type": "BLOOD PRESSURE",
+      "value": "125/80",
+      "units": "mmHg",
+      "date_time": "T-0.0800",
+      "entered_by": "NURSE,LISA"
+    },
+    {
+      "dfn": "300001",
+      "type": "TEMPERATURE",
+      "value": "98.3",
+      "units": "F",
+      "date_time": "T-0.0800",
+      "entered_by": "NURSE,LISA"
+    },
+    {
+      "dfn": "300001",
+      "type": "PULSE",
+      "value": "72",
+      "units": "/min",
+      "date_time": "T-0.0800",
+      "entered_by": "NURSE,LISA"
+    },
+    {
+      "dfn": "300001",
+      "type": "RESPIRATION",
+      "value": "16",
+      "units": "/min",
+      "date_time": "T-0.0800",
+      "entered_by": "NURSE,LISA"
+    },
+    {
+      "dfn": "300001",
+      "type": "PULSE OXIMETRY",
+      "value": "98",
+      "units": "%",
+      "date_time": "T-0.0800",
+      "entered_by": "NURSE,LISA"
+    },
+    {
+      "dfn": "300002",
+      "type": "BLOOD PRESSURE",
+      "value": "138/86",
+      "units": "mmHg",
+      "date_time": "T-0.0930",
+      "entered_by": "NURSE,JAMES"
+    },
+    {
+      "dfn": "300002",
+      "type": "TEMPERATURE",
+      "value": "99.0",
+      "units": "F",
+      "date_time": "T-0.0930",
+      "entered_by": "NURSE,JAMES"
+    },
+    {
+      "dfn": "300002",
+      "type": "PULSE",
+      "value": "80",
+      "units": "/min",
+      "date_time": "T-0.0930",
+      "entered_by": "NURSE,JAMES"
+    },
+    {
+      "dfn": "300002",
+      "type": "RESPIRATION",
+      "value": "18",
+      "units": "/min",
+      "date_time": "T-0.0930",
+      "entered_by": "NURSE,JAMES"
+    },
+    {
+      "dfn": "300002",
+      "type": "PULSE OXIMETRY",
+      "value": "96",
+      "units": "%",
+      "date_time": "T-0.0930",
+      "entered_by": "NURSE,JAMES"
+    },
+    {
+      "dfn": "630001",
+      "type": "BLOOD PRESSURE",
+      "value": "132/84",
+      "units": "mmHg",
+      "date_time": "T-0.1100",
+      "entered_by": "NURSE,KAREN"
+    },
+    {
+      "dfn": "630001",
+      "type": "TEMPERATURE",
+      "value": "98.7",
+      "units": "F",
+      "date_time": "T-0.1100",
+      "entered_by": "NURSE,KAREN"
+    },
+    {
+      "dfn": "630001",
+      "type": "PULSE",
+      "value": "75",
+      "units": "/min",
+      "date_time": "T-0.1100",
+      "entered_by": "NURSE,KAREN"
+    },
+    {
+      "dfn": "630001",
+      "type": "RESPIRATION",
+      "value": "16",
+      "units": "/min",
+      "date_time": "T-0.1100",
+      "entered_by": "NURSE,KAREN"
+    },
+    {
+      "dfn": "630001",
+      "type": "PULSE OXIMETRY",
+      "value": "98",
+      "units": "%",
+      "date_time": "T-0.1100",
+      "entered_by": "NURSE,KAREN"
+    },
+    {
+      "dfn": "630002",
+      "type": "BLOOD PRESSURE",
+      "value": "140/90",
+      "units": "mmHg",
+      "date_time": "T-0.1415",
+      "entered_by": "NURSE,THOMAS"
+    },
+    {
+      "dfn": "630002",
+      "type": "TEMPERATURE",
+      "value": "98.9",
+      "units": "F",
+      "date_time": "T-0.1415",
+      "entered_by": "NURSE,THOMAS"
+    },
+    {
+      "dfn": "630002",
+      "type": "PULSE",
+      "value": "84",
+      "units": "/min",
+      "date_time": "T-0.1415",
+      "entered_by": "NURSE,THOMAS"
+    },
+    {
+      "dfn": "630002",
+      "type": "RESPIRATION",
+      "value": "17",
+      "units": "/min",
+      "date_time": "T-0.1415",
+      "entered_by": "NURSE,THOMAS"
+    },
+    {
+      "dfn": "630002",
+      "type": "PULSE OXIMETRY",
+      "value": "95",
+      "units": "%",
+      "date_time": "T-0.1415",
+      "entered_by": "NURSE,THOMAS"
+    }
+  ]
+}

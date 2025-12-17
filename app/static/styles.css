@@ -1213,6 +1213,11 @@ input:focus-visible,
     color: #ffffff;
 }
 
+.badge--success {
+    background: #16a34a;  /* Green background for Vista real-time data */
+    color: #ffffff;
+}
+
 /* Topbar flags badge (small notification badge) */
 #flags-badge {
     margin-left: 0.5rem;

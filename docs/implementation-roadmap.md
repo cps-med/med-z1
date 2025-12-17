@@ -2270,10 +2270,10 @@ UI Display (with "AI-generated" disclaimer)
 
 ## 11.3 Phase 8: Vista RPC Broker Simulator (Real-Time Data Layer)
 
-**Status:** 🚧 In Development - Phase 1 Complete (2025-12-15)
+**Status:** 🚧 In Development - Phase 3 MVP Complete (2025-12-17)
 **Duration:** 5-6 weeks (Phases 1-6 as defined in vista-rpc-broker-design.md)
 **Priority:** Medium - Addresses T-0 (today) data latency gap
-**Current Progress:** ✅ 17% complete (Phase 1 of 6 phases complete)
+**Current Progress:** ✅ 50% complete (Phase 1-3 complete: Walking Skeleton, Multi-Site Support, Vitals MVP)
 
 ### Overview
 
@@ -2308,12 +2308,12 @@ UI Display (with "AI-generated" disclaimer)
 
 | Phase | Focus | Duration | Status | Key Deliverables |
 |-------|-------|----------|--------|------------------|
-| **Phase 1** | Walking Skeleton | 1 week | ✅ Complete (Days 1-5/5) | ✅ Patient registry with real data<br>✅ DataLoader (ICN→DFN resolution)<br>✅ RPCHandler base class<br>✅ RPCRegistry infrastructure<br>✅ First RPC handler (ORWPT PTINQ)<br>✅ M-Serializer<br>✅ FastAPI integration<br>✅ 82 tests, 100% passing<br>✅ Comprehensive README.md |
-| **Phase 2** | Multi-Site Support | 1 week | ⏳ Not Started | 3 sites (200, 500, 630), site selection policy |
-| **Phase 3** | Demographics Domain | 1 week | ⏳ Not Started | 3 demographics RPCs, complete patient data files |
-| **Phase 4** | Vitals Domain | 1 week | ⏳ Not Started | 3 vitals RPCs, date-range queries, T-0/T-1 data |
-| **Phase 5** | Allergies & Medications | 1 week | ⏳ Not Started | 8 RPCs across 2 domains, merge/dedupe implementation |
-| **Phase 6** | Med-z1 Integration | 1 week | ⏳ Not Started | VistaClient, multi-site aggregation, UI "Refresh" buttons |
+| **Phase 1** | Walking Skeleton | 1 week | ✅ Complete (Days 1-5/5) | ✅ Patient registry with real data<br>✅ DataLoader (ICN→DFN resolution)<br>✅ RPCHandler base class<br>✅ RPCRegistry infrastructure<br>✅ First RPC handler (ORWPT PTINQ)<br>✅ M-Serializer<br>✅ FastAPI integration<br>✅ 94 tests, 100% passing<br>✅ Comprehensive README.md |
+| **Phase 2** | Multi-Site Support | 1 week | ✅ Complete (Days 6-7/7) | ✅ VistaClient with site selection<br>✅ 3 sites (200, 500, 630)<br>✅ Domain-specific site limits<br>✅ T-notation date parsing<br>✅ Multi-site RPC calls<br>✅ 42 unit tests + manual guide<br>✅ 136 total tests (100% passing) |
+| **Phase 3** | Vitals MVP | 3 days | ✅ Complete (2025-12-17) | ✅ GMV LATEST VM RPC handler<br>✅ Merge/dedupe logic (318 lines)<br>✅ UI "Refresh from VistA" button<br>✅ Green site badges<br>✅ T-notation date system<br>✅ End-to-end integration<br>✅ 305 PG + 10 Vista = 315 vitals |
+| **Phase 4** | Additional Vitals RPCs | 1 week | ⏳ Not Started | GMV EXTRACT REC, GMV MANAGER, date-range queries |
+| **Phase 5** | Allergies & Medications | 1 week | ⏳ Not Started | 8 RPCs across 2 domains, additional merge/dedupe |
+| **Phase 6** | Polish & Documentation | 1 week | ⏳ Not Started | Error handling, performance tuning, docs |
 
 ### Dependencies
 
@@ -2344,6 +2344,44 @@ UI Display (with "AI-generated" disclaimer)
   - Multi-site support (3 sites: 200, 500, 630)
   - Integration tests via curl (patient found, site switching, error conditions)
   - Comprehensive documentation (`vista/README.md` - 580 lines)
+
+**Phase 2 Progress** (Completed 2025-12-17):
+- ✅ **Day 6:** VistaClient implementation
+  - `app/services/vista_client.py` (310 lines) - HTTP client for Vista service
+  - Intelligent site selection with domain-specific limits
+  - T-notation date parsing (T-0, T-7, T-30)
+  - Multi-site parallel RPC calls
+  - 42 comprehensive unit tests
+- ✅ **Day 7:** Testing and documentation
+  - `app/services/test_vista_manual.py` - 7 end-to-end scenarios
+  - `vista/MANUAL_TESTING.md` - Comprehensive testing guide
+  - All edge cases validated (negative limits, invalid domains, etc.)
+  - 136 total tests across both subsystems (100% passing)
+
+**Phase 3 MVP Progress** (Completed 2025-12-17):
+- ✅ **Step 1:** Vitals RPC Handler (1-2 hours actual)
+  - `vista/app/handlers/vitals.py` (146 lines) - GMV LATEST VM implementation
+  - Test data for 3 sites with T-notation dates
+  - Unit tests for vitals handler
+  - Curl testing verified
+- ✅ **Step 2:** Merge/Deduplication Logic (2-3 hours actual)
+  - `app/services/realtime_overlay.py` (318 lines)
+  - FileMan datetime parsing
+  - Vista vitals parsing (caret-delimited format)
+  - Canonical key deduplication (type|datetime|location)
+  - Vista preferred for T-1+ conflicts
+  - Comprehensive unit tests
+- ✅ **Step 3:** UI Integration (2-3 hours actual)
+  - `GET /patient/{icn}/vitals-realtime` endpoint
+  - "Refresh from VistA" button with HTMX
+  - Green site badges: "⚡ Site 200", "⚡ Site 500"
+  - Loading spinner and freshness indicator
+  - End-to-end testing: 305 PG + 10 Vista = 315 vitals
+  - Badge CSS fix (`badge--success` class added)
+- ✅ **Bonus:** T-Notation Date System
+  - Automatic date conversion in DataLoader
+  - No daily manual updates required
+  - Test data always appears fresh
 
 **Subsystem Location:**
 ```
