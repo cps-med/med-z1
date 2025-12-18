@@ -209,6 +209,35 @@ POSTGRES_CONFIG = {
 
 
 # -----------------------------------------------------------
+# Authentication and Session Management configuration
+# -----------------------------------------------------------
+
+# Session timeout (in minutes) - configurable, not hardcoded
+SESSION_TIMEOUT_MINUTES = int(os.getenv("SESSION_TIMEOUT_MINUTES", "15"))
+
+# Session cookie settings
+SESSION_COOKIE_NAME = os.getenv("SESSION_COOKIE_NAME", "session_id")
+SESSION_COOKIE_SECURE = _get_bool("SESSION_COOKIE_SECURE", False)  # True in production
+SESSION_COOKIE_HTTPONLY = _get_bool("SESSION_COOKIE_HTTPONLY", True)
+SESSION_COOKIE_SAMESITE = os.getenv("SESSION_COOKIE_SAMESITE", "lax")
+SESSION_COOKIE_MAX_AGE = SESSION_TIMEOUT_MINUTES * 60
+
+# Password hashing
+BCRYPT_ROUNDS = int(os.getenv("BCRYPT_ROUNDS", "12"))
+
+# Configuration dictionary
+AUTH_CONFIG = {
+    "session_timeout_minutes": SESSION_TIMEOUT_MINUTES,
+    "cookie_name": SESSION_COOKIE_NAME,
+    "cookie_secure": SESSION_COOKIE_SECURE,
+    "cookie_httponly": SESSION_COOKIE_HTTPONLY,
+    "cookie_samesite": SESSION_COOKIE_SAMESITE,
+    "cookie_max_age": SESSION_COOKIE_MAX_AGE,
+    "bcrypt_rounds": BCRYPT_ROUNDS,
+}
+
+
+# -----------------------------------------------------------
 # Optional logging of config (without secrets)
 # -----------------------------------------------------------
 

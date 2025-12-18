@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign in - med-z1</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, "Roboto", "Helvetica Neue", sans-serif;
+            background-color: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #1f1f1f;
+        }
+
+        .login-container {
+            background: white;
+            width: 100%;
+            max-width: 440px;
+            padding: 44px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        .logo-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 600;
+            color: #0078d4;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: #605e5c;
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #1f1f1f;
+        }
+
+        .sign-in-description {
+            font-size: 15px;
+            color: #605e5c;
+            margin-bottom: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 15px;
+            color: #323130;
+            margin-bottom: 8px;
+            font-weight: 400;
+        }
+
+        input[type="email"],
+        input[type="password"] {
+            width: 100%;
+            padding: 8px 12px;
+            font-size: 15px;
+            border: 1px solid #8a8886;
+            outline: none;
+            background-color: white;
+            color: #323130;
+        }
+
+        input[type="email"]:hover,
+        input[type="password"]:hover {
+            border-color: #323130;
+        }
+
+        input[type="email"]:focus,
+        input[type="password"]:focus {
+            border-color: #0078d4;
+            border-width: 2px;
+            padding: 7px 11px;
+        }
+
+        .error-message {
+            background-color: #fde7e9;
+            border: 1px solid #a4262c;
+            color: #a4262c;
+            padding: 12px;
+            margin-bottom: 16px;
+            font-size: 14px;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .error-message::before {
+            content: "⚠";
+            margin-right: 8px;
+            font-size: 16px;
+        }
+
+        .button-container {
+            margin-top: 24px;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        button[type="submit"] {
+            background-color: #0078d4;
+            color: white;
+            border: none;
+            padding: 8px 32px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            min-width: 108px;
+        }
+
+        button[type="submit"]:hover {
+            background-color: #106ebe;
+        }
+
+        button[type="submit"]:active {
+            background-color: #005a9e;
+        }
+
+        button[type="submit"]:focus {
+            outline: 2px solid #000;
+            outline-offset: 2px;
+        }
+
+        .demo-credentials {
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid #edebe9;
+        }
+
+        .demo-credentials-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #323130;
+            margin-bottom: 12px;
+        }
+
+        .demo-credentials-content {
+            background-color: #f3f2f1;
+            padding: 16px;
+            border-left: 3px solid #0078d4;
+            font-size: 13px;
+            color: #323130;
+        }
+
+        .demo-credentials-content p {
+            margin-bottom: 8px;
+        }
+
+        .demo-credentials-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        .credential-label {
+            font-weight: 600;
+            color: #323130;
+        }
+
+        .credential-value {
+            font-family: "Consolas", "Monaco", monospace;
+            color: #0078d4;
+        }
+
+        .footer {
+            margin-top: 24px;
+            text-align: center;
+            font-size: 12px;
+            color: #605e5c;
+        }
+
+        .footer a {
+            color: #0078d4;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* Responsive design */
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 24px;
+                box-shadow: none;
+            }
+
+            h1 {
+                font-size: 20px;
+            }
+        }
+
+        /* Accessibility: high contrast mode support */
+        @media (prefers-contrast: high) {
+            input[type="email"],
+            input[type="password"] {
+                border-width: 2px;
+            }
+        }
+
+        /* Accessibility: reduced motion support */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation: none !important;
+                transition: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <!-- Logo and branding -->
+        <div class="logo-container">
+            <div class="logo">med-z1</div>
+            <div class="subtitle">Department of Veterans Affairs</div>
+        </div>
+
+        <!-- Sign in heading -->
+        <h1>Sign in</h1>
+        <p class="sign-in-description">to continue to med-z1 Health Record Viewer</p>
+
+        <!-- Error message (if any) -->
+        {% if error %}
+        <div class="error-message" role="alert" aria-live="polite">
+            {{ error }}
+        </div>
+        {% endif %}
+
+        <!-- Login form -->
+        <form method="post" action="/login">
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    required
+                    autocomplete="username"
+                    autofocus
+                    aria-required="true"
+                    placeholder="user@va.gov"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    required
+                    autocomplete="current-password"
+                    aria-required="true"
+                >
+            </div>
+
+            <div class="button-container">
+                <button type="submit">Sign in</button>
+            </div>
+        </form>
+
+        <!-- Demo credentials section -->
+        <div class="demo-credentials">
+            <div class="demo-credentials-title">Demo Credentials (Development Environment)</div>
+            <div class="demo-credentials-content">
+                <p>
+                    <span class="credential-label">Email:</span>
+                    <span class="credential-value">clinician.alpha@va.gov</span>
+                </p>
+                <p>
+                    <span class="credential-label">Password:</span>
+                    <span class="credential-value">VaDemo2025!</span>
+                </p>
+                <p style="margin-top: 12px; font-size: 12px; color: #605e5c;">
+                    All 7 mock users share the same password. See <code>docs/mock-users.md</code> for the full list.
+                </p>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>Development Environment - Synthetic Data Only</p>
+        </div>
+    </div>
+</body>
+</html>

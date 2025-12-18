@@ -1,6 +1,6 @@
 # med-z1 – Product & Technical Development Plan
 
-December 16, 2025 • Document version v1.4
+December 18, 2025 • Document version v1.5
 
 > **Related Documentation:**
 > - **Tactical Implementation & Current Status:** See `implementation-roadmap.md` for detailed execution plan, current implementation status, and development phases
@@ -8,6 +8,7 @@ December 16, 2025 • Document version v1.4
 > - **Domain-Specific Specifications:** See `vitals-design.md`, `allergies-design.md`, `medications-design.md`, `patient-flags-design.md`, etc.
 
 **Changelog:**
+- **v1.5 (December 18, 2025):** Added User Authentication and Management implementation status. All 8 authentication phases complete (database, routes, middleware, login UI, session management, testing). See `docs/user-auth-design.md` and `docs/auth-implementation-summary.md`.
 - **v1.4 (December 16, 2025):** Updated current status to reflect 7 clinical domains implemented (added Encounters). Noted Laboratory Results ETL completion (UI implementation pending). Updated "Next Priorities" section.
 - **v1.3 (December 15, 2025):** Refactored to focus on strategic vision and product planning. Removed redundant technical implementation details (now in `implementation-roadmap.md`). Updated current status to reflect 6 clinical domains implemented and Vista Phase 1 complete.
 - **v1.2 (December 8, 2025):** Updated with actual implementation details - medallion architecture working, PostgreSQL setup, MinIO client, ETL pipeline complete for patient demographics, actual dependencies and project structure
@@ -567,13 +568,25 @@ med-z1/
 
 ## 6. Development Phases & Current Status
 
-### 6.1 Current Implementation Status (as of December 16, 2025)
+### 6.1 Current Implementation Status (as of December 18, 2025)
 
 **✅ Infrastructure & Data Pipeline: COMPLETE**
 - Medallion architecture (Bronze/Silver/Gold) operational with MinIO
 - PostgreSQL serving database with 36 patients
 - CCOW Context Vault service (port 8001)
 - Complete ETL pipeline working for all implemented domains
+
+**✅ User Authentication & Management: COMPLETE**
+- PostgreSQL `auth` schema with users, sessions, and audit_logs tables
+- Mock Microsoft Entra ID-style login page with email/password authentication
+- Server-side session management with 15-minute configurable timeout
+- Single-session enforcement (one active session per user)
+- Authentication middleware with automatic session timeout extension
+- User context display in sidebar with logout button
+- Comprehensive audit logging for all authentication events
+- 7 mock users with bcrypt password hashing
+- Complete test suite with 7 automated tests
+- **See:** `docs/user-auth-design.md` and `docs/auth-implementation-summary.md`
 
 **✅ Clinical Domains Implemented: 7 DOMAINS**
 1. **Dashboard** - Patient overview with clinical widgets (widget grid system)

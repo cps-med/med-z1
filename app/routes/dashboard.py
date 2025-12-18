@@ -12,6 +12,7 @@ from fastapi.templating import Jinja2Templates
 import logging
 
 from app.utils.ccow_client import ccow_client
+from app.utils.template_context import get_base_context
 from app.db.patient import get_patient_demographics
 from app.db.patient_flags import get_patient_flags
 
@@ -45,23 +46,23 @@ async def get_dashboard(request: Request):
 
         return templates.TemplateResponse(
             "dashboard.html",
-            {
-                "request": request,
-                "patient": patient,
-                "active_page": "dashboard"
-            }
+            get_base_context(
+                request,
+                patient=patient,
+                active_page="dashboard"
+            )
         )
 
     except Exception as e:
         logger.error(f"Error loading dashboard: {e}")
         return templates.TemplateResponse(
             "dashboard.html",
-            {
-                "request": request,
-                "patient": None,
-                "error": str(e),
-                "active_page": "dashboard"
-            }
+            get_base_context(
+                request,
+                patient=None,
+                error=str(e),
+                active_page="dashboard"
+            )
         )
 
 

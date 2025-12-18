@@ -33,14 +33,23 @@ from config import (
 )
 
 # Import routers
-from app.routes import patient, dashboard, vitals, medications, demographics, encounters, labs
+from app.routes import patient, dashboard, vitals, medications, demographics, encounters, labs, auth
+
+# Import middleware
+from app.middleware.auth import AuthMiddleware
 
 app = FastAPI(title="med-z1")
+
+# Add authentication middleware
+# IMPORTANT: Middleware is applied in reverse order - last added is executed first
+# AuthMiddleware must be added BEFORE routes are accessed
+app.add_middleware(AuthMiddleware)
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 # Include routers
+app.include_router(auth.router)  # Authentication routes (login/logout)
 app.include_router(dashboard.router)  # Dashboard handles / and /dashboard
 app.include_router(patient.router)
 app.include_router(patient.page_router)  # Patient pages (Allergies full page)

@@ -1,10 +1,21 @@
 # CDWWork2 (Oracle Health/Cerner) Mock Database - Design Document
 
-**Document Version:** 1.1
+**Document Version:** 1.2
 **Date:** 2025-12-17
-**Last Updated:** 2025-12-17
+**Last Updated:** 2025-12-18
 **Status:** ✅ Ready for Implementation - All Open Questions Resolved
 **Implementation Phase:** Not Started
+
+**Changelog:**
+- **v1.2** (2025-12-18): Incorporated peer review feedback
+  - Added ICN as primary identity resolution key (Section 7.1)
+  - Added SiteTransition reference table for go-live tracking (Section 6.6)
+  - Added location sharing caveat for production considerations (Section 4.4)
+  - Added architectural note on VitalResult as simplified CDW view (Section 6.4)
+  - Added extraction_timestamp to lineage tracking (Section 9.3, 9.6)
+  - Added performance note for Silver layer unpivot pattern (Section 8.2)
+- **v1.1** (2025-12-17): Initial complete design with all open questions resolved
+- **v1.0** (2025-12-17): Initial draft
 
 ---
 
@@ -412,6 +423,56 @@ docker exec -i sqlserver /opt/mssql-tools18/bin/sqlcmd ... \
   < mock/sql-server/cdwwork2/insert/_master.sql
 ```
 
+### 4.4 Location Sharing Strategy and Caveats
+
+**Current Design**: CDWWork2 schemas reuse `Dim.Location` from CDWWork for location references (clinics, wards, collection sites).
+
+**Mock Simplification Benefits**:
+- ✅ Fewer tables to manage (no separate `EncMill.Location` or `LocationMill` schema)
+- ✅ Shared location dimension simplifies queries (single location table)
+- ✅ Adequate for reference application with limited location diversity
+
+**Production Reality vs. Mock**:
+
+⚠️ **Important Caveat**: This location-sharing approach is a **mock simplification**. In production VA CDW:
+- Cerner sites have distinct location records in `LocationMill` schema (separate from VistA's `Dim.Location`)
+- Location IDs are site-specific (Sta3n 648's "Cardiology Clinic" ≠ Sta3n 508's "Cardiology Clinic")
+- Cerner location tables include Millennium-specific metadata not present in VistA locations
+- Location code sets in Cerner use `NDimMill.CodeValue` pattern (facility type, location type, etc.)
+
+**Design Constraints for Shared Locations**:
+
+To maintain data integrity when sharing `Dim.Location` across databases:
+
+1. **Sta3n Validation**: Every location record must have a valid, non-NULL `Sta3n` column
+   ```sql
+   -- Dim.Location must include Sta3n to prevent cross-site references
+   ALTER TABLE Dim.Location ADD Sta3n INT NOT NULL;
+   ```
+
+2. **ETL Filtering**: Clinical records in CDWWork2 must only reference locations from Cerner sites
+   ```sql
+   -- INCORRECT: Cerner vital at Portland (648) referencing Atlanta location (508)
+   -- CORRECT: Enforce Sta3n matching in foreign key relationships
+   ```
+
+3. **Site-Specific Location Data**: When populating locations:
+   - VistA sites (508, 509, 516, 552, 200, 500, 630) → Locations only in CDWWork inserts
+   - Cerner sites (648, 663, 531) → Locations in both databases (shared dimension)
+
+**Future Enhancement Path**:
+
+If Cerner-specific location metadata becomes necessary:
+- Create `EncMill.Location` as Cerner-specific location table
+- Add Cerner location codes to `NDimMill.CodeValue` (e.g., Set 220 = Location Type)
+- Migrate CDWWork2 clinical tables to reference `EncMill.Location` instead of `Dim.Location`
+- Keep `Dim.Location` exclusively for VistA data
+
+**Recommendation for Implementation**:
+- ✅ **Phase 1**: Use shared `Dim.Location` (current design) - acceptable for reference application
+- ⚠️ **Phase 2+**: If location complexity increases, create separate `EncMill.Location`
+- 📋 **Production Deployment**: Must use separate location tables per database
+
 ---
 
 ## 5. Code Set System Design
@@ -817,6 +878,12 @@ VALUES
 
 **Purpose**: Store vital sign measurements from Cerner sites.
 
+**Architectural Note**:
+
+⚠️ In production Cerner Millennium systems, vitals are often stored in a generic `ClinicalEvent` table (Cerner's event-based architecture) and extracted into domain-specific views for CDW syndication. For med-z1 simplicity, we model vitals directly as `VitalMill.VitalResult` - a **simplified representation** of what CDW provides to consumers, not the raw Cerner source structure.
+
+This approach is consistent with CDW's "domain-centric" extraction pattern, where Cerner's generic event model is transformed into domain-specific tables (vitals, labs, I&O, etc.) for easier consumption by downstream applications. Our mock skips the intermediate `ClinicalEvent` layer and goes directly to the domain view structure.
+
 **Schema**:
 ```sql
 CREATE TABLE VitalMill.VitalResult (
@@ -962,6 +1029,95 @@ VALUES
  '70', '100', 600002, 'High', 'mg/dL', '2024-09-15 12:00', 648);
 ```
 
+### 6.6 Site Metadata - NDimMill.SiteTransition
+
+**Purpose**: Track which VA sites use VistA vs Oracle Health (Cerner) and their migration timeline. This reference table supports the approved Q2 decision to display go-live dates in the UI.
+
+**Schema**:
+```sql
+CREATE TABLE NDimMill.SiteTransition (
+    Sta3n               INT             PRIMARY KEY,
+    SiteName            VARCHAR(100)    NOT NULL,
+    EHRSystem           VARCHAR(50)     NOT NULL,  -- 'VistA' or 'Oracle Health'
+    GoLiveDate          DATE            NULL,      -- NULL for VistA-only sites
+    SiteState           VARCHAR(2),                -- Two-letter state code (optional)
+    Notes               VARCHAR(255),              -- Migration notes (optional)
+
+    INDEX IX_EHRSystem (EHRSystem),
+    INDEX IX_GoLiveDate (GoLiveDate)
+);
+```
+
+**Field Descriptions**:
+- **Sta3n**: VA Station Number (primary key)
+- **SiteName**: Full facility name (e.g., "Portland VA Medical Center")
+- **EHRSystem**: Current EHR platform - either `'VistA'` or `'Oracle Health'`
+- **GoLiveDate**: Date when site transitioned to Cerner (NULL for sites still on VistA)
+- **SiteState**: Two-letter state code for geographic filtering (optional)
+- **Notes**: Additional context about migration (e.g., "Pilot site", "Phase 2 rollout")
+
+**Sample Data**:
+```sql
+SET QUOTED_IDENTIFIER ON;
+GO
+
+INSERT INTO NDimMill.SiteTransition (Sta3n, SiteName, EHRSystem, GoLiveDate, SiteState, Notes) VALUES
+-- Cerner Sites (CDWWork2)
+(648, 'Portland VA Medical Center', 'Oracle Health', '2024-09-01', 'OR', 'Initial med-z1 test site'),
+(663, 'Seattle/Puget Sound VA Health Care System', 'Oracle Health', '2024-06-01', 'WA', 'Early adopter site'),
+(531, 'Boise VA Medical Center', 'Oracle Health', '2024-11-01', 'ID', 'Recent migration'),
+
+-- VistA Sites (CDWWork)
+(508, 'Atlanta VA Medical Center', 'VistA', NULL, 'GA', 'Primary VistA test site'),
+(509, 'Augusta VA Medical Center', 'VistA', NULL, 'GA', 'Secondary VistA test site'),
+(516, 'C.W. Bill Young VA Medical Center (Bay Pines)', 'VistA', NULL, 'FL', 'VistA site'),
+(552, 'Dayton VA Medical Center', 'VistA', NULL, 'OH', 'VistA site'),
+(200, 'Alexandria (Vista RPC Broker Simulator)', 'VistA', NULL, 'VA', 'Mock real-time data site'),
+(500, 'Anchorage (Vista RPC Broker Simulator)', 'VistA', NULL, 'AK', 'Mock real-time data site'),
+(630, 'Palo Alto (Vista RPC Broker Simulator)', 'VistA', NULL, 'CA', 'Mock real-time data site');
+```
+
+**UI Integration**:
+
+This table enables the Demographics page to display contextual information about site migrations (per Q2 approved decision):
+
+```html
+<!-- Demographics page - Site Information section -->
+<div class="site-info">
+    <h4>Treatment Sites</h4>
+    <ul>
+        <li>
+            Portland VAMC (648) -
+            <span class="badge badge-cerner">Oracle Health</span>
+            <span class="text-muted">(Go-Live: Sep 2024)</span>
+        </li>
+        <li>
+            Atlanta VAMC (508) -
+            <span class="badge badge-vista">VistA</span>
+        </li>
+    </ul>
+</div>
+```
+
+**Query Pattern**:
+```python
+# app/db/sites.py
+def get_site_info(sta3n: int) -> Dict[str, Any]:
+    """Get site metadata including EHR system and go-live date."""
+    query = text("""
+        SELECT Sta3n, SiteName, EHRSystem, GoLiveDate, SiteState
+        FROM NDimMill.SiteTransition
+        WHERE Sta3n = :sta3n
+    """)
+    # Returns: {'sta3n': 648, 'site_name': 'Portland VA...', 'ehr_system': 'Oracle Health', ...}
+```
+
+**Benefits**:
+- ✅ Provides educational context to users about VA's EHR transition
+- ✅ Explains why data before/after certain dates comes from different systems
+- ✅ Supports future UI features (site filter, migration timeline visualization)
+- ✅ Single source of truth for site-to-EHR mapping
+
 ---
 
 ## 7. Patient Identity and Site Assignment
@@ -970,20 +1126,48 @@ VALUES
 
 **Core Principle**: The same synthetic patient exists in **both** CDWWork and CDWWork2 with identical PatientSID and ICN values.
 
+**Identity Resolution Hierarchy** (Real VA Pattern):
+
+In production VA systems, patient identity is managed through the **Master Patient Index (MPI)**, which uses a specific hierarchy:
+
+1. **Primary Identity Key**: **PatientICN** (Integration Control Number)
+   - Canonical identity across ALL VA systems (VistA, Cerner, community care)
+   - Format: `{Base}V{Checksum}` (e.g., `1000000001V123456`)
+   - Globally unique across the entire VA enterprise
+   - **This is the true "source of truth" for patient identity**
+
+2. **Surrogate Keys**: **PatientSID** (Surrogate ID)
+   - Database-specific technical key (may differ across CDWWork and CDWWork2 in production)
+   - Used for internal joins within a single database
+   - In real VA CDW, the same patient may have different SIDs in different databases
+
+3. **Mock Simplification**: For med-z1 convenience:
+   - We use **identical PatientSID values** for the same patient across both databases
+   - This simplifies mock data generation and early development
+   - Real production systems require ICN-based joins for cross-database patient matching
+
+**ETL Best Practice**:
+- ✅ **DO**: JOIN on `PatientICN` when merging data from CDWWork and CDWWork2
+- ⚠️ **AVOID**: Relying on PatientSID equality across databases (won't work in production)
+- 📋 **Pattern**: Use ICN as the primary key in Gold/PostgreSQL layers (Silver can use SID internally)
+
 **Rationale**:
 - Simulates real-world scenario: Veterans seek care at both VistA and Cerner sites
-- Enables Silver layer to JOIN data from both sources on PatientSID
-- Tests cross-source data aggregation and deduplication
-- Mirrors VA's Master Patient Index (MPI) identity resolution
+- Enables Silver layer to JOIN data from both sources via ICN (production pattern)
+- Tests cross-source data aggregation and deduplication using canonical identity
+- Mirrors VA's Master Patient Index (MPI) identity resolution approach
+- Prepares code for production deployment where SIDs may differ
 
 **Implementation**:
 
 ```sql
 -- CDWWork (VistA) - Patient 1001
+-- NOTE: In production, PatientSID might be different (e.g., 8472), but ICN is always the same
 INSERT INTO SPatient.Spatient (PatientSID, PatientICN, PatientName, ...)
 VALUES (1001, '1000000001V123456', 'SMITH,JOHN ALPHA', ...);
 
 -- CDWWork2 (Cerner) - SAME Patient 1001
+-- Mock uses identical SID for simplicity; production would use ICN for matching
 INSERT INTO VeteranMill.SPerson (PatientSID, PatientICN, PatientName, ...)
 VALUES (1001, '1000000001V123456', 'SMITH,JOHN ALPHA', ...);
 ```
@@ -1274,6 +1458,21 @@ def merge_vitals():
 4. **Null Handling**: Unified NULL representation
 5. **Deduplication**: Prefer Cerner data if same event exists in both sources
 
+**Performance Note** (Reference Application Scale):
+
+⚠️ The unpivot-on-the-fly approach shown above is optimized for **med-z1's reference scale** (10s-100s of rows). This pattern:
+- ✅ Keeps transformation logic transparent and easy to study for developers
+- ✅ Adequate performance for small datasets (sub-second execution)
+- ✅ Maintains separation of concerns (Bronze = raw, Silver = harmonized)
+
+For **production deployment** with millions of rows:
+- Consider pre-materializing the unpivoted structure during Bronze-to-Silver transformation
+- Store VistA vitals in "pre-unpivoted" format in Bronze layer to reduce repeated compute overhead
+- Use lazy evaluation and partitioning strategies (e.g., partition by Sta3n or date ranges)
+- Monitor ETL performance metrics; unpivot operations scale linearly but may benefit from optimization at scale
+
+**Current Approach**: Keep simple unpivot pattern for reference application, revisit if/when scaling to production volumes.
+
 ### 8.3 Gold Layer Source Attribution
 
 **Purpose**: Preserve data lineage for transparency and debugging.
@@ -1441,6 +1640,7 @@ CREATE TABLE patient_<domain> (
     sta3n                   INTEGER,
     data_source             VARCHAR(20),           -- ✅ REQUIRED: 'CDWWork' or 'CDWWork2'
     encounter_id            INTEGER,               -- ✅ OPTIONAL: NULL for VistA, populated for Cerner (Q4 Decision)
+    extraction_timestamp    TIMESTAMP,             -- ✅ OPTIONAL: When data was extracted from source (for troubleshooting)
 
     INDEX idx_patient_key (patient_key),
     INDEX idx_data_source (data_source),          -- ✅ Enable source filtering
@@ -1448,11 +1648,20 @@ CREATE TABLE patient_<domain> (
 );
 ```
 
-**Note on encounter_id** (per Q4 decision):
+**Notes on Optional Lineage Columns**:
+
+**encounter_id** (per Q4 decision):
 - **VistA data**: `encounter_id = NULL` (most clinical records not linked to encounters in VistA)
 - **Cerner data**: `encounter_id = <EncounterSID>` (always populated, required in Cerner model)
 - **Future enhancement**: Can backfill VistA encounter_id from `Inpat.Inpatient` for inpatient records
 - **UI handling**: Display encounter context when available, gracefully handle NULL values
+
+**extraction_timestamp** (peer review recommendation):
+- **Purpose**: Records when data was extracted from source database (CDWWork or CDWWork2)
+- **Use case**: Troubleshooting ETL delays, understanding data freshness, debugging syndication issues
+- **Population**: Set to `CURRENT_TIMESTAMP` during PostgreSQL load phase of ETL
+- **Phase 1**: Optional - can defer to Phase 2+ if not needed immediately
+- **Example query**: `SELECT * FROM patient_vitals WHERE extraction_timestamp < NOW() - INTERVAL '7 days'` (find stale data)
 
 **Examples**:
 
@@ -1637,6 +1846,7 @@ def get_all_vitals(icn: str) -> List[Dict[str, Any]]:
 **DO**:
 - ✅ Add `data_source` column to ALL clinical tables (vitals, allergies, labs, meds, encounters)
 - ✅ Add `encounter_id` column to ALL clinical tables (NULL for VistA, populated for Cerner - Q4 Decision)
+- ✅ Add `extraction_timestamp` column (optional Phase 1, recommended Phase 2+) for ETL troubleshooting
 - ✅ Populate during PostgreSQL load from Gold Parquet
 - ✅ Index `data_source` column for efficient filtering
 - ✅ Index `encounter_id` column for optional encounter-based queries
@@ -1652,10 +1862,16 @@ def get_all_vitals(icn: str) -> List[Dict[str, Any]]:
 - ❌ Forget to add to new clinical domains as they're implemented
 - ❌ Require encounter_id to be non-NULL (it's optional for VistA data)
 
+**Implemented Enhancements** (v1.2):
+- ✅ `extraction_timestamp` added to standard schema pattern (Section 9.3)
+  - **Purpose**: Track when data was extracted from source database
+  - **Use case**: Troubleshoot ETL delays, understand data freshness, debug Cerner syndication issues
+  - **Implementation**: Set to `CURRENT_TIMESTAMP` during PostgreSQL load phase
+  - **Phase**: Optional for Phase 1, recommended for Phase 2+
+
 **Future Enhancements**:
-- Add `data_source_timestamp` (when data was extracted from source)
 - Add `etl_run_id` (which ETL batch loaded this record)
-- Add `source_record_id` (original SID from source database)
+- Add `source_record_id` (original SID from source database for traceability)
 - Backfill VistA `encounter_id` from `Inpat.Inpatient` for inpatient clinical records
 
 ---
