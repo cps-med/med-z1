@@ -20,6 +20,7 @@ from app.db.labs import (
     get_lab_counts
 )
 from app.db.patient import get_patient_demographics
+from app.utils.template_context import get_base_context
 
 # API router for labs endpoints
 router = APIRouter(prefix="/api/patient", tags=["labs"])
@@ -293,11 +294,11 @@ async def get_labs_page(
         if not patient:
             return templates.TemplateResponse(
                 "patient_labs.html",
-                {
-                    "request": request,
-                    "error": f"Patient not found: {icn}",
-                    "patient": None
-                }
+                get_base_context(
+                    request,
+                    error=f"Patient not found: {icn}",
+                    patient=None
+                )
             )
 
         # Get all lab results with filters and sorting
@@ -322,29 +323,29 @@ async def get_labs_page(
 
         return templates.TemplateResponse(
             "patient_labs.html",
-            {
-                "request": request,
-                "patient": patient,
-                "labs": labs,
-                "counts": counts,
-                "total_count": total_count,
-                "abnormal_count": abnormal_count,
-                "panel_filter": panel_filter,
-                "abnormal_only": abnormal_only,
-                "days": days,
-                "sort_by": sort_by,
-                "sort_order": sort_order,
-                "active_page": "labs"
-            }
+            get_base_context(
+                request,
+                patient=patient,
+                labs=labs,
+                counts=counts,
+                total_count=total_count,
+                abnormal_count=abnormal_count,
+                panel_filter=panel_filter,
+                abnormal_only=abnormal_only,
+                days=days,
+                sort_by=sort_by,
+                sort_order=sort_order,
+                active_page="labs"
+            )
         )
 
     except Exception as e:
         logger.error(f"Error rendering labs page for {icn}: {e}")
         return templates.TemplateResponse(
             "patient_labs.html",
-            {
-                "request": request,
-                "error": str(e),
-                "patient": None
-            }
+            get_base_context(
+                request,
+                error=str(e),
+                patient=None
+            )
         )

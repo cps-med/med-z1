@@ -11,6 +11,7 @@ from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from app.db.patient import get_patient_demographics
+from app.utils.template_context import get_base_context
 import logging
 
 logger = logging.getLogger(__name__)
@@ -55,11 +56,11 @@ async def get_patient_demographics_page(request: Request, icn: str):
     # Render full demographics page template
     return templates.TemplateResponse(
         "patient_demographics.html",
-        {
-            "request": request,
-            "patient": patient,
-            "active_page": "demographics"
-        }
+        get_base_context(
+            request,
+            patient=patient,
+            active_page="demographics"
+        )
     )
 
 

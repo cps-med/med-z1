@@ -21,6 +21,7 @@ from app.db.vitals import (
     get_vital_counts
 )
 from app.db.patient import get_patient_demographics
+from app.utils.template_context import get_base_context
 
 # API router for vitals endpoints
 router = APIRouter(prefix="/api/patient", tags=["vitals"])
@@ -226,11 +227,11 @@ async def get_vitals_page(
             logger.warning(f"Patient {icn} not found")
             return templates.TemplateResponse(
                 "patient_vitals.html",
-                {
-                    "request": request,
-                    "patient": None,
-                    "error": "Patient not found"
-                }
+                get_base_context(
+                    request,
+                    patient=None,
+                    error="Patient not found"
+                )
             )
 
         # Get all vitals for patient (limit 500 for page view)
@@ -260,32 +261,32 @@ async def get_vitals_page(
 
         return templates.TemplateResponse(
             "patient_vitals.html",
-            {
-                "request": request,
-                "patient": patient,
-                "vitals": vitals,
-                "counts": counts,
-                "vital_type_filter": vital_type,
-                "sort_by": sort_by,
-                "sort_order": sort_order,
-                "total_count": len(vitals),
-                "active_page": "vitals",
-                "data_current_through": data_current_through,
-                "data_freshness_label": data_freshness_label,
-                "vista_refreshed": False,
-            }
+            get_base_context(
+                request,
+                patient=patient,
+                vitals=vitals,
+                counts=counts,
+                vital_type_filter=vital_type,
+                sort_by=sort_by,
+                sort_order=sort_order,
+                total_count=len(vitals),
+                active_page="vitals",
+                data_current_through=data_current_through,
+                data_freshness_label=data_freshness_label,
+                vista_refreshed=False,
+            )
         )
 
     except Exception as e:
         logger.error(f"Error loading vitals page for {icn}: {e}")
         return templates.TemplateResponse(
             "patient_vitals.html",
-            {
-                "request": request,
-                "patient": None,
-                "error": str(e),
-                "active_page": "vitals"
-            }
+            get_base_context(
+                request,
+                patient=None,
+                error=str(e),
+                active_page="vitals"
+            )
         )
 
 

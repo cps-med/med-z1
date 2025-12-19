@@ -1691,69 +1691,51 @@ This isn't just "how we implemented it" - it's **how enterprise healthcare syste
 
 ```
 vista/
-├── __init__.py
 ├── README.md                      # Vista subsystem documentation
 │
-├── app/
+├── app/                           # Main application directory (one level deeper)
 │   ├── __init__.py
 │   ├── main.py                    # FastAPI application entry point
-│   ├── config.py                  # Vista service configuration (latency, site loading)
 │   │
-│   ├── models/
-│   │   ├── __init__.py
-│   │   └── rpc_request.py         # Pydantic models for API
+│   ├── config/
+│   │   └── sites.json             # ✅ Site registry (sta3n, names, metadata)
+│   │
+│   ├── data/
+│   │   └── sites/
+│   │       ├── 200/               # Alexandria
+│   │       │   └── vitals.json
+│   │       ├── 500/               # Anchorage
+│   │       │   └── vitals.json
+│   │       └── 630/               # Palo Alto
+│   │           └── vitals.json
 │   │
 │   ├── services/
 │   │   ├── __init__.py
-│   │   ├── cluster.py             # VistaCluster (manages multiple VistaServer instances)
-│   │   ├── vista_server.py        # VistaServer base class (one per site)
-│   │   ├── dispatcher.py          # RpcDispatcher (routes RPC calls to handlers)
-│   │   └── data_loader.py         # DataLoader (reads JSON data for a site)
+│   │   ├── data_loader.py         # DataLoader (ICN→DFN resolution, data loading)
+│   │   ├── rpc_handler.py         # RPCHandler base class
+│   │   └── rpc_registry.py        # RPCRegistry (handler registration/dispatch)
 │   │
 │   ├── handlers/
 │   │   ├── __init__.py
-│   │   ├── demographics.py        # ORWPT* RPCs
-│   │   ├── vitals.py              # GMV* RPCs
-│   │   ├── allergies.py           # ORQQAL* RPCs
-│   │   └── medications.py         # ORWPS*, PSO* RPCs
+│   │   ├── demographics.py        # ORWPT* RPCs (Patient Inquiry)
+│   │   └── vitals.py              # GMV* RPCs (Latest Vitals)
 │   │
 │   └── utils/
 │       ├── __init__.py
-│       ├── m_serializer.py        # VistA format serialization (^ | ;)
-│       ├── temporal.py            # T-0/T-1 date parsing and FileMan conversion
-│       └── vista_datetime.py      # FileMan date/time utilities
+│       └── m_serializer.py        # VistA format serialization (^ | ;)
 │
-├── config/
-│   ├── sites.json                 # Site registry (sta3n, names, metadata)
-│   └── rpc_registry.json          # (Optional) RPC definitions for validation
-│
-├── data/
-│   └── sites/
-│       ├── 200/                   # Alexandria
-│       │   ├── patients.json
-│       │   ├── vitals.json
-│       │   ├── allergies.json
-│       │   └── medications.json
-│       │
-│       ├── 500/                   # Anchorage
-│       │   ├── patients.json
-│       │   ├── vitals.json
-│       │   ├── allergies.json
-│       │   └── medications.json
-│       │
-│       └── 630/                   # Palo Alto
-│           ├── patients.json
-│           ├── vitals.json
-│           ├── allergies.json
-│           └── medications.json
-│
-└── tests/
+└── tests/                         # ✅ Test suite (parallel to app/)
     ├── __init__.py
-    ├── test_rpc_dispatcher.py
-    ├── test_demographics.py
-    ├── test_vitals.py
-    └── test_m_serializer.py
+    ├── test_api_integration.py
+    ├── test_data_loader.py
+    ├── test_demographics_handler.py
+    ├── test_m_serializer.py
+    ├── test_rpc_registry.py
+    ├── test_sites_config.py       # ✅ New: Tests for sites.json loading
+    └── test_vitals_handler.py
 ```
+
+**Note:** Actual implementation is one level deeper than originally documented (`vista/app/`). The `sites.json` file is located at `vista/app/config/sites.json`, and data files are at `vista/app/data/sites/{sta3n}/`.
 
 ---
 
@@ -1761,38 +1743,39 @@ vista/
 
 ### 5.1 Configuration Files
 
-**vista/config/sites.json**:
+**vista/app/config/sites.json** ✅ (Actual Implementation):
 ```json
 {
   "sites": [
     {
       "sta3n": "200",
       "name": "ALEXANDRIA",
-      "full_name": "Alexandria VA Medical Center",
-      "state": "VA",
-      "enabled": true
+      "description": "Alexandria VA Medical Center"
     },
     {
       "sta3n": "500",
       "name": "ANCHORAGE",
-      "full_name": "Alaska VA Healthcare System",
-      "state": "AK",
-      "enabled": true
+      "description": "Anchorage VA Medical Center"
     },
     {
       "sta3n": "630",
       "name": "PALO_ALTO",
-      "full_name": "VA Palo Alto Health Care System",
-      "state": "CA",
-      "enabled": true
+      "description": "Palo Alto VA Medical Center"
     }
-  ]
+  ],
+  "metadata": {
+    "version": "1.0",
+    "last_updated": "2025-12-19",
+    "description": "VistA site registry for RPC Broker Simulator"
+  }
 }
 ```
 
+**Configuration Loading:** Site configurations are loaded at application startup via `load_sites_config()` in `vista/app/main.py`. This function reads `vista/app/config/sites.json` and converts the sites array into a dictionary keyed by `sta3n`.
+
 ### 5.2 Patient Data Files
 
-**vista/data/sites/200/patients.json**:
+**Note:** Patient data is stored in `mock/shared/patient_registry.json` (enterprise-wide ICN→DFN mappings). Per-site clinical data files are at `vista/app/data/sites/{sta3n}/`.
 ```json
 {
   "patients": [

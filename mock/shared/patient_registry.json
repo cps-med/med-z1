@@ -46,7 +46,7 @@
       ]
     },
     {
-      "_note": "Patient 2 - Multi-site test patient (305 total records in PostgreSQL: 301 vitals, 2 allergies, 2 medications)",
+      "_note": "Patient 2 - Multi-site test patient (305 total records in PostgreSQL: 301 vitals, 2 allergies, 2 medications). ✅ 2025-12-19: Mapped orphaned Vista vitals DFNs (100002, 200001) to enable testing.",
       "icn": "ICN100010",
       "ssn": "666-23-1010",
       "name_last": "AMINOR",
@@ -64,17 +64,33 @@
           "_note": "Most recent care - primary site for this patient"
         },
         {
+          "sta3n": "200",
+          "name": "ALEXANDRIA",
+          "dfn": "100002",
+          "first_seen": "2024-11-01",
+          "last_seen": "T-0",
+          "_note": "✅ Orphaned Vista vitals DFN mapped 2025-12-19 - enables vitals testing"
+        },
+        {
           "sta3n": "500",
           "name": "ANCHORAGE",
           "dfn": "500010",
           "first_seen": "2021-11-03",
           "last_seen": "T-90",
           "_note": "Secondary care site - less recent visits"
+        },
+        {
+          "sta3n": "500",
+          "name": "ANCHORAGE",
+          "dfn": "200001",
+          "first_seen": "2024-10-15",
+          "last_seen": "T-0",
+          "_note": "✅ Orphaned Vista vitals DFN mapped 2025-12-19 - enables vitals testing"
         }
       ]
     },
     {
-      "_note": "Patient 3 - Single-site test patient (312 total records in PostgreSQL: 304 vitals, 8 allergies)",
+      "_note": "Patient 3 - Single-site test patient (312 total records in PostgreSQL: 304 vitals, 8 allergies). ✅ 2025-12-19: Mapped orphaned Vista vitals DFNs (100003, 200002, 300001, 300002, 630002) to enable comprehensive multi-site testing.",
       "icn": "ICN100013",
       "ssn": "666-34-1013",
       "name_last": "THOMPSON",
@@ -84,12 +100,52 @@
       "sex": "M",
       "treating_facilities": [
         {
+          "sta3n": "200",
+          "name": "ALEXANDRIA",
+          "dfn": "100003",
+          "first_seen": "2024-09-20",
+          "last_seen": "T-0",
+          "_note": "✅ Orphaned Vista vitals DFN mapped 2025-12-19 - enables vitals testing at site 200"
+        },
+        {
+          "sta3n": "500",
+          "name": "ANCHORAGE",
+          "dfn": "200002",
+          "first_seen": "2024-08-10",
+          "last_seen": "T-0",
+          "_note": "✅ Orphaned Vista vitals DFN mapped 2025-12-19 - enables vitals testing at site 500"
+        },
+        {
           "sta3n": "630",
           "name": "PALO_ALTO",
           "dfn": "630013",
           "first_seen": "2019-08-22",
           "last_seen": "T-3",
-          "_note": "Single-site patient - all care at this facility only"
+          "_note": "Original DFN - primary site for this patient"
+        },
+        {
+          "sta3n": "630",
+          "name": "PALO_ALTO",
+          "dfn": "300001",
+          "first_seen": "2024-07-15",
+          "last_seen": "T-0",
+          "_note": "✅ Orphaned Vista vitals DFN mapped 2025-12-19 - enables additional vitals testing"
+        },
+        {
+          "sta3n": "630",
+          "name": "PALO_ALTO",
+          "dfn": "300002",
+          "first_seen": "2024-06-01",
+          "last_seen": "T-0",
+          "_note": "✅ Orphaned Vista vitals DFN mapped 2025-12-19 - enables additional vitals testing"
+        },
+        {
+          "sta3n": "630",
+          "name": "PALO_ALTO",
+          "dfn": "630002",
+          "first_seen": "2024-05-20",
+          "last_seen": "T-0",
+          "_note": "✅ Orphaned Vista vitals DFN mapped 2025-12-19 - enables additional vitals testing"
         }
       ]
     }

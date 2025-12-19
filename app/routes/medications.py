@@ -19,6 +19,7 @@ from app.db.medications import (
     get_medication_counts
 )
 from app.db.patient import get_patient_demographics
+from app.utils.template_context import get_base_context
 
 # API router for medications endpoints
 router = APIRouter(prefix="/api/patient", tags=["medications"])
@@ -261,11 +262,11 @@ async def get_medications_page(
             logger.warning(f"Patient {icn} not found")
             return templates.TemplateResponse(
                 "patient_medications.html",
-                {
-                    "request": request,
-                    "patient": None,
-                    "error": "Patient not found"
-                }
+                get_base_context(
+                    request,
+                    patient=None,
+                    error="Patient not found"
+                )
             )
 
         # Normalize medication_type filter
@@ -306,29 +307,29 @@ async def get_medications_page(
 
         return templates.TemplateResponse(
             "patient_medications.html",
-            {
-                "request": request,
-                "patient": patient,
-                "medications": medications,
-                "counts": counts,
-                "medication_type_filter": medication_type or "all",
-                "status_filter": status,
-                "days_filter": days,
-                "sort_by": sort_by,
-                "sort_order": sort_order,
-                "total_count": len(medications),
-                "active_page": "medications"
-            }
+            get_base_context(
+                request,
+                patient=patient,
+                medications=medications,
+                counts=counts,
+                medication_type_filter=medication_type or "all",
+                status_filter=status,
+                days_filter=days,
+                sort_by=sort_by,
+                sort_order=sort_order,
+                total_count=len(medications),
+                active_page="medications"
+            )
         )
 
     except Exception as e:
         logger.error(f"Error loading medications page for {icn}: {e}")
         return templates.TemplateResponse(
             "patient_medications.html",
-            {
-                "request": request,
-                "patient": None,
-                "error": str(e),
-                "active_page": "medications"
-            }
+            get_base_context(
+                request,
+                patient=None,
+                error=str(e),
+                active_page="medications"
+            )
         )

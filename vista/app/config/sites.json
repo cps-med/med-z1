@@ -1,0 +1,24 @@
+{
+  "sites": [
+    {
+      "sta3n": "200",
+      "name": "ALEXANDRIA",
+      "description": "Alexandria VA Medical Center"
+    },
+    {
+      "sta3n": "500",
+      "name": "ANCHORAGE",
+      "description": "Anchorage VA Medical Center"
+    },
+    {
+      "sta3n": "630",
+      "name": "PALO_ALTO",
+      "description": "Palo Alto VA Medical Center"
+    }
+  ],
+  "metadata": {
+    "version": "1.0",
+    "last_updated": "2025-12-19",
+    "description": "VistA site registry for RPC Broker Simulator"
+  }
+}

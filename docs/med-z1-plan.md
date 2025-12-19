@@ -529,7 +529,7 @@ Vista RPC Broker development is planned for **after core clinical domains are im
 
 **Configuration:**
 - Vista service URL: `VISTA_SERVICE_URL = "http://localhost:8003"` (dev environment)
-- Site registry: `vista/config/sites.json`
+- Site registry: `vista/app/config/sites.json` ✅
 - Patient data: `mock/shared/patient_registry.json`
 
 ---

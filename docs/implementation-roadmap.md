@@ -2404,8 +2404,9 @@ vista/
   data/
     sites/
       200/, 500/, 630/         # Per-site JSON data files
-  config/
-    sites.json                 # Site registry
+  app/
+    config/
+      sites.json               # Site registry (sta3n, names, descriptions)
 ```
 
 ### Realtime Overlay Service (Phase 6-7 Enhancement)

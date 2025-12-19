@@ -344,20 +344,30 @@ Response: `"-1^Patient ICN100013 not registered at site 200"`
 vista/
   app/
     main.py                    # FastAPI application
+    config/
+      sites.json               # ✅ Site registry configuration
+    data/
+      sites/
+        200/vitals.json        # Site-specific clinical data
+        500/vitals.json
+        630/vitals.json
     services/
       data_loader.py           # ICN→DFN resolution, patient registry
       rpc_handler.py           # Base RPC handler interface
       rpc_registry.py          # Handler registration and dispatch
     handlers/
-      demographics.py          # ORWPT* RPCs
-      # Future: vitals.py, allergies.py, medications.py
+      demographics.py          # ORWPT* RPCs (Patient Inquiry)
+      vitals.py                # GMV* RPCs (Latest Vitals)
     utils/
       m_serializer.py          # VistA format conversion
   tests/
+    test_api_integration.py
     test_data_loader.py
-    test_rpc_registry.py
-    test_m_serializer.py
     test_demographics_handler.py
+    test_m_serializer.py
+    test_rpc_registry.py
+    test_sites_config.py       # ✅ Tests for sites.json loading
+    test_vitals_handler.py
   README.md                    # This file
 ```
 
@@ -596,15 +606,39 @@ if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8003, log_level="info")
 ```
 
-**Site configuration:**
-```python
-# vista/app/main.py
-SITES = {
-    "200": {"name": "ALEXANDRIA", "sta3n": "200"},
-    "500": {"name": "ANCHORAGE", "sta3n": "500"},
-    "630": {"name": "PALO_ALTO", "sta3n": "630"},
+**Site configuration:** ✅ **Updated 2025-12-19**
+```json
+# vista/app/config/sites.json
+{
+  "sites": [
+    {
+      "sta3n": "200",
+      "name": "ALEXANDRIA",
+      "description": "Alexandria VA Medical Center"
+    },
+    {
+      "sta3n": "500",
+      "name": "ANCHORAGE",
+      "description": "Anchorage VA Medical Center"
+    },
+    {
+      "sta3n": "630",
+      "name": "PALO_ALTO",
+      "description": "Palo Alto VA Medical Center"
+    }
+  ],
+  "metadata": {
+    "version": "1.0",
+    "last_updated": "2025-12-19",
+    "description": "VistA site registry for RPC Broker Simulator"
+  }
 }
 ```
+
+**Configuration loading:**
+- Sites are loaded at startup via `load_sites_config()` in `vista/app/main.py`
+- Reads `vista/app/config/sites.json` and converts to dictionary keyed by `sta3n`
+- To add/remove/modify sites: Edit `sites.json` and restart the service
 
 **Patient registry location:**
 ```

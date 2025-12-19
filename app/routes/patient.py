@@ -12,6 +12,7 @@ from fastapi.templating import Jinja2Templates
 import logging
 
 from app.utils.ccow_client import ccow_client
+from app.utils.template_context import get_base_context
 from app.db.patient import get_patient_demographics, search_patients
 from app.db.patient_flags import (
     get_patient_flags,
@@ -469,11 +470,11 @@ async def get_allergies_page(request: Request, icn: str):
             logger.warning(f"Patient {icn} not found")
             return templates.TemplateResponse(
                 "allergies.html",
-                {
-                    "request": request,
-                    "patient": None,
-                    "error": "Patient not found"
-                }
+                get_base_context(
+                    request,
+                    patient=None,
+                    error="Patient not found"
+                )
             )
 
         # Get all allergies for patient
@@ -491,32 +492,32 @@ async def get_allergies_page(request: Request, icn: str):
 
         return templates.TemplateResponse(
             "allergies.html",
-            {
-                "request": request,
-                "patient": patient,
-                "allergies": allergies,
-                "drug_allergies": drug_allergies,
-                "food_allergies": food_allergies,
-                "environmental_allergies": environmental_allergies,
-                "total_count": counts["total"],
-                "drug_count": counts["drug"],
-                "food_count": counts["food"],
-                "environmental_count": counts["environmental"],
-                "severe_count": counts["severe"],
-                "active_page": "allergies"
-            }
+            get_base_context(
+                request,
+                patient=patient,
+                allergies=allergies,
+                drug_allergies=drug_allergies,
+                food_allergies=food_allergies,
+                environmental_allergies=environmental_allergies,
+                total_count=counts["total"],
+                drug_count=counts["drug"],
+                food_count=counts["food"],
+                environmental_count=counts["environmental"],
+                severe_count=counts["severe"],
+                active_page="allergies"
+            )
         )
 
     except Exception as e:
         logger.error(f"Error loading allergies page for {icn}: {e}")
         return templates.TemplateResponse(
             "allergies.html",
-            {
-                "request": request,
-                "patient": None,
-                "error": str(e),
-                "active_page": "allergies"
-            }
+            get_base_context(
+                request,
+                patient=None,
+                error=str(e),
+                active_page="allergies"
+            )
         )
 
 

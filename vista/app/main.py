@@ -8,6 +8,7 @@
 import logging
 import asyncio
 import random
+import json
 import sys
 from typing import List, Dict, Any, Optional
 from pathlib import Path
@@ -41,12 +42,57 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-# Site configurations
-SITES = {
-    "200": {"name": "ALEXANDRIA", "sta3n": "200"},
-    "500": {"name": "ANCHORAGE", "sta3n": "500"},
-    "630": {"name": "PALO_ALTO", "sta3n": "630"},
-}
+
+def load_sites_config() -> Dict[str, Dict[str, str]]:
+    """
+    Load site configurations from sites.json.
+
+    Returns:
+        Dictionary mapping sta3n to site metadata (name, description)
+
+    Raises:
+        FileNotFoundError: If sites.json is not found
+        json.JSONDecodeError: If sites.json contains invalid JSON
+
+    Example:
+        {
+            "200": {"name": "ALEXANDRIA", "sta3n": "200", "description": "..."},
+            "500": {"name": "ANCHORAGE", "sta3n": "500", "description": "..."},
+            ...
+        }
+    """
+    config_path = Path(__file__).parent / "config" / "sites.json"
+
+    try:
+        with open(config_path, 'r') as f:
+            config = json.load(f)
+
+        # Convert list to dictionary keyed by sta3n
+        sites = {}
+        for site in config.get("sites", []):
+            sta3n = site["sta3n"]
+            sites[sta3n] = {
+                "name": site["name"],
+                "sta3n": sta3n,
+                "description": site.get("description", "")
+            }
+
+        logger.info(f"Loaded {len(sites)} sites from {config_path}")
+        return sites
+
+    except FileNotFoundError:
+        logger.error(f"Sites configuration not found at {config_path}")
+        raise
+    except json.JSONDecodeError as e:
+        logger.error(f"Invalid JSON in sites configuration: {e}")
+        raise
+    except KeyError as e:
+        logger.error(f"Missing required field in sites configuration: {e}")
+        raise
+
+
+# Load site configurations from JSON file
+SITES = load_sites_config()
 
 # Global registry per site
 # Each site gets its own DataLoader and RPCRegistry

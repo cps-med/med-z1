@@ -21,6 +21,7 @@ from app.db.encounters import (
     get_encounter_by_id
 )
 from app.db.patient import get_patient_demographics
+from app.utils.template_context import get_base_context
 
 # API router for encounters endpoints
 router = APIRouter(prefix="/api/patient", tags=["encounters"])
@@ -235,11 +236,11 @@ async def get_encounters_page(
             logger.warning(f"Patient {icn} not found")
             return templates.TemplateResponse(
                 "patient_encounters.html",
-                {
-                    "request": request,
-                    "patient": None,
-                    "error": "Patient not found"
-                }
+                get_base_context(
+                    request,
+                    patient=None,
+                    error="Patient not found"
+                )
             )
 
         # Get encounter counts for stats
@@ -277,31 +278,31 @@ async def get_encounters_page(
 
         return templates.TemplateResponse(
             "patient_encounters.html",
-            {
-                "request": request,
-                "patient": patient,
-                "encounters": encounters,
-                "counts": counts,
-                "filter_active": filter_active,
-                "filter_recent": filter_recent,
-                "total_count": total_count,
-                "page": page,
-                "page_size": page_size,
-                "total_pages": total_pages,
-                "has_prev": has_prev,
-                "has_next": has_next,
-                "active_page": "encounters"
-            }
+            get_base_context(
+                request,
+                patient=patient,
+                encounters=encounters,
+                counts=counts,
+                filter_active=filter_active,
+                filter_recent=filter_recent,
+                total_count=total_count,
+                page=page,
+                page_size=page_size,
+                total_pages=total_pages,
+                has_prev=has_prev,
+                has_next=has_next,
+                active_page="encounters"
+            )
         )
 
     except Exception as e:
         logger.error(f"Error loading encounters page for {icn}: {e}")
         return templates.TemplateResponse(
             "patient_encounters.html",
-            {
-                "request": request,
-                "patient": None,
-                "error": str(e),
-                "active_page": "encounters"
-            }
+            get_base_context(
+                request,
+                patient=None,
+                error=str(e),
+                active_page="encounters"
+            )
         )
