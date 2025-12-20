@@ -1,8 +1,8 @@
 # User Authentication Design Updates
 
-**Date**: 2025-12-18
-**Version**: v1.1
-**Changes**: Updated file locations and organizational strategy
+**Date**: 2025-12-20
+**Version**: v1.2
+**Changes**: Added session timeout timezone fix and CCOW v2.0 integration updates
 
 ---
 
@@ -116,6 +116,61 @@ With the design document updated, implementation can proceed with Phase 2:
 
 ---
 
+---
+
+## v1.2 Updates (December 20, 2025)
+
+### Session Timeout Timezone Fix
+
+**Issue**: Session expiry validation was comparing timezone-naive `expires_at` (from PostgreSQL) with timezone-aware `now()` (UTC), causing comparison errors.
+
+**Fix Location**: `ccow/auth_helper.py` line 112-115
+
+**Solution**:
+```python
+# Use timezone-naive comparison if expires_at is timezone-naive
+if expires_at.tzinfo is None:
+    now = datetime.now()  # Local time, no timezone
+else:
+    now = datetime.now(timezone.utc)  # UTC time
+```
+
+**Impact**:
+- CCOW Context Vault v2.0 session validation now works correctly
+- Session timeout properly enforces 15-minute sliding window
+- All manual and automated tests passing
+
+### CCOW v2.0 Integration
+
+**Integration Points**:
+1. CCOW vault calls `ccow/auth_helper.py::get_user_from_session()` to validate sessions
+2. Shares same `auth.sessions` and `auth.users` tables with med-z1 app
+3. Same session validation logic (active, not expired, user active)
+4. Session timeout extends on every authenticated request in both med-z1 app AND CCOW vault
+
+**New Documentation**:
+- `docs/session-timeout-behavior.md` - Complete session timeout behavior guide
+- `docs/environment-variables-guide.md` - Environment variable configuration
+- `docs/ccow-v2-implementation-summary.md` - CCOW v2.0 completion summary
+- `docs/ccow-v2-testing-guide.md` - API testing guide for curl/Insomnia
+
+### Configuration Updates
+
+**New Environment Variables** (added to `.env`):
+```bash
+# Session timeout configuration
+SESSION_TIMEOUT_MINUTES=15
+SESSION_COOKIE_NAME=session_id
+SESSION_COOKIE_SECURE=false        # true in production
+SESSION_COOKIE_HTTPONLY=true       # XSS protection
+SESSION_COOKIE_SAMESITE=lax        # CSRF protection
+```
+
+**See**: `docs/environment-variables-guide.md` for complete guide
+
+---
+
 **Document Version History:**
 - v1.0 (2025-12-17): Initial design with `mock/users/` approach
 - v1.1 (2025-12-18): Updated to `db/seeds/` approach for semantic correctness
+- v1.2 (2025-12-20): Added session timeout timezone fix and CCOW v2.0 integration details

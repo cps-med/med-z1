@@ -1,12 +1,32 @@
 # CCOW Context Vault – Consolidated Design & Implementation Guide
 
-December 7, 2025 • Document version v1.1 (updated configuration guidance)
+December 20, 2025 • Document version v1.2 (v2.0 completion update)
 
-> **Note**  
+> **Note**
 > This document consolidates and refines the earlier design specs:
 > - `ccow-context-vault-design.md`
-> - `ccow-design-chatgpt-v3.md`  
-> It is intended to be the **single source of truth** for the CCOW Context Vault implementation going forward.
+> - `ccow-design-chatgpt-v3.md`
+> It is intended to be the **baseline reference** for the CCOW Context Vault v1.1 implementation.
+
+> **✅ IMPORTANT: Multi-User Enhancement (v2.0) - COMPLETE**
+> **Version 1.1** (this document) describes the **single global context** implementation (baseline).
+> **Version 2.0** multi-user enhancement has been **COMPLETED** (December 20, 2025).
+>
+> **For current implementation status, see:**
+> - **Design Spec:** `docs/ccow-multi-user-enhancement.md` (v2.0 detailed design)
+> - **Implementation Summary:** `docs/ccow-v2-implementation-summary.md` (what was built)
+> - **Testing Guide:** `docs/ccow-v2-testing-guide.md` (how to test with curl/Insomnia)
+> - **Session Timeout:** `docs/session-timeout-behavior.md` (authentication integration)
+>
+> **Key v2.0 Features:**
+> - ✅ Per-user context isolation (multi-user support)
+> - ✅ Session-based authentication (PostgreSQL validation)
+> - ✅ Context persistence across logout/login
+> - ✅ History tracking (user/global scopes)
+> - ✅ Timezone-aware session validation
+> - ✅ Comprehensive test coverage (21 unit + 14 integration tests)
+>
+> This document (v1.1) remains useful for understanding the baseline architecture and foundational concepts.
 
 ---
 
@@ -1508,7 +1528,7 @@ These are explicitly **out of scope** for the initial implementation but align w
 
 ### 13.1 Near-Term
 
-* **Multi-user contexts** – per-user or per-session patient context
+* ✅ **Multi-user contexts** – per-user or per-session patient context (**COMPLETED: See `docs/ccow-multi-user-enhancement.md` for v2.0 design**)
 * **Persistent history** – store history in a database for longer-term auditing
 * **API authentication** – e.g., API key for write operations
 
@@ -1606,6 +1626,7 @@ curl http://localhost:8001/ccow/history
 | ------- | ---------- | ------ | ------------------------------------------ |
 | v1      | 2025-12-06 | You    | Consolidated design for CCOW Context Vault |
 | v1.1    | 2025-12-07 | You    | Enhanced Section 9 with detailed config.py and .env integration guidance, added step-by-step checklist |
+| v1.1.1  | 2025-12-20 | You    | Added notice about v2.0 multi-user enhancement design (see `docs/ccow-multi-user-enhancement.md`) |
 
 ---
 

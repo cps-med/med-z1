@@ -187,7 +187,7 @@ async def get_encounters_widget(request: Request, icn: str):
 # ============================================
 
 @page_router.get("/encounters")
-async def encounters_redirect():
+async def encounters_redirect(request: Request):
     """
     Redirect to current patient's encounters page.
     Gets patient from CCOW and redirects to /patient/{icn}/encounters.
@@ -195,7 +195,7 @@ async def encounters_redirect():
     """
     from app.utils.ccow_client import ccow_client
 
-    patient_icn = ccow_client.get_active_patient()
+    patient_icn = ccow_client.get_active_patient(request)
 
     if not patient_icn:
         logger.warning("No active patient in CCOW for encounters page")

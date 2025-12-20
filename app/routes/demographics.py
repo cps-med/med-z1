@@ -81,7 +81,7 @@ async def demographics_redirect(request: Request):
     """
     from app.utils.ccow_client import ccow_client
 
-    patient_icn = ccow_client.get_active_patient()
+    patient_icn = ccow_client.get_active_patient(request)
 
     if not patient_icn:
         logger.warning("No active patient in CCOW for demographics page")

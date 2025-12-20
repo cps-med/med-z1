@@ -40,8 +40,8 @@ async def get_current_patient(request: Request):
     Called on initial page load via HTMX (hx-trigger="load").
     """
     try:
-        # Query CCOW vault
-        patient_id = ccow_client.get_active_patient()
+        # Query CCOW vault (v2.0: pass request for session cookie)
+        patient_id = ccow_client.get_active_patient(request)
 
         if not patient_id:
             # No active patient in vault
@@ -96,8 +96,8 @@ async def set_patient_context(request: Request):
         if not icn:
             raise HTTPException(status_code=400, detail="ICN required")
 
-        # Update CCOW vault
-        success = ccow_client.set_active_patient(patient_id=icn, set_by="med-z1")
+        # Update CCOW vault (v2.0: pass request for session cookie)
+        success = ccow_client.set_active_patient(request, patient_id=icn, set_by="med-z1")
 
         if not success:
             logger.warning(f"Failed to set CCOW context for {icn}")
@@ -209,8 +209,8 @@ async def get_patient_flags_modal_content(request: Request):
     Returns formatted HTML with all patient flags (active and inactive).
     """
     try:
-        # Get current patient from CCOW
-        patient_id = ccow_client.get_active_patient()
+        # Get current patient from CCOW (v2.0: pass request for session cookie)
+        patient_id = ccow_client.get_active_patient(request)
 
         if not patient_id:
             logger.warning("No patient context in CCOW when flags modal opened")
@@ -440,7 +440,8 @@ async def allergies_redirect(request: Request):
     """
     from fastapi.responses import RedirectResponse
 
-    patient_icn = ccow_client.get_active_patient()
+    # v2.0: pass request for session cookie
+    patient_icn = ccow_client.get_active_patient(request)
 
     if not patient_icn:
         logger.warning("No active patient in CCOW for allergies page")

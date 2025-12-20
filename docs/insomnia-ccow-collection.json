@@ -1,0 +1,245 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2025-12-20T19:00:00.000Z",
+  "__export_source": "insomnia.desktop.app:v2023.5.8",
+  "resources": [
+    {
+      "_id": "req_ccow_health",
+      "parentId": "fld_ccow",
+      "modified": 1703098800000,
+      "created": 1703098800000,
+      "url": "http://localhost:8001/ccow/health",
+      "name": "Health Check (No Auth)",
+      "description": "Public endpoint - no authentication required",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -1703098800000,
+      "_type": "request"
+    },
+    {
+      "_id": "req_ccow_get_patient",
+      "parentId": "fld_ccow",
+      "modified": 1703098801000,
+      "created": 1703098801000,
+      "url": "http://localhost:8001/ccow/active-patient",
+      "name": "Get Active Patient",
+      "description": "IMPORTANT: Replace YOUR_SESSION_ID in Cookie header below",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Cookie",
+          "value": "session_id=YOUR_SESSION_ID_HERE",
+          "description": "Replace with actual session_id from browser"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1703098801000,
+      "_type": "request"
+    },
+    {
+      "_id": "req_ccow_set_patient",
+      "parentId": "fld_ccow",
+      "modified": 1703098802000,
+      "created": 1703098802000,
+      "url": "http://localhost:8001/ccow/active-patient",
+      "name": "Set Active Patient",
+      "description": "IMPORTANT: Replace YOUR_SESSION_ID in Cookie header below",
+      "method": "PUT",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"patient_id\": \"ICN100001\",\n  \"set_by\": \"insomnia-test\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Cookie",
+          "value": "session_id=YOUR_SESSION_ID_HERE",
+          "description": "Replace with actual session_id from browser"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1703098802000,
+      "_type": "request"
+    },
+    {
+      "_id": "req_ccow_clear_patient",
+      "parentId": "fld_ccow",
+      "modified": 1703098803000,
+      "created": 1703098803000,
+      "url": "http://localhost:8001/ccow/active-patient",
+      "name": "Clear Active Patient",
+      "description": "IMPORTANT: Replace YOUR_SESSION_ID in Cookie header below",
+      "method": "DELETE",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"cleared_by\": \"insomnia-test\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Cookie",
+          "value": "session_id=YOUR_SESSION_ID_HERE",
+          "description": "Replace with actual session_id from browser"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1703098803000,
+      "_type": "request"
+    },
+    {
+      "_id": "req_ccow_history_user",
+      "parentId": "fld_ccow",
+      "modified": 1703098804000,
+      "created": 1703098804000,
+      "url": "http://localhost:8001/ccow/history?scope=user",
+      "name": "Get History (User Scope)",
+      "description": "IMPORTANT: Replace YOUR_SESSION_ID in Cookie header below",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        {
+          "name": "scope",
+          "value": "user"
+        }
+      ],
+      "headers": [
+        {
+          "name": "Cookie",
+          "value": "session_id=YOUR_SESSION_ID_HERE",
+          "description": "Replace with actual session_id from browser"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1703098804000,
+      "_type": "request"
+    },
+    {
+      "_id": "req_ccow_history_global",
+      "parentId": "fld_ccow",
+      "modified": 1703098805000,
+      "created": 1703098805000,
+      "url": "http://localhost:8001/ccow/history?scope=global",
+      "name": "Get History (Global Scope)",
+      "description": "IMPORTANT: Replace YOUR_SESSION_ID in Cookie header below",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        {
+          "name": "scope",
+          "value": "global"
+        }
+      ],
+      "headers": [
+        {
+          "name": "Cookie",
+          "value": "session_id=YOUR_SESSION_ID_HERE",
+          "description": "Replace with actual session_id from browser"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1703098805000,
+      "_type": "request"
+    },
+    {
+      "_id": "req_ccow_all_contexts",
+      "parentId": "fld_ccow",
+      "modified": 1703098806000,
+      "created": 1703098806000,
+      "url": "http://localhost:8001/ccow/active-patients",
+      "name": "Get All Active Contexts (Admin)",
+      "description": "IMPORTANT: Replace YOUR_SESSION_ID in Cookie header below",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Cookie",
+          "value": "session_id=YOUR_SESSION_ID_HERE",
+          "description": "Replace with actual session_id from browser"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1703098806000,
+      "_type": "request"
+    },
+    {
+      "_id": "req_ccow_cleanup",
+      "parentId": "fld_ccow",
+      "modified": 1703098807000,
+      "created": 1703098807000,
+      "url": "http://localhost:8001/ccow/cleanup",
+      "name": "Cleanup Stale Contexts (Admin)",
+      "description": "IMPORTANT: Replace YOUR_SESSION_ID in Cookie header below",
+      "method": "POST",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Cookie",
+          "value": "session_id=YOUR_SESSION_ID_HERE",
+          "description": "Replace with actual session_id from browser"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1703098807000,
+      "_type": "request"
+    },
+    {
+      "_id": "fld_ccow",
+      "parentId": "wrk_ccow",
+      "modified": 1703098799000,
+      "created": 1703098799000,
+      "name": "CCOW Context Vault v2.0",
+      "description": "Multi-user CCOW context management endpoints",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1703098799000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "wrk_ccow",
+      "parentId": null,
+      "modified": 1703098798000,
+      "created": 1703098798000,
+      "name": "med-z1 CCOW API",
+      "description": "",
+      "scope": "collection",
+      "_type": "workspace"
+    },
+    {
+      "_id": "env_ccow",
+      "parentId": "wrk_ccow",
+      "modified": 1703098797000,
+      "created": 1703098797000,
+      "name": "Base Environment",
+      "data": {
+        "base_url": "http://localhost:8001",
+        "session_id": "YOUR_SESSION_ID_HERE"
+      },
+      "dataPropertyOrder": {
+        "&": [
+          "base_url",
+          "session_id"
+        ]
+      },
+      "color": null,
+      "isPrivate": false,
+      "metaSortKey": 1703098797000,
+      "_type": "environment"
+    }
+  ]
+}

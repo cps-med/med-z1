@@ -30,8 +30,8 @@ async def get_dashboard(request: Request):
     clinical domain widgets for the active patient.
     """
     try:
-        # Get current patient from CCOW
-        patient_id = ccow_client.get_active_patient()
+        # Get current patient from CCOW (v2.0: pass request for session cookie)
+        patient_id = ccow_client.get_active_patient(request)
 
         patient = None
         if patient_id:

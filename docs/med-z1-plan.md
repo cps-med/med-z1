@@ -1,6 +1,6 @@
 # med-z1 – Product & Technical Development Plan
 
-December 18, 2025 • Document version v1.5
+December 20, 2025 • Document version v1.6
 
 > **Related Documentation:**
 > - **Tactical Implementation & Current Status:** See `implementation-roadmap.md` for detailed execution plan, current implementation status, and development phases
@@ -8,6 +8,7 @@ December 18, 2025 • Document version v1.5
 > - **Domain-Specific Specifications:** See `vitals-design.md`, `allergies-design.md`, `medications-design.md`, `patient-flags-design.md`, etc.
 
 **Changelog:**
+- **v1.6 (December 20, 2025):** Updated CCOW Context Management to v2.0 (multi-user enhancement complete). Added session timeout behavior documentation. Fixed timezone bug in session validation. See `docs/ccow-v2-implementation-summary.md`, `docs/session-timeout-behavior.md`, and `docs/environment-variables-guide.md`.
 - **v1.5 (December 18, 2025):** Added User Authentication and Management implementation status. All 8 authentication phases complete (database, routes, middleware, login UI, session management, testing). See `docs/user-auth-design.md` and `docs/auth-implementation-summary.md`.
 - **v1.4 (December 16, 2025):** Updated current status to reflect 7 clinical domains implemented (added Encounters). Noted Laboratory Results ETL completion (UI implementation pending). Updated "Next Priorities" section.
 - **v1.3 (December 15, 2025):** Refactored to focus on strategic vision and product planning. Removed redundant technical implementation details (now in `implementation-roadmap.md`). Updated current status to reflect 6 clinical domains implemented and Vista Phase 1 complete.
@@ -317,41 +318,54 @@ med-z1 implements a **medallion data architecture** (Bronze → Silver → Gold)
 
 > **For complete mock CDW schema details and conventions, see `docs/implementation-roadmap.md` Section 10.**
 
-### 4.5 CCOW Context Management
+### 4.5 CCOW Context Management (v2.0 - Multi-User)
 
 * **Purpose:**
 
   * Implement a simplified version of the HL7 CCOW (Clinical Context Object Workgroup) standard for **patient context synchronization** across applications.
   * Provide a **single source of truth** for the currently active patient context, enabling med-z1 and other clinical applications to stay synchronized during clinical workflows.
+  * **v2.0 Enhancement:** Support **multi-user context isolation** - each authenticated user maintains their own independent active patient context.
 
-* **Implementation:**
+* **Implementation (v2.0):**
 
   * **FastAPI service** running on port 8001 (separate from main app on port 8000).
-  * **Thread-safe in-memory vault** (`vault.py`) for managing current patient context and change history.
-  * **REST API endpoints** for getting, setting, and clearing active patient context.
-  * Pydantic models for request/response validation.
+  * **Thread-safe in-memory vault** (`vault.py`) with per-user context storage (dictionary keyed by `user_id`).
+  * **Session-based authentication** - validates `session_id` cookie against PostgreSQL `auth.sessions` table.
+  * **User context isolation** - `user_id` automatically extracted from validated session (prevents spoofing).
+  * **REST API endpoints** for getting, setting, and clearing active patient context (all require authentication).
+  * **Context persistence** - user's patient context survives logout/login cycles (supports multi-application workflows).
+  * **History tracking** - user-scoped and global context change history with filtering.
+  * **Stale context cleanup** - automatic removal of contexts inactive for 24+ hours.
+  * Pydantic models for request/response validation with `user_id`, `email`, and timestamps.
 
-* **Scope (Development/Testing):**
+* **Key Features (v2.0):**
 
-  * Mock/development implementation to demonstrate CCOW-like context synchronization patterns.
-  * Support local development and testing scenarios.
-  * Foundation for future production CCOW integration with real clinical applications.
-
-* **Explicitly Out of Scope (Phase 1):**
-
-  * Full CCOW standard compliance.
-  * Authentication/authorization.
-  * Persistent storage (vault resets on service restart).
-  * Multi-user or multi-session contexts.
-  * Real-time push notifications (WebSocket/SSE).
+  * ✅ **Multi-user isolation** - Each user has independent patient context
+  * ✅ **Session validation** - Direct PostgreSQL query for security
+  * ✅ **Context persistence** - Survives med-z1 logout (critical for multi-app workflows)
+  * ✅ **History filtering** - User-scoped (`scope=user`) or global (`scope=global`)
+  * ✅ **Admin endpoints** - Get all contexts, manual cleanup
+  * ✅ **Timezone-aware** - Fixed session expiry comparison bug
 
 * **Integration Points:**
 
-  * med-z1 web app (`app/`) will call CCOW service when user selects a patient.
-  * Future integration: external clinical applications (CPRS, imaging viewers, pharmacy systems) can query/set context.
-  * Configuration: `CCOW_BASE_URL = "http://localhost:8001"` in `.env`.
+  * med-z1 web app (`app/`) calls CCOW service when user selects a patient, forwards `session_id` cookie.
+  * All authenticated routes (dashboard, patient pages, etc.) get active patient from CCOW.
+  * Future integration: external clinical applications (CPRS, imaging viewers, pharmacy systems) can query/set context with their own session cookies.
+  * Configuration: `CCOW_ENABLED=true`, `CCOW_URL=http://localhost:8001` in `.env`.
 
-**Implementation Reference:** See `docs/ccow-vault-design.md` for complete technical specification, API documentation, and usage examples.
+* **Security Model (v2.0):**
+
+  * `session_id` cookie required for all context endpoints (except health check).
+  * `user_id` extracted from validated PostgreSQL session (not from request body).
+  * Session expiry, active status, and user active status all validated.
+  * Prevents user_id spoofing attacks.
+
+**Implementation Reference:**
+- **Design:** `docs/ccow-vault-design.md` (v1.1 baseline), `docs/ccow-multi-user-enhancement.md` (v2.0 spec)
+- **Implementation Summary:** `docs/ccow-v2-implementation-summary.md`
+- **Testing Guide:** `docs/ccow-v2-testing-guide.md`
+- **API Testing:** Use curl or Insomnia with `session_id` cookie (see testing guide)
 
 ### 4.6 AI & Agentic
 
@@ -568,25 +582,40 @@ med-z1/
 
 ## 6. Development Phases & Current Status
 
-### 6.1 Current Implementation Status (as of December 18, 2025)
+### 6.1 Current Implementation Status (as of December 20, 2025)
 
 **✅ Infrastructure & Data Pipeline: COMPLETE**
 - Medallion architecture (Bronze/Silver/Gold) operational with MinIO
 - PostgreSQL serving database with 36 patients
-- CCOW Context Vault service (port 8001)
+- **CCOW Context Vault v2.0** (port 8001) - Multi-user enhancement complete
 - Complete ETL pipeline working for all implemented domains
 
 **✅ User Authentication & Management: COMPLETE**
 - PostgreSQL `auth` schema with users, sessions, and audit_logs tables
 - Mock Microsoft Entra ID-style login page with email/password authentication
-- Server-side session management with 15-minute configurable timeout
+- Server-side session management with 15-minute configurable timeout (sliding window)
 - Single-session enforcement (one active session per user)
-- Authentication middleware with automatic session timeout extension
+- Authentication middleware with automatic session timeout extension on every request
 - User context display in sidebar with logout button
 - Comprehensive audit logging for all authentication events
 - 7 mock users with bcrypt password hashing
 - Complete test suite with 7 automated tests
-- **See:** `docs/user-auth-design.md` and `docs/auth-implementation-summary.md`
+- Timezone-aware session expiry validation (fixed timezone bug)
+- **See:** `docs/user-auth-design.md`, `docs/auth-implementation-summary.md`, `docs/session-timeout-behavior.md`
+
+**✅ CCOW Context Vault v2.0 - Multi-User Enhancement: COMPLETE** (December 20, 2025)
+- Per-user context isolation (`user_id`-keyed dictionary storage)
+- Session-based authentication (validates `session_id` cookie against PostgreSQL)
+- Security: `user_id` extracted from validated session (prevents spoofing)
+- Context persistence across med-z1 logout/login (supports multi-app workflows)
+- History tracking with user/global scoping
+- Admin endpoints (get all contexts, manual cleanup)
+- Stale context cleanup (24-hour threshold)
+- Updated all 7 route files to forward `request` object to CCOW client
+- Created `ccow/auth_helper.py` for session validation
+- Fixed timezone comparison bug in session validation
+- Comprehensive test suite (21 unit tests, 14 integration tests)
+- **See:** `docs/ccow-multi-user-enhancement.md` (design), `docs/ccow-v2-implementation-summary.md` (summary), `docs/ccow-v2-testing-guide.md` (API testing)
 
 **✅ Clinical Domains Implemented: 7 DOMAINS**
 1. **Dashboard** - Patient overview with clinical widgets (widget grid system)

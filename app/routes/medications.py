@@ -209,7 +209,7 @@ async def get_medications_widget(request: Request, icn: str):
 # ============================================
 
 @page_router.get("/medications")
-async def medications_redirect():
+async def medications_redirect(request: Request):
     """
     Redirect to current patient's medications page.
     Gets patient from CCOW and redirects to /patient/{icn}/medications.
@@ -218,7 +218,7 @@ async def medications_redirect():
     from fastapi.responses import RedirectResponse
     from app.utils.ccow_client import ccow_client
 
-    patient_icn = ccow_client.get_active_patient()
+    patient_icn = ccow_client.get_active_patient(request)
 
     if not patient_icn:
         logger.warning("No active patient in CCOW for medications page")

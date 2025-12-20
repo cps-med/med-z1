@@ -245,7 +245,7 @@ async def get_labs_widget(request: Request, icn: str):
 # ============================================
 
 @page_router.get("/labs")
-async def labs_redirect():
+async def labs_redirect(request: Request):
     """
     Redirect to current patient's labs page.
     Gets patient from CCOW and redirects to /patient/{icn}/labs.
@@ -253,7 +253,7 @@ async def labs_redirect():
     """
     from app.utils.ccow_client import ccow_client
 
-    patient_icn = ccow_client.get_active_patient()
+    patient_icn = ccow_client.get_active_patient(request)
 
     if not patient_icn:
         logger.warning("No active patient in CCOW for labs page")
