@@ -1,0 +1,123 @@
+{# Vista Refresh Area Partial - allergies content #}
+{# This partial is returned by the /patient/{icn}/allergies/realtime endpoint #}
+{# and replaces the #vista-refresh-area div via HTMX outerHTML swap #}
+
+<!-- Vista Refresh Area -->
+<div id="vista-refresh-area">
+
+<!-- Page Title Section -->
+<div class="page-header__title-group">
+    <h1 class="page-header__title">
+        Allergies & Adverse Reactions
+    </h1>
+</div>
+
+<!-- Summary Stats -->
+<div class="allergies-summary-bar">
+    <div class="allergy-stat-card">
+        <div class="allergy-stat-card__value">{{ total_count }}</div>
+        <div class="allergy-stat-card__label">Total Allergies</div>
+    </div>
+    <div class="allergy-stat-card">
+        <div class="allergy-stat-card__value">{{ drug_count }}</div>
+        <div class="allergy-stat-card__label">Drug Allergies</div>
+    </div>
+    <div class="allergy-stat-card">
+        <div class="allergy-stat-card__value">{{ food_count }}</div>
+        <div class="allergy-stat-card__label">Food Allergies</div>
+    </div>
+    <div class="allergy-stat-card">
+        <div class="allergy-stat-card__value">{{ environmental_count }}</div>
+        <div class="allergy-stat-card__label">Environmental</div>
+    </div>
+    {% if severe_count > 0 %}
+    <div class="allergy-stat-card allergy-stat-card--severe">
+        <div class="allergy-stat-card__value">{{ severe_count }}</div>
+        <div class="allergy-stat-card__label">Severe</div>
+    </div>
+    {% endif %}
+</div>
+
+{% if total_count == 0 %}
+    <!-- No Allergies State -->
+    <div class="empty-state">
+        <div class="empty-state__icon">
+            <i class="fa-solid fa-capsules fa-3x"></i>
+        </div>
+        <h3 class="empty-state__title">No Known Allergies</h3>
+        <p class="empty-state__message">This patient has no documented allergies or adverse reactions</p>
+    </div>
+{% else %}
+    <!-- Drug Allergies Section -->
+    {% if drug_allergies | length > 0 %}
+    <div class="allergies-section">
+        <div class="allergies-section__header">
+            <h2 class="allergies-section__title">
+                <i class="fa-solid fa-pills"></i>
+                Drug Allergies
+                <span class="allergies-section__count">{{ drug_allergies | length }}</span>
+            </h2>
+            <p class="allergies-section__description">Medications causing adverse reactions</p>
+        </div>
+        <div class="allergies-grid">
+            {% for allergy in drug_allergies %}
+                {% include 'partials/allergy_card.html' %}
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Food Allergies Section -->
+    {% if food_allergies | length > 0 %}
+    <div class="allergies-section">
+        <div class="allergies-section__header">
+            <h2 class="allergies-section__title">
+                <i class="fa-solid fa-apple-whole"></i>
+                Food Allergies
+                <span class="allergies-section__count">{{ food_allergies | length }}</span>
+            </h2>
+            <p class="allergies-section__description">Foods causing adverse reactions</p>
+        </div>
+        <div class="allergies-grid">
+            {% for allergy in food_allergies %}
+                {% include 'partials/allergy_card.html' %}
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Environmental Allergies Section -->
+    {% if environmental_allergies | length > 0 %}
+    <div class="allergies-section">
+        <div class="allergies-section__header">
+            <h2 class="allergies-section__title">
+                <i class="fa-solid fa-leaf"></i>
+                Environmental Allergies
+                <span class="allergies-section__count">{{ environmental_allergies | length }}</span>
+            </h2>
+            <p class="allergies-section__description">Environmental allergens and substances</p>
+        </div>
+        <div class="allergies-grid">
+            {% for allergy in environmental_allergies %}
+                {% include 'partials/allergy_card.html' %}
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+{% endif %}
+
+</div>
+<!-- End Vista Refresh Area -->
+
+{# Out-of-band swap to update the freshness message #}
+{# This updates the #freshness-message element outside the main swap target #}
+{% if vista_refreshed %}
+<span id="freshness-message" class="freshness-label" hx-swap-oob="true">
+    Data current through: {{ data_current_through }} (refreshed at {{ last_updated }})
+    {% if vista_sites %}
+    <span class="vista-sites-info" title="Data from {{ vista_sites | length }} VistA sites: {{ vista_sites | join(', ') }}">
+        <i class="fa-solid fa-server"></i> {{ vista_success_rate }}
+    </span>
+    {% endif %}
+</span>
+{% endif %}

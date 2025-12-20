@@ -1,0 +1,71 @@
+{
+  "site_sta3n": "630",
+  "site_name": "Palo Alto VA Medical Center",
+  "encounters": [
+    {
+      "dfn": "630001",
+      "inpatient_id": "730089",
+      "admit_datetime": "T-90.0815",
+      "admit_location": "4A GENERAL MED",
+      "status": "DISCHARGED",
+      "discharge_datetime": "T-85.1215",
+      "discharge_location": "HOME",
+      "length_of_stay": "5",
+      "diagnosis_code": "N18.3",
+      "admit_provider": "MARTINEZ,JENNIFER",
+      "_note": "ICN100001 (DOOREE, ADAM) - CKD management"
+    },
+    {
+      "dfn": "300001",
+      "inpatient_id": "730101",
+      "admit_datetime": "T-10.1915",
+      "admit_location": "GERIATRICS",
+      "status": "DISCHARGED",
+      "discharge_datetime": "T-5.1030",
+      "discharge_location": "SNF",
+      "length_of_stay": "5",
+      "diagnosis_code": "G30.9",
+      "admit_provider": "GARCIA,THOMAS",
+      "_note": "ICN100013 (THOMPSON, IRVING - orphaned DFN) - Dementia care"
+    },
+    {
+      "dfn": "300002",
+      "inpatient_id": "730045",
+      "admit_datetime": "T-35.1115",
+      "admit_location": "STROKE UNIT",
+      "status": "DISCHARGED",
+      "discharge_datetime": "T-28.0845",
+      "discharge_location": "REHAB",
+      "length_of_stay": "7",
+      "diagnosis_code": "I63.9",
+      "admit_provider": "RODRIGUEZ,MARIA",
+      "_note": "ICN100013 (orphaned DFN) - CVA, discharged to rehab"
+    },
+    {
+      "dfn": "630002",
+      "inpatient_id": "730112",
+      "admit_datetime": "T-5.2030",
+      "admit_location": "EMERGENCY",
+      "status": "DISCHARGED",
+      "discharge_datetime": "T-4.0915",
+      "discharge_location": "HOME",
+      "length_of_stay": "1",
+      "diagnosis_code": "R50.9",
+      "admit_provider": "LEE,KEVIN",
+      "_note": "ICN100013 (orphaned DFN) - Brief ER visit, fever evaluation"
+    },
+    {
+      "dfn": "630013",
+      "inpatient_id": "730123",
+      "admit_datetime": "T-2.0730",
+      "admit_location": "5B PULMONARY",
+      "status": "DISCHARGED",
+      "discharge_datetime": "T-0.1145",
+      "discharge_location": "HOME",
+      "length_of_stay": "2",
+      "diagnosis_code": "J44.1",
+      "admit_provider": "CLARK,NANCY",
+      "_note": "ICN100013 (correct DFN) - COPD exacerbation, discharged today"
+    }
+  ]
+}

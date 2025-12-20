@@ -1,7 +1,7 @@
 # VistA RPC Broker Simulator
 
-**Version:** 1.0.0
-**Status:** Phase 1 Complete - Production Ready for Single RPC
+**Version:** 1.4.0
+**Status:** Phase 4 Complete - Demographics, Vitals, Encounters, Allergies
 **Port:** 8003
 
 > **📝 Note:** When updating implementation or design, keep these docs in sync:
@@ -77,7 +77,7 @@ The VistA RPC Broker Simulator is a FastAPI-based HTTP service that simulates th
 └─────────────────────────────────────────────────┘
 ```
 
-### Current Capabilities (Phase 1)
+### Current Capabilities (Phase 2)
 
 **Sites:**
 - 200 (ALEXANDRIA)
@@ -86,11 +86,14 @@ The VistA RPC Broker Simulator is a FastAPI-based HTTP service that simulates th
 
 **RPCs Implemented:**
 - ✅ ORWPT PTINQ - Patient demographics inquiry
+- ✅ GMV LATEST VM - Latest vital signs (T-0, today)
+- ✅ ORWCV ADMISSIONS - Inpatient encounters/admissions (90 days)
+- ✅ ORQQAL LIST - Patient allergy list (all known allergies)
 
 **Test Patients:**
-- ICN100001 (Dooree, Adam) - Sites 200, 500, 630
-- ICN100010 (Aminor, Alexander) - Sites 200, 500
-- ICN100013 (Thompson, Irving) - Site 630 only
+- ICN100001 (Dooree, Adam) - Sites 200, 500, 630 (Vitals: 30, Encounters: 8, Allergies: 9)
+- ICN100010 (Aminor, Alexander) - Sites 200, 500 (Vitals: 20, Encounters: 5, Allergies: 9)
+- ICN100013 (Thompson, Irving) - Site 630 only (Vitals: 15, Encounters: 5, Allergies: 5)
 
 ---
 
@@ -117,9 +120,9 @@ python -m app.main
 ```
 INFO:     Started server process
 INFO:     Waiting for application startup.
-INFO:     Site 200 initialized: 1 RPCs, 2 patients
-INFO:     Site 500 initialized: 1 RPCs, 2 patients
-INFO:     Site 630 initialized: 1 RPCs, 2 patients
+INFO:     Site 200 initialized: 3 RPCs, 3 patients
+INFO:     Site 500 initialized: 3 RPCs, 2 patients
+INFO:     Site 630 initialized: 3 RPCs, 2 patients
 INFO:     VistA RPC Broker ready: 3 sites initialized
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://0.0.0.0:8003
@@ -348,9 +351,15 @@ vista/
       sites.json               # ✅ Site registry configuration
     data/
       sites/
-        200/vitals.json        # Site-specific clinical data
-        500/vitals.json
-        630/vitals.json
+        200/
+          vitals.json          # Site 200 vitals data
+          encounters.json      # Site 200 encounters data
+        500/
+          vitals.json          # Site 500 vitals data
+          encounters.json      # Site 500 encounters data
+        630/
+          vitals.json          # Site 630 vitals data
+          encounters.json      # Site 630 encounters data
     services/
       data_loader.py           # ICN→DFN resolution, patient registry
       rpc_handler.py           # Base RPC handler interface
@@ -358,17 +367,21 @@ vista/
     handlers/
       demographics.py          # ORWPT* RPCs (Patient Inquiry)
       vitals.py                # GMV* RPCs (Latest Vitals)
+      encounters.py            # ORWCV* RPCs (Admissions/Encounters)
+      allergies.py             # ORQQAL* RPCs (Allergies/Adverse Reactions)
     utils/
       m_serializer.py          # VistA format conversion
   tests/
     test_api_integration.py
     test_data_loader.py
     test_demographics_handler.py
+    test_encounters_handler.py # ✅ Added 2025-12-19
     test_m_serializer.py
     test_rpc_registry.py
     test_sites_config.py       # ✅ Tests for sites.json loading
     test_vitals_handler.py
   README.md                    # This file
+  TESTING_GUIDE.md             # ✅ Comprehensive testing guide
 ```
 
 ### Adding a New RPC Handler
@@ -488,7 +501,7 @@ python -m pytest vista/tests/ --cov=vista --cov-report=html
 
 **Expected output:**
 ```
-===== 82 passed in 0.03s =====
+===== 129 passed in 0.06s =====
 ```
 
 ### Run Specific Test Suite
@@ -505,6 +518,15 @@ python -m pytest vista/tests/test_m_serializer.py -v
 
 # Demographics handler tests
 python -m pytest vista/tests/test_demographics_handler.py -v
+
+# Vitals handler tests
+python -m pytest vista/tests/test_vitals_handler.py -v
+
+# Encounters handler tests
+python -m pytest vista/tests/test_encounters_handler.py -v
+
+# Allergies handler tests
+python -m pytest vista/tests/test_allergies_handler.py -v
 ```
 
 ### Integration Testing
@@ -541,13 +563,17 @@ curl -X POST 'http://localhost:8003/rpc/execute?site=200' \
 
 ### Test Coverage
 
-**Current coverage (Phase 1):**
+**Current coverage (Phase 2):**
 - DataLoader: 13 tests (100% coverage)
 - RPCRegistry: 19 tests (100% coverage)
 - M-Serializer: 34 tests (100% coverage)
+- Sites Config: 6 tests (100% coverage)
 - Demographics Handler: 16 tests (100% coverage)
+- Vitals Handler: 17 tests (100% coverage)
+- Encounters Handler: 24 tests (100% coverage)
+- Allergies Handler: 21 tests (100% coverage)
 
-**Total: 82 tests, 100% pass rate**
+**Total: 150 tests, 100% pass rate**
 
 ---
 
@@ -765,13 +791,13 @@ python -m pytest vista/tests/ -v
 
 ## Next Steps (Future Phases)
 
-**Phase 2-5 Roadmap:**
+**Phase 1-6 Roadmap:**
 - ✅ Phase 1: Single RPC (ORWPT PTINQ) - **COMPLETE**
-- ⏳ Phase 2: Multi-site support enhancements
-- ⏳ Phase 3: Demographics domain (3 RPCs total)
-- ⏳ Phase 4: Vitals domain (GMV* RPCs)
-- ⏳ Phase 5: Allergies & Medications domains
-- ⏳ Phase 6: Med-z1 integration (VistaClient)
+- ✅ Phase 2: Vitals domain (GMV LATEST VM) - **COMPLETE**
+- ✅ Phase 3: Encounters domain (ORWCV ADMISSIONS) - **COMPLETE**
+- ✅ Phase 4: Allergies domain (ORQQAL LIST) - **COMPLETE**
+- ⏳ Phase 5: Medications domains (ORWPS* RPCs)
+- ⏳ Phase 6: Med-z1 UI integration enhancements
 
 ---
 
@@ -792,6 +818,6 @@ python -m pytest vista/tests/ -v
 
 ---
 
-**Last Updated:** 2025-12-15
-**Phase:** 1 (Complete)
-**Version:** 1.0.0
+**Last Updated:** 2025-12-19
+**Phase:** 4 (Complete - Demographics, Vitals, Encounters, Allergies)
+**Version:** 1.4.0

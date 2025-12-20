@@ -1,0 +1,84 @@
+{
+  "site_sta3n": "200",
+  "site_name": "Alexandria VA Medical Center",
+  "encounters": [
+    {
+      "dfn": "100001",
+      "inpatient_id": "285001",
+      "admit_datetime": "T-7.1430",
+      "admit_location": "7A MED/SURG",
+      "status": "DISCHARGED",
+      "discharge_datetime": "T-2.1015",
+      "discharge_location": "HOME",
+      "length_of_stay": "5",
+      "diagnosis_code": "I50.9",
+      "admit_provider": "DOE,JOHN",
+      "_note": "ICN100001 (DOOREE, ADAM) - Recent discharge, CHF admission"
+    },
+    {
+      "dfn": "100001",
+      "inpatient_id": "284512",
+      "admit_datetime": "T-45.0830",
+      "admit_location": "EMERGENCY",
+      "status": "DISCHARGED",
+      "discharge_datetime": "T-43.1645",
+      "discharge_location": "HOME",
+      "length_of_stay": "2",
+      "diagnosis_code": "J18.9",
+      "admit_provider": "SMITH,JANE",
+      "_note": "ICN100001 - Historical encounter, pneumonia"
+    },
+    {
+      "dfn": "100002",
+      "inpatient_id": "285023",
+      "admit_datetime": "T-0.0830",
+      "admit_location": "ICU",
+      "status": "ACTIVE",
+      "discharge_datetime": "",
+      "discharge_location": "",
+      "length_of_stay": "0",
+      "diagnosis_code": "J96.00",
+      "admit_provider": "WILLIAMS,ROBERT",
+      "_note": "ICN100010 (AMINOR, ALEXANDER) - Active admission today, respiratory failure"
+    },
+    {
+      "dfn": "100002",
+      "inpatient_id": "284801",
+      "admit_datetime": "T-30.1230",
+      "admit_location": "4B CARDIOLOGY",
+      "status": "DISCHARGED",
+      "discharge_datetime": "T-25.0915",
+      "discharge_location": "SNF",
+      "length_of_stay": "5",
+      "diagnosis_code": "I21.9",
+      "admit_provider": "JOHNSON,MICHAEL",
+      "_note": "ICN100010 - Recent MI, discharged to SNF"
+    },
+    {
+      "dfn": "100003",
+      "inpatient_id": "284923",
+      "admit_datetime": "T-15.1530",
+      "admit_location": "5C ORTHOPEDICS",
+      "status": "DISCHARGED",
+      "discharge_datetime": "T-12.1030",
+      "discharge_location": "HOME",
+      "length_of_stay": "3",
+      "diagnosis_code": "S72.001A",
+      "admit_provider": "DAVIS,SARAH",
+      "_note": "ICN100013 (THOMPSON, IRVING) - Hip fracture, recent discharge"
+    },
+    {
+      "dfn": "100010",
+      "inpatient_id": "285034",
+      "admit_datetime": "T-1.2145",
+      "admit_location": "EMERGENCY",
+      "status": "DISCHARGED",
+      "discharge_datetime": "T-0.0845",
+      "discharge_location": "HOME",
+      "length_of_stay": "1",
+      "diagnosis_code": "R10.9",
+      "admit_provider": "BROWN,PATRICIA",
+      "_note": "ICN100010 (correct DFN) - ER visit, observation, discharged today"
+    }
+  ]
+}

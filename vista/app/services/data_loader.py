@@ -290,3 +290,97 @@ class DataLoader:
         except Exception as e:
             logger.error(f"Error loading vitals data: {e}")
             return None
+
+    def load_encounters(self) -> Optional[Dict[str, Any]]:
+        """
+        Load encounters data for this site from JSON file.
+
+        Supports both FileMan format and T-notation for date_time fields.
+        T-notation dates are automatically converted to today's equivalent FileMan format.
+
+        Returns:
+            Dictionary with encounters data, or None if file not found
+
+        File location: vista/app/data/sites/{sta3n}/encounters.json
+        """
+        try:
+            # Construct path to encounters data file
+            # Assume structure: vista/app/data/sites/{sta3n}/encounters.json
+            vista_root = Path(__file__).parent.parent
+            encounters_path = vista_root / "data" / "sites" / self.site_sta3n / "encounters.json"
+
+            if not encounters_path.exists():
+                logger.warning(f"Encounters data file not found: {encounters_path}")
+                return None
+
+            with open(encounters_path, 'r') as f:
+                encounters_data = json.load(f)
+
+            # Convert T-notation dates to FileMan format
+            encounters_list = encounters_data.get("encounters", [])
+            for encounter in encounters_list:
+                # Convert admit_datetime
+                if "admit_datetime" in encounter:
+                    original = encounter["admit_datetime"]
+                    converted = self.parse_t_notation_to_fileman(original)
+                    encounter["admit_datetime"] = converted
+
+                # Convert discharge_datetime (may be empty for active admissions)
+                if "discharge_datetime" in encounter and encounter["discharge_datetime"]:
+                    original = encounter["discharge_datetime"]
+                    converted = self.parse_t_notation_to_fileman(original)
+                    encounter["discharge_datetime"] = converted
+
+            logger.debug(f"Loaded encounters data from {encounters_path}")
+            return encounters_data
+
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON in encounters data file: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Error loading encounters data: {e}")
+            return None
+
+    def load_allergies(self) -> Optional[Dict[str, Any]]:
+        """
+        Load allergies data for this site from JSON file.
+
+        Supports both FileMan format and T-notation for reaction_datetime fields.
+        T-notation dates are automatically converted to today's equivalent FileMan format.
+
+        Returns:
+            Dictionary with allergies data, or None if file not found
+
+        File location: vista/app/data/sites/{sta3n}/allergies.json
+        """
+        try:
+            # Construct path to allergies data file
+            # Assume structure: vista/app/data/sites/{sta3n}/allergies.json
+            vista_root = Path(__file__).parent.parent
+            allergies_path = vista_root / "data" / "sites" / self.site_sta3n / "allergies.json"
+
+            if not allergies_path.exists():
+                logger.warning(f"Allergies data file not found: {allergies_path}")
+                return None
+
+            with open(allergies_path, 'r') as f:
+                allergies_data = json.load(f)
+
+            # Convert T-notation dates to FileMan format
+            allergies_list = allergies_data.get("allergies", [])
+            for allergy in allergies_list:
+                # Convert reaction_datetime
+                if "reaction_datetime" in allergy:
+                    original = allergy["reaction_datetime"]
+                    converted = self.parse_t_notation_to_fileman(original)
+                    allergy["reaction_datetime"] = converted
+
+            logger.debug(f"Loaded allergies data from {allergies_path}")
+            return allergies_data
+
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON in allergies data file: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Error loading allergies data: {e}")
+            return None

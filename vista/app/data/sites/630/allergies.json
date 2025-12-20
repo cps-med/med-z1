@@ -1,0 +1,105 @@
+{
+  "site_sta3n": "630",
+  "site_name": "Palo Alto VA Medical Center",
+  "allergies": [
+    {
+      "dfn": "630001",
+      "allergen_name": "PENICILLIN",
+      "severity": "SEVERE",
+      "reaction_datetime": "T-250.0930",
+      "reactions": "HIVES,ANGIOEDEMA",
+      "allergy_type": "DRUG",
+      "originating_site": "630",
+      "entered_by": "ALLERGIST,JENNIFER",
+      "_note": "ICN100001 (DOOREE, ADAM) - Documented penicillin allergy"
+    },
+    {
+      "dfn": "630001",
+      "allergen_name": "EGGS",
+      "severity": "MILD",
+      "reaction_datetime": "T-600.1200",
+      "reactions": "HIVES",
+      "allergy_type": "FOOD",
+      "originating_site": "630",
+      "entered_by": "DIETITIAN,MARY",
+      "_note": "ICN100001 (DOOREE, ADAM) - Egg allergy"
+    },
+    {
+      "dfn": "630001",
+      "allergen_name": "MOLD",
+      "severity": "MODERATE",
+      "reaction_datetime": "T-420.0845",
+      "reactions": "COUGHING,WHEEZING",
+      "allergy_type": "ENVIRONMENTAL",
+      "originating_site": "630",
+      "entered_by": "PULMONOLOGIST,STEVEN",
+      "_note": "ICN100001 (DOOREE, ADAM) - Mold sensitivity"
+    },
+    {
+      "dfn": "630013",
+      "allergen_name": "SULFA DRUGS",
+      "severity": "SEVERE",
+      "reaction_datetime": "T-400.1030",
+      "reactions": "STEVENS-JOHNSON SYNDROME",
+      "allergy_type": "DRUG",
+      "originating_site": "630",
+      "entered_by": "DERMATOLOGIST,RACHEL",
+      "_note": "ICN100013 (THOMPSON, IRVING) - Severe sulfa reaction"
+    },
+    {
+      "dfn": "630013",
+      "allergen_name": "WHEAT",
+      "severity": "MODERATE",
+      "reaction_datetime": "T-700.0915",
+      "reactions": "ABDOMINAL PAIN,BLOATING",
+      "allergy_type": "FOOD",
+      "originating_site": "630",
+      "entered_by": "GASTROENTEROLOGIST,WILLIAM",
+      "_note": "ICN100013 (THOMPSON, IRVING) - Gluten sensitivity"
+    },
+    {
+      "dfn": "630013",
+      "allergen_name": "RAGWEED",
+      "severity": "MODERATE",
+      "reaction_datetime": "T-500.0800",
+      "reactions": "SNEEZING,RUNNY NOSE,ITCHY EYES",
+      "allergy_type": "ENVIRONMENTAL",
+      "originating_site": "630",
+      "entered_by": "NURSE,ANGELA",
+      "_note": "ICN100013 (THOMPSON, IRVING) - Seasonal allergies"
+    },
+    {
+      "dfn": "630013",
+      "allergen_name": "MORPHINE",
+      "severity": "MODERATE",
+      "reaction_datetime": "T-150.1445",
+      "reactions": "NAUSEA,VOMITING,CONFUSION",
+      "allergy_type": "DRUG",
+      "originating_site": "630",
+      "entered_by": "PAIN SPECIALIST,CHRISTOPHER",
+      "_note": "ICN100013 (THOMPSON, IRVING) - Morphine adverse reaction"
+    },
+    {
+      "dfn": "300001",
+      "allergen_name": "PENICILLIN",
+      "severity": "MODERATE",
+      "reaction_datetime": "T-650.1115",
+      "reactions": "RASH",
+      "allergy_type": "DRUG",
+      "originating_site": "630",
+      "entered_by": "PHARMACIST,LINDA",
+      "_note": "ICN100013 (THOMPSON, IRVING - mapped orphan DFN) - Penicillin sensitivity"
+    },
+    {
+      "dfn": "300002",
+      "allergen_name": "NSAIDS",
+      "severity": "MILD",
+      "reaction_datetime": "T-350.0930",
+      "reactions": "STOMACH UPSET,HEARTBURN",
+      "allergy_type": "DRUG",
+      "originating_site": "630",
+      "entered_by": "DOCTOR,NANCY",
+      "_note": "ICN100013 (THOMPSON, IRVING - mapped orphan DFN) - NSAID sensitivity"
+    }
+  ]
+}

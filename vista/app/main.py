@@ -19,6 +19,8 @@ from pydantic import BaseModel, Field
 
 from vista.app.services import DataLoader, RPCRegistry, RPCExecutionError
 from vista.app.handlers import PatientInquiryHandler, LatestVitalsHandler
+from vista.app.handlers.encounters import AdmissionsHandler
+from vista.app.handlers.allergies import AllergiesListHandler
 
 # Add project root to Python path for config import
 project_root = Path(__file__).resolve().parent.parent.parent
@@ -142,9 +144,10 @@ def initialize_site(sta3n: str) -> Dict[str, Any]:
     registry = RPCRegistry()
 
     # Register RPC handlers
-    # TODO: In Phase 3-5, register additional handlers here
     registry.register(PatientInquiryHandler())
     registry.register(LatestVitalsHandler())
+    registry.register(AdmissionsHandler())  # ✅ Added 2025-12-19
+    registry.register(AllergiesListHandler())  # ✅ Added 2025-12-19
 
     logger.info(
         f"Site {sta3n} initialized: "

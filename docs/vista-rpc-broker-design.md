@@ -1,13 +1,22 @@
 # VistA RPC Broker Simulator - Design Document
 
-**Document Version:** v1.7
-**Date:** 2025-12-17
-**Status:** Phase 1 & 2 COMPLETE - Ready for Phase 3 (Merge/Dedupe Logic)
+**Document Version:** v1.8
+**Date:** 2025-12-19
+**Status:** Phase 1 & 2 COMPLETE | Phase 3 IN PROGRESS (Encounters Domain)
 
 **📝 Documentation Update Policy:**
 When updating this design document with implementation progress or design changes, also update:
 - `vista/README.md` - Practical guide (API examples, endpoints, test coverage, capabilities)
 - `docs/implementation-roadmap.md` Section 11.3 - Phase 8 progress tracking
+
+**Changelog v1.8** (2025-12-19):
+- ✅ **Encounters Domain (ORWCV Namespace)** - Added Section 6.5
+- ✅ Specified `ORWCV ADMISSIONS` RPC for inpatient encounters
+- ✅ Defined VistA response format (9 fields, caret-delimited)
+- ✅ Documented merge/dedupe strategy for PostgreSQL + Vista data
+- ✅ Added canonical event key pattern for encounter deduplication
+- 📝 **Implementation scope:** Last 90 days, 3 sites, active + discharged encounters
+- 🎯 **Phase 3 target:** Mirror Vitals "Refresh from VistA" pattern exactly
 
 **Changelog v1.7** (2025-12-17):
 - ✅ **Phase 2 COMPLETE** - Multi-Site Support fully implemented
@@ -1962,19 +1971,59 @@ PULSE^72^/min^3241201.0930^NURSE,JANE
 TEMPERATURE^98.6^F^3241201.0930^NURSE,JANE
 ```
 
-### 6.3 Allergies (ORQQAL Namespace)
+### 6.3 Allergies (ORQQAL Namespace) ✅ Implemented 2025-12-19
+
+**RPC:** `ORQQAL LIST`
+
+**Purpose:** Returns complete patient allergy list with severity, reactions, and origination details.
+
+**Parameters:**
+- `params[0]`: ICN (Integrated Care Number) - automatically resolved to site-specific DFN
+
+**Response Format (VistA caret-delimited, multi-line):**
+```
+AllergenName^Severity^ReactionDateTime^Reactions^AllergyType^OriginatingSite^EnteredBy
+```
+
+**Field Definitions:**
+
+1. **AllergenName** - Allergen name (e.g., "PENICILLIN", "SHELLFISH", "LATEX")
+2. **Severity** - Severity level ("MILD" | "MODERATE" | "SEVERE")
+3. **ReactionDateTime** - FileMan date/time of first documented reaction (e.g., "3251215.1430")
+4. **Reactions** - Comma-separated reactions (e.g., "HIVES,ITCHING" or "ANAPHYLAXIS")
+5. **AllergyType** - Allergy category ("DRUG" | "FOOD" | "ENVIRONMENTAL")
+6. **OriginatingSite** - Site where allergy was first documented (e.g., "200", "500", "630")
+7. **EnteredBy** - Staff member who entered the allergy (e.g., "NURSE,JANE")
+
+**Example Response:**
+```
+PENICILLIN^SEVERE^3251120.0930^HIVES,ITCHING,RASH^DRUG^200^PHARMACIST,JOHN
+SHELLFISH^MODERATE^3250815.1445^NAUSEA,VOMITING^FOOD^200^NURSE,SARAH
+SULFA DRUGS^MILD^3241030.0800^RASH^DRUG^500^DOCTOR,EMILY
+LATEX^MODERATE^3230405.1020^CONTACT DERMATITIS^ENVIRONMENTAL^630^NURSE,MICHAEL
+```
+
+**Error Response:**
+```
+-1^Patient ICN999999 not found in registry
+-1^Patient ICN100010 not registered at site 630
+```
+
+**FileMan Date Format:**
+- Format: `YYYMMDD.HHMM` where YYY = year - 1700
+- Example: `3251215.1430` = December 15, 2025 at 14:30 (325 = 2025 - 1700)
+
+**Usage in med-z1:**
+- Endpoint: `POST /rpc/execute?site={sta3n}`
+- Request Body: `{"name": "ORQQAL LIST", "params": ["ICN100001"]}`
+- Used by: `/patient/{icn}/allergies/realtime` (Refresh from VistA button)
+
+**Related RPCs (future phases):**
 
 | RPC Name | Purpose | Parameters | Response Format |
 |----------|---------|------------|-----------------|
-| `ORQQAL LIST` | Get patient allergy list | `[DFN]` | Multi-line: `ALLERGEN^TYPE^REACTIONS^SEVERITY` |
 | `ORQQAL DETAIL` | Get allergy detail | `[DFN, ALLERGY_ID]` | Detailed allergy info |
 | `ORQQAL ALLERGY MATCH` | Match allergy by name | `[SEARCH_STRING]` | List of matching allergens |
-
-**Example Response (ORQQAL LIST)**:
-```
-PENICILLIN^DRUG^HIVES^MODERATE^VERIFIED
-PEANUTS^FOOD^ANAPHYLAXIS^SEVERE^VERIFIED
-```
 
 ### 6.4 Medications (ORWPS, PSO Namespaces)
 
@@ -1990,6 +2039,80 @@ PEANUTS^FOOD^ANAPHYLAXIS^SEVERE^VERIFIED
 2860066^LISINOPRIL 10MG TAB^ACTIVE^60/90^3^2024-11-15^2025-11-15
 2860067^METFORMIN 500MG TAB^ACTIVE^120/180^5^2024-11-15^2025-11-15
 ```
+
+### 6.5 Encounters (ORWCV Namespace) ✅ Added 2025-12-19
+
+| RPC Name | Purpose | Parameters | Response Format |
+|----------|---------|------------|-----------------|
+| `ORWCV ADMISSIONS` | Get inpatient admissions/discharges | `[ICN]` | Multi-line: `InpatientID^AdmitDateTime^Location^Status^DischargeDateTime^LOS` |
+| `ORWCV VST` | Visit/encounter list | `[DFN, START_DATE, END_DATE]` | Multi-line visit data |
+| `ORWCV DETAIL` | Encounter detail | `[DFN, ENCOUNTER_ID]` | Detailed encounter info |
+
+**RPC:** `ORWCV ADMISSIONS`
+
+**Purpose:** Retrieve inpatient admission and discharge information for a patient
+
+**Parameters:**
+- `ICN` (string): Patient Integrated Care Number
+- Optional: `DAYS_BACK` (integer): Number of days to look back (default: 90)
+
+**Response Format (VistA caret-delimited, multi-line):**
+```
+InpatientID^AdmitDateTime^AdmitLocation^Status^DischargeDateTime^DischargeLocation^LOS^DiagnosisCode^AdmitProvider
+```
+
+**Field Definitions:**
+1. **InpatientID**: Unique inpatient encounter identifier (e.g., "285001")
+2. **AdmitDateTime**: FileMan date/time of admission (e.g., "3251215.1430")
+3. **AdmitLocation**: Admission location (e.g., "7A MED/SURG")
+4. **Status**: Encounter status ("ACTIVE" | "DISCHARGED")
+5. **DischargeDateTime**: FileMan date/time of discharge (empty if active)
+6. **DischargeLocation**: Discharge location (empty if active)
+7. **LOS**: Length of stay in days (e.g., "5")
+8. **DiagnosisCode**: Primary diagnosis ICD-10 code (e.g., "I50.9")
+9. **AdmitProvider**: Admitting provider name (e.g., "DOE,JOHN")
+
+**Example Response (ORWCV ADMISSIONS)**:
+```
+285001^3251215.1430^7A MED/SURG^DISCHARGED^3251220.1015^DISCHARGE UNIT^5^I50.9^DOE,JOHN
+285023^3251218.0830^ICU^ACTIVE^^^0^J18.9^SMITH,JANE
+284987^3251201.2130^EMERGENCY^DISCHARGED^3251203.0945^HOME^2^R07.9^WILLIAMS,ROBERT
+```
+
+**Implementation Notes:**
+- **Date Format:** FileMan format (`YYYMMDD.HHMM` where YYY = year - 1700)
+- **Site-Specific Data:** Each VistA site returns only encounters at that facility
+- **Multi-Site Pattern:** Med-z1 app queries 3 sites by default, merges results
+- **Time Window:** Default 90 days (configurable via `DAYS_BACK` parameter)
+- **Merge/Dedupe:** Use `InpatientID^AdmitDateTime^Site` as canonical key
+- **Real-Time Data:** Returns T-0 (today) data for active admissions
+
+**Error Responses:**
+```
+-1^Patient not found                    # ICN not in registry
+-1^Patient not registered at site 200   # ICN→DFN resolution failed
+-1^No encounters found                  # Patient has no encounters
+```
+
+**Vista Format Details:**
+- Caret (`^`) delimiter between fields
+- Newline (`\n`) delimiter between encounters
+- Empty fields represented as empty string between carets
+- Active admissions have empty discharge fields
+
+**Canonical Event Key (for deduplication):**
+```python
+def get_encounter_key(encounter: dict) -> str:
+    """Generate unique key for encounter deduplication"""
+    return f"{encounter['inpatient_id']}^{encounter['admit_datetime']}^{encounter['site_sta3n']}"
+```
+
+**PostgreSQL Merge Rules:**
+- PostgreSQL data: T-1 and earlier (yesterday and before)
+- Vista data: T-0 (today, real-time)
+- Prefer Vista for T-0 encounters (active admissions)
+- Deduplicate by canonical key
+- Sort by admit_datetime DESC (most recent first)
 
 ---
 

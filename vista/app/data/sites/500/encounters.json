@@ -1,0 +1,58 @@
+{
+  "site_sta3n": "500",
+  "site_name": "Anchorage VA Medical Center",
+  "encounters": [
+    {
+      "dfn": "500001",
+      "inpatient_id": "590045",
+      "admit_datetime": "T-60.1015",
+      "admit_location": "3A MEDICAL",
+      "status": "DISCHARGED",
+      "discharge_datetime": "T-53.1430",
+      "discharge_location": "HOME",
+      "length_of_stay": "7",
+      "diagnosis_code": "E11.9",
+      "admit_provider": "ANDERSON,JAMES",
+      "_note": "ICN100001 (DOOREE, ADAM) - Diabetes management"
+    },
+    {
+      "dfn": "200001",
+      "inpatient_id": "590067",
+      "admit_datetime": "T-20.0915",
+      "admit_location": "CCU",
+      "status": "DISCHARGED",
+      "discharge_datetime": "T-17.1115",
+      "discharge_location": "REHAB",
+      "length_of_stay": "3",
+      "diagnosis_code": "I48.91",
+      "admit_provider": "MILLER,ELIZABETH",
+      "_note": "ICN100010 (AMINOR, ALEXANDER - orphaned DFN) - A-fib admission"
+    },
+    {
+      "dfn": "200002",
+      "inpatient_id": "590012",
+      "admit_datetime": "T-75.1330",
+      "admit_location": "2B SURGICAL",
+      "status": "DISCHARGED",
+      "discharge_datetime": "T-70.0930",
+      "discharge_location": "HOME",
+      "length_of_stay": "5",
+      "diagnosis_code": "K80.20",
+      "admit_provider": "TAYLOR,DAVID",
+      "_note": "ICN100013 (THOMPSON, IRVING - orphaned DFN) - Cholecystectomy"
+    },
+    {
+      "dfn": "500010",
+      "inpatient_id": "590078",
+      "admit_datetime": "T-0.1430",
+      "admit_location": "TELEMETRY",
+      "status": "ACTIVE",
+      "discharge_datetime": "",
+      "discharge_location": "",
+      "length_of_stay": "0",
+      "diagnosis_code": "I21.9",
+      "admit_provider": "WILSON,CHRISTOPHER",
+      "_note": "ICN100010 (correct DFN) - Active MI admission today"
+    }
+  ]
+}

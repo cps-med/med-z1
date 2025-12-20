@@ -1,0 +1,83 @@
+{
+  "site_sta3n": "200",
+  "site_name": "Alexandria VA Medical Center",
+  "allergies": [
+    {
+      "dfn": "100001",
+      "allergen_name": "PENICILLIN",
+      "severity": "SEVERE",
+      "reaction_datetime": "T-120.0930",
+      "reactions": "HIVES,ITCHING,RASH",
+      "allergy_type": "DRUG",
+      "originating_site": "200",
+      "entered_by": "PHARMACIST,JOHN",
+      "_note": "ICN100001 (DOOREE, ADAM) - Severe penicillin allergy"
+    },
+    {
+      "dfn": "100001",
+      "allergen_name": "SHELLFISH",
+      "severity": "MODERATE",
+      "reaction_datetime": "T-365.1445",
+      "reactions": "NAUSEA,VOMITING",
+      "allergy_type": "FOOD",
+      "originating_site": "200",
+      "entered_by": "NURSE,SARAH",
+      "_note": "ICN100001 (DOOREE, ADAM) - Shellfish allergy"
+    },
+    {
+      "dfn": "100001",
+      "allergen_name": "LATEX",
+      "severity": "MILD",
+      "reaction_datetime": "T-730.1020",
+      "reactions": "CONTACT DERMATITIS",
+      "allergy_type": "ENVIRONMENTAL",
+      "originating_site": "200",
+      "entered_by": "NURSE,MICHAEL",
+      "_note": "ICN100001 (DOOREE, ADAM) - Latex sensitivity"
+    },
+    {
+      "dfn": "100010",
+      "allergen_name": "SULFA DRUGS",
+      "severity": "MODERATE",
+      "reaction_datetime": "T-180.0800",
+      "reactions": "RASH,FEVER",
+      "allergy_type": "DRUG",
+      "originating_site": "200",
+      "entered_by": "DOCTOR,EMILY",
+      "_note": "ICN100010 (AMINOR, ALEXANDER) - Sulfa allergy"
+    },
+    {
+      "dfn": "100010",
+      "allergen_name": "PEANUTS",
+      "severity": "SEVERE",
+      "reaction_datetime": "T-1095.1630",
+      "reactions": "ANAPHYLAXIS,THROAT SWELLING",
+      "allergy_type": "FOOD",
+      "originating_site": "200",
+      "entered_by": "DOCTOR,LISA",
+      "_note": "ICN100010 (AMINOR, ALEXANDER) - Severe peanut allergy"
+    },
+    {
+      "dfn": "100010",
+      "allergen_name": "BEE STINGS",
+      "severity": "MODERATE",
+      "reaction_datetime": "T-900.1115",
+      "reactions": "SWELLING,DIFFICULTY BREATHING",
+      "allergy_type": "ENVIRONMENTAL",
+      "originating_site": "200",
+      "entered_by": "NURSE,KAREN",
+      "_note": "ICN100010 (AMINOR, ALEXANDER) - Bee sting allergy"
+    },
+    {
+      "dfn": "100003",
+      "allergen_name": "ASPIRIN",
+      "severity": "MILD",
+      "reaction_datetime": "T-450.0945",
+      "reactions": "STOMACH UPSET",
+      "allergy_type": "DRUG",
+      "originating_site": "200",
+      "entered_by": "PHARMACIST,DAVID",
+      "_note": "ICN100013 (THOMPSON, IRVING - mapped orphan DFN) - Aspirin sensitivity"
+    }
+  ]
+}

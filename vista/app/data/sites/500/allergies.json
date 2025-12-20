@@ -1,0 +1,83 @@
+{
+  "site_sta3n": "500",
+  "site_name": "Anchorage VA Medical Center",
+  "allergies": [
+    {
+      "dfn": "500001",
+      "allergen_name": "SULFA DRUGS",
+      "severity": "MODERATE",
+      "reaction_datetime": "T-200.1330",
+      "reactions": "RASH,ITCHING",
+      "allergy_type": "DRUG",
+      "originating_site": "500",
+      "entered_by": "PHARMACIST,ROBERT",
+      "_note": "ICN100001 (DOOREE, ADAM) - Sulfa drug allergy"
+    },
+    {
+      "dfn": "500001",
+      "allergen_name": "CODEINE",
+      "severity": "MILD",
+      "reaction_datetime": "T-500.0815",
+      "reactions": "NAUSEA,DIZZINESS",
+      "allergy_type": "DRUG",
+      "originating_site": "500",
+      "entered_by": "NURSE,PATRICIA",
+      "_note": "ICN100001 (DOOREE, ADAM) - Codeine sensitivity"
+    },
+    {
+      "dfn": "500001",
+      "allergen_name": "TREE POLLEN",
+      "severity": "MILD",
+      "reaction_datetime": "T-1000.0930",
+      "reactions": "SNEEZING,WATERY EYES",
+      "allergy_type": "ENVIRONMENTAL",
+      "originating_site": "500",
+      "entered_by": "NURSE,BRIAN",
+      "_note": "ICN100001 (DOOREE, ADAM) - Seasonal allergies"
+    },
+    {
+      "dfn": "500010",
+      "allergen_name": "PENICILLIN",
+      "severity": "SEVERE",
+      "reaction_datetime": "T-300.1445",
+      "reactions": "HIVES,DIFFICULTY BREATHING",
+      "allergy_type": "DRUG",
+      "originating_site": "500",
+      "entered_by": "DOCTOR,JAMES",
+      "_note": "ICN100010 (AMINOR, ALEXANDER) - Severe penicillin allergy"
+    },
+    {
+      "dfn": "500010",
+      "allergen_name": "DAIRY",
+      "severity": "MODERATE",
+      "reaction_datetime": "T-800.1020",
+      "reactions": "ABDOMINAL PAIN,DIARRHEA",
+      "allergy_type": "FOOD",
+      "originating_site": "500",
+      "entered_by": "DIETITIAN,SUSAN",
+      "_note": "ICN100010 (AMINOR, ALEXANDER) - Lactose intolerance"
+    },
+    {
+      "dfn": "500010",
+      "allergen_name": "DUST MITES",
+      "severity": "MILD",
+      "reaction_datetime": "T-600.0800",
+      "reactions": "SNEEZING,CONGESTION",
+      "allergy_type": "ENVIRONMENTAL",
+      "originating_site": "500",
+      "entered_by": "NURSE,THOMAS",
+      "_note": "ICN100010 (AMINOR, ALEXANDER) - Dust allergy"
+    },
+    {
+      "dfn": "200002",
+      "allergen_name": "IODINE",
+      "severity": "MODERATE",
+      "reaction_datetime": "T-550.1115",
+      "reactions": "RASH,SWELLING",
+      "allergy_type": "DRUG",
+      "originating_site": "500",
+      "entered_by": "RADIOLOGIST,MARK",
+      "_note": "ICN100013 (THOMPSON, IRVING - mapped orphan DFN) - Iodine contrast allergy"
+    }
+  ]
+}

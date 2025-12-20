@@ -1,0 +1,287 @@
+{# Encounters page content partial - used for HTMX Vista realtime refresh #}
+{# This div will replace the #vista-refresh-area on realtime refresh #}
+
+<!-- Out-of-band swap for freshness message -->
+{% if vista_refreshed %}
+<span class="data-freshness" id="freshness-message" hx-swap-oob="true">
+    Data current through: {{ data_current_through }} (today)
+    <span class="last-updated">Last updated: {{ last_updated }}</span>
+</span>
+{% endif %}
+
+<div id="vista-refresh-area">
+
+<!-- Page Title Section -->
+<div class="page-header__title-group">
+    <h1 class="page-header__title">
+        Inpatient Encounters
+    </h1>
+</div>
+
+<!-- Summary Stats Card -->
+{% if counts %}
+<div class="encounters-summary-card">
+    <div class="encounters-summary-stat">
+        <div class="encounters-summary-stat__value">{{ counts.total_encounters }}</div>
+        <div class="encounters-summary-stat__label">Total Encounters</div>
+    </div>
+    <div class="encounters-summary-stat">
+        <div class="encounters-summary-stat__value {% if counts.active_admissions > 0 %}text-danger{% endif %}">
+            {{ counts.active_admissions }}
+        </div>
+        <div class="encounters-summary-stat__label">Active Admissions</div>
+    </div>
+    <div class="encounters-summary-stat">
+        <div class="encounters-summary-stat__value">{{ counts.recent_encounters }}</div>
+        <div class="encounters-summary-stat__label">Recent (30 days)</div>
+    </div>
+    <div class="encounters-summary-stat">
+        <div class="encounters-summary-stat__value">{{ counts.extended_stays }}</div>
+        <div class="encounters-summary-stat__label">Extended Stays</div>
+    </div>
+    <div class="encounters-summary-stat">
+        <div class="encounters-summary-stat__value">{{ counts.facility_count }}</div>
+        <div class="encounters-summary-stat__label">Facilities</div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Filters and Controls -->
+<div class="encounters-controls">
+    <!-- Filter Pills -->
+    <div class="filter-pills">
+        <span class="filter-pills__label">Filter:</span>
+        <a href="/patient/{{ patient.icn }}/encounters?page=1&page_size={{ page_size }}"
+           class="filter-pill {% if not filter_active and not filter_recent %}filter-pill--active{% endif %}">
+            All Encounters ({{ counts.total_encounters if counts else 0 }})
+        </a>
+        <a href="/patient/{{ patient.icn }}/encounters?filter_active=true&page=1&page_size={{ page_size }}"
+           class="filter-pill {% if filter_active %}filter-pill--active{% endif %}">
+            <i class="fa-solid fa-bed-pulse"></i>
+            Active ({{ counts.active_admissions if counts else 0 }})
+        </a>
+        <a href="/patient/{{ patient.icn }}/encounters?filter_recent=true&page=1&page_size={{ page_size }}"
+           class="filter-pill {% if filter_recent %}filter-pill--active{% endif %}">
+            <i class="fa-solid fa-clock"></i>
+            Recent ({{ counts.recent_encounters if counts else 0 }})
+        </a>
+    </div>
+
+    <!-- Page Size Selector -->
+    <div class="page-size-controls">
+        <span class="page-size-controls__label">Show:</span>
+        <select class="page-size-select" onchange="window.location.href=this.value">
+            {% set base_url = '/patient/' ~ patient.icn ~ '/encounters?page=1' %}
+            {% if filter_active %}{% set base_url = base_url ~ '&filter_active=true' %}{% endif %}
+            {% if filter_recent %}{% set base_url = base_url ~ '&filter_recent=true' %}{% endif %}
+            <option value="{{ base_url }}&page_size=10" {% if page_size == 10 %}selected{% endif %}>10 per page</option>
+            <option value="{{ base_url }}&page_size=20" {% if page_size == 20 %}selected{% endif %}>20 per page</option>
+            <option value="{{ base_url }}&page_size=50" {% if page_size == 50 %}selected{% endif %}>50 per page</option>
+            <option value="{{ base_url }}&page_size=100" {% if page_size == 100 %}selected{% endif %}>100 per page</option>
+        </select>
+    </div>
+</div>
+
+<!-- Encounters Table -->
+{% if error %}
+    <!-- Error State (Vista refresh failed) -->
+    <div class="empty-state">
+        <div class="empty-state__icon">
+            <i class="fa-solid fa-triangle-exclamation fa-3x"></i>
+        </div>
+        <h3 class="empty-state__title">Error Fetching Real-Time Data</h3>
+        <p class="empty-state__message">{{ error }}</p>
+        <button onclick="window.location.reload()" class="btn btn--primary">
+            <i class="fa-solid fa-rotate"></i>
+            Retry
+        </button>
+    </div>
+{% elif encounters %}
+<div class="encounters-table-container">
+    <table class="encounters-table">
+        <thead>
+            <tr>
+                <th>Status</th>
+                <th>Admit Date</th>
+                <th>Discharge Date</th>
+                <th>LOS</th>
+                <th>Facility</th>
+                <th>Diagnosis</th>
+                <th>Disposition</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for encounter in encounters %}
+            <tr class="encounter-row {% if encounter.is_active %}encounter-row--active{% elif encounter.is_extended_stay %}encounter-row--extended{% endif %}">
+                <!-- Status -->
+                <td class="encounter-cell encounter-cell--status">
+                    {% if encounter.is_active %}
+                        <span class="status-badge status-badge--active">
+                            <i class="fa-solid fa-bed-pulse"></i>
+                            Active
+                        </span>
+                    {% elif encounter.is_extended_stay %}
+                        <span class="status-badge status-badge--extended">
+                            <i class="fa-solid fa-clock"></i>
+                            Extended
+                        </span>
+                    {% else %}
+                        <span class="status-badge status-badge--discharged">
+                            <i class="fa-solid fa-check-circle"></i>
+                            Discharged
+                        </span>
+                    {% endif %}
+                </td>
+
+                <!-- Admit Date -->
+                <td class="encounter-cell encounter-cell--date">
+                    <div class="encounter-date">
+                        {{ encounter.admit_datetime[:10] if encounter.admit_datetime else '—' }}
+                    </div>
+                    <div class="encounter-time">
+                        {{ encounter.admit_datetime[11:16] if encounter.admit_datetime and encounter.admit_datetime|length > 10 else '' }}
+                    </div>
+                </td>
+
+                <!-- Discharge Date -->
+                <td class="encounter-cell encounter-cell--date">
+                    {% if encounter.discharge_datetime %}
+                        <div class="encounter-date">
+                            {{ encounter.discharge_datetime[:10] }}
+                        </div>
+                        <div class="encounter-time">
+                            {{ encounter.discharge_datetime[11:16] if encounter.discharge_datetime|length > 10 else '' }}
+                        </div>
+                    {% else %}
+                        <span class="text-muted">—</span>
+                    {% endif %}
+                </td>
+
+                <!-- Length of Stay -->
+                <td class="encounter-cell encounter-cell--los">
+                    {% if encounter.is_active %}
+                        <span class="los-active">{{ encounter.total_days }} days</span>
+                    {% elif encounter.length_of_stay is not none %}
+                        {{ encounter.length_of_stay }} day{{ 's' if encounter.length_of_stay != 1 else '' }}
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+
+                <!-- Facility -->
+                <td class="encounter-cell encounter-cell--facility">
+                    {{ encounter.facility_name or 'Unknown' }}
+                </td>
+
+                <!-- Diagnosis -->
+                <td class="encounter-cell encounter-cell--diagnosis">
+                    {% if encounter.discharge_diagnosis_text %}
+                        <div class="diagnosis-text">{{ encounter.discharge_diagnosis_text }}</div>
+                        {% if encounter.discharge_diagnosis_code %}
+                            <div class="diagnosis-code">{{ encounter.discharge_diagnosis_code }}</div>
+                        {% endif %}
+                    {% elif encounter.admit_diagnosis_code %}
+                        <div class="diagnosis-code">{{ encounter.admit_diagnosis_code }}</div>
+                    {% else %}
+                        <span class="text-muted">Not recorded</span>
+                    {% endif %}
+                </td>
+
+                <!-- Disposition -->
+                <td class="encounter-cell encounter-cell--disposition">
+                    {% if encounter.discharge_disposition %}
+                        {% if encounter.discharge_disposition == 'Home' %}
+                            <span class="disposition-badge disposition-badge--home">
+                                <i class="fa-solid fa-house"></i>
+                                {{ encounter.discharge_disposition }}
+                            </span>
+                        {% elif encounter.discharge_disposition == 'Home with O2' %}
+                            <span class="disposition-badge disposition-badge--home-oxygen">
+                                <i class="fa-solid fa-house-medical"></i>
+                                Home + O₂
+                            </span>
+                        {% elif encounter.discharge_disposition in ['SNF', 'Rehab'] %}
+                            <span class="disposition-badge disposition-badge--facility">
+                                <i class="fa-solid fa-wheelchair"></i>
+                                {{ encounter.discharge_disposition }}
+                            </span>
+                        {% elif encounter.discharge_disposition == 'AMA' %}
+                            <span class="disposition-badge disposition-badge--ama">
+                                <i class="fa-solid fa-person-walking-arrow-right"></i>
+                                {{ encounter.discharge_disposition }}
+                            </span>
+                        {% else %}
+                            {{ encounter.discharge_disposition }}
+                        {% endif %}
+                    {% elif encounter.is_active %}
+                        <span class="text-muted">—</span>
+                    {% else %}
+                        <span class="text-muted">Not recorded</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination Controls (ADR-005) -->
+{% if total_pages > 1 %}
+<div class="pagination-controls">
+    <div class="pagination-info">
+        Page {{ page }} of {{ total_pages }} ({{ total_count }} total encounter{{ 's' if total_count != 1 else '' }})
+    </div>
+    <div class="pagination-buttons">
+        {% if has_prev %}
+            {% set prev_url = '/patient/' ~ patient.icn ~ '/encounters?page=' ~ (page - 1) ~ '&page_size=' ~ page_size %}
+            {% if filter_active %}{% set prev_url = prev_url ~ '&filter_active=true' %}{% endif %}
+            {% if filter_recent %}{% set prev_url = prev_url ~ '&filter_recent=true' %}{% endif %}
+            <a href="{{ prev_url }}" class="btn btn--secondary btn--sm">
+                <i class="fa-solid fa-chevron-left"></i>
+                Previous
+            </a>
+        {% else %}
+            <button class="btn btn--secondary btn--sm" disabled>
+                <i class="fa-solid fa-chevron-left"></i>
+                Previous
+            </button>
+        {% endif %}
+
+        {% if has_next %}
+            {% set next_url = '/patient/' ~ patient.icn ~ '/encounters?page=' ~ (page + 1) ~ '&page_size=' ~ page_size %}
+            {% if filter_active %}{% set next_url = next_url ~ '&filter_active=true' %}{% endif %}
+            {% if filter_recent %}{% set next_url = next_url ~ '&filter_recent=true' %}{% endif %}
+            <a href="{{ next_url }}" class="btn btn--secondary btn--sm">
+                Next
+                <i class="fa-solid fa-chevron-right"></i>
+            </a>
+        {% else %}
+            <button class="btn btn--secondary btn--sm" disabled>
+                Next
+                <i class="fa-solid fa-chevron-right"></i>
+            </button>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+{% else %}
+    <!-- Empty State -->
+    <div class="empty-state">
+        <div class="empty-state__icon">
+            <i class="fa-solid fa-hospital fa-3x"></i>
+        </div>
+        <h3 class="empty-state__title">No Encounters Found</h3>
+        <p class="empty-state__message">
+            {% if filter_active %}
+                No active admissions found.
+            {% elif filter_recent %}
+                No recent encounters in the last 30 days.
+            {% else %}
+                This patient has no recorded encounters.
+            {% endif %}
+        </p>
+    </div>
+{% endif %}
+
+</div> {# End vista-refresh-area #}

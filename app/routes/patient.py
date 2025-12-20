@@ -463,6 +463,8 @@ async def get_allergies_page(request: Request, icn: str):
         Full HTML page with allergies cards
     """
     try:
+        from datetime import datetime, timedelta
+
         # Get patient demographics for header
         patient = get_patient_demographics(icn)
 
@@ -488,6 +490,11 @@ async def get_allergies_page(request: Request, icn: str):
         food_allergies = [a for a in allergies if a["allergen_type"] == "FOOD"]
         environmental_allergies = [a for a in allergies if a["allergen_type"] == "ENVIRONMENTAL"]
 
+        # Calculate data freshness (yesterday's date for PostgreSQL data)
+        yesterday = datetime.now() - timedelta(days=1)
+        data_current_through = yesterday.strftime("%b %d, %Y")
+        data_freshness_label = "yesterday"
+
         logger.info(f"Loaded allergies page for {icn}: {len(allergies)} allergies ({counts['drug']} drug, {counts['food']} food, {counts['environmental']} environmental)")
 
         return templates.TemplateResponse(
@@ -504,6 +511,9 @@ async def get_allergies_page(request: Request, icn: str):
                 food_count=counts["food"],
                 environmental_count=counts["environmental"],
                 severe_count=counts["severe"],
+                data_current_through=data_current_through,
+                data_freshness_label=data_freshness_label,
+                vista_refreshed=False,
                 active_page="allergies"
             )
         )
@@ -518,6 +528,213 @@ async def get_allergies_page(request: Request, icn: str):
                 error=str(e),
                 active_page="allergies"
             )
+        )
+
+
+@page_router.post("/patient/{icn}/allergies/realtime", response_class=HTMLResponse)
+async def get_allergies_realtime(
+    request: Request,
+    icn: str
+):
+    """
+    VistA real-time refresh endpoint for allergies.
+
+    Fetches today's allergies from VistA sites and merges with historical PostgreSQL data.
+    Returns HTML partial for HTMX swap.
+
+    Args:
+        icn: Patient ICN
+
+    Returns:
+        HTML partial containing allergies content (all sections)
+    """
+    try:
+        from datetime import datetime
+        logger.info(f"VistA realtime refresh requested for allergies - patient {icn}")
+
+        # Get patient demographics
+        patient = get_patient_demographics(icn)
+        if not patient:
+            logger.warning(f"Patient {icn} not found during realtime refresh")
+            patient = {"icn": icn, "name_display": "Unknown Patient"}
+
+        # Fetch real-time data from VistA
+        from app.services.vista_client import VistaClient
+        from app.services.realtime_overlay import parse_fileman_datetime
+
+        vista_client = VistaClient()
+
+        # Get target sites for allergies (3 sites per domain policy)
+        target_sites = vista_client.get_target_sites(icn, domain="allergies")
+        logger.info(f"Querying {len(target_sites)} VistA sites for allergies: {target_sites}")
+
+        # Call ORQQAL LIST RPC at all target sites
+        vista_results_raw = await vista_client.call_rpc_multi_site(
+            sites=target_sites,
+            rpc_name="ORQQAL LIST",
+            params=[icn]
+        )
+
+        # Extract successful responses
+        vista_results = {}
+        for site_sta3n, result in vista_results_raw.items():
+            if result.get("success") and result.get("response"):
+                vista_results[site_sta3n] = result["response"]
+
+        logger.info(f"Vista query complete: {len(vista_results)} successful sites")
+
+        # Map site sta3n to site names
+        site_names = {
+            "200": "ALEXANDRIA",
+            "500": "ANCHORAGE",
+            "630": "PALO_ALTO"
+        }
+
+        # Parse Vista allergies from caret-delimited format
+        vista_allergies = []
+        for site_sta3n, response_text in vista_results.items():
+            # Skip error responses
+            if response_text.startswith("-1^"):
+                logger.warning(f"Vista error from site {site_sta3n}: {response_text}")
+                continue
+
+            # Parse each line (one allergy per line)
+            # Format: AllergenName^Severity^ReactionDateTime^Reactions^AllergyType^OriginatingSite^EnteredBy
+            for line in response_text.strip().split('\n'):
+                if not line:
+                    continue
+
+                fields = line.split('^')
+                if len(fields) >= 7:
+                    # Convert FileMan date to ISO format (YYYY-MM-DD HH:MM:SS)
+                    reaction_dt = parse_fileman_datetime(fields[2])
+                    reaction_datetime_iso = reaction_dt.strftime("%Y-%m-%d %H:%M:%S") if reaction_dt else fields[2]
+
+                    # Map originating site to name
+                    originating_site = fields[5]
+                    originating_site_name = site_names.get(originating_site, f"Site {originating_site}")
+
+                    # Generate clinical comment from allergy details
+                    allergen = fields[0]
+                    severity = fields[1]
+                    reactions = fields[3]
+                    allergy_type = fields[4]
+                    entered_by = fields[6]
+
+                    comment = f"{severity.capitalize()} {allergy_type.lower()} allergy to {allergen}. "
+                    comment += f"Patient experienced {reactions.lower().replace(',', ', ')}. "
+                    comment += f"Documented by {entered_by} at {originating_site_name}. "
+                    comment += "Avoid administration of this allergen and cross-reactive substances."
+
+                    vista_allergies.append({
+                        "allergen_local": fields[0],  # AllergenName
+                        "allergen_standardized": fields[0],  # Same as local for Vista
+                        "allergen_type": fields[4],  # AllergyType (DRUG, FOOD, ENVIRONMENTAL)
+                        "severity": fields[1],  # Severity
+                        "reactions": fields[3],  # Comma-separated reactions
+                        "origination_date": reaction_datetime_iso,  # Converted FileMan date
+                        "originating_site": originating_site,  # Site sta3n
+                        "originating_site_name": originating_site_name,  # Site name
+                        "originating_staff": fields[6],  # EnteredBy
+                        "historical_or_observed": "OBSERVED",  # Vista data is real-time (T-0)
+                        "verification_status": "VERIFIED",  # Vista data is verified
+                        "comment": comment,  # Generated clinical comment
+                        "data_source": "VistA",
+                        "source_system": "VistA",
+                        "is_active": True
+                    })
+
+        logger.info(f"Parsed {len(vista_allergies)} allergies from Vista")
+
+        # Get historical data from PostgreSQL (T-1 and earlier)
+        pg_allergies = get_patient_allergies(icn)
+
+        # Simple merge: Combine PG + Vista (no deduplication for allergies - clinical decision)
+        # Unlike vitals/encounters, allergies from different sites may legitimately differ
+        all_allergies = pg_allergies + vista_allergies
+
+        logger.info(
+            f"Merge complete: {len(all_allergies)} total allergies "
+            f"({len(pg_allergies)} PG + {len(vista_allergies)} Vista)"
+        )
+
+        # Separate allergies by type
+        drug_allergies = [a for a in all_allergies if a["allergen_type"] == "DRUG"]
+        food_allergies = [a for a in all_allergies if a["allergen_type"] == "FOOD"]
+        environmental_allergies = [a for a in all_allergies if a["allergen_type"] == "ENVIRONMENTAL"]
+
+        # Recalculate counts from merged data
+        counts = {
+            "total": len(all_allergies),
+            "drug": len(drug_allergies),
+            "food": len(food_allergies),
+            "environmental": len(environmental_allergies),
+            "severe": len([a for a in all_allergies if a.get("severity") == "SEVERE"])
+        }
+
+        # Calculate data freshness (today's date after VistA refresh)
+        now = datetime.now()
+        data_current_through = now.strftime("%b %d, %Y")
+        last_updated = now.strftime("%I:%M %p")
+
+        # Calculate Vista success rate
+        successful_sites = len(vista_results)
+        total_sites_attempted = len(target_sites)
+        vista_success_rate = f"{successful_sites} of {total_sites_attempted} sites" if total_sites_attempted > 0 else "no sites"
+
+        logger.info(
+            f"VistA refresh complete for {icn}: {len(all_allergies)} allergies "
+            f"({vista_success_rate} successful)"
+        )
+
+        # Return the allergies content partial (for HTMX outerHTML swap)
+        # Note: This returns the refresh area + out-of-band freshness update
+        return templates.TemplateResponse(
+            "partials/allergies_content.html",
+            {
+                "request": request,
+                "patient": patient,
+                "allergies": all_allergies,
+                "drug_allergies": drug_allergies,
+                "food_allergies": food_allergies,
+                "environmental_allergies": environmental_allergies,
+                "total_count": counts["total"],
+                "drug_count": counts["drug"],
+                "food_count": counts["food"],
+                "environmental_count": counts["environmental"],
+                "severe_count": counts["severe"],
+                "vista_refreshed": True,
+                "data_current_through": data_current_through,
+                "last_updated": last_updated,
+                "vista_success_rate": vista_success_rate,
+                "vista_sites": target_sites,
+                "merge_stats": {
+                    "total_merged": len(all_allergies),
+                    "pg_count": len(pg_allergies),
+                    "vista_count": len(vista_allergies)
+                }
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Error during VistA refresh for allergies {icn}: {e}", exc_info=True)
+        # Return error state
+        return templates.TemplateResponse(
+            "partials/allergies_content.html",
+            {
+                "request": request,
+                "patient": {"icn": icn, "name_display": "Unknown Patient"},
+                "allergies": [],
+                "drug_allergies": [],
+                "food_allergies": [],
+                "environmental_allergies": [],
+                "total_count": 0,
+                "drug_count": 0,
+                "food_count": 0,
+                "environmental_count": 0,
+                "severe_count": 0,
+                "error": f"Vista refresh failed: {str(e)}"
+            }
         )
 
 
