@@ -19,15 +19,15 @@ iniconfig==2.3.0
 Jinja2==3.1.6
 jmespath==1.0.1
 MarkupSafe==3.0.3
-numpy==2.3.5
+numpy>=2.0.0
 packaging==25.0
-pandas==2.3.3
+pandas>=2.0.0
 pluggy==1.6.0
-polars==1.18.0
+polars>=1.0.0
 psycopg2-binary==2.9.11
 pyarrow==18.1.0
 pydantic==2.12.5
-pydantic_core==2.41.5
+# pydantic_core==2.41.5
 Pygments==2.19.2
 pyodbc==5.2.0
 pytest==9.0.2
