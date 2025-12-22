@@ -19,9 +19,9 @@ Browser/Client          med-z1 App           CCOW Vault          PostgreSQL
      |   (with cookie)       |                     |                   |
      |                       |-- Set Context ----->|                   |
      |                       |   (forward cookie)  |                   |
-     |                       |                     |-- Validate ------->|
-     |                       |                     |   session          |
-     |                       |                     |<-- user_id --------|
+     |                       |                     |-- Validate ------>|
+     |                       |                     |   session         |
+     |                       |                     |<-- user_id -------|
      |                       |                     |                   |
      |                       |                     | Store context:    |
      |                       |                     | {user_id: X,      |
@@ -40,6 +40,37 @@ Browser/Client          med-z1 App           CCOW Vault          PostgreSQL
 2. Get your `session_id` from browser DevTools → Cookies
 3. Use that session_id in curl commands below
 
+### CORS and Header Considerations
+
+**Issue:** On macOS (and potentially other platforms), curl requests may encounter CORS-related errors when making authenticated requests to the CCOW service, even though the service is configured with permissive CORS settings (`allow_origins=["*"]`).
+
+**Symptoms:**
+- 401 Unauthorized errors despite valid session cookie
+- CORS policy errors in certain environments
+- "Invalid or expired session" errors with known-good session IDs
+
+**Workaround:** Add `Origin` and `Referer` headers to simulate browser requests:
+
+```bash
+# Basic curl (may fail with CORS issues)
+curl -X GET "http://localhost:8001/ccow/active-patient" \
+  -b "session_id=YOUR_SESSION_ID_HERE"
+
+# Recommended curl (with CORS headers)
+curl -X GET "http://localhost:8001/ccow/active-patient" \
+  -b "session_id=YOUR_SESSION_ID_HERE" \
+  -H "Origin: http://localhost:8001" \
+  -H "Referer: http://localhost:8001/"
+```
+
+**Why this works:**
+- `Origin: http://localhost:8001` - Tells the server the request originated from the same domain
+- `Referer: http://localhost:8001/` - Provides the referring page URL
+- These headers make curl behave more like a browser request
+- Safe and appropriate for local development testing
+
+**Note:** This is a local development workaround only. In production, the browser handles these headers automatically.
+
 ### Example Commands
 
 **1. Health Check (No Auth Required)**
@@ -52,6 +83,8 @@ curl http://localhost:8001/ccow/health
 curl -X PUT "http://localhost:8001/ccow/active-patient" \
   -H "Content-Type: application/json" \
   -b "session_id=YOUR_SESSION_ID_HERE" \
+  -H "Origin: http://localhost:8001" \
+  -H "Referer: http://localhost:8001/" \
   -d '{
     "patient_id": "ICN100001",
     "set_by": "manual-test"
@@ -73,7 +106,18 @@ Expected Response:
 **3. Get Active Patient**
 ```bash
 curl -X GET "http://localhost:8001/ccow/active-patient" \
-  -b "session_id=YOUR_SESSION_ID_HERE"
+  -b "session_id=YOUR_SESSION_ID_HERE" \
+  -H "Origin: http://localhost:8001" \
+  -H "Referer: http://localhost:8001/"
+```
+
+**Tip:** Pipe through `jq` for pretty-printed JSON:
+```bash
+curl "http://localhost:8001/ccow/active-patient" \
+  -b "session_id=YOUR_SESSION_ID_HERE" \
+  -H "Origin: http://localhost:8001" \
+  -H "Referer: http://localhost:8001/" \
+  | jq
 ```
 
 Expected Response (if context exists):
@@ -100,6 +144,8 @@ Expected Response (if no context):
 curl -X DELETE "http://localhost:8001/ccow/active-patient" \
   -H "Content-Type: application/json" \
   -b "session_id=YOUR_SESSION_ID_HERE" \
+  -H "Origin: http://localhost:8001" \
+  -H "Referer: http://localhost:8001/" \
   -d '{"cleared_by": "manual-test"}'
 ```
 
@@ -108,7 +154,9 @@ Expected Response: `204 No Content` (empty body)
 **5. Get Context History (User Scope)**
 ```bash
 curl -X GET "http://localhost:8001/ccow/history?scope=user" \
-  -b "session_id=YOUR_SESSION_ID_HERE"
+  -b "session_id=YOUR_SESSION_ID_HERE" \
+  -H "Origin: http://localhost:8001" \
+  -H "Referer: http://localhost:8001/"
 ```
 
 Expected Response:
@@ -133,13 +181,17 @@ Expected Response:
 **6. Get Context History (Global Scope - All Users)**
 ```bash
 curl -X GET "http://localhost:8001/ccow/history?scope=global" \
-  -b "session_id=YOUR_SESSION_ID_HERE"
+  -b "session_id=YOUR_SESSION_ID_HERE" \
+  -H "Origin: http://localhost:8001" \
+  -H "Referer: http://localhost:8001/"
 ```
 
 **7. Get All Active Contexts (Admin)**
 ```bash
 curl -X GET "http://localhost:8001/ccow/active-patients" \
-  -b "session_id=YOUR_SESSION_ID_HERE"
+  -b "session_id=YOUR_SESSION_ID_HERE" \
+  -H "Origin: http://localhost:8001" \
+  -H "Referer: http://localhost:8001/"
 ```
 
 Expected Response:
@@ -162,7 +214,9 @@ Expected Response:
 **8. Trigger Manual Cleanup (Admin)**
 ```bash
 curl -X POST "http://localhost:8001/ccow/cleanup" \
-  -b "session_id=YOUR_SESSION_ID_HERE"
+  -b "session_id=YOUR_SESSION_ID_HERE" \
+  -H "Origin: http://localhost:8001" \
+  -H "Referer: http://localhost:8001/"
 ```
 
 Expected Response:
@@ -202,6 +256,8 @@ Import the pre-configured collection from `docs/insomnia-ccow-collection.json`.
 ---
 
 ## Testing with Insomnia
+
+**Note:** Insomnia automatically handles CORS headers and does not require the `Origin`/`Referer` workaround needed for curl on some platforms. Cookie-based authentication works seamlessly in Insomnia.
 
 ### Prerequisites
 
@@ -322,6 +378,10 @@ Now all requests to `localhost:8001` will automatically include the cookie (no n
 
 ### Common Errors in Insomnia
 
+**Note:** Insomnia does NOT experience the CORS-related issues that can affect curl on macOS. You do not need to add `Origin` or `Referer` headers in Insomnia.
+
+---
+
 **Error: 401 Unauthorized - "Missing session cookie"**
 
 **Cause:** Cookie header not included in request
@@ -441,11 +501,15 @@ SESSION_ALPHA="your-alpha-session-id"
 # Set patient for Alpha
 curl -X PUT "http://localhost:8001/ccow/active-patient" \
   -H "Content-Type: application/json" \
+  -H "Origin: http://localhost:8001" \
+  -H "Referer: http://localhost:8001/" \
   -b "session_id=$SESSION_ALPHA" \
   -d '{"patient_id": "ICN100001", "set_by": "test"}'
 
 # Verify Alpha sees ICN100001
 curl -X GET "http://localhost:8001/ccow/active-patient" \
+  -H "Origin: http://localhost:8001" \
+  -H "Referer: http://localhost:8001/" \
   -b "session_id=$SESSION_ALPHA"
 ```
 
@@ -457,11 +521,15 @@ SESSION_BETA="your-beta-session-id"
 # Set different patient for Beta
 curl -X PUT "http://localhost:8001/ccow/active-patient" \
   -H "Content-Type: application/json" \
+  -H "Origin: http://localhost:8001" \
+  -H "Referer: http://localhost:8001/" \
   -b "session_id=$SESSION_BETA" \
   -d '{"patient_id": "ICN100002", "set_by": "test"}'
 
 # Verify Beta sees ICN100002
 curl -X GET "http://localhost:8001/ccow/active-patient" \
+  -H "Origin: http://localhost:8001" \
+  -H "Referer: http://localhost:8001/" \
   -b "session_id=$SESSION_BETA"
 ```
 
@@ -469,6 +537,8 @@ curl -X GET "http://localhost:8001/ccow/active-patient" \
 ```bash
 # Verify Alpha STILL sees ICN100001 (not ICN100002)
 curl -X GET "http://localhost:8001/ccow/active-patient" \
+  -H "Origin: http://localhost:8001" \
+  -H "Referer: http://localhost:8001/" \
   -b "session_id=$SESSION_ALPHA"
 ```
 
@@ -476,6 +546,8 @@ curl -X GET "http://localhost:8001/ccow/active-patient" \
 ```bash
 # See both users' context changes
 curl -X GET "http://localhost:8001/ccow/history?scope=global" \
+  -H "Origin: http://localhost:8001" \
+  -H "Referer: http://localhost:8001/" \
   -b "session_id=$SESSION_ALPHA"
 ```
 
@@ -573,13 +645,18 @@ curl -X GET "http://localhost:8001/ccow/active-patient" \
 
 ## Troubleshooting
 
-**Problem:** Getting 401 errors
+**Problem:** Getting 401 errors with curl (macOS)
 
 **Solution:**
-1. Verify you're logged into med-z1 app
-2. Get fresh session_id from browser cookies
-3. Check session hasn't expired (15 min idle timeout)
-4. Run debug script: `python scripts/debug_ccow_session.py <session_id>`
+1. Add CORS headers to your curl command (see "CORS and Header Considerations" section above):
+   ```bash
+   -H "Origin: http://localhost:8001" \
+   -H "Referer: http://localhost:8001/"
+   ```
+2. Verify you're logged into med-z1 app
+3. Get fresh session_id from browser cookies
+4. Check session hasn't expired (15 min idle timeout)
+5. Run debug script: `python scripts/debug_ccow_session.py <session_id>`
 
 **Problem:** Getting 404 "No active patient context"
 

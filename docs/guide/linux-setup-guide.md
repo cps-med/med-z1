@@ -62,3 +62,7 @@ Update these specific lines in your file:
 - Change: polars==1.18.0 to polars>=1.0.0
 - Keep this line: pydantic==2.12.5
 - Remove this line: pydantic_core==2.41.5 
+
+## Step 4: Docker and Docker Images Setup
+
+work on this section next...
