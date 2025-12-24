@@ -340,13 +340,77 @@ VERIFYING MINIO...
 ✓ Test passed: 3 rows
 ```
 
+## Install SQL Server Command-Line Tools (Recommended)
+
+For better developer experience, install Microsoft SQL Server command-line tools natively on your Linux machine. This allows you to run `sqlcmd` directly from your host terminal without using `docker exec`.
+
+### Install mssql-tools18 on Pop!_OS/Ubuntu
+
+```bash
+# Import the public repository GPG keys
+curl https://packages.microsoft.com/keys/microsoft.asc | sudo tee /etc/apt/trusted.gpg.d/microsoft.asc
+
+# Register the Microsoft Ubuntu repository
+# For Pop!_OS 22.04 (based on Ubuntu 22.04):
+curl https://packages.microsoft.com/config/ubuntu/22.04/prod.list | sudo tee /etc/apt/sources.list.d/mssql-release.list
+
+# Update package lists
+sudo apt-get update
+
+# Install mssql-tools18 (includes sqlcmd and bcp)
+sudo ACCEPT_EULA=Y apt-get install -y mssql-tools18 unixodbc-dev
+```
+
+**Note:** The `ACCEPT_EULA=Y` environment variable accepts the Microsoft EULA automatically. You can also install interactively without this flag.
+
+### Add sqlcmd to PATH
+
+```bash
+# Add to your ~/.bashrc
+echo 'export PATH="$PATH:/opt/mssql-tools18/bin"' >> ~/.bashrc
+
+# Reload your shell configuration
+source ~/.bashrc
+
+# Verify installation
+sqlcmd -?
+```
+
+Expected output: You should see the sqlcmd help text showing version 18.x.
+
+### Test Connection to SQL Server
+
+```bash
+# Test connection to your Docker SQL Server instance
+sqlcmd -S 127.0.0.1,1433 -U sa -P 'MyS3cur3P@ssw0rd' -C -Q "SELECT @@VERSION"
+```
+
+**Note:** The `-C` flag is required for sqlcmd 18+ to trust the server certificate.
+
+Expected output: SQL Server version information.
+
 ## Create and Populate SQL Server Mock Data
 
 The **med-z1** application uses Microsoft SQL Server 2019 to simulate the VA Corporate Data Warehouse (CDW) for local development. The mock CDW contains synthetic patient data across multiple clinical domains including demographics, vitals, medications, allergies, encounters, and laboratory results.
 
 This section guides you through creating the **CDWWork** database schema and populating it with mock patient data.
 
-Verify that the SQL Server container is running
+### Overview of CDWWork Database
+
+The CDWWork database simulates VistA-sourced data with the following major schemas:
+
+- **Dim** - Dimension tables (facilities, states, flags, drug definitions, etc.)
+- **SPatient** - Patient demographics, addresses, insurance, flags
+- **SStaff** - Staff and provider information
+- **Vital** - Vital signs measurements
+- **Allergy** - Patient allergies and reactions
+- **RxOut** - Outpatient medications and prescriptions
+- **BCMA** - Bar Code Medication Administration records
+- **Inpat** - Inpatient admissions and encounters
+- **Chem** - Laboratory chemistry results
+
+### Verify SQL Server Container is Running
+
 ```bash
 # Check that SQL Server container is running
 docker ps | grep sqlserver
@@ -355,66 +419,102 @@ docker ps | grep sqlserver
 docker logs sqlserver2019 | tail -20
 ```
 
-Create CDWWork database and tables
+### Create Database and Tables
+
+The project provides `_master.sql` scripts in the `create/` folder that orchestrate the creation of all tables in the correct dependency order.
+
+#### Option 1: Using Shell Script with .env Password (Recommended)
+
 ```bash
 # Navigate to the create scripts directory
 cd ~/swdev/med/med-z1/mock/sql-server/cdwwork/create
 
-# Run the master creation script via docker exec
-docker exec -i sqlserver2019 /opt/mssql-tools18/bin/sqlcmd \
-  -S localhost -U sa -P 'MyS3cur3P@ssw0rd' \
-  -C -i /docker-entrypoint-initdb.d/create/_master.sql
+# Run the shell script (sources password from .env)
+./_master.sh
 ```
 
-**Note:** The `-C` flag is required to trust the server certificate in SQL Server 2019+.
+The `_master.sh` script loads the `CDWWORK_DB_PASSWORD` environment variable from your `.env` file and executes the `_master.sql` script.
 
-You can verify that the database and tables were created via the VS Code SQL Server utility.
-- Connect to "sqlserver19-docker"
-- Select the CDWWork database
-- Verify that the full set of Dim and Fact tables were created  
+#### Option 2: Direct sqlcmd Command
 
-**Step 2: Insert Mock Data**
+```bash
+# Navigate to the create scripts directory
+cd ~/swdev/med/med-z1/mock/sql-server/cdwwork/create
+
+# Run sqlcmd directly with password
+sqlcmd -S 127.0.0.1,1433 -U sa -P 'MyS3cur3P@ssw0rd' -C -i _master.sql
+```
+
+Replace `'MyS3cur3P@ssw0rd'` with your actual SQL Server password from the `.env` file.
+
+#### Option 3: Using VS Code with mssql Extension
+
+These scripts can also be run using Visual Studio Code with the Microsoft SQL Server (mssql) extension.
+
+1. Ensure you have a connection profile configured:
+   ```text
+   Profile Name: sqlserver19-docker
+   Server name: 127.0.0.1,1433
+   Trust server certificate: yes
+   Authentication type: SQL Login
+   User name: sa
+   Password: ************
+   Save Password: yes
+   ```
+
+2. Navigate to `mock/sql-server/cdwwork/create/`
+3. Open `_master.sql`
+4. Right-click in editor and select "Execute Query"
+
+**Note:** The `-C` flag in sqlcmd (or "Trust server certificate" in VS Code) is required for SQL Server 2019+.
+
+Expected output will show table creation messages for all schemas and tables. The script will:
+1. Drop and recreate the CDWWork database
+2. Create all required schemas (Dim, SPatient, SStaff, Vital, Allergy, RxOut, BCMA, Inpat, Chem)
+3. Create all dimension tables
+4. Create all fact/transaction tables
+
+### Populate Mock Data
+
+After creating the database structure, populate the tables with synthetic patient data.
+
+#### Option 1: Using Shell Script with .env Password (Recommended)
 
 ```bash
 # Navigate to the insert scripts directory
 cd ~/swdev/med/med-z1/mock/sql-server/cdwwork/insert
 
-# Run the master insert script via docker exec
-docker exec -i sqlserver2019 /opt/mssql-tools18/bin/sqlcmd \
-  -S localhost -U sa -P 'MyS3cur3P@ssw0rd' \
-  -C -i /docker-entrypoint-initdb.d/insert/_master.sql
+# Run the shell script (sources password from .env)
+./_master.sh
 ```
+
+#### Option 2: Direct sqlcmd Command
+
+```bash
+# Navigate to the insert scripts directory
+cd ~/swdev/med/med-z1/mock/sql-server/cdwwork/insert
+
+# Run sqlcmd directly with password
+sqlcmd -S 127.0.0.1,1433 -U sa -P 'MyS3cur3P@ssw0rd' -C -i _master.sql
+```
+
+#### Option 3: Using VS Code with mssql Extension
+
+1. Navigate to `mock/sql-server/cdwwork/insert/`
+2. Open `_master.sql`
+3. Right-click in editor and select "Execute Query"
 
 Expected output will show INSERT confirmation messages with row counts. The script populates data for approximately 15 synthetic patients across all clinical domains.
 
-### Method 2: Using Individual SQL Scripts
-
-If you need to create or populate specific tables individually (useful during development or debugging):
-
-**Create a single table:**
-```bash
-# Example: Create the Vital.VitalSign table
-docker exec -i sqlserver2019 /opt/mssql-tools18/bin/sqlcmd \
-  -S localhost -U sa -P 'MyS3cur3P@ssw0rd' \
-  -C -i /docker-entrypoint-initdb.d/create/Vital.VitalSign.sql
-```
-
-**Populate a single table:**
-```bash
-# Example: Insert data into Vital.VitalSign
-docker exec -i sqlserver2019 /opt/mssql-tools18/bin/sqlcmd \
-  -S localhost -U sa -P 'MyS3cur3P@ssw0rd' \
-  -C -i /docker-entrypoint-initdb.d/insert/Vital.VitalSign.sql
-```
-
 ### Verify Database Creation
 
-Connect to the SQL Server container and verify the database and tables were created:
+You can verify that the database and tables were created using one of several methods:
+
+#### Verification via sqlcmd (Command Line)
 
 ```bash
 # Connect to SQL Server interactively
-docker exec -it sqlserver2019 /opt/mssql-tools18/bin/sqlcmd \
-  -S localhost -U sa -P 'MyS3cur3P@ssw0rd' -C
+sqlcmd -S 127.0.0.1,1433 -U sa -P 'MyS3cur3P@ssw0rd' -C
 ```
 
 From the sqlcmd prompt, run verification queries:
@@ -457,6 +557,13 @@ GO
 EXIT
 ```
 
+#### Verification via VS Code mssql Extension
+
+1. Open Command Palette (Ctrl+Shift+P)
+2. Select "MSSQL: Connect" using your `sqlserver19-docker` profile
+3. Open a new SQL query window
+4. Run verification queries (same as above, without `GO` statements)
+
 Expected row counts (approximate):
 - Patients: 15-20
 - Vitals: 200+
@@ -467,13 +574,29 @@ Expected row counts (approximate):
 
 ### Troubleshooting
 
-**Issue: "Sqlcmd: command not found"**
-- The SQL Server tools are installed inside the container, not on your host machine
-- Always use `docker exec` to run sqlcmd commands
+**Issue: "sqlcmd: command not found"**
+- Verify sqlcmd is installed: `which sqlcmd`
+- Ensure PATH includes `/opt/mssql-tools18/bin`
+- Reload your shell: `source ~/.bashrc`
+- If not installed, see "Install SQL Server Command-Line Tools" section above
 
 **Issue: "Login failed for user 'sa'"**
 - Verify password matches the one in your `.env` file (`CDWWORK_DB_PASSWORD`)
-- Default password in docker-compose is typically `MyS3cur3P@ssw0rd`
+- Check the password in `docker-compose.yaml` (typically `MyS3cur3P@ssw0rd`)
+- Ensure the SQL Server container is running: `docker ps | grep sqlserver`
+
+**Issue: "Cannot open server '127.0.0.1,1433'"**
+- Verify SQL Server container is running: `docker ps | grep sqlserver2019`
+- Check container logs: `docker logs sqlserver2019 | tail -20`
+- Verify port mapping: `docker port sqlserver2019`
+
+**Issue: "Certificate validation failed"**
+- Always use `-C` flag with sqlcmd 18+ to trust self-signed certificates
+- Example: `sqlcmd -S 127.0.0.1,1433 -U sa -P 'password' -C`
+
+**Issue: "Incorrect syntax near ':r'" when running _master.sql**
+- The `:r` command requires you to run sqlcmd from the same directory as the script
+- Always `cd` to the `create/` or `insert/` directory before running `sqlcmd -i _master.sql`
 
 **Issue: Tables already exist errors**
 - The master create script drops and recreates the database, so this shouldn't occur
