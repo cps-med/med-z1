@@ -1,19 +1,29 @@
 # User Authentication and Management - Design Document
 
-**Document Version:** 1.1
-**Date:** 2025-12-18
-**Last Updated:** 2025-12-18
+**Document Version:** 2.0
+**Date:** 2025-12-23
+**Last Updated:** 2025-12-23
 **Status:** ✅ Implementation Complete
 **Implementation Phase:** Phases 1-8 Complete (All)
 
 **Changelog:**
+- **v2.0** (2025-12-23): CCOW v2.0 integration and session timeout fixes
+  - **Session Timeout Timezone Fix:** Fixed timezone-aware/naive datetime comparison in `ccow/auth_helper.py` (line 112-115)
+  - **CCOW v2.0 Integration:** CCOW Context Vault now shares `auth.sessions` and `auth.users` tables with med-z1 app
+  - **Shared Session Management:** Both med-z1 and CCOW extend session timeout on authenticated requests
+  - **Enhanced Documentation:** Added cross-references to:
+    - `docs/spec/session-timeout-behavior.md` - Complete session timeout behavior guide
+    - `docs/guide/environment-variables-guide.md` - Environment variable configuration
+    - `docs/spec/ccow-v2-implementation-summary.md` - CCOW v2.0 completion summary
+    - `docs/spec/ccow-v2-testing-guide.md` - API testing guide
+  - **Environment Configuration:** Documented SESSION_TIMEOUT_* environment variables
 - **v1.1** (2025-12-18): Implementation complete
   - All 8 phases implemented and tested
   - Login page with Entra ID-style design
   - User context display in sidebar with logout button
   - Template context helper utility created
   - Comprehensive test suite with 7 tests
-  - Complete implementation summary in `docs/auth-implementation-summary.md`
+  - Complete implementation summary in `docs/spec/auth-implementation-summary.md`
 - **v1.0** (2025-12-18): Initial design document
   - PostgreSQL auth schema design (users, sessions, audit logs)
   - Mock Microsoft Entra ID authentication flow
@@ -261,11 +271,15 @@ med-z1/
       medications.py     # Medications pages
       encounters.py      # Encounters pages
       labs.py            # Labs pages
+      auth.py            # (NEW) Authentication routes (login/logout)
     db/
       patient.py         # Patient queries
       vitals.py          # Vitals queries
       medications.py     # Medications queries
+      auth.py            # (NEW) Authentication database functions
       (etc.)
+    middleware/
+      auth.py            # (NEW) Authentication middleware
     templates/
       base.html          # Base template with topbar
       dashboard.html     # Main dashboard
@@ -273,9 +287,28 @@ med-z1/
       (etc.)
     utils/
       ccow_client.py     # CCOW context management
+      template_context.py # (NEW) Template context helper
     static/
       css/               # Stylesheets
       js/                # JavaScript (minimal)
+  db/                    # PostgreSQL serving database
+    ddl/                 # Schema creation scripts
+      create_auth_tables.sql                # Authentication schema
+      patient_demographics.sql              # Patient demographics table
+      create_patient_vitals_table.sql       # Vitals table
+      create_patient_flags_tables.sql       # Patient flags tables
+      create_patient_allergies_tables.sql   # Allergies tables
+      create_patient_medications_tables.sql # Medications tables
+      create_patient_encounters_table.sql   # Encounters table
+      create_patient_labs_table.sql         # Laboratory results table
+    seeds/               # Test/development data
+      auth_users.sql     # Mock user accounts with hashed passwords
+  ccow/
+    main.py              # CCOW Context Vault service
+    auth_helper.py       # (NEW) Shared authentication validation
+  scripts/
+    generate_password_hash.py # (NEW) Password hashing utility
+    test_auth_flow.py         # (NEW) Authentication flow tests
 ```
 
 **Current Session State**:
@@ -1149,6 +1182,32 @@ async def cleanup_expired_sessions():
         logger.info(f"Cleaned up {result.rowcount} expired sessions")
 ```
 
+### 7.5 Session Timeout Behavior and Timezone Handling
+
+**Timezone-Aware Session Validation** (v2.0 Fix):
+
+PostgreSQL `TIMESTAMP WITHOUT TIME ZONE` fields return timezone-naive datetime objects in Python. The session validation logic in `ccow/auth_helper.py` handles this correctly:
+
+```python
+# ccow/auth_helper.py (lines 112-115)
+# Use timezone-naive comparison if expires_at is timezone-naive
+if expires_at.tzinfo is None:
+    now = datetime.now()  # Local time, no timezone
+else:
+    now = datetime.now(timezone.utc)  # UTC time
+```
+
+**Key Points:**
+- Both med-z1 app (`app/middleware/auth.py`) and CCOW Context Vault (`ccow/auth_helper.py`) share `auth.sessions` table
+- Session timeout extends on every authenticated request in **both** applications
+- Single session enforcement applies across both applications
+- Expired session detection triggers audit logging and graceful redirect to login
+
+**For Complete Details:**
+- Session timeout behavior, extension rules, and edge cases: See `docs/spec/session-timeout-behavior.md`
+- CCOW v2.0 integration architecture and shared session management: See `docs/spec/ccow-v2-implementation-summary.md`
+- API testing with curl and Insomnia: See `docs/spec/ccow-v2-testing-guide.md`
+
 ---
 
 ## 8. Configuration Management
@@ -1368,6 +1427,17 @@ if BCRYPT_ROUNDS > 14:
 **User Experience**:
 - Balance security (shorter timeout) with convenience (longer timeout)
 - Adjust based on user feedback
+
+### 8.8 Complete Environment Variable Reference
+
+For a comprehensive guide to all authentication-related environment variables, including:
+- Detailed descriptions of each variable
+- Valid value ranges and constraints
+- Production vs. development recommendations
+- Troubleshooting common configuration errors
+- Integration with CCOW Context Vault settings
+
+**See:** `docs/guide/environment-variables-guide.md`
 
 ---
 
@@ -2788,6 +2858,80 @@ app.add_middleware(AuthMiddleware)
 # Include auth router
 app.include_router(auth.router)
 ```
+
+### 10.5 CCOW v2.0 Integration (Shared Authentication)
+
+**Overview:**
+
+As of v2.0, the CCOW Context Vault service shares authentication infrastructure with the med-z1 application:
+
+**Shared Components:**
+- **Database Tables:** `auth.users` and `auth.sessions` (single source of truth)
+- **Session Validation:** Both services use compatible session validation logic
+- **Session Extension:** Session timeout extends on activity in either service
+- **Single Sign-On Effect:** Login to med-z1 enables authenticated CCOW API access
+
+**Implementation:**
+
+```python
+# ccow/auth_helper.py - Shared authentication helper
+from datetime import datetime, timezone
+from sqlalchemy import create_engine, text
+from config import DATABASE_URL, SESSION_TIMEOUT_MINUTES
+
+def get_user_from_session(session_id: str) -> Optional[Dict[str, Any]]:
+    """
+    Validate session and return user information.
+    Shared by both med-z1 app and CCOW Context Vault.
+
+    Returns:
+        User dict if session valid, None otherwise
+    """
+    # 1. Query session from auth.sessions
+    # 2. Check if active and not expired (with timezone handling)
+    # 3. Extend session timeout (sliding window)
+    # 4. Query user from auth.users
+    # 5. Return user info or None
+```
+
+**Key Integration Points:**
+
+1. **CCOW API Endpoints Use Session Validation:**
+   ```python
+   # ccow/main.py (example endpoint)
+   @app.get("/ccow/active-patient")
+   async def get_active_patient(request: Request, session_id: str = Cookie(None)):
+       """Get active patient context (requires authentication)."""
+       user = get_user_from_session(session_id)
+       if not user:
+           raise HTTPException(status_code=401, detail="Unauthorized")
+       # ... return active patient context
+   ```
+
+2. **Session Timeout Extends in Both Services:**
+   - User activity in med-z1 app → session extended → CCOW API stays authenticated
+   - CCOW API call → session extended → med-z1 app stays authenticated
+   - Inactivity in both → session expires after 15 minutes → both require re-login
+
+3. **Timezone-Aware Session Validation (v2.0 Fix):**
+   ```python
+   # Handles PostgreSQL TIMESTAMP WITHOUT TIME ZONE correctly
+   if expires_at.tzinfo is None:
+       now = datetime.now()  # Local time, no timezone
+   else:
+       now = datetime.now(timezone.utc)  # UTC time
+   ```
+
+**For Complete Details:**
+- CCOW v2.0 architecture and shared session implementation: See `docs/spec/ccow-v2-implementation-summary.md`
+- Session timeout behavior across both services: See `docs/spec/session-timeout-behavior.md`
+- Testing CCOW API with authentication: See `docs/spec/ccow-v2-testing-guide.md`
+
+**Benefits:**
+- ✅ Single source of truth for authentication
+- ✅ Consistent session management across services
+- ✅ Simplified codebase (shared auth logic)
+- ✅ Automatic session extension across all user activity
 
 ---
 

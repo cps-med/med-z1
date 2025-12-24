@@ -328,17 +328,35 @@ docker ps | grep postgres16
 
 **Create the medz1 Database:**
 
-```bash
-# Connect to the default 'postgres' database
-docker exec -it postgres16 psql -U postgres -d medz1
+**IMPORTANT:** This is a prerequisite for both the ETL pipeline and user authentication setup. The `medz1` database must be created before running any DDL scripts from `db/ddl/` or seed scripts from `db/seeds/`.
 
-# In the psql prompt, create the medz1 database
+```bash
+# Step 1: Connect to the default 'postgres' database (NOT medz1, which doesn't exist yet)
+docker exec -it postgres16 psql -U postgres -d postgres
+
+# Step 2: In the psql prompt, create the medz1 database
 CREATE DATABASE medz1;
 
-# List all databases to verify creation
+# Step 3: List all databases to verify creation
 \l
 
-# Exit psql
+# Step 4: Exit psql
+\q
+```
+
+**Verification:**
+
+After creating the database, verify you can connect to it:
+
+```bash
+# Connect to the newly created medz1 database
+docker exec -it postgres16 psql -U postgres -d medz1
+
+# Verify connection
+SELECT current_database();
+-- Should return: medz1
+
+# Exit
 \q
 ```
 
