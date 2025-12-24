@@ -279,8 +279,589 @@ Email: clinician.alpha@va.gov
 Password: VaDemo2025!
 ```
 
+## MinIO Setup and Bucket Creation
+
+The med-z1 application uses MinIO as an S3-compatible object storage system for the data lake. MinIO must be properly configured before running ETL pipelines, as the pipelines write and read Parquet files from MinIO.  
+
+The MinIO service should already be running from the `docker compose up -d` command executed earlier.  
+
+Verify the container status
+```bash
+# Check that MinIO container is running
+docker ps | grep minio
+
+# View MinIO logs
+docker logs med-insight-minio
+```
+
+Expected output should show the MinIO container is running on port 9000 (API) and port 9001 (console).
+
+MinIO provides a web-based console for managing buckets and objects.
+
+Open your web browser and navigate to:
+```
+http://localhost:9001
+```
+
+Login with credentials from your `.env` file:
+```
+Username: admin
+Password: {admin password}
+```
+
+The ETL pipelines expect a bucket named `med-z1` (or name specified in `.env` file as `MINIO_BUCKET_NAME`).
+
+Create the med-z1 bucket via web console
+```text
+2. Click "Create Bucket" button
+3. Enter bucket name: med-z1
+4. Click "Create Bucket"
+5. Verify the bucket appears in the bucket list
+```
+
+**Test MinIO Connectivity**
+Use the provided test script to verify Python can connect to MinIO and perform basic read/write operations:
+
+```bash
+# Ensure you're in the project root and virtual environment is activated
+cd ~/swdev/med/med-z1
+source .venv/bin/activate
+
+# Run MinIO connectivity test (using -m flag to run as module)
+python -m scripts.minio_test
+```
+
+Expected output:
+```text
+VERIFYING MINIO...
+
+✓ Connected to MinIO at localhost:9000
+✓ Using bucket: med-z1
+✓ Test passed: 3 rows
+```
+
 ## Create and Populate SQL Server Mock Data
-Instructions...
+
+The **med-z1** application uses Microsoft SQL Server 2019 to simulate the VA Corporate Data Warehouse (CDW) for local development. The mock CDW contains synthetic patient data across multiple clinical domains including demographics, vitals, medications, allergies, encounters, and laboratory results.
+
+This section guides you through creating the **CDWWork** database schema and populating it with mock patient data.
+
+Verify that the SQL Server container is running
+```bash
+# Check that SQL Server container is running
+docker ps | grep sqlserver
+
+# View SQL Server logs (should show "SQL Server is now ready for client connections")
+docker logs sqlserver2019 | tail -20
+```
+
+Create CDWWork database and tables
+```bash
+# Navigate to the create scripts directory
+cd ~/swdev/med/med-z1/mock/sql-server/cdwwork/create
+
+# Run the master creation script via docker exec
+docker exec -i sqlserver2019 /opt/mssql-tools18/bin/sqlcmd \
+  -S localhost -U sa -P 'MyS3cur3P@ssw0rd' \
+  -C -i /docker-entrypoint-initdb.d/create/_master.sql
+```
+
+**Note:** The `-C` flag is required to trust the server certificate in SQL Server 2019+.
+
+You can verify that the database and tables were created via the VS Code SQL Server utility.
+- Connect to "sqlserver19-docker"
+- Select the CDWWork database
+- Verify that the full set of Dim and Fact tables were created  
+
+**Step 2: Insert Mock Data**
+
+```bash
+# Navigate to the insert scripts directory
+cd ~/swdev/med/med-z1/mock/sql-server/cdwwork/insert
+
+# Run the master insert script via docker exec
+docker exec -i sqlserver2019 /opt/mssql-tools18/bin/sqlcmd \
+  -S localhost -U sa -P 'MyS3cur3P@ssw0rd' \
+  -C -i /docker-entrypoint-initdb.d/insert/_master.sql
+```
+
+Expected output will show INSERT confirmation messages with row counts. The script populates data for approximately 15 synthetic patients across all clinical domains.
+
+### Method 2: Using Individual SQL Scripts
+
+If you need to create or populate specific tables individually (useful during development or debugging):
+
+**Create a single table:**
+```bash
+# Example: Create the Vital.VitalSign table
+docker exec -i sqlserver2019 /opt/mssql-tools18/bin/sqlcmd \
+  -S localhost -U sa -P 'MyS3cur3P@ssw0rd' \
+  -C -i /docker-entrypoint-initdb.d/create/Vital.VitalSign.sql
+```
+
+**Populate a single table:**
+```bash
+# Example: Insert data into Vital.VitalSign
+docker exec -i sqlserver2019 /opt/mssql-tools18/bin/sqlcmd \
+  -S localhost -U sa -P 'MyS3cur3P@ssw0rd' \
+  -C -i /docker-entrypoint-initdb.d/insert/Vital.VitalSign.sql
+```
+
+### Verify Database Creation
+
+Connect to the SQL Server container and verify the database and tables were created:
+
+```bash
+# Connect to SQL Server interactively
+docker exec -it sqlserver2019 /opt/mssql-tools18/bin/sqlcmd \
+  -S localhost -U sa -P 'MyS3cur3P@ssw0rd' -C
+```
+
+From the sqlcmd prompt, run verification queries:
+
+```sql
+-- List all databases (should see CDWWork)
+SELECT name FROM sys.databases;
+GO
+
+-- Switch to CDWWork database
+USE CDWWork;
+GO
+
+-- List all schemas
+SELECT name FROM sys.schemas WHERE name IN ('Dim', 'SPatient', 'Vital', 'Allergy', 'RxOut', 'BCMA', 'Inpat', 'Chem');
+GO
+
+-- Count patients in SPatient.SPatient
+SELECT COUNT(*) AS patient_count FROM SPatient.SPatient;
+GO
+
+-- Count vitals records
+SELECT COUNT(*) AS vitals_count FROM Vital.VitalSign;
+GO
+
+-- Count medications records
+SELECT COUNT(*) AS meds_count FROM RxOut.RxOutpat;
+GO
+
+-- Count lab results
+SELECT COUNT(*) AS labs_count FROM Chem.LabChem;
+GO
+
+-- View sample patient data
+SELECT TOP 5 PatientSID, PatientICN, PatientName, BirthDateTime, GenderName
+FROM SPatient.SPatient;
+GO
+
+-- Exit sqlcmd
+EXIT
+```
+
+Expected row counts (approximate):
+- Patients: 15-20
+- Vitals: 200+
+- Medications: 100+
+- Allergies: 30+
+- Encounters: 20+
+- Labs: 50+
+
+### Troubleshooting
+
+**Issue: "Sqlcmd: command not found"**
+- The SQL Server tools are installed inside the container, not on your host machine
+- Always use `docker exec` to run sqlcmd commands
+
+**Issue: "Login failed for user 'sa'"**
+- Verify password matches the one in your `.env` file (`CDWWORK_DB_PASSWORD`)
+- Default password in docker-compose is typically `MyS3cur3P@ssw0rd`
+
+**Issue: Tables already exist errors**
+- The master create script drops and recreates the database, so this shouldn't occur
+- If running individual scripts, manually drop tables first or truncate data
+
+**Issue: Foreign key constraint errors during INSERT**
+- Ensure dimension tables are populated before fact tables
+- The master insert script handles dependency order automatically
+- If running individual scripts, follow this order: Dim tables → SPatient → SStaff → clinical domain tables
 
 ## Run ETL Data Pipelines
-Instructions
+
+The **med-z1** ETL (Extract, Transform, Load) pipelines transform raw data from the SQL Server mock CDW into curated, query-optimized data for the PostgreSQL serving database. The pipelines follow the **medallion architecture** with three layers stored as Parquet files in MinIO, followed by loading into PostgreSQL.
+
+**Pipeline Flow:**
+1. **Bronze:** Extract raw data from SQL Server → Write Parquet files to MinIO
+2. **Silver:** Read Bronze Parquet → Clean, harmonize, unify → Write Silver Parquet to MinIO
+3. **Gold:** Read Silver Parquet → Optimize for queries → Write Gold Parquet to MinIO
+4. **Load:** Read Gold Parquet → Insert into PostgreSQL serving database
+
+### Prerequisites Checklist
+
+Before running ETL pipelines, ensure the following are complete:
+
+- ✅ PostgreSQL container running with `medz1` database created
+- ✅ PostgreSQL auth schema and tables created (from previous section)
+- ✅ MinIO container running with `med-z1` bucket created
+- ✅ MinIO connectivity tested successfully (`python -m scripts.minio_test`)
+- ✅ SQL Server container running with CDWWork database populated
+- ✅ Python virtual environment activated (`source .venv/bin/activate`)
+
+### Create PostgreSQL Clinical Domain Schemas
+
+Before loading data, create the PostgreSQL table schemas for each clinical domain:
+
+```bash
+# Ensure you're in project root with virtual environment activated
+cd ~/swdev/med/med-z1
+source .venv/bin/activate
+
+# Create patient demographics tables
+docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/patient_demographics.sql
+
+# Create vitals table
+docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_vitals_table.sql
+
+# Create allergies tables
+docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_allergies_tables.sql
+
+# Create medications tables
+docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_medications_tables.sql
+
+# Create patient flags tables
+docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_flags_tables.sql
+
+# Create encounters table
+docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_encounters_table.sql
+
+# Create laboratory results table
+docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_labs_table.sql
+```
+
+Verify schemas were created:
+```bash
+docker exec -it postgres16 psql -U postgres -d medz1 -c "\dt clinical.*"
+```
+
+Expected output should list tables: `patient_demographics`, `patient_vitals`, `patient_allergies`, `patient_allergy_reactions`, `patient_medications`, `patient_flags`, `patient_flag_assignments`, `patient_encounters`, `patient_labs`
+
+### Running ETL Pipelines by Domain
+
+Each clinical domain has a complete pipeline (Bronze → Silver → Gold → Load). Run pipelines in the order shown below to respect data dependencies.
+
+All ETL scripts are run as Python modules from the project root:
+
+```bash
+# Ensure you're in project root
+cd ~/swdev/med/med-z1
+source .venv/bin/activate
+```
+
+#### 1. Patient Demographics Pipeline
+
+```bash
+# Bronze: Extract raw patient data from SQL Server
+python -m etl.bronze_patient
+python -m etl.bronze_patient_address
+python -m etl.bronze_patient_disability
+python -m etl.bronze_patient_insurance
+python -m etl.bronze_insurance_company
+
+# Silver: Clean and harmonize
+python -m etl.silver_patient
+
+# Gold: Create query-optimized demographics
+python -m etl.gold_patient
+
+# Load: Insert into PostgreSQL
+python -m etl.load_postgres_patient
+```
+
+#### 2. Vitals Pipeline
+
+```bash
+# Bronze: Extract vitals from SQL Server
+python -m etl.bronze_vitals
+
+# Silver: Clean and harmonize
+python -m etl.silver_vitals
+
+# Gold: Create query-optimized vitals
+python -m etl.gold_vitals
+
+# Load: Insert into PostgreSQL
+python -m etl.load_vitals
+```
+
+#### 3. Allergies Pipeline
+
+```bash
+# Bronze: Extract allergies and related dimension data
+python -m etl.bronze_allergen
+python -m etl.bronze_reaction
+python -m etl.bronze_allergy_severity
+python -m etl.bronze_patient_allergy
+python -m etl.bronze_patient_allergy_reaction
+
+# Silver: Clean and harmonize
+python -m etl.silver_patient_allergies
+
+# Gold: Create query-optimized allergies
+python -m etl.gold_patient_allergies
+
+# Load: Insert into PostgreSQL
+python -m etl.load_patient_allergies
+```
+
+#### 4. Medications Pipeline
+
+```bash
+# Bronze: Extract medications from SQL Server
+python -m etl.bronze_medications
+
+# Silver: Clean and harmonize
+python -m etl.silver_medications
+
+# Gold: Create query-optimized medications
+python -m etl.gold_patient_medications
+
+# Load: Insert into PostgreSQL
+python -m etl.load_medications
+```
+
+#### 5. Patient Flags Pipeline
+
+```bash
+# Bronze: Extract patient flags
+python -m etl.bronze_patient_flags
+
+# Silver: Clean and harmonize
+python -m etl.silver_patient_flags
+
+# Gold: Create query-optimized flags
+python -m etl.gold_patient_flags
+
+# Load: Insert into PostgreSQL
+python -m etl.load_patient_flags
+```
+
+#### 6. Encounters (Inpatient) Pipeline
+
+```bash
+# Bronze: Extract inpatient encounters
+python -m etl.bronze_inpatient
+
+# Silver: Clean and harmonize
+python -m etl.silver_inpatient
+
+# Gold: Create query-optimized encounters
+python -m etl.gold_inpatient
+
+# Load: Insert into PostgreSQL
+python -m etl.load_encounters
+```
+
+#### 7. Laboratory Results Pipeline
+
+```bash
+# Bronze: Extract lab results
+python -m etl.bronze_labs
+
+# Silver: Clean and harmonize
+python -m etl.silver_labs
+
+# Gold: Create query-optimized labs
+python -m etl.gold_labs
+
+# Load: Insert into PostgreSQL
+python -m etl.load_labs
+```
+
+### Verify ETL Pipeline Results
+
+After running pipelines, verify data was successfully loaded into PostgreSQL:
+
+```bash
+# Check row counts for all clinical domain tables
+docker exec -it postgres16 psql -U postgres -d medz1 -c "
+SELECT
+  'patient_demographics' AS table_name, COUNT(*) AS row_count FROM clinical.patient_demographics
+UNION ALL
+SELECT 'patient_vitals', COUNT(*) FROM clinical.patient_vitals
+UNION ALL
+SELECT 'patient_allergies', COUNT(*) FROM clinical.patient_allergies
+UNION ALL
+SELECT 'patient_medications', COUNT(*) FROM clinical.patient_medications
+UNION ALL
+SELECT 'patient_flags', COUNT(*) FROM clinical.patient_flags
+UNION ALL
+SELECT 'patient_flag_assignments', COUNT(*) FROM clinical.patient_flag_assignments
+UNION ALL
+SELECT 'patient_encounters', COUNT(*) FROM clinical.patient_encounters
+UNION ALL
+SELECT 'patient_labs', COUNT(*) FROM clinical.patient_labs
+ORDER BY table_name;
+"
+```
+
+Expected row counts (approximate):
+```
+         table_name         | row_count
+----------------------------+-----------
+ patient_allergies          |        30
+ patient_demographics       |        15
+ patient_encounters         |        20
+ patient_flag_assignments   |        12
+ patient_flags              |         8
+ patient_labs               |        58
+ patient_medications        |       100
+ patient_vitals             |       200
+```
+
+### Verify MinIO Parquet Files
+
+You can also verify that Parquet files were created in MinIO:
+
+**Via MinIO Web Console:**
+1. Navigate to http://localhost:9001
+2. Login (admin / admin#123#2025)
+3. Click "Buckets" → "med-z1"
+4. Browse folders: `bronze/`, `silver/`, `gold/`
+5. You should see Parquet files organized by domain
+
+**Via Python Script:**
+```bash
+# List all objects in MinIO bucket
+python -c "
+from lake.minio_client import MinIOClient
+client = MinIOClient()
+# List all objects (requires adding a list method or using boto3 directly)
+import boto3
+s3 = client.s3_client
+response = s3.list_objects_v2(Bucket='med-z1', Prefix='bronze/')
+for obj in response.get('Contents', []):
+    print(obj['Key'])
+"
+```
+
+### Running All Pipelines with a Shell Script (Optional)
+
+For convenience, you can create a shell script to run all ETL pipelines sequentially:
+
+```bash
+# Create a script: scripts/run_all_etl.sh
+cat > scripts/run_all_etl.sh << 'EOF'
+#!/bin/bash
+# Run all ETL pipelines for med-z1
+
+set -e  # Exit on error
+
+echo "Starting ETL pipelines..."
+
+# Patient Demographics
+echo ">>> Running Patient Demographics pipeline..."
+python -m etl.bronze_patient
+python -m etl.bronze_patient_address
+python -m etl.bronze_patient_disability
+python -m etl.bronze_patient_insurance
+python -m etl.bronze_insurance_company
+python -m etl.silver_patient
+python -m etl.gold_patient
+python -m etl.load_postgres_patient
+
+# Vitals
+echo ">>> Running Vitals pipeline..."
+python -m etl.bronze_vitals
+python -m etl.silver_vitals
+python -m etl.gold_vitals
+python -m etl.load_vitals
+
+# Allergies
+echo ">>> Running Allergies pipeline..."
+python -m etl.bronze_allergen
+python -m etl.bronze_reaction
+python -m etl.bronze_allergy_severity
+python -m etl.bronze_patient_allergy
+python -m etl.bronze_patient_allergy_reaction
+python -m etl.silver_patient_allergies
+python -m etl.gold_patient_allergies
+python -m etl.load_patient_allergies
+
+# Medications
+echo ">>> Running Medications pipeline..."
+python -m etl.bronze_medications
+python -m etl.silver_medications
+python -m etl.gold_patient_medications
+python -m etl.load_medications
+
+# Patient Flags
+echo ">>> Running Patient Flags pipeline..."
+python -m etl.bronze_patient_flags
+python -m etl.silver_patient_flags
+python -m etl.gold_patient_flags
+python -m etl.load_patient_flags
+
+# Encounters
+echo ">>> Running Encounters pipeline..."
+python -m etl.bronze_inpatient
+python -m etl.silver_inpatient
+python -m etl.gold_inpatient
+python -m etl.load_encounters
+
+# Laboratory Results
+echo ">>> Running Laboratory Results pipeline..."
+python -m etl.bronze_labs
+python -m etl.silver_labs
+python -m etl.gold_labs
+python -m etl.load_labs
+
+echo "All ETL pipelines completed successfully!"
+EOF
+
+# Make it executable
+chmod +x scripts/run_all_etl.sh
+
+# Run it
+./scripts/run_all_etl.sh
+```
+
+### Troubleshooting ETL Issues
+
+**Issue: "Connection refused" to SQL Server or PostgreSQL**
+- Verify containers are running: `docker ps`
+- Check `.env` file has correct connection strings
+- Verify network connectivity: `docker network ls`
+
+**Issue: "Bucket does not exist" error**
+- Verify MinIO bucket exists: check web console at http://localhost:9001
+- Verify bucket name in `.env` matches the bucket you created
+
+**Issue: "Table does not exist" in PostgreSQL**
+- Ensure you ran all DDL scripts in `db/ddl/` before running load scripts
+- Check table exists: `docker exec -it postgres16 psql -U postgres -d medz1 -c "\dt clinical.*"`
+
+**Issue: ETL script fails with "column does not exist"**
+- This typically means the SQL Server mock data schema doesn't match what the ETL script expects
+- Check that you ran the latest `_master.sql` scripts for both CREATE and INSERT
+- Verify the source table structure in SQL Server matches the Bronze extraction query
+
+**Issue: Data loaded but row counts are zero**
+- Check SQL Server has data: `docker exec -it sqlserver2019 /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'MyS3cur3P@ssw0rd' -C -Q "USE CDWWork; SELECT COUNT(*) FROM SPatient.SPatient;"`
+- Check MinIO has Parquet files via web console
+- Review ETL script logs for errors
+
+### Next Steps
+
+With the ETL pipelines complete, you now have:
+- ✅ Mock CDW data in SQL Server (simulates VA production CDW)
+- ✅ Bronze/Silver/Gold Parquet files in MinIO (data lake)
+- ✅ Query-optimized data in PostgreSQL (serving database for UI)
+
+You can now start the FastAPI application and view patient data in the UI:
+
+```bash
+# Start the main med-z1 web application
+uvicorn app.main:app --reload
+
+# Open browser to http://127.0.0.1:8000
+# Login with: clinician.alpha@va.gov / VaDemo2025!
+# Search for patient by ICN (e.g., 1000000001)
+```
