@@ -80,4 +80,4 @@ COMMENT ON COLUMN clinical.patient_labs.abnormal_flag IS 'H=High, L=Low, H*=Crit
 COMMENT ON COLUMN clinical.patient_labs.collection_location IS 'Laboratory location where specimen was collected';
 
 -- Grant permissions
-GRANT SELECT ON patient_labs TO PUBLIC;
+GRANT SELECT ON clinical.patient_labs TO PUBLIC;

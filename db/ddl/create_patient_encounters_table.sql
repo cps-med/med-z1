@@ -96,4 +96,4 @@ COMMENT ON COLUMN clinical.patient_encounters.admission_category IS 'Active Admi
 COMMENT ON COLUMN clinical.patient_encounters.discharge_disposition IS 'Where patient went after discharge (Home, SNF, Rehab, AMA, Deceased, etc.)';
 
 -- Grant permissions
-GRANT SELECT ON patient_encounters TO PUBLIC;
+GRANT SELECT ON clinical.patient_encounters TO PUBLIC;
