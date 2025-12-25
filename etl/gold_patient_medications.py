@@ -43,19 +43,22 @@ def transform_rxout_gold():
     logger.info(f"  - Loaded {len(df)} prescriptions from Silver layer")
 
     # ==================================================================
-    # Step 2: Generate patient ICN from patient_sid
+    # Step 2: Validate patient ICN from Silver layer
     # ==================================================================
-    logger.info("Step 2: Generating patient ICN from patient_sid...")
+    logger.info("Step 2: Validating patient ICN from Silver layer...")
 
-    # Patient ICN Resolution Strategy (same as vitals):
-    # PatientSID in different tables may have different ranges, but they map
-    # to the same ICN using: ICN = "ICN" + str(100000 + patient_sid)
+    # Patient ICN is already resolved in Silver layer via join with SPatient.SPatient
+    # Just create patient_key as alias to patient_icn for consistency
     df = df.with_columns([
-        pl.format("ICN{}", (100000 + pl.col("patient_sid"))).alias("patient_icn"),
-        pl.format("ICN{}", (100000 + pl.col("patient_sid"))).alias("patient_key"),
+        pl.col("patient_icn").alias("patient_key"),
     ])
 
-    logger.info(f"  - Generated patient ICN for all {len(df)} prescriptions")
+    # Log any prescriptions without ICN
+    missing_icn_count = df.filter(pl.col("patient_icn").is_null()).shape[0]
+    if missing_icn_count > 0:
+        logger.warning(f"  - {missing_icn_count} prescriptions missing PatientICN")
+    else:
+        logger.info(f"  - All {len(df)} prescriptions have PatientICN")
 
     # ==================================================================
     # Step 3: Calculate is_active flag
@@ -232,16 +235,22 @@ def transform_bcma_gold():
     logger.info(f"  - Loaded {len(df)} administration events from Silver layer")
 
     # ==================================================================
-    # Step 2: Generate patient ICN from patient_sid
+    # Step 2: Validate patient ICN from Silver layer
     # ==================================================================
-    logger.info("Step 2: Generating patient ICN from patient_sid...")
+    logger.info("Step 2: Validating patient ICN from Silver layer...")
 
+    # Patient ICN is already resolved in Silver layer via join with SPatient.SPatient
+    # Just create patient_key as alias to patient_icn for consistency
     df = df.with_columns([
-        pl.format("ICN{}", (100000 + pl.col("patient_sid"))).alias("patient_icn"),
-        pl.format("ICN{}", (100000 + pl.col("patient_sid"))).alias("patient_key"),
+        pl.col("patient_icn").alias("patient_key"),
     ])
 
-    logger.info(f"  - Generated patient ICN for all {len(df)} administration events")
+    # Log any administrations without ICN
+    missing_icn_count = df.filter(pl.col("patient_icn").is_null()).shape[0]
+    if missing_icn_count > 0:
+        logger.warning(f"  - {missing_icn_count} administrations missing PatientICN")
+    else:
+        logger.info(f"  - All {len(df)} administrations have PatientICN")
 
     # ==================================================================
     # Step 3: Calculate administration_variance flag (boolean)

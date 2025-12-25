@@ -24,6 +24,11 @@ from sqlalchemy import create_engine
 from config import CDWWORK_DB_CONFIG
 from lake.minio_client import MinIOClient, build_bronze_path, build_silver_path
 
+# Note: SQLAlchemy and CDWWORK_DB_CONFIG imports are retained only for
+# load_sta3n_lookup() and load_staff_lookup() functions.
+# TODO: Future enhancement - extract Sta3n and Staff to Bronze layer
+# to fully comply with medallion architecture.
+
 logger = logging.getLogger(__name__)
 
 
@@ -98,6 +103,35 @@ def load_staff_lookup():
     return staff_df
 
 
+def load_patient_lookup():
+    """
+    Load Patient lookup table from Bronze layer.
+    Returns a polars DataFrame with PatientSID to PatientICN mapping.
+    Adheres to medallion architecture: Silver only reads from Bronze Parquet.
+    """
+    logger.info("Loading Patient lookup table from Bronze layer")
+
+    # Initialize MinIO client
+    minio_client = MinIOClient()
+
+    # Load Bronze patient data
+    patient_path = build_bronze_path("cdwwork", "patient", "patient_raw.parquet")
+    patient_df = minio_client.read_parquet(patient_path)
+
+    # Select only needed columns for lookup
+    patient_df = patient_df.select([
+        "PatientSID",
+        "PatientICN",
+        "PatientName",
+        "Sta3n"
+    ]).filter(
+        pl.col("PatientICN").is_not_null()
+    )
+
+    logger.info(f"Loaded {len(patient_df)} patient records for ICN lookup from Bronze Parquet")
+    return patient_df
+
+
 def transform_rxout_silver():
     """Transform Bronze RxOut (outpatient) data to Silver layer."""
 
@@ -134,11 +168,33 @@ def transform_rxout_silver():
     # Load lookup tables
     sta3n_lookup = load_sta3n_lookup()
     staff_lookup = load_staff_lookup()
+    patient_lookup = load_patient_lookup()
 
     # ==================================================================
-    # Step 2: Get latest fill per prescription
+    # Step 2: Join with patient demographics to get PatientICN
     # ==================================================================
-    logger.info("Step 2: Determining latest fill per prescription...")
+    logger.info("Step 2: Joining with patient demographics to get PatientICN...")
+
+    df_rxoutpat = df_rxoutpat.join(
+        patient_lookup.select([
+            "PatientSID",
+            pl.col("PatientICN").alias("patient_icn"),
+        ]),
+        on="PatientSID",
+        how="left"
+    )
+
+    # Log any prescriptions without ICN mapping
+    missing_icn_count = df_rxoutpat.filter(pl.col("patient_icn").is_null()).shape[0]
+    if missing_icn_count > 0:
+        logger.warning(f"  - {missing_icn_count} prescriptions missing PatientICN mapping")
+    else:
+        logger.info(f"  - All {len(df_rxoutpat)} prescriptions have PatientICN mapping")
+
+    # ==================================================================
+    # Step 3: Get latest fill per prescription
+    # ==================================================================
+    logger.info("Step 3: Determining latest fill per prescription...")
 
     # Sort by FillDateTime descending and take first record per RxOutpatSID
     df_latest_fill = (
@@ -151,9 +207,9 @@ def transform_rxout_silver():
     logger.info(f"  - Found latest fill for {len(df_latest_fill)} prescriptions")
 
     # ==================================================================
-    # Step 3: Join RxOutpat with latest fill
+    # Step 4: Join RxOutpat with latest fill
     # ==================================================================
-    logger.info("Step 3: Joining prescriptions with latest fills...")
+    logger.info("Step 4: Joining prescriptions with latest fills...")
 
     df = df_rxoutpat.join(
         df_latest_fill.select([
@@ -172,9 +228,9 @@ def transform_rxout_silver():
     logger.info(f"  - Joined {len(df)} prescriptions with fill data")
 
     # ==================================================================
-    # Step 4: Resolve LocalDrug lookups
+    # Step 5: Resolve LocalDrug lookups
     # ==================================================================
-    logger.info("Step 4: Resolving LocalDrug lookups...")
+    logger.info("Step 5: Resolving LocalDrug lookups...")
 
     df = df.join(
         df_local_drug.select([
@@ -194,9 +250,9 @@ def transform_rxout_silver():
     logger.info(f"  - Resolved local drug names for {len(df)} prescriptions")
 
     # ==================================================================
-    # Step 5: Resolve NationalDrug lookups (using LocalDrug mapping)
+    # Step 6: Resolve NationalDrug lookups (using LocalDrug mapping)
     # ==================================================================
-    logger.info("Step 5: Resolving NationalDrug lookups...")
+    logger.info("Step 6: Resolving NationalDrug lookups...")
 
     # Use NationalDrugSID from LocalDrug dimension, not from RxOutpat
     # (RxOutpat may have stale/incorrect NationalDrugSID values)
@@ -221,9 +277,9 @@ def transform_rxout_silver():
     logger.info(f"  - Resolved national drug names for {len(df)} prescriptions")
 
     # ==================================================================
-    # Step 6: Resolve Sta3n lookups (facility names)
+    # Step 7: Resolve Sta3n lookups (facility names)
     # ==================================================================
-    logger.info("Step 6: Resolving Sta3n lookups...")
+    logger.info("Step 7: Resolving Sta3n lookups...")
 
     df = df.join(
         sta3n_lookup.select([
@@ -235,9 +291,9 @@ def transform_rxout_silver():
     )
 
     # ==================================================================
-    # Step 7: Resolve Provider lookups
+    # Step 8: Resolve Provider lookups
     # ==================================================================
-    logger.info("Step 7: Resolving provider lookups...")
+    logger.info("Step 8: Resolving provider lookups...")
 
     df = df.join(
         staff_lookup.select([
@@ -262,9 +318,9 @@ def transform_rxout_silver():
     )
 
     # ==================================================================
-    # Step 8: Calculate rx_status_computed
+    # Step 9: Calculate rx_status_computed
     # ==================================================================
-    logger.info("Step 8: Calculating rx_status_computed...")
+    logger.info("Step 9: Calculating rx_status_computed...")
 
     current_date = datetime.now()  # Naive datetime to match database datetimes
 
@@ -286,9 +342,9 @@ def transform_rxout_silver():
     ])
 
     # ==================================================================
-    # Step 9: Clean and standardize fields
+    # Step 10: Clean and standardize fields
     # ==================================================================
-    logger.info("Step 9: Cleaning and standardizing fields...")
+    logger.info("Step 10: Cleaning and standardizing fields...")
 
     df = df.with_columns([
         # Clean string fields
@@ -304,14 +360,15 @@ def transform_rxout_silver():
     ])
 
     # ==================================================================
-    # Step 10: Select final columns
+    # Step 11: Select final columns
     # ==================================================================
-    logger.info("Step 10: Selecting final columns...")
+    logger.info("Step 11: Selecting final columns...")
 
     df = df.select([
         # IDs
         pl.col("RxOutpatSID").alias("rx_outpat_id"),
         pl.col("PatientSID").alias("patient_sid"),
+        pl.col("patient_icn"),
         pl.col("LocalDrugSID").alias("local_drug_id"),
         pl.col("NationalDrugSID_from_LocalDrug").alias("national_drug_id"),
 
@@ -382,9 +439,9 @@ def transform_rxout_silver():
     ])
 
     # ==================================================================
-    # Step 11: Write to Silver layer
+    # Step 12: Write to Silver layer
     # ==================================================================
-    logger.info("Step 11: Writing to Silver layer...")
+    logger.info("Step 12: Writing to Silver layer...")
 
     silver_path = build_silver_path("medications", "medications_rxout_cleaned.parquet")
     minio_client.write_parquet(df, silver_path)
@@ -429,11 +486,33 @@ def transform_bcma_silver():
     # Load lookup tables
     sta3n_lookup = load_sta3n_lookup()
     staff_lookup = load_staff_lookup()
+    patient_lookup = load_patient_lookup()
 
     # ==================================================================
-    # Step 2: Resolve LocalDrug lookups
+    # Step 2: Join with patient demographics to get PatientICN
     # ==================================================================
-    logger.info("Step 2: Resolving LocalDrug lookups...")
+    logger.info("Step 2: Joining with patient demographics to get PatientICN...")
+
+    df_bcma = df_bcma.join(
+        patient_lookup.select([
+            "PatientSID",
+            pl.col("PatientICN").alias("patient_icn"),
+        ]),
+        on="PatientSID",
+        how="left"
+    )
+
+    # Log any administrations without ICN mapping
+    missing_icn_count = df_bcma.filter(pl.col("patient_icn").is_null()).shape[0]
+    if missing_icn_count > 0:
+        logger.warning(f"  - {missing_icn_count} administrations missing PatientICN mapping")
+    else:
+        logger.info(f"  - All {len(df_bcma)} administrations have PatientICN mapping")
+
+    # ==================================================================
+    # Step 3: Resolve LocalDrug lookups
+    # ==================================================================
+    logger.info("Step 3: Resolving LocalDrug lookups...")
 
     df = df_bcma.join(
         df_local_drug.select([
@@ -453,9 +532,9 @@ def transform_bcma_silver():
     logger.info(f"  - Resolved local drug names for {len(df)} administration events")
 
     # ==================================================================
-    # Step 3: Resolve NationalDrug lookups (using LocalDrug mapping)
+    # Step 4: Resolve NationalDrug lookups (using LocalDrug mapping)
     # ==================================================================
-    logger.info("Step 3: Resolving NationalDrug lookups...")
+    logger.info("Step 4: Resolving NationalDrug lookups...")
 
     # Use NationalDrugSID from LocalDrug dimension, not from BCMA
     # (BCMA may have stale/incorrect NationalDrugSID values)
@@ -480,9 +559,9 @@ def transform_bcma_silver():
     logger.info(f"  - Resolved national drug names for {len(df)} administration events")
 
     # ==================================================================
-    # Step 4: Resolve Sta3n lookups (facility names)
+    # Step 5: Resolve Sta3n lookups (facility names)
     # ==================================================================
-    logger.info("Step 4: Resolving Sta3n lookups...")
+    logger.info("Step 5: Resolving Sta3n lookups...")
 
     df = df.join(
         sta3n_lookup.select([
@@ -494,9 +573,9 @@ def transform_bcma_silver():
     )
 
     # ==================================================================
-    # Step 5: Resolve Staff lookups (administered by)
+    # Step 6: Resolve Staff lookups (administered by)
     # ==================================================================
-    logger.info("Step 5: Resolving staff lookups...")
+    logger.info("Step 6: Resolving staff lookups...")
 
     df = df.join(
         staff_lookup.select([
@@ -521,9 +600,9 @@ def transform_bcma_silver():
     )
 
     # ==================================================================
-    # Step 6: Calculate computed fields
+    # Step 7: Calculate computed fields
     # ==================================================================
-    logger.info("Step 6: Calculating computed fields...")
+    logger.info("Step 7: Calculating computed fields...")
 
     df = df.with_columns([
         # is_controlled_substance: Y if DEASchedule is not null
@@ -540,9 +619,9 @@ def transform_bcma_silver():
     ])
 
     # ==================================================================
-    # Step 7: Clean and standardize fields
+    # Step 8: Clean and standardize fields
     # ==================================================================
-    logger.info("Step 7: Cleaning and standardizing fields...")
+    logger.info("Step 8: Cleaning and standardizing fields...")
 
     df = df.with_columns([
         # Clean string fields
@@ -562,14 +641,15 @@ def transform_bcma_silver():
     ])
 
     # ==================================================================
-    # Step 8: Select final columns
+    # Step 9: Select final columns
     # ==================================================================
-    logger.info("Step 8: Selecting final columns...")
+    logger.info("Step 9: Selecting final columns...")
 
     df = df.select([
         # IDs
         pl.col("BCMAMedicationLogSID").alias("bcma_medication_log_id"),
         pl.col("PatientSID").alias("patient_sid"),
+        pl.col("patient_icn"),
         pl.col("InpatientSID").alias("inpatient_sid"),
         pl.col("LocalDrugSID").alias("local_drug_id"),
         pl.col("NationalDrugSID_from_LocalDrug").alias("national_drug_id"),
@@ -635,9 +715,9 @@ def transform_bcma_silver():
     ])
 
     # ==================================================================
-    # Step 9: Write to Silver layer
+    # Step 10: Write to Silver layer
     # ==================================================================
-    logger.info("Step 9: Writing to Silver layer...")
+    logger.info("Step 10: Writing to Silver layer...")
 
     silver_path = build_silver_path("medications", "medications_bcma_cleaned.parquet")
     minio_client.write_parquet(df, silver_path)
