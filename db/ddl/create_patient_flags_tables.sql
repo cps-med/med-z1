@@ -19,14 +19,17 @@
 -- Set client encoding
 SET client_encoding = 'UTF8';
 
+-- Create clinical schema if it doesn't exist
+CREATE SCHEMA IF NOT EXISTS clinical;
+
 -- Drop tables if they exist (for clean re-runs)
-DROP TABLE IF EXISTS patient_flag_history CASCADE;
-DROP TABLE IF EXISTS patient_flags CASCADE;
+DROP TABLE IF EXISTS clinical.patient_flag_history CASCADE;
+DROP TABLE IF EXISTS clinical.patient_flags CASCADE;
 
 \echo 'Creating patient_flags table...'
 
 -- Main patient flags table (denormalized for query performance)
-CREATE TABLE patient_flags (
+CREATE TABLE clinical.patient_flags (
     flag_id                 SERIAL PRIMARY KEY,
     patient_key             VARCHAR(50) NOT NULL,   -- ICN
     assignment_id           BIGINT NOT NULL UNIQUE, -- Unique for upserts
@@ -51,13 +54,13 @@ CREATE TABLE patient_flags (
 \echo 'Creating indexes on patient_flags...'
 
 -- Indexes for patient-centric queries
-CREATE INDEX idx_patient_flags_patient ON patient_flags (patient_key, is_active);
-CREATE INDEX idx_patient_flags_review ON patient_flags (review_status, next_review_date);
+CREATE INDEX idx_patient_flags_patient ON clinical.patient_flags (patient_key, is_active);
+CREATE INDEX idx_patient_flags_review ON clinical.patient_flags (review_status, next_review_date);
 
 \echo 'Creating patient_flag_history table...'
 
 -- History table with sensitive narrative text
-CREATE TABLE patient_flag_history (
+CREATE TABLE clinical.patient_flag_history (
     history_id              SERIAL PRIMARY KEY,
     assignment_id           BIGINT NOT NULL,
     patient_key             VARCHAR(50) NOT NULL,
@@ -77,8 +80,8 @@ CREATE TABLE patient_flag_history (
 \echo 'Creating indexes on patient_flag_history...'
 
 -- Indexes for history queries
-CREATE INDEX idx_flag_history_assignment ON patient_flag_history (assignment_id, history_date DESC);
-CREATE INDEX idx_flag_history_patient ON patient_flag_history (patient_key, history_date DESC);
+CREATE INDEX idx_flag_history_assignment ON clinical.patient_flag_history (assignment_id, history_date DESC);
+CREATE INDEX idx_flag_history_patient ON clinical.patient_flag_history (patient_key, history_date DESC);
 
 \echo 'Patient flags tables created successfully!'
 

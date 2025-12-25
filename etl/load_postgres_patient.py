@@ -46,6 +46,7 @@ def load_patient_demographics_to_postgres():
     df_pandas.to_sql(
         "patient_demographics",
         engine,
+        schema="clinical",
         if_exists="replace",
         index=False,
         method="multi",
@@ -55,7 +56,7 @@ def load_patient_demographics_to_postgres():
 
     # Verify
     with engine.connect() as conn:
-        result = conn.execute(text("SELECT COUNT(*) FROM patient_demographics")).fetchone()
+        result = conn.execute(text("SELECT COUNT(*) FROM clinical.patient_demographics")).fetchone()
         logger.info(f"Verification: {result[0]} rows in patient_demographics table")
 
 

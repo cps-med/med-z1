@@ -109,7 +109,7 @@ def load_labs_to_postgresql():
     logger.info("Step 4: Truncating existing patient_labs table...")
 
     with engine.connect() as conn:
-        conn.execute(text("TRUNCATE TABLE patient_labs;"))
+        conn.execute(text("TRUNCATE TABLE clinical.patient_labs;"))
         conn.commit()
 
     logger.info("  - Table truncated")
@@ -126,6 +126,7 @@ def load_labs_to_postgresql():
     df_pandas.to_sql(
         "patient_labs",
         engine,
+        schema="clinical",
         if_exists="append",
         index=False,
         method="multi",  # Bulk insert for performance
@@ -140,7 +141,7 @@ def load_labs_to_postgresql():
     logger.info("Step 6: Verifying data...")
 
     with engine.connect() as conn:
-        result = conn.execute(text("SELECT COUNT(*) FROM patient_labs;"))
+        result = conn.execute(text("SELECT COUNT(*) FROM clinical.patient_labs;"))
         count = result.scalar()
         logger.info(f"  - Verified: {count} rows in patient_labs table")
 
@@ -148,7 +149,7 @@ def load_labs_to_postgresql():
         result = conn.execute(text("""
             SELECT patient_key, lab_test_name, result_value, abnormal_flag,
                    collection_location, collection_datetime
-            FROM patient_labs
+            FROM clinical.patient_labs
             LIMIT 5;
         """))
         logger.info("  - Sample records:")
@@ -158,7 +159,7 @@ def load_labs_to_postgresql():
         # Count by location
         result = conn.execute(text("""
             SELECT collection_location, COUNT(*) as count
-            FROM patient_labs
+            FROM clinical.patient_labs
             GROUP BY collection_location
             ORDER BY count DESC;
         """))

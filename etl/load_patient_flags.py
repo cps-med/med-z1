@@ -119,7 +119,7 @@ def load_patient_flags_to_postgres():
         logger.info("Performing upsert into patient_flags...")
 
         result = conn.execute(text("""
-            INSERT INTO patient_flags (
+            INSERT INTO clinical.patient_flags (
                 patient_key, assignment_id, flag_name, flag_category,
                 is_active, assignment_status, assignment_date, inactivation_date,
                 owner_site, owner_site_name, review_frequency_days,
@@ -265,7 +265,7 @@ def load_patient_flags_to_postgres():
                     SELECT 1 FROM pg_constraint
                     WHERE conname = 'patient_flag_history_unique_key'
                 ) THEN
-                    ALTER TABLE patient_flag_history
+                    ALTER TABLE clinical.patient_flag_history
                     ADD CONSTRAINT patient_flag_history_unique_key
                     UNIQUE (assignment_id, history_date);
                 END IF;
@@ -273,7 +273,7 @@ def load_patient_flags_to_postgres():
         """))
 
         result = conn.execute(text("""
-            INSERT INTO patient_flag_history (
+            INSERT INTO clinical.patient_flag_history (
                 assignment_id, patient_key, history_date, action_code, action_name,
                 entered_by_duz, entered_by_name, approved_by_duz, approved_by_name,
                 tiu_document_ien, history_comments, event_site
@@ -306,19 +306,19 @@ def load_patient_flags_to_postgres():
 
     with engine.connect() as conn:
         # Verify patient_flags
-        result = conn.execute(text("SELECT COUNT(*) FROM patient_flags")).fetchone()
+        result = conn.execute(text("SELECT COUNT(*) FROM clinical.patient_flags")).fetchone()
         flags_count = result[0]
         logger.info(f"  - patient_flags: {flags_count} rows")
 
         # Verify patient_flag_history
-        result = conn.execute(text("SELECT COUNT(*) FROM patient_flag_history")).fetchone()
+        result = conn.execute(text("SELECT COUNT(*) FROM clinical.patient_flag_history")).fetchone()
         history_count = result[0]
         logger.info(f"  - patient_flag_history: {history_count} rows")
 
         # Show active flags by review status
         result = conn.execute(text("""
             SELECT review_status, COUNT(*) as count
-            FROM patient_flags
+            FROM clinical.patient_flags
             WHERE is_active = true
             GROUP BY review_status
             ORDER BY review_status

@@ -47,7 +47,7 @@ def get_recent_panels(
             collection_location,
             collection_location_type,
             sta3n
-        FROM patient_labs
+        FROM clinical.patient_labs
         WHERE patient_key = :icn
           AND panel_name IS NOT NULL
         ORDER BY collection_datetime DESC
@@ -79,7 +79,7 @@ def get_recent_panels(
                         is_critical,
                         ref_range_text,
                         collection_datetime
-                    FROM patient_labs
+                    FROM clinical.patient_labs
                     WHERE patient_key = :icn
                       AND accession_number = :accession_number
                     ORDER BY lab_test_name ASC
@@ -151,7 +151,7 @@ def get_trending_tests(
             result_numeric,
             result_unit,
             abnormal_flag
-        FROM patient_labs
+        FROM clinical.patient_labs
         WHERE patient_key = :icn
           AND lab_test_name = ANY(:test_names)
           AND result_numeric IS NOT NULL
@@ -268,7 +268,7 @@ def get_all_lab_results(
             sta3n,
             vista_package,
             last_updated
-        FROM patient_labs
+        FROM clinical.patient_labs
         WHERE {where_clause}
         ORDER BY {order_clause}
         LIMIT :limit
@@ -358,7 +358,7 @@ def get_test_trend(
             collection_location,
             collection_location_type,
             sta3n
-        FROM patient_labs
+        FROM clinical.patient_labs
         WHERE patient_key = :icn
           AND lab_test_name = :lab_test_name
           AND collection_datetime >= CURRENT_DATE - INTERVAL ':days days'
@@ -414,7 +414,7 @@ def get_lab_counts(icn: str) -> Dict[str, int]:
         SELECT
             COALESCE(panel_name, 'Individual Tests') as panel_category,
             COUNT(*) as count
-        FROM patient_labs
+        FROM clinical.patient_labs
         WHERE patient_key = :icn
         GROUP BY panel_category
         ORDER BY count DESC

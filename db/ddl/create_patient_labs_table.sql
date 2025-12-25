@@ -1,11 +1,15 @@
 -- Create table: patient_labs
 -- Purpose: Serving database table for patient laboratory results
 -- Source: Gold layer Parquet files (labs/*.parquet)
+-- Updated: 2025-12-24 - Moved to clinical schema
+
+-- Create clinical schema if it doesn't exist
+CREATE SCHEMA IF NOT EXISTS clinical;
 
 -- Drop table if exists (development only)
-DROP TABLE IF EXISTS patient_labs;
+DROP TABLE IF EXISTS clinical.patient_labs;
 
-CREATE TABLE patient_labs (
+CREATE TABLE clinical.patient_labs (
     lab_id                      SERIAL PRIMARY KEY,
     patient_key                 VARCHAR(50) NOT NULL,       -- ICN
     lab_chem_sid                BIGINT NOT NULL UNIQUE,     -- Source LabChemSID
@@ -39,41 +43,41 @@ CREATE TABLE patient_labs (
 
 -- Indexes for performance
 CREATE INDEX idx_patient_labs_patient_date
-    ON patient_labs (patient_key, collection_datetime DESC);
+    ON clinical.patient_labs (patient_key, collection_datetime DESC);
 
 CREATE INDEX idx_patient_labs_test_date
-    ON patient_labs (lab_test_name, collection_datetime DESC);
+    ON clinical.patient_labs (lab_test_name, collection_datetime DESC);
 
 CREATE INDEX idx_patient_labs_panel
-    ON patient_labs (panel_name, collection_datetime DESC)
+    ON clinical.patient_labs (panel_name, collection_datetime DESC)
     WHERE panel_name IS NOT NULL;
 
 -- Index for abnormal/critical results
 CREATE INDEX idx_patient_labs_abnormal
-    ON patient_labs (is_abnormal, is_critical, collection_datetime DESC)
+    ON clinical.patient_labs (is_abnormal, is_critical, collection_datetime DESC)
     WHERE is_abnormal = TRUE;
 
 -- Index for recent labs widget queries
 CREATE INDEX idx_patient_labs_recent
-    ON patient_labs (patient_key, panel_name, collection_datetime DESC);
+    ON clinical.patient_labs (patient_key, panel_name, collection_datetime DESC);
 
 -- Index for location type filtering
 CREATE INDEX idx_patient_labs_location_type
-    ON patient_labs (collection_location_type);
+    ON clinical.patient_labs (collection_location_type);
 
 -- Index for accession number grouping (panel results)
 CREATE INDEX idx_patient_labs_accession
-    ON patient_labs (accession_number, lab_test_sid);
+    ON clinical.patient_labs (accession_number, lab_test_sid);
 
 -- Comments
-COMMENT ON TABLE patient_labs IS 'Patient laboratory results from Gold layer';
-COMMENT ON COLUMN patient_labs.patient_key IS 'Patient ICN (Integrated Care Number)';
-COMMENT ON COLUMN patient_labs.lab_chem_sid IS 'Source LabChemSID from CDWWork';
-COMMENT ON COLUMN patient_labs.loinc_code IS 'Logical Observation Identifiers Names and Codes (LOINC)';
-COMMENT ON COLUMN patient_labs.panel_name IS 'Panel/battery name (e.g., Basic Metabolic Panel, Lipid Panel)';
-COMMENT ON COLUMN patient_labs.is_critical IS 'Critical/panic values requiring immediate clinical attention';
-COMMENT ON COLUMN patient_labs.abnormal_flag IS 'H=High, L=Low, H*=Critical High, L*=Critical Low, PANIC=Panic value';
-COMMENT ON COLUMN patient_labs.collection_location IS 'Laboratory location where specimen was collected';
+COMMENT ON TABLE clinical.patient_labs IS 'Patient laboratory results from Gold layer';
+COMMENT ON COLUMN clinical.patient_labs.patient_key IS 'Patient ICN (Integrated Care Number)';
+COMMENT ON COLUMN clinical.patient_labs.lab_chem_sid IS 'Source LabChemSID from CDWWork';
+COMMENT ON COLUMN clinical.patient_labs.loinc_code IS 'Logical Observation Identifiers Names and Codes (LOINC)';
+COMMENT ON COLUMN clinical.patient_labs.panel_name IS 'Panel/battery name (e.g., Basic Metabolic Panel, Lipid Panel)';
+COMMENT ON COLUMN clinical.patient_labs.is_critical IS 'Critical/panic values requiring immediate clinical attention';
+COMMENT ON COLUMN clinical.patient_labs.abnormal_flag IS 'H=High, L=Low, H*=Critical High, L*=Critical Low, PANIC=Panic value';
+COMMENT ON COLUMN clinical.patient_labs.collection_location IS 'Laboratory location where specimen was collected';
 
 -- Grant permissions
 GRANT SELECT ON patient_labs TO PUBLIC;

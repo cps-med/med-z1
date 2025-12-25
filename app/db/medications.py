@@ -123,7 +123,7 @@ def _get_outpatient_medications(
             facility_name,
             cmop_indicator,
             mail_indicator
-        FROM patient_medications_outpatient
+        FROM clinical.patient_medications_outpatient
         WHERE {where_clause}
         ORDER BY issue_date DESC
         {f"LIMIT {limit}" if limit else ""}
@@ -237,7 +237,7 @@ def _get_inpatient_medications(
             ordering_provider,
             ward_name,
             facility_name
-        FROM patient_medications_inpatient
+        FROM clinical.patient_medications_inpatient
         WHERE {where_clause}
         ORDER BY action_datetime DESC
         {f"LIMIT {limit}" if limit else ""}
@@ -349,7 +349,7 @@ def get_medication_counts(icn: str) -> Dict[str, int]:
                     COUNT(*) as total,
                     COUNT(*) FILTER (WHERE is_active = TRUE) as active,
                     COUNT(*) FILTER (WHERE is_controlled_substance = TRUE) as controlled
-                FROM patient_medications_outpatient
+                FROM clinical.patient_medications_outpatient
                 WHERE patient_icn = :icn
             """)
 
@@ -364,7 +364,7 @@ def get_medication_counts(icn: str) -> Dict[str, int]:
                 SELECT
                     COUNT(*) as total,
                     COUNT(*) FILTER (WHERE is_controlled_substance = TRUE) as controlled
-                FROM patient_medications_inpatient
+                FROM clinical.patient_medications_inpatient
                 WHERE patient_icn = :icn
             """)
 

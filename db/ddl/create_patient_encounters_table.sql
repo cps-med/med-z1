@@ -1,11 +1,15 @@
 -- Create table: patient_encounters
 -- Purpose: Serving database table for patient inpatient encounters (admissions)
 -- Source: Gold layer Parquet files (inpatient/inpatient_final.parquet)
+-- Updated: 2025-12-24 - Moved to clinical schema
+
+-- Create clinical schema if it doesn't exist
+CREATE SCHEMA IF NOT EXISTS clinical;
 
 -- Drop table if exists (development only)
-DROP TABLE IF EXISTS patient_encounters;
+DROP TABLE IF EXISTS clinical.patient_encounters;
 
-CREATE TABLE patient_encounters (
+CREATE TABLE clinical.patient_encounters (
     encounter_id            SERIAL PRIMARY KEY,
     patient_key             VARCHAR(50) NOT NULL,       -- ICN
     inpatient_id            BIGINT NOT NULL UNIQUE,     -- Source InpatientSID
@@ -51,45 +55,45 @@ CREATE TABLE patient_encounters (
 
 -- Indexes for performance
 CREATE INDEX idx_patient_encounters_patient_date
-    ON patient_encounters (patient_key, admit_datetime DESC);
+    ON clinical.patient_encounters (patient_key, admit_datetime DESC);
 
 CREATE INDEX idx_patient_encounters_admit_date
-    ON patient_encounters (admit_datetime DESC);
+    ON clinical.patient_encounters (admit_datetime DESC);
 
 CREATE INDEX idx_patient_encounters_discharge_date
-    ON patient_encounters (discharge_datetime DESC)
+    ON clinical.patient_encounters (discharge_datetime DESC)
     WHERE discharge_datetime IS NOT NULL;
 
 -- Index for active admissions (widget and alerts)
 CREATE INDEX idx_patient_encounters_active
-    ON patient_encounters (patient_key, admit_datetime DESC)
+    ON clinical.patient_encounters (patient_key, admit_datetime DESC)
     WHERE is_active = TRUE;
 
 -- Index for recent encounters (last 30 days)
 CREATE INDEX idx_patient_encounters_recent
-    ON patient_encounters (patient_key, admit_datetime DESC)
+    ON clinical.patient_encounters (patient_key, admit_datetime DESC)
     WHERE is_recent = TRUE;
 
 -- Index for facility queries
 CREATE INDEX idx_patient_encounters_facility
-    ON patient_encounters (sta3n, admit_datetime DESC);
+    ON clinical.patient_encounters (sta3n, admit_datetime DESC);
 
 -- Indexes for location type filtering
 CREATE INDEX idx_patient_encounters_admit_location_type
-    ON patient_encounters (admit_location_type);
+    ON clinical.patient_encounters (admit_location_type);
 
 CREATE INDEX idx_patient_encounters_discharge_location_type
-    ON patient_encounters (discharge_location_type);
+    ON clinical.patient_encounters (discharge_location_type);
 
 -- Comments
-COMMENT ON TABLE patient_encounters IS 'Patient inpatient encounters (admissions) from Gold layer';
-COMMENT ON COLUMN patient_encounters.patient_key IS 'Patient ICN (Integrated Care Number)';
-COMMENT ON COLUMN patient_encounters.inpatient_id IS 'Source InpatientSID from CDWWork';
-COMMENT ON COLUMN patient_encounters.is_active IS 'True if patient is currently admitted (no discharge date)';
-COMMENT ON COLUMN patient_encounters.is_recent IS 'True if admitted or discharged within last 30 days';
-COMMENT ON COLUMN patient_encounters.is_extended_stay IS 'True if active admission with total_days > 14';
-COMMENT ON COLUMN patient_encounters.admission_category IS 'Active Admission, Observation, Short Stay, Standard Stay, or Extended Stay';
-COMMENT ON COLUMN patient_encounters.discharge_disposition IS 'Where patient went after discharge (Home, SNF, Rehab, AMA, Deceased, etc.)';
+COMMENT ON TABLE clinical.patient_encounters IS 'Patient inpatient encounters (admissions) from Gold layer';
+COMMENT ON COLUMN clinical.patient_encounters.patient_key IS 'Patient ICN (Integrated Care Number)';
+COMMENT ON COLUMN clinical.patient_encounters.inpatient_id IS 'Source InpatientSID from CDWWork';
+COMMENT ON COLUMN clinical.patient_encounters.is_active IS 'True if patient is currently admitted (no discharge date)';
+COMMENT ON COLUMN clinical.patient_encounters.is_recent IS 'True if admitted or discharged within last 30 days';
+COMMENT ON COLUMN clinical.patient_encounters.is_extended_stay IS 'True if active admission with total_days > 14';
+COMMENT ON COLUMN clinical.patient_encounters.admission_category IS 'Active Admission, Observation, Short Stay, Standard Stay, or Extended Stay';
+COMMENT ON COLUMN clinical.patient_encounters.discharge_disposition IS 'Where patient went after discharge (Home, SNF, Rehab, AMA, Deceased, etc.)';
 
 -- Grant permissions
 GRANT SELECT ON patient_encounters TO PUBLIC;

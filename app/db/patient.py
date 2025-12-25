@@ -59,7 +59,7 @@ def get_patient_demographics(icn: str) -> Optional[Dict[str, Any]]:
             death_date,
             source_system,
             last_updated
-        FROM patient_demographics
+        FROM clinical.patient_demographics
         WHERE icn = :icn
     """)
 
@@ -130,7 +130,7 @@ def search_patients(
                     sex,
                     ssn_last4,
                     primary_station
-                FROM patient_demographics
+                FROM clinical.patient_demographics
                 WHERE name_last ILIKE :query OR name_first ILIKE :query
                 ORDER BY name_last, name_first
                 LIMIT :limit
@@ -147,7 +147,7 @@ def search_patients(
                     sex,
                     ssn_last4,
                     primary_station
-                FROM patient_demographics
+                FROM clinical.patient_demographics
                 WHERE icn = :query
                 LIMIT :limit
             """)

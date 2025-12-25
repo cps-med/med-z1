@@ -53,7 +53,7 @@ def get_patient_flags(patient_icn: str) -> List[Dict[str, Any]]:
             last_action,
             last_action_by,
             last_updated
-        FROM patient_flags
+        FROM clinical.patient_flags
         WHERE patient_key = :patient_icn
         ORDER BY
             flag_category ASC,  -- National (I) first, then Local (II)
@@ -114,7 +114,7 @@ def get_flag_count(patient_icn: str) -> Dict[str, int]:
             SUM(CASE WHEN flag_category = 'I' THEN 1 ELSE 0 END) as national,
             SUM(CASE WHEN flag_category = 'II' THEN 1 ELSE 0 END) as local,
             SUM(CASE WHEN review_status = 'OVERDUE' THEN 1 ELSE 0 END) as overdue
-        FROM patient_flags
+        FROM clinical.patient_flags
         WHERE patient_key = :patient_icn
           AND is_active = true
     """)
@@ -168,7 +168,7 @@ def get_flag_history(assignment_id: int, patient_icn: str) -> List[Dict[str, Any
             history_comments,
             event_site,
             created_at
-        FROM patient_flag_history
+        FROM clinical.patient_flag_history
         WHERE assignment_id = :assignment_id
           AND patient_key = :patient_icn
         ORDER BY history_date DESC
@@ -221,7 +221,7 @@ def get_active_flags_count(patient_icn: str) -> int:
     """
     query = text("""
         SELECT COUNT(*)
-        FROM patient_flags
+        FROM clinical.patient_flags
         WHERE patient_key = :patient_icn
           AND is_active = true
     """)

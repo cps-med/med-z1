@@ -142,7 +142,7 @@ def load_medications_outpatient_to_postgresql():
     logger.info("Step 4: Truncating existing patient_medications_outpatient table...")
 
     with engine.connect() as conn:
-        conn.execute(text("TRUNCATE TABLE patient_medications_outpatient;"))
+        conn.execute(text("TRUNCATE TABLE clinical.patient_medications_outpatient;"))
         conn.commit()
 
     logger.info("  - Table truncated")
@@ -159,6 +159,7 @@ def load_medications_outpatient_to_postgresql():
     df_pandas.to_sql(
         "patient_medications_outpatient",
         engine,
+        schema="clinical",
         if_exists="append",
         index=False,
         method="multi",  # Bulk insert for performance
@@ -173,7 +174,7 @@ def load_medications_outpatient_to_postgresql():
     logger.info("Step 6: Verifying data...")
 
     with engine.connect() as conn:
-        result = conn.execute(text("SELECT COUNT(*) FROM patient_medications_outpatient;"))
+        result = conn.execute(text("SELECT COUNT(*) FROM clinical.patient_medications_outpatient;"))
         count = result.scalar()
         logger.info(f"  - Verified: {count} rows in patient_medications_outpatient table")
 
@@ -181,7 +182,7 @@ def load_medications_outpatient_to_postgresql():
         result = conn.execute(text("""
             SELECT patient_icn, drug_name_local, rx_status_computed,
                    is_controlled_substance, issue_date
-            FROM patient_medications_outpatient
+            FROM clinical.patient_medications_outpatient
             ORDER BY issue_date DESC
             LIMIT 5;
         """))
@@ -311,7 +312,7 @@ def load_medications_inpatient_to_postgresql():
     logger.info("Step 4: Truncating existing patient_medications_inpatient table...")
 
     with engine.connect() as conn:
-        conn.execute(text("TRUNCATE TABLE patient_medications_inpatient;"))
+        conn.execute(text("TRUNCATE TABLE clinical.patient_medications_inpatient;"))
         conn.commit()
 
     logger.info("  - Table truncated")
@@ -328,6 +329,7 @@ def load_medications_inpatient_to_postgresql():
     df_pandas.to_sql(
         "patient_medications_inpatient",
         engine,
+        schema="clinical",
         if_exists="append",
         index=False,
         method="multi",  # Bulk insert for performance
@@ -342,7 +344,7 @@ def load_medications_inpatient_to_postgresql():
     logger.info("Step 6: Verifying data...")
 
     with engine.connect() as conn:
-        result = conn.execute(text("SELECT COUNT(*) FROM patient_medications_inpatient;"))
+        result = conn.execute(text("SELECT COUNT(*) FROM clinical.patient_medications_inpatient;"))
         count = result.scalar()
         logger.info(f"  - Verified: {count} rows in patient_medications_inpatient table")
 
@@ -350,7 +352,7 @@ def load_medications_inpatient_to_postgresql():
         result = conn.execute(text("""
             SELECT patient_icn, drug_name_local, action_type,
                    is_controlled_substance, action_datetime
-            FROM patient_medications_inpatient
+            FROM clinical.patient_medications_inpatient
             ORDER BY action_datetime DESC
             LIMIT 5;
         """))

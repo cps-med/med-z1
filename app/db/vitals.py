@@ -65,7 +65,7 @@ def get_patient_vitals(
             entered_by,
             abnormal_flag,
             bmi
-        FROM patient_vitals
+        FROM clinical.patient_vitals
         {where_clause}
         ORDER BY taken_datetime DESC
         LIMIT :limit
@@ -144,7 +144,7 @@ def get_recent_vitals(icn: str) -> Dict[str, Any]:
             entered_by,
             abnormal_flag,
             bmi
-        FROM patient_vitals
+        FROM clinical.patient_vitals
         WHERE patient_key = :icn
         ORDER BY vital_abbr, taken_datetime DESC
     """)
@@ -225,7 +225,7 @@ def get_vital_type_history(
             entered_by,
             abnormal_flag,
             bmi
-        FROM patient_vitals
+        FROM clinical.patient_vitals
         WHERE patient_key = :icn
           AND vital_type = :vital_type
         ORDER BY taken_datetime ASC
@@ -286,7 +286,7 @@ def get_vital_counts(icn: str) -> Dict[str, int]:
         SELECT
             vital_abbr,
             COUNT(*) as count
-        FROM patient_vitals
+        FROM clinical.patient_vitals
         WHERE patient_key = :icn
         GROUP BY vital_abbr
         ORDER BY count DESC

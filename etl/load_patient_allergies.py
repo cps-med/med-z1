@@ -86,6 +86,7 @@ def load_patient_allergies_to_postgres():
     df_pandas.to_sql(
         "patient_allergies",
         engine,
+        schema="clinical",
         if_exists="replace",
         index=False,
         method="multi",
@@ -99,13 +100,13 @@ def load_patient_allergies_to_postgres():
 
     with engine.connect() as conn:
         # Check row count
-        result = conn.execute(text("SELECT COUNT(*) FROM patient_allergies")).fetchone()
+        result = conn.execute(text("SELECT COUNT(*) FROM clinical.patient_allergies")).fetchone()
         logger.info(f"Verification: {result[0]} rows in patient_allergies table")
 
         # Check allergy type distribution
         type_dist = conn.execute(text("""
             SELECT allergen_type, COUNT(*) as count
-            FROM patient_allergies
+            FROM clinical.patient_allergies
             GROUP BY allergen_type
             ORDER BY count DESC
         """)).fetchall()
@@ -117,7 +118,7 @@ def load_patient_allergies_to_postgres():
         # Check severity distribution
         severity_dist = conn.execute(text("""
             SELECT severity, COUNT(*) as count
-            FROM patient_allergies
+            FROM clinical.patient_allergies
             WHERE severity IS NOT NULL
             GROUP BY severity
             ORDER BY count DESC
@@ -151,6 +152,7 @@ def load_patient_allergies_to_postgres():
         df_reactions.to_sql(
             "patient_allergy_reactions",
             engine,
+            schema="clinical",
             if_exists="replace",
             index=False,
             method="multi",
@@ -160,7 +162,7 @@ def load_patient_allergies_to_postgres():
 
         # Verify
         with engine.connect() as conn:
-            result = conn.execute(text("SELECT COUNT(*) FROM patient_allergy_reactions")).fetchone()
+            result = conn.execute(text("SELECT COUNT(*) FROM clinical.patient_allergy_reactions")).fetchone()
             logger.info(f"Verification: {result[0]} rows in patient_allergy_reactions table")
     else:
         logger.warning("No reactions to load to patient_allergy_reactions table")

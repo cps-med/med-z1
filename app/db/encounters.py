@@ -82,7 +82,7 @@ def get_patient_encounters(
             facility_name,
             source_system,
             last_updated
-        FROM patient_encounters
+        FROM clinical.patient_encounters
         WHERE {where_clause}
         ORDER BY admit_datetime DESC
         LIMIT :limit
@@ -168,7 +168,7 @@ def get_recent_encounters(icn: str, limit: int = 5) -> List[Dict[str, Any]]:
             is_extended_stay,
             sta3n,
             facility_name
-        FROM patient_encounters
+        FROM clinical.patient_encounters
         WHERE patient_key = :icn
           AND is_recent = TRUE
         ORDER BY admit_datetime DESC
@@ -233,7 +233,7 @@ def get_active_admissions(icn: str) -> List[Dict[str, Any]]:
             is_extended_stay,
             sta3n,
             facility_name
-        FROM patient_encounters
+        FROM clinical.patient_encounters
         WHERE patient_key = :icn
           AND is_active = TRUE
         ORDER BY admit_datetime DESC
@@ -285,7 +285,7 @@ def get_encounter_counts(icn: str) -> Dict[str, int]:
             COUNT(*) FILTER (WHERE is_recent = TRUE) as recent_encounters,
             COUNT(*) FILTER (WHERE is_extended_stay = TRUE) as extended_stays,
             COUNT(DISTINCT sta3n) as facility_count
-        FROM patient_encounters
+        FROM clinical.patient_encounters
         WHERE patient_key = :icn
     """)
 
@@ -354,7 +354,7 @@ def get_encounter_by_id(encounter_id: int) -> Optional[Dict[str, Any]]:
             facility_name,
             source_system,
             last_updated
-        FROM patient_encounters
+        FROM clinical.patient_encounters
         WHERE encounter_id = :encounter_id
     """)
 

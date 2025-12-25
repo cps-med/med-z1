@@ -1,15 +1,19 @@
 -- Create tables: patient_medications_outpatient and patient_medications_inpatient
 -- Purpose: Serving database tables for patient medications
 -- Source: Gold layer Parquet files (medications/*.parquet)
+-- Updated: 2025-12-24 - Moved to clinical schema
+
+-- Create clinical schema if it doesn't exist
+CREATE SCHEMA IF NOT EXISTS clinical;
 
 -- ==================================================================
 -- TABLE 1: patient_medications_outpatient (RxOut - Outpatient)
 -- ==================================================================
 
 -- Drop table if exists (development only)
-DROP TABLE IF EXISTS patient_medications_outpatient CASCADE;
+DROP TABLE IF EXISTS clinical.patient_medications_outpatient CASCADE;
 
-CREATE TABLE patient_medications_outpatient (
+CREATE TABLE clinical.patient_medications_outpatient (
     -- Primary key and patient identity
     medication_outpatient_id    SERIAL PRIMARY KEY,
     patient_icn                 VARCHAR(50) NOT NULL,       -- Patient ICN
@@ -85,37 +89,37 @@ CREATE TABLE patient_medications_outpatient (
 
 -- Indexes for patient_medications_outpatient
 CREATE INDEX idx_patient_medications_out_patient_date
-    ON patient_medications_outpatient (patient_icn, issue_date DESC);
+    ON clinical.patient_medications_outpatient (patient_icn, issue_date DESC);
 
 CREATE INDEX idx_patient_medications_out_active
-    ON patient_medications_outpatient (patient_icn, is_active, issue_date DESC)
+    ON clinical.patient_medications_outpatient (patient_icn, is_active, issue_date DESC)
     WHERE is_active = TRUE;
 
 CREATE INDEX idx_patient_medications_out_controlled
-    ON patient_medications_outpatient (patient_icn, is_controlled_substance, issue_date DESC)
+    ON clinical.patient_medications_outpatient (patient_icn, is_controlled_substance, issue_date DESC)
     WHERE is_controlled_substance = TRUE;
 
 CREATE INDEX idx_patient_medications_out_drug_class
-    ON patient_medications_outpatient (drug_class, issue_date DESC);
+    ON clinical.patient_medications_outpatient (drug_class, issue_date DESC);
 
 CREATE INDEX idx_patient_medications_out_rx_status
-    ON patient_medications_outpatient (rx_status_computed, issue_date DESC);
+    ON clinical.patient_medications_outpatient (rx_status_computed, issue_date DESC);
 
 -- Comments on patient_medications_outpatient
 COMMENT ON TABLE patient_medications_outpatient IS 'Outpatient prescriptions from RxOut data';
-COMMENT ON COLUMN patient_medications_outpatient.patient_icn IS 'Patient ICN (Integrated Care Number)';
-COMMENT ON COLUMN patient_medications_outpatient.rx_outpat_id IS 'Source RxOutpatSID from CDWWork';
-COMMENT ON COLUMN patient_medications_outpatient.is_controlled_substance IS 'DEA controlled substance (Schedule II-V)';
-COMMENT ON COLUMN patient_medications_outpatient.is_active IS 'Currently active (not discontinued, not expired)';
+COMMENT ON COLUMN clinical.patient_medications_outpatient.patient_icn IS 'Patient ICN (Integrated Care Number)';
+COMMENT ON COLUMN clinical.patient_medications_outpatient.rx_outpat_id IS 'Source RxOutpatSID from CDWWork';
+COMMENT ON COLUMN clinical.patient_medications_outpatient.is_controlled_substance IS 'DEA controlled substance (Schedule II-V)';
+COMMENT ON COLUMN clinical.patient_medications_outpatient.is_active IS 'Currently active (not discontinued, not expired)';
 
 -- ==================================================================
 -- TABLE 2: patient_medications_inpatient (BCMA - Inpatient)
 -- ==================================================================
 
 -- Drop table if exists (development only)
-DROP TABLE IF EXISTS patient_medications_inpatient CASCADE;
+DROP TABLE IF EXISTS clinical.patient_medications_inpatient CASCADE;
 
-CREATE TABLE patient_medications_inpatient (
+CREATE TABLE clinical.patient_medications_inpatient (
     -- Primary key and patient identity
     medication_inpatient_id     SERIAL PRIMARY KEY,
     patient_icn                 VARCHAR(50) NOT NULL,       -- Patient ICN
@@ -185,35 +189,35 @@ CREATE TABLE patient_medications_inpatient (
 
 -- Indexes for patient_medications_inpatient
 CREATE INDEX idx_patient_medications_inp_patient_date
-    ON patient_medications_inpatient (patient_icn, action_datetime DESC);
+    ON clinical.patient_medications_inpatient (patient_icn, action_datetime DESC);
 
 CREATE INDEX idx_patient_medications_inp_action_type
-    ON patient_medications_inpatient (action_type, action_datetime DESC);
+    ON clinical.patient_medications_inpatient (action_type, action_datetime DESC);
 
 CREATE INDEX idx_patient_medications_inp_controlled
-    ON patient_medications_inpatient (patient_icn, is_controlled_substance, action_datetime DESC)
+    ON clinical.patient_medications_inpatient (patient_icn, is_controlled_substance, action_datetime DESC)
     WHERE is_controlled_substance = TRUE;
 
 CREATE INDEX idx_patient_medications_inp_variance
-    ON patient_medications_inpatient (patient_icn, administration_variance, action_datetime DESC)
+    ON clinical.patient_medications_inpatient (patient_icn, administration_variance, action_datetime DESC)
     WHERE administration_variance = TRUE;
 
 CREATE INDEX idx_patient_medications_inp_iv
-    ON patient_medications_inpatient (patient_icn, is_iv_medication, action_datetime DESC)
+    ON clinical.patient_medications_inpatient (patient_icn, is_iv_medication, action_datetime DESC)
     WHERE is_iv_medication = TRUE;
 
 CREATE INDEX idx_patient_medications_inp_drug_class
-    ON patient_medications_inpatient (drug_class, action_datetime DESC);
+    ON clinical.patient_medications_inpatient (drug_class, action_datetime DESC);
 
 -- Comments on patient_medications_inpatient
 COMMENT ON TABLE patient_medications_inpatient IS 'Inpatient medication administration from BCMA data';
-COMMENT ON COLUMN patient_medications_inpatient.patient_icn IS 'Patient ICN (Integrated Care Number)';
-COMMENT ON COLUMN patient_medications_inpatient.bcma_log_id IS 'Source BCMAMedicationLogSID from CDWWork';
-COMMENT ON COLUMN patient_medications_inpatient.action_type IS 'GIVEN, HELD, REFUSED, or MISSING DOSE';
-COMMENT ON COLUMN patient_medications_inpatient.administration_variance IS 'Variance occurred during administration';
-COMMENT ON COLUMN patient_medications_inpatient.is_iv_medication IS 'IV (intravenous) medication';
-COMMENT ON COLUMN patient_medications_inpatient.is_controlled_substance IS 'DEA controlled substance (Schedule II-V)';
+COMMENT ON COLUMN clinical.patient_medications_inpatient.patient_icn IS 'Patient ICN (Integrated Care Number)';
+COMMENT ON COLUMN clinical.patient_medications_inpatient.bcma_log_id IS 'Source BCMAMedicationLogSID from CDWWork';
+COMMENT ON COLUMN clinical.patient_medications_inpatient.action_type IS 'GIVEN, HELD, REFUSED, or MISSING DOSE';
+COMMENT ON COLUMN clinical.patient_medications_inpatient.administration_variance IS 'Variance occurred during administration';
+COMMENT ON COLUMN clinical.patient_medications_inpatient.is_iv_medication IS 'IV (intravenous) medication';
+COMMENT ON COLUMN clinical.patient_medications_inpatient.is_controlled_substance IS 'DEA controlled substance (Schedule II-V)';
 
 -- Grant permissions
-GRANT SELECT ON patient_medications_outpatient TO PUBLIC;
-GRANT SELECT ON patient_medications_inpatient TO PUBLIC;
+GRANT SELECT ON clinical.patient_medications_outpatient TO PUBLIC;
+GRANT SELECT ON clinical.patient_medications_inpatient TO PUBLIC;

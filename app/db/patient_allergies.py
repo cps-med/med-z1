@@ -60,7 +60,7 @@ def get_patient_allergies(patient_icn: str) -> List[Dict[str, Any]]:
             originating_staff,
             source_system,
             last_updated
-        FROM patient_allergies
+        FROM clinical.patient_allergies
         WHERE patient_key = :patient_icn
           AND is_active = true
         ORDER BY
@@ -137,7 +137,7 @@ def get_critical_allergies(patient_icn: str, limit: int = 6) -> List[Dict[str, A
             reaction_count,
             origination_date,
             is_drug_allergy
-        FROM patient_allergies
+        FROM clinical.patient_allergies
         WHERE patient_key = :patient_icn
           AND is_active = true
         ORDER BY
@@ -215,7 +215,7 @@ def get_allergy_details(allergy_sid: int, patient_icn: str) -> Optional[Dict[str
             originating_staff,
             source_system,
             last_updated
-        FROM patient_allergies
+        FROM clinical.patient_allergies
         WHERE allergy_sid = :allergy_sid
           AND patient_key = :patient_icn
     """)
@@ -281,7 +281,7 @@ def get_allergy_count(patient_icn: str) -> Dict[str, int]:
             SUM(CASE WHEN allergen_type = 'FOOD' THEN 1 ELSE 0 END) as food,
             SUM(CASE WHEN allergen_type = 'ENVIRONMENTAL' THEN 1 ELSE 0 END) as environmental,
             SUM(CASE WHEN severity = 'SEVERE' THEN 1 ELSE 0 END) as severe
-        FROM patient_allergies
+        FROM clinical.patient_allergies
         WHERE patient_key = :patient_icn
           AND is_active = true
     """)

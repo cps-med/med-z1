@@ -9,13 +9,17 @@
 --   v2.0 (2025-12-11): Added address, phone, and insurance fields
 --   v3.0 (2025-12-14): Added marital_status, religion, service_connected_percent,
 --                       deceased_flag, death_date (Demographics full page - Phase 2)
+--   v4.0 (2025-12-24): Moved to clinical schema for better organization
 -- ---------------------------------------------------------------------
 
+-- Create clinical schema if it doesn't exist
+CREATE SCHEMA IF NOT EXISTS clinical;
+
 -- Drop table if exists (for development - use migrations in production)
-DROP TABLE IF EXISTS patient_demographics CASCADE;
+DROP TABLE IF EXISTS clinical.patient_demographics CASCADE;
 
 -- Create patient demographics table
-CREATE TABLE patient_demographics (
+CREATE TABLE clinical.patient_demographics (
     patient_key VARCHAR(50) PRIMARY KEY,
     icn VARCHAR(50) UNIQUE NOT NULL,
     ssn VARCHAR(64),  -- Encrypted or hashed in production
@@ -61,31 +65,31 @@ CREATE TABLE patient_demographics (
 );
 
 -- Create indexes for common queries
-CREATE INDEX idx_patient_icn ON patient_demographics(icn);
-CREATE INDEX idx_patient_name_last ON patient_demographics(name_last);
-CREATE INDEX idx_patient_name_first ON patient_demographics(name_first);
-CREATE INDEX idx_patient_ssn_last4 ON patient_demographics(ssn_last4);
-CREATE INDEX idx_patient_station ON patient_demographics(primary_station);
-CREATE INDEX idx_patient_dob ON patient_demographics(dob);
+CREATE INDEX idx_patient_icn ON clinical.patient_demographics(icn);
+CREATE INDEX idx_patient_name_last ON clinical.patient_demographics(name_last);
+CREATE INDEX idx_patient_name_first ON clinical.patient_demographics(name_first);
+CREATE INDEX idx_patient_ssn_last4 ON clinical.patient_demographics(ssn_last4);
+CREATE INDEX idx_patient_station ON clinical.patient_demographics(primary_station);
+CREATE INDEX idx_patient_dob ON clinical.patient_demographics(dob);
 
 -- Add comments for documentation
-COMMENT ON TABLE patient_demographics IS 'Patient demographics from Gold layer - optimized for UI queries';
-COMMENT ON COLUMN patient_demographics.patient_key IS 'Internal unique identifier (currently same as ICN)';
-COMMENT ON COLUMN patient_demographics.icn IS 'Integrated Care Number - primary VA patient identifier';
-COMMENT ON COLUMN patient_demographics.ssn_last4 IS 'Last 4 digits of SSN for display/verification';
-COMMENT ON COLUMN patient_demographics.name_display IS 'Formatted name for UI display (LAST, First)';
-COMMENT ON COLUMN patient_demographics.age IS 'Current age calculated from DOB';
-COMMENT ON COLUMN patient_demographics.address_street1 IS 'Primary address street line 1';
-COMMENT ON COLUMN patient_demographics.address_city IS 'Primary address city';
-COMMENT ON COLUMN patient_demographics.address_state IS 'Primary address state abbreviation';
-COMMENT ON COLUMN patient_demographics.address_zip IS 'Primary address ZIP code';
-COMMENT ON COLUMN patient_demographics.phone_primary IS 'Primary phone number (placeholder in MVP)';
-COMMENT ON COLUMN patient_demographics.insurance_company_name IS 'Primary insurance company name';
-COMMENT ON COLUMN patient_demographics.marital_status IS 'Marital status (Single, Married, Divorced, Widowed, etc.)';
-COMMENT ON COLUMN patient_demographics.religion IS 'Religion for spiritual care coordination';
-COMMENT ON COLUMN patient_demographics.service_connected_percent IS 'Service connected disability percentage (0-100)';
-COMMENT ON COLUMN patient_demographics.deceased_flag IS 'Deceased flag (Y/N)';
-COMMENT ON COLUMN patient_demographics.death_date IS 'Date of death (if deceased)';
+COMMENT ON TABLE clinical.patient_demographics IS 'Patient demographics from Gold layer - optimized for UI queries';
+COMMENT ON COLUMN clinical.patient_demographics.patient_key IS 'Internal unique identifier (currently same as ICN)';
+COMMENT ON COLUMN clinical.patient_demographics.icn IS 'Integrated Care Number - primary VA patient identifier';
+COMMENT ON COLUMN clinical.patient_demographics.ssn_last4 IS 'Last 4 digits of SSN for display/verification';
+COMMENT ON COLUMN clinical.patient_demographics.name_display IS 'Formatted name for UI display (LAST, First)';
+COMMENT ON COLUMN clinical.patient_demographics.age IS 'Current age calculated from DOB';
+COMMENT ON COLUMN clinical.patient_demographics.address_street1 IS 'Primary address street line 1';
+COMMENT ON COLUMN clinical.patient_demographics.address_city IS 'Primary address city';
+COMMENT ON COLUMN clinical.patient_demographics.address_state IS 'Primary address state abbreviation';
+COMMENT ON COLUMN clinical.patient_demographics.address_zip IS 'Primary address ZIP code';
+COMMENT ON COLUMN clinical.patient_demographics.phone_primary IS 'Primary phone number (placeholder in MVP)';
+COMMENT ON COLUMN clinical.patient_demographics.insurance_company_name IS 'Primary insurance company name';
+COMMENT ON COLUMN clinical.patient_demographics.marital_status IS 'Marital status (Single, Married, Divorced, Widowed, etc.)';
+COMMENT ON COLUMN clinical.patient_demographics.religion IS 'Religion for spiritual care coordination';
+COMMENT ON COLUMN clinical.patient_demographics.service_connected_percent IS 'Service connected disability percentage (0-100)';
+COMMENT ON COLUMN clinical.patient_demographics.deceased_flag IS 'Deceased flag (Y/N)';
+COMMENT ON COLUMN clinical.patient_demographics.death_date IS 'Date of death (if deceased)';
 
 -- Verify table creation
-SELECT 'patient_demographics table created successfully (v3.0 - Phase 2)' AS status;
+SELECT 'patient_demographics table created successfully in clinical schema (v4.0)' AS status;

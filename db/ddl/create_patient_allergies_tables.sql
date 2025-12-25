@@ -3,18 +3,22 @@
 -- Description: Serving tables for patient allergy data
 -- Author: Claude Code
 -- Date: 2025-12-12
+-- Updated: 2025-12-24 - Moved to clinical schema
 -- =============================================
 
+-- Create clinical schema if it doesn't exist
+CREATE SCHEMA IF NOT EXISTS clinical;
+
 -- Drop tables if they exist (for development)
-DROP TABLE IF EXISTS patient_allergy_reactions CASCADE;
-DROP TABLE IF EXISTS patient_allergies CASCADE;
+DROP TABLE IF EXISTS clinical.patient_allergy_reactions CASCADE;
+DROP TABLE IF EXISTS clinical.patient_allergies CASCADE;
 
 -- =============================================
 -- Table: patient_allergies
 -- Description: Main patient allergy data (denormalized)
 -- =============================================
 
-CREATE TABLE patient_allergies (
+CREATE TABLE clinical.patient_allergies (
     allergy_id              SERIAL PRIMARY KEY,
     patient_key             VARCHAR(50) NOT NULL,       -- ICN
     allergy_sid             BIGINT NOT NULL,            -- Source PatientAllergySID
@@ -40,34 +44,34 @@ CREATE TABLE patient_allergies (
 
 -- Indexes for patient_allergies
 CREATE INDEX idx_patient_allergies_patient
-    ON patient_allergies (patient_key, is_active);
+    ON clinical.patient_allergies (patient_key, is_active);
 
 CREATE INDEX idx_patient_allergies_type
-    ON patient_allergies (allergen_type, severity_rank DESC);
+    ON clinical.patient_allergies (allergen_type, severity_rank DESC);
 
 CREATE INDEX idx_patient_allergies_drug
-    ON patient_allergies (patient_key, is_drug_allergy, severity_rank DESC)
+    ON clinical.patient_allergies (patient_key, is_drug_allergy, severity_rank DESC)
     WHERE is_active = TRUE;
 
 CREATE INDEX idx_patient_allergies_severity
-    ON patient_allergies (severity_rank DESC, origination_date DESC)
+    ON clinical.patient_allergies (severity_rank DESC, origination_date DESC)
     WHERE is_active = TRUE;
 
-COMMENT ON TABLE patient_allergies IS 'Main patient allergy data with denormalized reactions';
-COMMENT ON COLUMN patient_allergies.patient_key IS 'Patient ICN identifier';
-COMMENT ON COLUMN patient_allergies.allergy_sid IS 'Source PatientAllergySID from CDW';
-COMMENT ON COLUMN patient_allergies.allergen_local IS 'Local allergen name as entered (e.g., PENICILLIN VK 500MG)';
-COMMENT ON COLUMN patient_allergies.allergen_standardized IS 'Standardized allergen name (e.g., PENICILLIN)';
-COMMENT ON COLUMN patient_allergies.reactions IS 'Comma-separated reaction names for quick display';
-COMMENT ON COLUMN patient_allergies.comment IS 'Free-text clinical narrative - may contain PHI';
-COMMENT ON COLUMN patient_allergies.is_drug_allergy IS 'TRUE if allergen_type = DRUG (for widget filtering)';
+COMMENT ON TABLE clinical.patient_allergies IS 'Main patient allergy data with denormalized reactions';
+COMMENT ON COLUMN clinical.patient_allergies.patient_key IS 'Patient ICN identifier';
+COMMENT ON COLUMN clinical.patient_allergies.allergy_sid IS 'Source PatientAllergySID from CDW';
+COMMENT ON COLUMN clinical.patient_allergies.allergen_local IS 'Local allergen name as entered (e.g., PENICILLIN VK 500MG)';
+COMMENT ON COLUMN clinical.patient_allergies.allergen_standardized IS 'Standardized allergen name (e.g., PENICILLIN)';
+COMMENT ON COLUMN clinical.patient_allergies.reactions IS 'Comma-separated reaction names for quick display';
+COMMENT ON COLUMN clinical.patient_allergies.comment IS 'Free-text clinical narrative - may contain PHI';
+COMMENT ON COLUMN clinical.patient_allergies.is_drug_allergy IS 'TRUE if allergen_type = DRUG (for widget filtering)';
 
 -- =============================================
 -- Table: patient_allergy_reactions
 -- Description: Detailed reaction data for each allergy (normalized)
 -- =============================================
 
-CREATE TABLE patient_allergy_reactions (
+CREATE TABLE clinical.patient_allergy_reactions (
     reaction_id             SERIAL PRIMARY KEY,
     allergy_sid             BIGINT NOT NULL,            -- FK to source PatientAllergySID
     patient_key             VARCHAR(50) NOT NULL,
@@ -77,13 +81,13 @@ CREATE TABLE patient_allergy_reactions (
 
 -- Indexes for patient_allergy_reactions
 CREATE INDEX idx_allergy_reactions_allergy
-    ON patient_allergy_reactions (allergy_sid);
+    ON clinical.patient_allergy_reactions (allergy_sid);
 
 CREATE INDEX idx_allergy_reactions_patient
-    ON patient_allergy_reactions (patient_key);
+    ON clinical.patient_allergy_reactions (patient_key);
 
-COMMENT ON TABLE patient_allergy_reactions IS 'Individual reactions for each allergy (normalized for granular querying)';
-COMMENT ON COLUMN patient_allergy_reactions.allergy_sid IS 'Links to source PatientAllergySID';
+COMMENT ON TABLE clinical.patient_allergy_reactions IS 'Individual reactions for each allergy (normalized for granular querying)';
+COMMENT ON COLUMN clinical.patient_allergy_reactions.allergy_sid IS 'Links to source PatientAllergySID';
 
 -- Print success message
 DO $$

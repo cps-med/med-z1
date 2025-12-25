@@ -110,7 +110,7 @@ def load_vitals_to_postgresql():
     logger.info("Step 4: Truncating existing patient_vitals table...")
 
     with engine.connect() as conn:
-        conn.execute(text("TRUNCATE TABLE patient_vitals;"))
+        conn.execute(text("TRUNCATE TABLE clinical.patient_vitals;"))
         conn.commit()
 
     logger.info("  - Table truncated")
@@ -127,6 +127,7 @@ def load_vitals_to_postgresql():
     df_pandas.to_sql(
         "patient_vitals",
         engine,
+        schema="clinical",
         if_exists="append",
         index=False,
         method="multi",  # Bulk insert for performance
@@ -141,14 +142,14 @@ def load_vitals_to_postgresql():
     logger.info("Step 6: Verifying data...")
 
     with engine.connect() as conn:
-        result = conn.execute(text("SELECT COUNT(*) FROM patient_vitals;"))
+        result = conn.execute(text("SELECT COUNT(*) FROM clinical.patient_vitals;"))
         count = result.scalar()
         logger.info(f"  - Verified: {count} rows in patient_vitals table")
 
         # Get sample data
         result = conn.execute(text("""
             SELECT patient_key, vital_type, result_value, abnormal_flag, taken_datetime
-            FROM patient_vitals
+            FROM clinical.patient_vitals
             LIMIT 5;
         """))
         logger.info("  - Sample records:")

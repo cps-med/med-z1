@@ -123,7 +123,7 @@ def load_encounters_to_postgresql():
     logger.info("Step 4: Truncating existing patient_encounters table...")
 
     with engine.connect() as conn:
-        conn.execute(text("TRUNCATE TABLE patient_encounters;"))
+        conn.execute(text("TRUNCATE TABLE clinical.patient_encounters;"))
         conn.commit()
 
     logger.info("  - Table truncated")
@@ -140,6 +140,7 @@ def load_encounters_to_postgresql():
     df_pandas.to_sql(
         "patient_encounters",
         engine,
+        schema="clinical",
         if_exists="append",
         index=False,
         method="multi",  # Bulk insert for performance
@@ -154,17 +155,17 @@ def load_encounters_to_postgresql():
     logger.info("Step 6: Verifying data...")
 
     with engine.connect() as conn:
-        result = conn.execute(text("SELECT COUNT(*) FROM patient_encounters;"))
+        result = conn.execute(text("SELECT COUNT(*) FROM clinical.patient_encounters;"))
         count = result.scalar()
         logger.info(f"  - Verified: {count} rows in patient_encounters table")
 
         # Get active admissions count
-        result = conn.execute(text("SELECT COUNT(*) FROM patient_encounters WHERE is_active = TRUE;"))
+        result = conn.execute(text("SELECT COUNT(*) FROM clinical.patient_encounters WHERE is_active = TRUE;"))
         active_count = result.scalar()
         logger.info(f"  - Active admissions: {active_count}")
 
         # Get recent encounters count
-        result = conn.execute(text("SELECT COUNT(*) FROM patient_encounters WHERE is_recent = TRUE;"))
+        result = conn.execute(text("SELECT COUNT(*) FROM clinical.patient_encounters WHERE is_recent = TRUE;"))
         recent_count = result.scalar()
         logger.info(f"  - Recent encounters: {recent_count}")
 
@@ -172,7 +173,7 @@ def load_encounters_to_postgresql():
         result = conn.execute(text("""
             SELECT patient_key, admit_datetime, discharge_datetime,
                    encounter_status, admission_category, facility_name
-            FROM patient_encounters
+            FROM clinical.patient_encounters
             ORDER BY admit_datetime DESC
             LIMIT 5;
         """))

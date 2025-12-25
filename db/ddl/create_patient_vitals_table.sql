@@ -2,10 +2,13 @@
 -- Purpose: Serving database table for patient vital signs
 -- Source: Gold layer Parquet files (patient_vitals/*.parquet)
 
--- Drop table if exists (development only)
-DROP TABLE IF EXISTS patient_vitals;
+-- Create clinical schema if it doesn't exist
+CREATE SCHEMA IF NOT EXISTS clinical;
 
-CREATE TABLE patient_vitals (
+-- Drop table if exists (development only)
+DROP TABLE IF EXISTS clinical.patient_vitals;
+
+CREATE TABLE clinical.patient_vitals (
     vital_id                SERIAL PRIMARY KEY,
     patient_key             VARCHAR(50) NOT NULL,       -- ICN
     vital_sign_id           BIGINT NOT NULL UNIQUE,     -- Source VitalSignSID
@@ -31,31 +34,31 @@ CREATE TABLE patient_vitals (
 
 -- Indexes for performance
 CREATE INDEX idx_patient_vitals_patient_date
-    ON patient_vitals (patient_key, taken_datetime DESC);
+    ON clinical.patient_vitals (patient_key, taken_datetime DESC);
 
 CREATE INDEX idx_patient_vitals_type_date
-    ON patient_vitals (vital_type, taken_datetime DESC);
+    ON clinical.patient_vitals (vital_type, taken_datetime DESC);
 
 -- Index for recent vitals widget queries
 CREATE INDEX idx_patient_vitals_recent
-    ON patient_vitals (patient_key, vital_abbr, taken_datetime DESC);
+    ON clinical.patient_vitals (patient_key, vital_abbr, taken_datetime DESC);
 
 -- Index for abnormal vitals queries
 CREATE INDEX idx_patient_vitals_abnormal
-    ON patient_vitals (abnormal_flag, taken_datetime DESC)
+    ON clinical.patient_vitals (abnormal_flag, taken_datetime DESC)
     WHERE abnormal_flag IN ('CRITICAL', 'HIGH');
 
 -- Index for location type filtering
 CREATE INDEX idx_patient_vitals_location_type
-    ON patient_vitals (location_type);
+    ON clinical.patient_vitals (location_type);
 
 -- Comments
-COMMENT ON TABLE patient_vitals IS 'Patient vital signs data from Gold layer';
-COMMENT ON COLUMN patient_vitals.patient_key IS 'Patient ICN (Integrated Care Number)';
-COMMENT ON COLUMN patient_vitals.vital_sign_id IS 'Source VitalSignSID from CDWWork';
-COMMENT ON COLUMN patient_vitals.qualifiers IS 'JSON array of qualifiers (position, site, method, cuff size)';
-COMMENT ON COLUMN patient_vitals.abnormal_flag IS 'CRITICAL, HIGH, LOW, or NORMAL based on clinical thresholds';
-COMMENT ON COLUMN patient_vitals.bmi IS 'Body Mass Index calculated from height and weight';
+COMMENT ON TABLE clinical.patient_vitals IS 'Patient vital signs data from Gold layer';
+COMMENT ON COLUMN clinical.patient_vitals.patient_key IS 'Patient ICN (Integrated Care Number)';
+COMMENT ON COLUMN clinical.patient_vitals.vital_sign_id IS 'Source VitalSignSID from CDWWork';
+COMMENT ON COLUMN clinical.patient_vitals.qualifiers IS 'JSON array of qualifiers (position, site, method, cuff size)';
+COMMENT ON COLUMN clinical.patient_vitals.abnormal_flag IS 'CRITICAL, HIGH, LOW, or NORMAL based on clinical thresholds';
+COMMENT ON COLUMN clinical.patient_vitals.bmi IS 'Body Mass Index calculated from height and weight';
 
 -- Grant permissions
-GRANT SELECT ON patient_vitals TO PUBLIC;
+GRANT SELECT ON clinical.patient_vitals TO PUBLIC;

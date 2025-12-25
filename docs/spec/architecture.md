@@ -666,6 +666,64 @@ def get_all_encounters(
 
 **See:** Section 4.3 (Location Field Patterns) for detailed implementation guidance
 
+### ADR-007: PostgreSQL Schema Organization (2025-12-24)
+**Status:** Accepted
+**Context:** Clinical domain tables (patient_demographics, patient_vitals, patient_allergies, etc.) were initially created in the PostgreSQL default `public` schema, while authentication tables used a dedicated `auth` schema. This implicit decision led to inconsistent schema organization and maintenance challenges as the project grew.
+
+**Problem:**
+1. **Organizational Clarity:** All clinical tables mixed with system tables in `public` schema
+2. **Security/Permissions:** Difficult to apply schema-level access controls
+3. **Namespace Management:** Potential for naming conflicts as project scales
+4. **Inconsistency:** Auth tables in dedicated `auth` schema, but clinical tables in `public`
+5. **Documentation:** Setup guide incorrectly assumed `clinical` schema existed
+
+**Decision:** Organize all clinical domain tables under a dedicated `clinical` schema:
+- **Schema structure:**
+  - `auth.*` - Authentication and session management tables (already implemented)
+  - `clinical.*` - All clinical domain tables (patient demographics, vitals, allergies, medications, flags, encounters, labs, etc.)
+  - `public` - Reserved for system/utility tables if needed
+
+**Implementation:**
+1. **DDL Scripts:** Add `CREATE SCHEMA IF NOT EXISTS clinical;` and prefix all clinical tables with `clinical.`
+2. **ETL Load Scripts:** Add `schema="clinical"` parameter to pandas `.to_sql()` calls
+3. **Application Queries:** Update all SQL queries to reference `clinical.table_name`
+4. **Documentation:** Fix verification commands in setup guides
+
+**Rationale:**
+1. **Logical Separation:** Clear boundaries between auth, clinical data, and future schemas (analytics, audit, etc.)
+2. **Security:** Easier to apply schema-level permissions (e.g., read-only access for reporting users)
+3. **Maintainability:** Table listings (`\dt`) become more organized and understandable
+4. **Scalability:** Prevents naming conflicts as new domains are added
+5. **Consistency:** Mirrors the pattern established with `auth` schema
+
+**Consequences:**
+- ✅ **Positive:**
+  - Clean separation of concerns by functional area
+  - Easier to reason about database structure
+  - Simplified permission management for production
+  - Consistent pattern for future schema additions (e.g., `analytics`, `audit`)
+  - Better developer experience (`\dt clinical.*` shows only clinical tables)
+- ⚠️ **Migration Required:**
+  - All DDL scripts updated with `CREATE SCHEMA IF NOT EXISTS clinical;`
+  - All ETL load scripts updated to specify `schema="clinical"`
+  - All application database queries updated to reference `clinical.*`
+  - Documentation (linux-setup-guide.md) corrected with proper schema references
+- ⚠️ **Trade-offs:**
+  - Slightly longer table references (`clinical.patient_demographics` vs `patient_demographics`)
+  - Requires schema prefix in all queries (can use `SET search_path` to mitigate)
+
+**Alternatives Considered:**
+1. **Continue using public schema** - Rejected: Poor organization, difficult to manage at scale
+2. **Schema per domain (vitals, labs, meds)** - Rejected: Over-fragmentation; too many schemas to manage
+3. **Single med-z1 schema for everything** - Rejected: Loses separation between auth and clinical concerns
+
+**Implementation Timeline:** 2025-12-24 - Complete refactoring of all DDL, ETL, and application code
+
+**See:**
+- Section 4.2 (Data Architecture - PostgreSQL Serving Database)
+- `db/ddl/` - All DDL scripts now create tables in `clinical` schema
+- `etl/load_*.py` - All load scripts use `schema="clinical"` parameter
+
 ---
 
 ## Appendices
