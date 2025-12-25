@@ -106,7 +106,7 @@ CREATE INDEX idx_patient_medications_out_rx_status
     ON clinical.patient_medications_outpatient (rx_status_computed, issue_date DESC);
 
 -- Comments on patient_medications_outpatient
-COMMENT ON TABLE patient_medications_outpatient IS 'Outpatient prescriptions from RxOut data';
+COMMENT ON TABLE clinical.patient_medications_outpatient IS 'Outpatient prescriptions from RxOut data';
 COMMENT ON COLUMN clinical.patient_medications_outpatient.patient_icn IS 'Patient ICN (Integrated Care Number)';
 COMMENT ON COLUMN clinical.patient_medications_outpatient.rx_outpat_id IS 'Source RxOutpatSID from CDWWork';
 COMMENT ON COLUMN clinical.patient_medications_outpatient.is_controlled_substance IS 'DEA controlled substance (Schedule II-V)';
@@ -210,7 +210,7 @@ CREATE INDEX idx_patient_medications_inp_drug_class
     ON clinical.patient_medications_inpatient (drug_class, action_datetime DESC);
 
 -- Comments on patient_medications_inpatient
-COMMENT ON TABLE patient_medications_inpatient IS 'Inpatient medication administration from BCMA data';
+COMMENT ON TABLE clinical.patient_medications_inpatient IS 'Inpatient medication administration from BCMA data';
 COMMENT ON COLUMN clinical.patient_medications_inpatient.patient_icn IS 'Patient ICN (Integrated Care Number)';
 COMMENT ON COLUMN clinical.patient_medications_inpatient.bcma_log_id IS 'Source BCMAMedicationLogSID from CDWWork';
 COMMENT ON COLUMN clinical.patient_medications_inpatient.action_type IS 'GIVEN, HELD, REFUSED, or MISSING DOSE';
