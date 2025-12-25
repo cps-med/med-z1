@@ -102,7 +102,7 @@ def transform_patient_allergies_silver():
         df_reactions_joined
         .group_by("PatientAllergySID")
         .agg([
-            pl.col("reaction_name").str.concat(", ").alias("reactions"),
+            pl.col("reaction_name").str.join(", ").alias("reactions"),
             pl.col("reaction_name").count().alias("reaction_count"),
         ])
         .select([

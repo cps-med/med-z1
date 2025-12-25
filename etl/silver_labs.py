@@ -17,12 +17,31 @@
 
 import polars as pl
 from datetime import datetime, timezone
+from decimal import Decimal
 import logging
 import re
 from lake.minio_client import MinIOClient, build_bronze_path, build_silver_path
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+def safe_float(value) -> float | None:
+    """
+    Safely convert a value to float, handling Decimal types.
+    Used for Python 3.10 compatibility where Parquet may return Decimals.
+    """
+    if value is None:
+        return None
+    if isinstance(value, Decimal):
+        return float(value)
+    if isinstance(value, (int, float)):
+        return float(value)
+    # Try parsing string
+    try:
+        return float(value)
+    except (ValueError, TypeError):
+        return None
 
 
 def parse_numeric_result(result_str: str, result_numeric: float | None) -> float | None:
@@ -34,8 +53,12 @@ def parse_numeric_result(result_str: str, result_numeric: float | None) -> float
     - "<5.0" → 4.99
     - ">1000" → 1001.0
     - "Positive", "Negative", etc. → None
+    - Decimal types (from Parquet on Python 3.10)
     """
     if result_numeric is not None:
+        # Handle Decimal types from Parquet files (Python 3.10 compatibility)
+        if isinstance(result_numeric, Decimal):
+            return float(result_numeric)
         return result_numeric
 
     if result_str is None or result_str.strip() == "":
@@ -152,7 +175,7 @@ def transform_lab_test_dim():
             pl.col("RefRangeLow").cast(pl.Utf8),
             pl.col("RefRangeHigh").cast(pl.Utf8)
         ]).map_elements(
-            lambda x: float(x["RefRangeLow"]) if x["RefRangeLow"] else None,
+            lambda x: safe_float(x["RefRangeLow"]),
             return_dtype=pl.Float64
         ).alias("RefRangeLowNumeric"),
 
@@ -160,7 +183,7 @@ def transform_lab_test_dim():
             pl.col("RefRangeLow").cast(pl.Utf8),
             pl.col("RefRangeHigh").cast(pl.Utf8)
         ]).map_elements(
-            lambda x: float(x["RefRangeHigh"]) if x["RefRangeHigh"] else None,
+            lambda x: safe_float(x["RefRangeHigh"]),
             return_dtype=pl.Float64
         ).alias("RefRangeHighNumeric"),
     ])
