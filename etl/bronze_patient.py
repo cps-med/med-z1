@@ -67,7 +67,7 @@ def extract_patient_bronze():
         MaritalStatus,
         VeteranFlag,
         ServiceConnectedFlag
-    FROM Spatient.Spatient
+    FROM SPatient.SPatient
     WHERE TestPatientFlag = 'N' OR TestPatientFlag = 'Y'
     """
 
