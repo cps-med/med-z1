@@ -51,10 +51,17 @@ The **AI Clinical Insights** feature adds an intelligent chatbot interface to me
 
 ### 1.3 User Interface
 
-- **New sidebar menu item:** "Insights" (positioned after Labs, before Problems)
+- **New sidebar menu item:** "Insights" (positioned after Procedures, below all clinical domains)
+- **Icon:** `fa-regular fa-sparkles` (Font Awesome Pro - sparkle indicates AI-powered feature)
 - **Page layout:** Chat-style interface (similar to ChatGPT, Claude)
 - **Interaction model:** User types questions, AI responds with sourced answers
 - **Technology:** FastAPI + HTMX (consistent with existing med-z1 patterns)
+
+**Note:** Font Awesome Pro is already configured in `app/templates/base.html` via kit link:
+```html
+<link rel="stylesheet" href="https://kit.fontawesome.com/124182fb50.css" crossorigin="anonymous">
+```
+This provides access to all Pro icon variants (solid, regular, light, thin, duotone) across the entire application.
 
 ### 1.4 Design Principles
 
@@ -1124,7 +1131,7 @@ async def clear_chat(
     <div class="page-header">
         <div class="page-header__title-group">
             <h1 class="page-header__title">
-                <i class="fa-solid fa-brain"></i>
+                <i class="fa-regular fa-sparkles"></i>
                 Clinical Insights
             </h1>
             <p class="page-header__subtitle">AI-assisted analysis for {{ patient.name }}</p>
@@ -1511,17 +1518,24 @@ function hideSuggestions() {
 
 ### 9.4 Sidebar Integration
 
+**Positioning:** Place "Insights" after Procedures (at the bottom of clinical domains) to distinguish it as a meta-layer that synthesizes across all clinical data rather than being another domain-specific view.
+
 ```html
 <!-- app/templates/base.html - Add to sidebar navigation -->
 
-<!-- After Labs, before Problems -->
+<!-- After Procedures (below all clinical domains) -->
 <a href="/insight"
    class="sidebar__link {{ 'sidebar__link--active' if active_page == 'insight' else '' }}"
    data-tooltip="AI Clinical Insights">
-    <i class="fa-solid fa-brain fa-lg"></i>
+    <i class="fa-regular fa-sparkles fa-lg"></i>
     <span class="sidebar__text">Insights</span>
 </a>
 ```
+
+**Icon Choice:** `fa-regular fa-sparkles` (Font Awesome Pro)
+- Sparkles universally indicate "AI-powered" or "smart" features
+- Regular weight provides elegant balance (not too heavy, not too light)
+- Already available via existing Font Awesome Pro kit in base.html
 
 ---
 
