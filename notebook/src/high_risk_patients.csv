@@ -1,0 +1,15 @@
+PatientSID,Age,Gender,unique_medications,ddi_pair_count,total_ddi_risk_score,cluster_name
+1024,75,M,74,249.0,319.0,Middle-Age Moderate Complexity
+1014,70,F,61,150.0,177.0,Middle-Age Moderate Complexity
+1011,72,M,59,131.0,170.0,Middle-Age Moderate Complexity
+1013,77,M,60,140.0,166.0,Middle-Age Moderate Complexity
+1015,82,M,49,132.0,161.0,Middle-Age Moderate Complexity
+1019,49,F,46,88.0,114.0,Middle-Age Moderate Complexity
+1016,29,M,46,89.0,106.0,Middle-Age Moderate Complexity
+1023,68,F,58,91.0,102.0,Middle-Age Moderate Complexity
+1012,68,F,35,74.0,89.0,Middle-Age Moderate Complexity
+1021,58,F,41,60.0,78.0,Middle-Age Moderate Complexity
+1025,80,F,9,7.0,10.0,Cluster 0
+1005,44,M,3,2.0,4.0,Cluster 0
+1017,36,F,4,1.0,2.0,Cluster 0
+1018,43,M,2,1.0,2.0,Cluster 0

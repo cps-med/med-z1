@@ -1,0 +1,3 @@
+Cluster,Patient_Count,Priority,Avg_Age,High_Risk_Rate_%,Interventions
+Middle-Age Moderate Complexity,10,CRITICAL,64.8,100.0,Immediate comprehensive medication review (CMR) | Pharmacist consultation required | Deprescribing evaluation for elderly patients | Weekly monitoring for first month | Care coordination between all providers
+Cluster 0,15,MODERATE,55.9,26.7,Semi-annual medication review | DDI screening when adding new medications | Patient education materials
