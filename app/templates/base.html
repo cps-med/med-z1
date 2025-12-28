@@ -125,7 +125,7 @@
                 <span class="sidebar__user-label">Signed in as</span>
                 <span class="sidebar__user-name">{{ user.display_name if user else 'Unknown User' }}</span>
                 <form method="post" action="/logout" style="margin-top: 8px;">
-                    <button type="submit" class="btn btn--secondary btn--sm" style="width: 100%;">
+                    <button type="submit" class="btn btn--secondary btn--sm" style="width: 100%;" data-tooltip="Sign Out">
                         <i class="fa-solid fa-arrow-right-from-bracket"></i>
                         <span class="sidebar__text">Sign Out</span>
                     </button>

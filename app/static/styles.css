@@ -129,7 +129,7 @@ body {
     margin-bottom: 1.75rem;
 }
 
-.sidebar__link--section-end::after {
+.sidebar__link--section-end::before {
     content: '';
     position: absolute;
     left: 0;
@@ -644,6 +644,22 @@ html.sidebar-init-collapsed .sidebar__nav {
 .layout--sidebar-collapsed .sidebar__link:hover::after,
 .layout--sidebar-collapsed .sidebar__link--active:hover::after,
 .layout--sidebar-collapsed .sidebar__link--disabled:hover::after {
+    content: attr(data-tooltip);
+    position: fixed;
+    left: 74px;  /* 64px sidebar width + 10px gap */
+    background: #111827;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    z-index: 9999;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    pointer-events: none;
+}
+
+/* Tooltip for Sign Out button in footer when collapsed */
+.layout--sidebar-collapsed .sidebar__footer button:hover::after {
     content: attr(data-tooltip);
     position: fixed;
     left: 74px;  /* 64px sidebar width + 10px gap */
