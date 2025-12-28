@@ -1,8 +1,40 @@
-# Med-Z1 Setup Guide for Linux
+# Med-Z1 Developer Setup Guide
 
-This guide provides instructions for installing, configuring, and running the **med-z1** application on a development machine running the Linux operating system. It is targeted for pop!_OS, but should be useful for other Linux variants.  
+This guide provides instructions for installing, configuring, and running the **med-z1** application on a development machine running the macOS or Linux operating system. For Linux machines, it is targeted for pop!_OS, but should be useful for other Linux variants.  
 
 **Prerequistite:** This application is designed to run using Python version 3.11 on macOS machines and version 3.10 on Linux based machines. Higher versions of Python may have incompatibility issues witih some of the supporting dependencies, such as numpy, pandas, and polars.
+
+## GIT Setup
+
+Prior to getting started, ensure that you have a current version of git installed and configured on your local machine. For macOS environments, it is recommended that you use the standard Apple Xcode developer tools. Installation of the xCODE app is not required. Instead, you can install the **Command Line Tools** via the command below:
+
+Install macOS Developer Tools
+```bash
+xcode-select --install
+```
+
+Verify
+```bash
+# check git version
+git --version
+
+# Check the path to the active developer directory
+xcode-select -p
+```
+
+Set up basic information about yourself
+```bash
+git config --global user.name "Chuck Sylvester"
+git config --global user.email chuck.sylvester@outlook.com
+git config --global color.ui true
+```
+
+To display your Git settings:
+```bash
+git config --list
+git config --local --list
+git config --global --list
+```
 
 ## Clone med-z1 Repo to Local Dev Machine
 
@@ -55,6 +87,58 @@ Place .env in the project root folder, or copy/paste contents into .env file
 cp .env ~/swdev/med/med-z1/
 ```
 
+## Verify Python v3.10 or v3.11 Availability
+
+For Macbook users, macOS comes with a system version of Python pre-installed, but it is often outdated and not recommended for development.
+
+You can check the version:
+```bash
+python3 --version
+```
+
+If it's an older version, consider a new installation via Homebrew.
+
+
+**Install Homebrew (if needed)**  
+
+Homebrew is a package manager for macOS. Check if already installed:
+
+```bash
+brew --version
+```
+
+If not installed, install Homebrew:
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
+
+Follow the post-installation instructions to add Homebrew to your PATH.
+
+**Install Python 3.11**  
+
+Recommended Version: Python 3.11.x (avoid 3.12+ due to virtual environment quirks)
+
+If you don't have Python 3.11.x, install it:
+
+```bash
+brew install python@3.11
+```
+
+After installation, you may need to add Python 3.11 to your PATH. Homebrew will provide instructions, typically:
+
+```bash
+# Add to ~/.zshrc or ~/.bash_profile
+echo 'export PATH="$(brew --prefix)/opt/python@3.11/libexec/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+**Verify Installation**:
+```bash
+python3 --version  # Should show 3.11.x
+pip3 --version     # Should show 24.x or 25.x
+```
+
 ## Create Python Virtual Environment
 
 The med-z1 application uses a single, shared Python virtual environment. This environment is not under version control, so you will need to create the environmenet locally within your development project using the `requirements.txt` file. This will install all required dependencies into your local environment.  
@@ -95,17 +179,112 @@ To deactivate a Pythone virtual environment:
 deactivate
 ```
 
-## Install and Run Docker Images
+## Install and Run Docker Desktop
 
 The **med-z1** application uses three core services that run within Docker container images: Microsoft SQL Server 2019, PostgreSQL 16, and MinIO. On macOS, these services are managed using Docker Desktop; however, there are significant performance gains on Linux by managing these services natively through the command line.  
 
-The instructions below are for Docker **native engine** installation.  
+### macOS Setup
+
+**Docker Desktop** is the recommended container runtime for macOS development.
+
+**Download and Install**:
+
+1. Download from [Docker Desktop for Mac](https://www.docker.com/products/docker-desktop/)
+2. Choose "Apple Chip" or "Intel Chip" based on your Mac
+3. Open the `.dmg` file and drag Docker to Applications folder
+4. Launch Docker Desktop from Applications
+5. Complete the setup wizard
+6. Add Docker to your dock for easy access
+
+**Configure Docker Desktop** (optional):
+
+1. Open Docker Desktop preferences
+2. Go to Settings → General
+3. Enable "Start Docker Desktop when you log in" for convenience
+4. Allocate resources (recommended: 4 CPUs, 8 GB RAM)
+
+**Verify Installation**:
+
+```bash
+docker --version
+# Expected output: Docker version 24.x.x or later
+```
+
+**Pull and Create Microsoft SQL Server Container**
+
+It is best to use SQL Server 2019, not 2022. SQL Server 2022 has issues on Apple Silicon.
+
+Pull Docker Image
+```bash
+# Pull image
+docker pull mcr.microsoft.com/mssql/server:2019-latest
+```
+
+For Apple Silicon based machines:
+```bash
+# Create and run container
+docker run --platform linux/amd64 \
+  -e 'ACCEPT_EULA=Y' \
+  -e 'SA_PASSWORD=YourSecurePassword123!' \
+  -p 1433:1433 \
+  --name sqlserver2019 \
+  -d mcr.microsoft.com/mssql/server:2019-latest
+```
+
+For intel based machines (remove the --platform flag):
+```bash
+# Create and run container
+docker run \
+  -e 'ACCEPT_EULA=Y' \
+  -e 'SA_PASSWORD=YourSecurePassword123!' \
+  -p 1433:1433 \
+  --name sqlserver2019 \
+  -d mcr.microsoft.com/mssql/server:2019-latest
+```
+
+**Pull and Create PostgreSQL Container**
+
+PostgreSQL is the **serving database** for med-z1, providing low-latency access to Gold-layer data.
+
+```bash
+# Create PostgreSQL container with password
+docker run -d \
+    --name postgres16 \
+    -e POSTGRES_PASSWORD=yourpassword \
+    -p 5432:5432 \
+    -v postgres16-data:/var/lib/postgresql/data \
+    postgres:16
+
+# Verify container is running
+docker ps | grep postgres16
+```
+
+**Pull and Create MinIO Container**
+
+MinIO Setup:
+```bash
+docker run -d --name med-insight-minio \
+  -p 9000:9000 -p 9001:9001 \
+  -e MINIO_ROOT_USER=admin \
+  -e MINIO_ROOT_PASSWORD=password \
+  -v $HOME/minio-data:/data \
+  quay.io/minio/minio server /data --console-address ":9001"
+```
+
+**Verfify Docker Containers**  
+Verify the newly installed containers by starting, stopping, and viewing them within the Docker Desktop app.  
+
+### Linux Setup
+
+The instructions below are for Docker **native engine** installation, using a **docker-compose.yaml** script.
 
 Install Docker components
 ```bash
 sudo apt-get update
 sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 ```
+
+The Linux intallation uses a docker-compose.yaml file located in the project root directory, to define and start the required conatiner images.  
 
 Run docker-compose.yaml script (from project root directory)
 ```bash
@@ -284,6 +463,43 @@ source .venv/bin/activate
 # Run MinIO connectivity test (using -m flag to run as module)
 python -m scripts.minio_test
 ```
+
+(copy/paste from Med-Insight)
+#### Install SQL Server Command-Line Tools
+
+Install the Microsoft SQL Server tools for database connectivity and management:
+
+```bash
+# Add Microsoft repository
+brew tap microsoft/mssql-release https://github.com/Microsoft/homebrew-mssql-release
+brew update
+
+# Install SQL Server tools and ODBC drivers
+brew install mssql-tools msodbcsql18
+
+# Install unixODBC driver manager (required for Python pyodbc)
+brew install unixodbc
+```
+
+**Add sqlcmd to PATH** (add to `~/.zshrc` or `~/.bash_profile`):
+
+```bash
+echo 'export PATH="/usr/local/opt/mssql-tools/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+**Verify Installation**:
+
+```bash
+# Test sqlcmd
+sqlcmd '-?'
+
+# Verify ODBC drivers
+odbcinst -q -d
+# Should see: [ODBC Driver 18 for SQL Server]
+```
+(copy/paste from Med-Insight)
+
 
 ## Install SQL Server Command-Line Tools
 
