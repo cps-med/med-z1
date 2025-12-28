@@ -639,7 +639,7 @@ SELECT COUNT(*) AS labs_count FROM Chem.LabChem;
 GO
 
 -- View sample patient data
-SELECT TOP 5 PatientSID, PatientICN, PatientName, BirthDateTime, GenderName
+SELECT TOP 5 PatientSID, PatientICN, PatientName, BirthDateTime, Gender, Sta3n
 FROM SPatient.SPatient;
 GO
 
