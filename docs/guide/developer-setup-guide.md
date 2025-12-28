@@ -193,14 +193,15 @@ The **med-z1** application uses three core services that run within Docker conta
 2. Choose "Apple Chip" or "Intel Chip" based on your Mac
 3. Open the `.dmg` file and drag Docker to Applications folder
 4. Launch Docker Desktop from Applications
-5. Complete the setup wizard
-6. Add Docker to your dock for easy access
+5. Complete the setup wizard (I use recommended settings)
+6. Login to Docker using a personal account
+7. Add Docker to your dock for easy access
 
 **Configure Docker Desktop** (optional):
 
 1. Open Docker Desktop preferences
 2. Go to Settings → General
-3. Enable "Start Docker Desktop when you log in" for convenience
+3. Enable "Start Docker Desktop when you sign in" (optional)
 4. Allocate resources (recommended: 4 CPUs, 8 GB RAM)
 
 **Verify Installation**:
@@ -464,10 +465,11 @@ source .venv/bin/activate
 python -m scripts.minio_test
 ```
 
-(copy/paste from Med-Insight)
-#### Install SQL Server Command-Line Tools
+## Install SQL Server Command-Line Tools
 
-Install the Microsoft SQL Server tools for database connectivity and management:
+For a better developer experience, install Microsoft SQL Server command-line tools natively on your macOS or Linux machine. This allows you to run `sqlcmd` directly from your host terminal without using `docker exec`.
+
+**macOS Setup**
 
 ```bash
 # Add Microsoft repository
@@ -498,14 +500,9 @@ sqlcmd '-?'
 odbcinst -q -d
 # Should see: [ODBC Driver 18 for SQL Server]
 ```
-(copy/paste from Med-Insight)
 
+**Linux/Pop!_OS Setup**
 
-## Install SQL Server Command-Line Tools
-
-For better developer experience, install Microsoft SQL Server command-line tools natively on your Linux machine. This allows you to run `sqlcmd` directly from your host terminal without using `docker exec`.
-
-Install mssql-tools18 on Pop!_OS/Ubuntu
 ```bash
 # Import the public repository GPG keys
 curl https://packages.microsoft.com/keys/microsoft.asc | sudo tee /etc/apt/trusted.gpg.d/microsoft.asc
