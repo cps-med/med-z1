@@ -236,6 +236,12 @@ AUTH_CONFIG = {
     "bcrypt_rounds": BCRYPT_ROUNDS,
 }
 
+# -----------------------------------------------------------
+# AI Subsystem Info
+# ----------------------------------------------------------- 
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4-turbo")
+OPENAI_TEMPERATURE = float(os.getenv("OPENAI_TEMPERATURE", "0.3"))  # Low temp for clinical accuracy
 
 # -----------------------------------------------------------
 # Optional logging of config (without secrets)

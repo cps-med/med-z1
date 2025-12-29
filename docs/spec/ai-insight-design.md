@@ -1,7 +1,8 @@
 # AI Clinical Insights Design Specification
 
-**Document Version:** v1.0
+**Document Version:** v1.1
 **Created:** 2025-12-28
+**Updated:** 2025-12-29 (library versions and API updates)
 **Status:** Draft - Architecture Approved
 **Target Completion:** Phase 1 MVP - 3 weeks from start
 
@@ -89,54 +90,54 @@ This provides access to all Pro icon variants (solid, regular, light, thin, duot
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                         User (Clinician)                         │
-└────────────────────────────┬────────────────────────────────────┘
-                             │ HTMX POST /insight/chat
-                             ▼
+│                         User (Clinician)                        │
+└──────────────────────────────┬──────────────────────────────────┘
+                               │ HTMX POST /insight/chat
+                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                   FastAPI Route (/insight/chat)                  │
-└────────────────────────────┬────────────────────────────────────┘
-                             │
-                             ▼
+│                   FastAPI Route (/insight/chat)                 │
+└──────────────────────────────┬──────────────────────────────────┘
+                               │
+                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                     LangGraph Agent (InsightAgent)               │
+│                     LangGraph Agent (InsightAgent)              │
 │  ┌────────────────────────────────────────────────────────────┐ │
 │  │ State: {messages, patient_icn, tools_used}                 │ │
-│  └────────────────────────────────────────────────────────────┘ │
-│                             │                                    │
-│    ┌────────────────────────┼────────────────────────┐          │
-│    ▼                        ▼                        ▼          │
-│  ┌──────┐              ┌──────┐                ┌──────┐        │
-│  │Tool 1│              │Tool 2│                │Tool 3│        │
-│  │ DDI  │              │Summ. │                │Vitals│        │
-│  └──┬───┘              └──┬───┘                └──┬───┘        │
-└─────┼─────────────────────┼───────────────────────┼────────────┘
-      │                     │                       │
-      ▼                     ▼                       ▼
+│  └───────────────────────────┬────────────────────────────────┘ │
+│                              │                                  │
+│      ┌───────────────────────┼────────────────────────┐         │
+│      ▼                       ▼                        ▼         │
+│   ┌──────┐               ┌──────┐                ┌──────┐       │
+│   │Tool 1│               │Tool 2│                │Tool 3│       │
+│   │ DDI  │               │Summ. │                │Vitals│       │
+│   └──┬───┘               └──┬───┘                └──┬───┘       │
+└──────┼──────────────────────┼───────────────────────┼───────────┘
+       │                      │                       │
+       ▼                      ▼                       ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│              ai/services/ (Business Logic Layer)                 │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
-│  │DDIAnalyzer   │  │PatientContext│  │VitalsTrend   │          │
+│              ai/services/ (Business Logic Layer)                │
+│  ┌───────────────┐  ┌──────────────┐  ┌──────────────┐          │
+│  │DDIAnalyzer    │  │PatientContext│  │VitalsTrend   │          │
 │  │(from notebook)│  │Builder       │  │Analyzer      │          │
-│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘          │
-└─────────┼──────────────────┼──────────────────┼─────────────────┘
-          │                  │                  │
-          ▼                  ▼                  ▼
+│  └──────┬────────┘  └──────┬───────┘  └──────┬───────┘          │
+└─────────┼──────────────────┼─────────────────┼──────────────────┘
+          │                  │                 │
+          ▼                  ▼                 ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│           Existing app/services/ (Data Access Layer)             │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
-│  │medication_   │  │vitals_       │  │demographics_ │          │
-│  │service       │  │service       │  │service       │          │
-│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘          │
-└─────────┼──────────────────┼──────────────────┼─────────────────┘
-          │                  │                  │
-          ▼                  ▼                  ▼
+│           Existing app/services/ (Data Access Layer)            │
+│   ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
+│   │medication_   │  │vitals_       │  │demographics_ │          │
+│   │service       │  │service       │  │service       │          │
+│   └──────┬───────┘  └──────┬───────┘  └──────┬───────┘          │
+└──────────┼─────────────────┼─────────────────┼──────────────────┘
+           │                 │                 │
+           ▼                 ▼                 ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                   Data Sources                                   │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
-│  │PostgreSQL    │  │Vista RPC     │  │MinIO/Parquet │          │
-│  │(T-1, historical)│ │(T-0, realtime)│ │(DDI reference)│         │
-│  └──────────────┘  └──────────────┘  └──────────────┘          │
+│                      Data Sources                               │
+│   ┌─────────────────┐  ┌───────────────┐  ┌───────────────┐     │
+│   │PostgreSQL       │  │Vista RPC      │  │MinIO/Parquet  │     │
+│   │(T-1, historical)│  │(T-0, realtime)│  │(DDI reference)│     │
+│   └─────────────────┘  └───────────────┘  └───────────────┘     │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -378,45 +379,94 @@ class InsightState(TypedDict):
 
 ### 5.2 Graph Definition
 
+**Note:** Updated for LangGraph 1.0.5 API (January 2025)
+
 ```python
 from langgraph.graph import StateGraph, END
-from langgraph.prebuilt import ToolExecutor
+from langgraph.prebuilt import ToolNode
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import HumanMessage
 
-# Define nodes
-def agent_node(state: InsightState) -> InsightState:
-    """LLM decides what to do (call tools or respond)."""
-    # Invoke LLM with tools
-    # Returns either tool calls or final response
-    ...
+# Initialize LLM with tool binding
+def create_insight_agent(tools: list):
+    """
+    Creates a LangGraph agent for clinical insights.
 
-def tool_node(state: InsightState) -> InsightState:
-    """Execute requested tools."""
-    # Run tools, append results to messages
-    ...
+    Args:
+        tools: List of LangChain tools (check_ddi_risks, get_patient_summary, etc.)
 
-def should_continue(state: InsightState) -> str:
-    """Router: continue to tools or end?"""
-    last_message = state["messages"][-1]
-    if last_message.tool_calls:
-        return "tools"
-    else:
+    Returns:
+        Compiled LangGraph agent
+    """
+    # Initialize OpenAI LLM
+    llm = ChatOpenAI(
+        model="gpt-4-turbo",
+        temperature=0.3,  # Low temperature for clinical accuracy
+    )
+
+    # Bind tools to LLM
+    llm_with_tools = llm.bind_tools(tools)
+
+    # Define agent node
+    def agent_node(state: InsightState) -> dict:
+        """LLM decides what to do (call tools or respond)."""
+        messages = state["messages"]
+        response = llm_with_tools.invoke(messages)
+        return {"messages": [response]}
+
+    # Define router function
+    def should_continue(state: InsightState) -> str:
+        """Router: continue to tools or end?"""
+        last_message = state["messages"][-1]
+        # If LLM makes a tool call, route to tools node
+        if hasattr(last_message, "tool_calls") and last_message.tool_calls:
+            return "tools"
+        # Otherwise, end the conversation
         return END
 
-# Build graph
-workflow = StateGraph(InsightState)
-workflow.add_node("agent", agent_node)
-workflow.add_node("tools", tool_node)
+    # Build graph
+    workflow = StateGraph(InsightState)
 
-workflow.set_entry_point("agent")
-workflow.add_conditional_edges(
-    "agent",
-    should_continue,
-    {"tools": "tools", END: END}
-)
-workflow.add_edge("tools", "agent")  # Loop back to agent after tools
+    # Add nodes
+    workflow.add_node("agent", agent_node)
+    workflow.add_node("tools", ToolNode(tools))  # ToolNode handles tool execution
 
-# Compile
-graph = workflow.compile()
+    # Set entry point
+    workflow.set_entry_point("agent")
+
+    # Add edges
+    workflow.add_conditional_edges(
+        "agent",
+        should_continue,
+        {
+            "tools": "tools",
+            END: END
+        }
+    )
+    workflow.add_edge("tools", "agent")  # Loop back to agent after tools
+
+    # Compile and return
+    return workflow.compile()
+
+# Example usage:
+# from ai.tools.medication_tools import check_ddi_risks
+# from ai.tools.patient_tools import get_patient_summary
+# from ai.tools.vitals_tools import analyze_vitals_trends
+#
+# tools = [check_ddi_risks, get_patient_summary, analyze_vitals_trends]
+# agent = create_insight_agent(tools)
+#
+# # Invoke with a question
+# initial_state = {
+#     "messages": [HumanMessage(content="Are there any DDI risks?")],
+#     "patient_icn": "ICN1011530429",
+#     "patient_name": "John Doe",
+#     "tools_used": [],
+#     "data_sources": [],
+#     "error": None
+# }
+# result = agent.invoke(initial_state)
+# print(result["messages"][-1].content)
 ```
 
 **Flow Diagram:**
@@ -429,7 +479,7 @@ graph = workflow.compile()
      ▼
 ┌──────────────┐
 │    Agent     │ (LLM decides: call tools or respond?)
-│  (GPT-4)     │
+│   (GPT-4)    │
 └───┬─────┬────┘
     │     │
     │     └────────────────────────────────┐
@@ -1543,12 +1593,13 @@ function hideSuggestions() {
 
 ### Phase 1: MVP Foundation (Week 1)
 
-**Days 1-2: Infrastructure Setup**
-- [ ] Install dependencies: `langchain`, `langgraph`, `openai`
-- [ ] Create `ai/` directory structure
-- [ ] Add OpenAI API key to `.env`
-- [ ] Create basic LangGraph agent skeleton
-- [ ] Test LangGraph agent with simple echo tool
+**Days 1-2: Infrastructure Setup** ✅ **COMPLETE**
+- [x] Install dependencies: `langchain`, `langgraph`, `langchain-openai`, `openai`
+- [x] Create `ai/` directory structure (including empty `__init__.py` files)
+- [x] Add OpenAI API key to `.env`
+- [x] Update root `config.py` to add OpenAI configuration variables
+- [x] Create basic LangGraph agent skeleton (using 1.0.5 API with ToolNode)
+- [x] Test LangGraph agent with simple echo tool
 
 **Days 3-4: DDI Tool Implementation**
 - [ ] Refactor `notebook/src/ddi_transforms.py` → `ai/services/ddi_analyzer.py`
@@ -1960,14 +2011,17 @@ LangGraph agent
 
 ## Appendix A: Dependencies
 
-### A.1 Python Packages (add to requirements.txt)
+### A.1 Python Packages  
+(add to requirements.txt)
+
+**Updated versions as of January 2025:**
 
 ```txt
-# AI/ML packages
-langchain==0.1.0
-langgraph==0.0.20
-langchain-openai==0.0.5
-openai==1.12.0
+# AI/ML packages (CURRENT VERSIONS - installed)
+langchain==1.2.0
+langgraph==1.0.5
+langchain-openai==1.1.6
+openai==2.14.0
 
 # Existing packages (already in med-z1)
 fastapi
@@ -1983,7 +2037,13 @@ pytest
 pytest-asyncio
 ```
 
-### A.2 Environment Variables (add to .env)
+**Note:** These versions reflect significant improvements over the original design document versions:
+- `langgraph` 1.0.5 includes stable API with `ToolNode` (replaces deprecated `ToolExecutor`)
+- `langchain` 1.2.0 has better modular imports via `langchain_core` and `langchain_openai`
+- `openai` 2.14.0 includes latest API features and bug fixes
+
+### A.2 Environment Variables  
+(add to .env)
 
 ```bash
 # OpenAI API
@@ -2065,11 +2125,236 @@ med-z1/
 
 ---
 
+## Appendix C: Python Package Initialization
+(`__init__.py` Files)
+
+### C.1 Overview
+
+Each directory in the `ai/` subsystem requires an `__init__.py` file to be recognized as a Python package. These files can range from empty (minimal) to functional (exposing key imports for cleaner API usage).
+
+**Two Valid Approaches:**
+
+1. **Empty files** - Quickest way to establish package structure (Python 3.3+)
+2. **Export files** - Expose key classes/functions for cleaner imports (recommended for production)
+
+### C.2 Recommended Content by File
+
+#### `ai/__init__.py` (Top-level package)
+
+**Purpose:** Expose main entry points and package metadata
+
+```python
+"""
+AI/ML subsystem for med-z1.
+
+Provides clinical insights through agentic RAG with LangGraph.
+"""
+
+__version__ = "0.1.0"
+
+# Expose main components for convenient importing
+from ai.agents.insight_agent import create_insight_agent
+
+__all__ = [
+    "create_insight_agent",
+]
+```
+
+**Benefit:** Enables `from ai import create_insight_agent` instead of `from ai.agents.insight_agent import create_insight_agent`
+
+---
+
+#### `ai/agents/__init__.py`
+
+**Purpose:** Expose agent creation function and state
+
+```python
+"""LangGraph agents for clinical insights."""
+
+from ai.agents.insight_agent import create_insight_agent, InsightState
+
+__all__ = [
+    "create_insight_agent",
+    "InsightState",
+]
+```
+
+**Benefit:** Cleaner imports in routes: `from ai.agents import create_insight_agent, InsightState`
+
+---
+
+#### `ai/tools/__init__.py`
+⭐ **MOST IMPORTANT**
+
+**Purpose:** Expose all tools as a convenient list for agent initialization
+
+```python
+"""LangChain tools for clinical data access."""
+
+from ai.tools.medication_tools import check_ddi_risks
+from ai.tools.patient_tools import get_patient_summary
+from ai.tools.vitals_tools import analyze_vitals_trends
+
+# Convenient list of all available tools
+ALL_TOOLS = [
+    check_ddi_risks,
+    get_patient_summary,
+    analyze_vitals_trends,
+]
+
+__all__ = [
+    "check_ddi_risks",
+    "get_patient_summary",
+    "analyze_vitals_trends",
+    "ALL_TOOLS",
+]
+```
+
+**Benefit:** Enables clean agent creation:
+```python
+from ai.tools import ALL_TOOLS
+agent = create_insight_agent(ALL_TOOLS)
+```
+
+**Why This One Matters Most:** The `ALL_TOOLS` list is central to how the LangGraph agent gets initialized. As you add new tools, you simply append them to this list.
+
+---
+
+#### `ai/services/__init__.py`
+
+**Purpose:** Expose service classes
+
+```python
+"""Business logic services for AI components."""
+
+from ai.services.ddi_analyzer import DDIAnalyzer
+from ai.services.patient_context import PatientContextBuilder
+from ai.services.vitals_trend_analyzer import VitalsTrendAnalyzer
+
+__all__ = [
+    "DDIAnalyzer",
+    "PatientContextBuilder",
+    "VitalsTrendAnalyzer",
+]
+```
+
+**Benefit:** Cleaner imports: `from ai.services import DDIAnalyzer` instead of full path
+
+---
+
+#### `ai/prompts/__init__.py`
+
+**Purpose:** Expose system prompts and templates
+
+```python
+"""System prompts and prompt templates."""
+
+from ai.prompts.system_prompts import INSIGHT_SYSTEM_PROMPT
+
+__all__ = [
+    "INSIGHT_SYSTEM_PROMPT",
+]
+```
+
+**Benefit:** Simple access: `from ai.prompts import INSIGHT_SYSTEM_PROMPT`
+
+---
+
+### C.3 Summary Table
+
+| File | Primary Purpose | Can Be Empty? | Priority |
+|------|----------------|---------------|----------|
+| `ai/__init__.py` | Package metadata + main exports | ✅ Yes | Medium |
+| `ai/agents/__init__.py` | Agent exports | ✅ Yes | Medium |
+| `ai/tools/__init__.py` | **ALL_TOOLS list** | ⚠️ Should have content | **HIGH** |
+| `ai/services/__init__.py` | Service class exports | ✅ Yes | Low |
+| `ai/prompts/__init__.py` | Prompt exports | ✅ Yes | Low |
+
+### C.4 Incremental Development
+
+**Recommended workflow for building the AI subsystem:**
+
+#### Phase 1: Establish Package Structure
+(Day 1)  
+
+Create all `__init__.py` files as **empty** to quickly establish the Python package structure:
+
+```bash
+# From project root
+touch ai/__init__.py
+touch ai/agents/__init__.py
+touch ai/tools/__init__.py
+touch ai/services/__init__.py
+touch ai/prompts/__init__.py
+```
+
+**Verification:**
+```python
+# Test that packages are recognized
+python -c "import ai; import ai.agents; import ai.tools"
+# Should run without errors
+```
+
+#### Phase 2: Populate as You Implement  
+(Days 2-5)
+
+Add exports to each `__init__.py` **as you create the corresponding modules**:
+
+1. **Day 2:** Implement `ai/agents/insight_agent.py` → Update `ai/agents/__init__.py` to export it
+2. **Day 3:** Implement `ai/tools/medication_tools.py` → Update `ai/tools/__init__.py` to include it in `ALL_TOOLS`
+3. **Day 4:** Implement `ai/services/ddi_analyzer.py` → Update `ai/services/__init__.py` to export it
+4. **Day 5:** Implement `ai/prompts/system_prompts.py` → Update `ai/prompts/__init__.py` to export it
+
+This incremental approach:
+- ✅ Prevents import errors during development
+- ✅ Keeps `__init__.py` files synchronized with actual implementations
+- ✅ Allows testing of each component as it's built
+
+### C.5 Usage Examples
+
+#### Before (Without `__init__.py` exports)
+```python
+# app/routes/insight.py
+from ai.agents.insight_agent import create_insight_agent
+from ai.tools.medication_tools import check_ddi_risks
+from ai.tools.patient_tools import get_patient_summary
+from ai.tools.vitals_tools import analyze_vitals_trends
+
+tools = [check_ddi_risks, get_patient_summary, analyze_vitals_trends]
+agent = create_insight_agent(tools)
+```
+
+#### After (With `__init__.py` exports)
+```python
+# app/routes/insight.py
+from ai import create_insight_agent
+from ai.tools import ALL_TOOLS
+
+agent = create_insight_agent(ALL_TOOLS)
+```
+
+**Result:** Cleaner, more maintainable code with fewer import statements.
+
+### C.6 Consistency with Existing med-z1 Patterns
+
+Check existing `__init__.py` files in the med-z1 codebase for consistency:
+
+```bash
+# Review existing patterns
+cat app/__init__.py
+cat app/services/__init__.py
+```
+
+Follow the same export style and documentation conventions used elsewhere in the project.
+
+---
+
 ## Document Revision History
 
 | Version | Date | Changes | Author |
 |---------|------|---------|--------|
 | v1.0 | 2025-12-28 | Initial draft - Architecture approved, ready for implementation | Claude + User |
+| v1.1 | 2025-12-29 | Updated for current library versions (langchain 1.2.0, langgraph 1.0.5, langchain-openai 1.1.6, openai 2.14.0). Updated Section 5.2 with ToolNode API pattern. Added Appendix C: Python Package Initialization guidelines. Clarified Days 1-2 tasks to include config.py update. | Claude + User |
 
 ---
 

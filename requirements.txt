@@ -1,3 +1,7 @@
+# -----------------------------
+# Master Libraries List
+# -----------------------------
+
 annotated-doc==0.0.4
 annotated-types==0.7.0
 anyio==4.12.0
@@ -58,3 +62,9 @@ uvicorn==0.38.0
 uvloop==0.22.1
 watchfiles==1.1.1
 websockets==15.0.1
+
+# AI/ML Packages
+langchain==1.2.0
+langchain-openai==1.1.6
+langgraph==1.0.5
+openai==2.14.0
