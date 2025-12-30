@@ -234,11 +234,30 @@ async def get_vitals_page(
                 )
             )
 
-        # Get all vitals for patient (limit 500 for page view)
-        vitals = get_patient_vitals(icn, limit=500, vital_type=vital_type)
+        # Get PostgreSQL vitals (limit 500 for page view)
+        vitals = get_patient_vitals(icn, limit=500, vital_type=None)  # Get all types for potential merge
 
-        # Get vital counts for filter pills
-        counts = get_vital_counts(icn)
+        # Check if we have cached Vista responses to merge with PG data
+        from app.services.vista_cache import VistaSessionCache
+        vitals_cache = VistaSessionCache.get_cached_data(request, icn, "vitals")
+
+        if vitals_cache and "vista_responses" in vitals_cache:
+            # Merge PG data with cached Vista responses
+            from app.services.realtime_overlay import merge_vitals_data
+            logger.info(f"Merging PG data with cached Vista responses from sites: {vitals_cache.get('sites')}")
+            vitals, merge_stats = merge_vitals_data(vitals, vitals_cache["vista_responses"], icn)
+            logger.info(f"Merged: {merge_stats['total_merged']} vitals ({merge_stats['pg_count']} PG + {merge_stats['vista_count']} Vista)")
+
+        # Apply vital_type filter AFTER merge (if specified)
+        if vital_type:
+            vitals = [v for v in vitals if v.get("vital_type") == vital_type]
+
+        # Get vital counts for filter pills (from merged data)
+        counts = {}
+        for vital in vitals:
+            abbr = vital.get("vital_abbr")
+            if abbr:
+                counts[abbr] = counts.get(abbr, 0) + 1
 
         # Sort vitals
         reverse = (sort_order == "desc")
@@ -254,10 +273,19 @@ async def get_vitals_page(
 
         logger.info(f"Loaded vitals page for {icn}: {len(vitals)} vitals, filter={vital_type}, sort={sort_by} {sort_order}")
 
-        # Calculate data freshness (yesterday's date for PostgreSQL data)
-        yesterday = datetime.now() - timedelta(days=1)
-        data_current_through = yesterday.strftime("%b %d, %Y")
-        data_freshness_label = "yesterday"
+        # Calculate data freshness
+        if vitals_cache:
+            # We have Vista data - current through today
+            now = datetime.now()
+            data_current_through = now.strftime("%b %d, %Y")
+            data_freshness_label = "today"
+        else:
+            # PostgreSQL only - current through yesterday
+            yesterday = datetime.now() - timedelta(days=1)
+            data_current_through = yesterday.strftime("%b %d, %Y")
+            data_freshness_label = "yesterday"
+
+        vista_cached = vitals_cache is not None
 
         return templates.TemplateResponse(
             "patient_vitals.html",
@@ -274,6 +302,9 @@ async def get_vitals_page(
                 data_current_through=data_current_through,
                 data_freshness_label=data_freshness_label,
                 vista_refreshed=False,
+                vista_cached=vista_cached,  # Indicate if Vista data is in session cache
+                cache_age=vitals_cache.get("timestamp") if vitals_cache else None,
+                cache_sites=vitals_cache.get("sites") if vitals_cache else []
             )
         )
 
@@ -353,9 +384,22 @@ async def get_vitals_realtime(
         # Merge PostgreSQL + Vista data
         vitals, merge_stats = merge_vitals_data(pg_vitals, vista_results, icn)
 
+        # Cache Vista RPC responses (NOT merged data) to avoid cookie size limit
+        from app.services.vista_cache import VistaSessionCache
+
+        # Store raw Vista responses (small - just strings), not merged data (large - 315+ records)
+        VistaSessionCache.set_cached_data(
+            request=request,
+            patient_icn=icn,
+            domain="vitals",
+            vista_responses=vista_results,  # Raw RPC response strings
+            sites=list(vista_results.keys()),
+            stats=merge_stats
+        )
+
         logger.info(
             f"Merge complete: {merge_stats['total_merged']} vitals "
-            f"({merge_stats['pg_count']} PG + {merge_stats['vista_count']} Vista)"
+            f"({merge_stats['pg_count']} PG + {merge_stats['vista_count']} Vista) - Vista responses cached in session"
         )
 
         # Apply vital_type filter AFTER merge (if specified)
@@ -408,6 +452,8 @@ async def get_vitals_realtime(
                 "sort_order": sort_order,
                 "total_count": len(vitals),
                 "vista_refreshed": True,
+                "vista_cached": True,  # Just cached the data!
+                "cache_sites": list(vista_results.keys()),  # Sites we cached from
                 "data_current_through": data_current_through,
                 "last_updated": last_updated,
                 "vista_success_rate": vista_success_rate,

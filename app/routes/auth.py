@@ -269,8 +269,13 @@ async def post_logout(request: Request):
 
                 logger.info(f"User logged out: {user['email'] if user else 'unknown'} (session: {session_id})")
 
-        # Clear session cookie and redirect to login
+        # Clear Vista cache from session
+        request.session.clear()
+
+        # Clear both session cookies (auth + Vista cache) and redirect to login
         response = RedirectResponse(url="/login", status_code=303)
+
+        # Clear auth session cookie
         response.delete_cookie(
             key=AUTH_CONFIG["cookie_name"],
             httponly=AUTH_CONFIG["cookie_httponly"],
@@ -278,18 +283,44 @@ async def post_logout(request: Request):
             samesite=AUTH_CONFIG["cookie_samesite"]
         )
 
+        # Clear SessionMiddleware session cookie (Vista cache)
+        response.delete_cookie(
+            key="session",  # Starlette SessionMiddleware cookie name
+            path="/",
+            httponly=True,
+            secure=False,  # Match SessionMiddleware config
+            samesite="lax"
+        )
+
         return response
 
     except Exception as e:
         logger.error(f"Error during logout: {e}")
 
-        # Still clear cookie and redirect even on error
+        # Clear session even on error
+        try:
+            request.session.clear()
+        except:
+            pass
+
+        # Still clear both cookies and redirect even on error
         response = RedirectResponse(url="/login", status_code=303)
+
+        # Clear auth session cookie
         response.delete_cookie(
             key=AUTH_CONFIG["cookie_name"],
             httponly=AUTH_CONFIG["cookie_httponly"],
             secure=AUTH_CONFIG["cookie_secure"],
             samesite=AUTH_CONFIG["cookie_samesite"]
+        )
+
+        # Clear SessionMiddleware session cookie (Vista cache)
+        response.delete_cookie(
+            key="session",
+            path="/",
+            httponly=True,
+            secure=False,
+            samesite="lax"
         )
 
         return response

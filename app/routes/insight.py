@@ -17,8 +17,9 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from app.db.patient import get_patient_demographics
 from app.utils.template_context import get_base_context
+from app.services.vista_cache import VistaSessionCache
 from ai.agents.insight_agent import create_insight_agent
-from ai.tools import ALL_TOOLS
+from ai.tools import ALL_TOOLS, set_request_context
 
 # Page router for full insight pages (no prefix for flexibility)
 page_router = APIRouter(tags=["insight-pages"])
@@ -98,6 +99,9 @@ async def get_insight_page(request: Request, icn: str):
             "What gaps in care should I be aware of?",
         ]
 
+        # Get Vista cache status for this patient
+        cache_info = VistaSessionCache.get_cache_info(request, icn)
+
         logger.info(f"Loaded insights page for {icn} ({patient.get('name', 'Unknown')})")
 
         return templates.TemplateResponse(
@@ -107,6 +111,7 @@ async def get_insight_page(request: Request, icn: str):
                 patient=patient,
                 suggested_questions=suggested_questions,
                 chat_messages=[],  # Empty on initial load
+                cache_info=cache_info,  # Vista cache status
                 active_page="insight"
             )
         )
@@ -156,68 +161,77 @@ async def post_chat_message(
 
         logger.info(f"Processing chat message for {icn}: '{message[:100]}...'")
 
-        # Create system message with patient context
-        system_message = SystemMessage(
-            content=f"""You are a clinical decision support AI assistant analyzing patient data.
+        # Set request context for tools (enables Vista cache access)
+        set_request_context(request)
+
+        try:
+            # Create system message with patient context
+            system_message = SystemMessage(
+                content=f"""You are a clinical decision support AI assistant analyzing patient data.
 
 CURRENT PATIENT CONTEXT:
 - Patient Name: {patient_name}
 - Patient ICN: {icn}
 
-You have access to tools that can query this patient's clinical data from the PostgreSQL database.
+You have access to tools that can query this patient's clinical data.
+If the user has refreshed data from Vista during this session, tools will automatically use that cached data.
 When the user asks questions about "this patient" or "the patient", they are referring to {patient_name} (ICN: {icn}).
 
 Use the available tools to gather relevant clinical information and provide evidence-based insights.
-Always cite which data sources you used in your analysis."""
-        )
+Always cite which data sources you used in your analysis (PostgreSQL, Vista, or both)."""
+            )
 
-        # Invoke LangGraph agent with system context + user message
-        result = insight_agent.invoke({
-            "messages": [system_message, HumanMessage(content=message)],
-            "patient_icn": icn,
-            "patient_name": patient_name,
-            "tools_used": [],
-            "data_sources": [],
-            "error": None
-        })
+            # Invoke LangGraph agent with system context + user message
+            result = insight_agent.invoke({
+                "messages": [system_message, HumanMessage(content=message)],
+                "patient_icn": icn,
+                "patient_name": patient_name,
+                "tools_used": [],
+                "data_sources": [],
+                "error": None
+            })
 
-        # Extract AI response from final message
-        ai_response = result["messages"][-1].content
+            # Extract AI response from final message
+            ai_response = result["messages"][-1].content
 
-        # Extract tools used (for transparency display)
-        tools_used = []
-        for msg in result["messages"]:
-            if hasattr(msg, "tool_calls") and msg.tool_calls:
-                for tool_call in msg.tool_calls:
-                    tool_name = tool_call.get("name", "unknown_tool")
-                    if tool_name not in tools_used:
-                        tools_used.append(tool_name)
+            # Extract tools used (for transparency display)
+            tools_used = []
+            for msg in result["messages"]:
+                if hasattr(msg, "tool_calls") and msg.tool_calls:
+                    for tool_call in msg.tool_calls:
+                        tool_name = tool_call.get("name", "unknown_tool")
+                        if tool_name not in tools_used:
+                            tools_used.append(tool_name)
 
-        logger.info(f"Agent response generated for {icn}. Tools used: {tools_used}")
+            logger.info(f"Agent response generated for {icn}. Tools used: {tools_used}")
 
-        # Convert AI response from markdown to HTML
-        ai_response_html = markdown.markdown(
-            ai_response,
-            extensions=['fenced_code', 'tables', 'nl2br']
-        )
+            # Convert AI response from markdown to HTML
+            ai_response_html = markdown.markdown(
+                ai_response,
+                extensions=['fenced_code', 'tables', 'nl2br']
+            )
 
-        # Render user message + AI response as HTML
-        # We'll render the chat_message partial twice (user, then AI)
-        user_message_html = templates.get_template("partials/chat_message.html").render(
-            message_type="user",
-            message_text=message,
-            timestamp="Just now"
-        )
+            # Render user message + AI response as HTML
+            # We'll render the chat_message partial twice (user, then AI)
+            user_message_html = templates.get_template("partials/chat_message.html").render(
+                message_type="user",
+                message_text=message,
+                timestamp="Just now"
+            )
 
-        ai_message_html = templates.get_template("partials/chat_message.html").render(
-            message_type="ai",
-            message_text=ai_response_html,  # Already converted to HTML
-            timestamp="Just now",
-            tools_used=tools_used if tools_used else None
-        )
+            ai_message_html = templates.get_template("partials/chat_message.html").render(
+                message_type="ai",
+                message_text=ai_response_html,  # Already converted to HTML
+                timestamp="Just now",
+                tools_used=tools_used if tools_used else None
+            )
 
-        # Return both messages concatenated
-        return HTMLResponse(content=user_message_html + ai_message_html)
+            # Return both messages concatenated
+            return HTMLResponse(content=user_message_html + ai_message_html)
+
+        finally:
+            # Clear request context to avoid memory leaks
+            set_request_context(None)
 
     except Exception as e:
         logger.error(f"Error processing chat message for {icn}: {e}")

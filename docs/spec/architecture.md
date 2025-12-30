@@ -1,7 +1,8 @@
 # med-z1 Architecture Documentation
 
-**Document Version:** 1.0
-**Date:** 2025-12-12
+**Document Version:** 1.1
+**Date:** 2025-12-30
+**Last Updated:** 2025-12-30 (Added ADR-008: Vista Session Caching for AI Integration)
 **Status:** Living Document
 
 ---
@@ -503,16 +504,187 @@ When implementing location fields for a new domain:
 
 ## 5. Authentication and Authorization
 
-**Current State (Development):**
-- ❌ No authentication (local development only)
-- ❌ No authorization (all data accessible)
-- ✅ CCOW context management (patient selection only)
+### 5.1 Current Implementation (Development/Testing)
 
-**Future State (Production):**
-- ✅ SSO integration (VA PIV/CAC)
+**Authentication Status:** ✅ **IMPLEMENTED (2025-12-18)**
+
+med-z1 now includes a complete session-based authentication system designed for development and testing environments. While production deployment will require VA SSO integration, the current implementation provides robust authentication for development, testing, and demonstration purposes.
+
+#### 5.1.1 Database Schema (`auth` Schema)
+
+**Tables:**
+- `auth.users` - User credentials and profile information
+  - UUID primary key, email (unique username), bcrypt password hash
+  - Profile fields: display_name, first_name, last_name, home_site_sta3n
+  - Account status: is_active, is_locked, failed_login_attempts
+  - Audit fields: created_at, updated_at, last_login_at
+- `auth.sessions` - Active user sessions with timeout enforcement
+  - UUID session_id (used in session cookie)
+  - Foreign key to users table (CASCADE delete)
+  - Session lifecycle: created_at, last_activity_at, expires_at
+  - Session metadata: ip_address, user_agent
+  - Configurable timeout (default: 15 minutes inactivity)
+- `auth.audit_logs` - Comprehensive audit trail
+  - All authentication events logged (login, logout, failures, timeouts)
+  - Event context: user_id, email, IP address, user agent
+  - Success/failure tracking with failure reasons
+  - Indexed by user, event type, and timestamp
+
+**See:** `db/ddl/create_auth_tables.sql`
+
+#### 5.1.2 Middleware Layer
+
+**AuthMiddleware** (`app/middleware/auth.py` - 168 lines):
+- Intercepts all HTTP requests before route handlers
+- Public routes bypass authentication: `/login`, `/static`, `/docs`, etc.
+- Protected routes require valid session:
+  1. Extracts `session_id` from cookie
+  2. Validates session in database (active, not expired)
+  3. Extends session timeout on activity (sliding window)
+  4. Injects user context into `request.state.user`
+- Invalid/expired sessions → redirect to `/login` with cookie cleared
+- Session extension: Updates `last_activity_at` + `expires_at` on every request
+
+**Middleware Ordering** (CRITICAL):
+```python
+# In app/main.py
+app.add_middleware(SessionMiddleware, ...)  # Vista cache (added first)
+app.add_middleware(AuthMiddleware)          # Authentication (added second)
+
+# Execution order (reverse of add order):
+# Request:  AuthMiddleware → SessionMiddleware → Route
+# Response: Route → SessionMiddleware → AuthMiddleware
+```
+
+**See:** `app/middleware/auth.py`
+
+#### 5.1.3 Routes and Endpoints
+
+**Authentication Routes** (`app/routes/auth.py` - 326 lines):
+- `GET /login` - Login page (public)
+- `POST /login` - Process login credentials
+  - Validates email and password (bcrypt hash verification)
+  - Creates new session in database
+  - Invalidates all previous sessions for user (security best practice)
+  - Sets `session_id` cookie (HttpOnly, SameSite=lax)
+  - Comprehensive audit logging (success/failure, IP, user agent)
+- `POST /logout` - Terminate session
+  - Invalidates session in database
+  - Clears both cookies: `session_id` (auth) and `session` (Vista cache)
+  - Logs logout event to audit trail
+- `GET /logout` - Redirect to login (handles bookmarked /logout URLs)
+
+**Database Layer** (`app/db/auth.py` - 503 lines):
+- User management: `create_user()`, `get_user_by_email()`, `verify_password()`
+- Session management: `create_session()`, `get_session()`, `extend_session()`, `invalidate_session()`
+- Audit logging: `log_audit_event()` for all authentication events
+- Password security: bcrypt hashing with 12 rounds (configurable)
+
+**See:** `app/routes/auth.py`, `app/db/auth.py`
+
+#### 5.1.4 Session Management
+
+**Session Cookie Configuration:**
+```python
+# config.py
+SESSION_COOKIE_NAME = "session_id"          # Auth session cookie
+SESSION_TIMEOUT_MINUTES = 15                # Inactivity timeout
+SESSION_COOKIE_HTTPONLY = True              # JavaScript cannot access
+SESSION_COOKIE_SECURE = False               # True in production (HTTPS only)
+SESSION_COOKIE_SAMESITE = "lax"             # CSRF protection
+```
+
+**Dual Cookie Architecture:**
+1. **`session_id` cookie** (AuthMiddleware) - Stores session UUID for authentication
+   - References `auth.sessions` table in PostgreSQL
+   - Contains only session ID, no user data
+   - Cleared on logout
+2. **`session` cookie** (SessionMiddleware) - Stores Vista cache data
+   - Signed cookie containing session data (itsdangerous)
+   - Stores Vista RPC responses for AI integration
+   - Cleared on logout
+   - See ADR-008 for Vista Session Caching details
+
+**Session Lifecycle:**
+1. **Login:** User credentials validated → new session created in DB → `session_id` cookie set
+2. **Activity:** Every request extends `last_activity_at` and `expires_at` (sliding window)
+3. **Timeout:** Session expires after 15 minutes of inactivity → redirect to login
+4. **Logout:** Session invalidated in DB → both cookies cleared
+
+#### 5.1.5 Security Features
+
+**Password Security:**
+- ✅ Bcrypt hashing with 12 rounds (configurable via `BCRYPT_ROUNDS`)
+- ✅ Passwords never stored in plaintext
+- ✅ Password strength requirements (future enhancement)
+
+**Session Security:**
+- ✅ Session ID stored server-side (PostgreSQL), not in cookie payload
+- ✅ HttpOnly cookies (JavaScript cannot access)
+- ✅ SameSite=lax (CSRF protection)
+- ✅ Secure flag in production (HTTPS only)
+- ✅ Session timeout with sliding window
+- ✅ All previous sessions invalidated on new login
+
+**Audit Trail:**
+- ✅ All login attempts logged (success/failure)
+- ✅ Failed login reasons tracked (user not found, invalid password, account locked)
+- ✅ Logout events logged
+- ✅ Session timeouts logged
+- ✅ IP address and user agent captured
+- ✅ Audit logs indexed for security review and compliance
+
+**Account Lockout:**
+- ✅ Failed login attempt counter
+- ✅ Account locking capability (`is_locked` flag)
+- ⚠️ Automatic lockout after N failures (future enhancement)
+
+#### 5.1.6 Test Users
+
+**Development Users** (created via `scripts/create_test_users.py`):
+- `clinician.alpha@va.gov` - Primary test user
+- `clinician.bravo@va.gov` - Secondary test user
+- All test users have password: `password123` (development only)
+
+### 5.2 Authorization (Future State)
+
+**Current State:** ❌ **NOT IMPLEMENTED**
+- All authenticated users have full access to all patient data
+- No role-based access control (RBAC)
+- No row-level security (RLS)
+- No data sensitivity classifications
+
+**Future Enhancements (Production):**
 - ✅ Role-based access control (RBAC)
-- ✅ Audit logging (all data access)
-- ✅ PHI/PII protections per VA policy
+  - Roles: Clinician, Nurse, Pharmacist, Administrator, Read-Only
+  - Permission system for data domains (vitals, meds, notes, etc.)
+- ✅ Row-level security for sensitive data
+  - Patient flags with narrative text (restricted to need-to-know)
+  - Mental health data (restricted access)
+  - Substance abuse treatment records (42 CFR Part 2)
+- ✅ Break-the-glass emergency access
+  - Override restrictions with audit trail and justification
+- ✅ Site-based access controls
+  - Users limited to home site data by default
+  - Cross-site access with justification
+
+### 5.3 Production Requirements (Future)
+
+**SSO Integration:**
+- ✅ VA PIV/CAC card authentication
+- ✅ SAML/OAuth integration with VA identity provider
+- ✅ Multi-factor authentication (MFA)
+
+**Compliance:**
+- ✅ HIPAA compliance (PHI protection)
+- ✅ VA Directive 6500 (IT security)
+- ✅ FISMA controls
+- ✅ Audit log retention (minimum 7 years)
+
+**See Also:**
+- ADR-008: Vista Session Caching for AI Integration (dual cookie architecture)
+- `config.py`: Authentication configuration variables
+- `app/middleware/auth.py`: Authentication middleware implementation
 
 ---
 
@@ -724,19 +896,114 @@ def get_all_encounters(
 - `db/ddl/` - All DDL scripts now create tables in `clinical` schema
 - `etl/load_*.py` - All load scripts use `schema="clinical"` parameter
 
+### ADR-008: Vista Session Caching for AI Integration (2025-12-30)
+**Status:** Accepted
+**Context:** AI Clinical Insights tools need access to real-time Vista data (T-0, today) in addition to historical PostgreSQL data (T-1 and earlier). Initial approach of storing full merged datasets in session cookies failed due to browser cookie size limit (4096 bytes).
+
+**Problem:**
+1. **Browser Cookie Limit:** Merged datasets (305 PG + 10 Vista = 315 vitals records) exceed 4096-byte limit
+   - Error: "Set-Cookie header is ignored... size must be <= 4096 characters"
+   - Original session size: ~40KB (10x over limit)
+2. **AI Tool Data Access:** LangChain tools need request context to access session data
+3. **Session Persistence:** Cache must survive page navigation and be cleared on logout
+4. **User Experience:** Should be transparent - no separate "refresh for AI" action required
+
+**Decision:** Implement session-based caching of Vista RPC responses with on-demand merging
+- **Cache Storage:** Store only raw Vista RPC response strings in session cookie (~1-2KB)
+- **Merge Strategy:** Fetch PostgreSQL data + merge with cached Vista responses when needed (page loads, AI tools)
+- **Session Management:** Use Starlette SessionMiddleware with `path="/"` parameter
+- **TTL:** 30-minute cache expiration (configurable)
+- **Cleanup:** Clear both `session_id` (auth) and `session` (Vista cache) cookies on logout
+
+**Implementation:**
+
+**Service Layer** (`app/services/vista_cache.py` - 367 lines):
+```python
+class VistaSessionCache:
+    @staticmethod
+    def set_cached_data(request, patient_icn, domain, vista_responses, sites, stats):
+        # Store raw RPC responses (NOT merged data)
+        request.session["vista_cache"][patient_icn][domain] = {
+            "vista_responses": vista_responses,  # Dict[site_id, response_string]
+            "timestamp": datetime.now().isoformat(),
+            "sites": sites,
+            "stats": stats
+        }
+
+    @staticmethod
+    def get_cached_data(request, patient_icn, domain):
+        # Returns cached Vista responses if not expired (30 min TTL)
+        # Returns None if missing or expired
+```
+
+**Middleware Configuration** (`app/main.py`):
+```python
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=SESSION_SECRET_KEY,
+    max_age=SESSION_COOKIE_MAX_AGE,
+    https_only=False,  # True in production
+    same_site="lax",
+    path="/"  # CRITICAL: Ensures cookie sent with all requests
+)
+```
+
+**Integration Points:**
+1. **Vitals Page:** `/patient/{icn}/vitals/realtime` caches Vista responses after "Refresh from VistA"
+2. **Page Loads:** `/patient/{icn}/vitals` merges PG + cached Vista on initial load
+3. **AI Tools:** `VitalsTrendAnalyzer` merges PG + cached Vista for analysis
+4. **Logout:** `POST /logout` clears both session cookies
+
+**Rationale:**
+1. **Cookie Size:** Reduced from ~40KB to ~1.5KB (under 4096 limit)
+2. **Performance:** On-demand merge takes ~1-3 seconds (acceptable for AI analysis)
+3. **Simplicity:** No Redis/database session storage needed
+4. **Transparency:** Users see green "Vista Cached" badge, AI automatically uses cache
+5. **Consistency:** Follows existing med-z1 pattern of minimal state management
+
+**Consequences:**
+- ✅ **Positive:**
+  - AI tools automatically use real-time Vista data when available
+  - No separate "Refresh Vista for AI" button needed
+  - Session cookie persists across navigation (path="/")
+  - Automatic cleanup on logout
+  - Scalable: No server-side session storage
+- ⚠️ **Trade-offs:**
+  - Merge happens on-demand (small latency: ~1-3 seconds)
+  - Cache limited by session TTL (30 minutes)
+  - Multiple domains (vitals, meds, etc.) share session space
+- ⚠️ **Security Considerations:**
+  - Session cookie signed with `SESSION_SECRET_KEY` (HMAC)
+  - HTTPS-only in production (`https_only=True`)
+  - SameSite=lax (CSRF protection)
+
+**Alternatives Considered:**
+1. **Server-side session storage (Redis)** - Rejected: Adds infrastructure complexity; overkill for MVP
+2. **Store merged data in session** - Rejected: Exceeds cookie size limit
+3. **Separate Vista fetch for AI** - Rejected: Poor UX; duplicates RPC calls
+4. **LocalStorage (client-side)** - Rejected: Not accessible from server-side AI tools
+
+**Implementation Timeline:** 2025-12-30 - Phase 3 Week 3 (AI Clinical Insights)
+
+**See:**
+- `docs/ai-insight-design.md` - Section 2.5 (Vista Session Caching Architecture)
+- `app/services/vista_cache.py` - Cache management service
+- `ai/services/vitals_trend_analyzer.py` - AI tool integration
+
 ---
 
 ## Appendices
 
 ### A. Related Documentation
 
-- `docs/med-z1-plan.md` - Product and technical development plan
-- `docs/patient-dashboard-design.md` - Dashboard and widget system design
-- `docs/vitals-design.md` - Vitals implementation specification
-- `docs/patient-flags-design.md` - Patient Flags implementation specification
-- `docs/allergies-design.md` - Allergies implementation specification
-- `docs/demographics-design.md` - Demographics implementation specification
-- `docs/encounters-design.md` - Encounters (Inpatient) implementation specification
+- `docs/spec/med-z1-plan.md` - Product and technical development plan
+- `docs/spec/ai-insight-design.md` - AI Clinical Insights implementation specification (Phase 1 MVP Complete ✅)
+- `docs/spec/patient-dashboard-design.md` - Dashboard and widget system design
+- `docs/spec/vitals-design.md` - Vitals implementation specification
+- `docs/spec/patient-flags-design.md` - Patient Flags implementation specification
+- `docs/spec/allergies-design.md` - Allergies implementation specification
+- `docs/spec/demographics-design.md` - Demographics implementation specification
+- `docs/spec/encounters-design.md` - Encounters (Inpatient) implementation specification
 - `app/README.md` - FastAPI application developer guide
 - `CLAUDE.md` - Project guidance for Claude Code assistant
 

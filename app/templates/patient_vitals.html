@@ -52,6 +52,13 @@
                     {% else %}
                         Data current through: {{ data_current_through }}{% if data_freshness_label %} ({{ data_freshness_label }}){% endif %}
                     {% endif %}
+
+                    {% if vista_cached %}
+                        <span class="badge badge--success" style="margin-left: 0.75rem;" title="Vista data cached from sites: {{ cache_sites|join(', ') }}">
+                            <i class="fa-solid fa-database"></i>
+                            Vista Cached (available to AI)
+                        </span>
+                    {% endif %}
                 </span>
 
                 {% if not vista_refreshed or True %}
@@ -62,8 +69,7 @@
                     hx-swap="outerHTML"
                     hx-indicator="#vista-loading"
                     aria-label="Refresh data from VistA sites"
-                    class="btn btn--secondary vista-refresh-btn"
-                    onclick="console.log('Button clicked!')">
+                    class="btn btn--secondary vista-refresh-btn">
                     <i class="fa-solid fa-rotate"></i> Refresh from VistA
                 </button>
                 {% endif %}

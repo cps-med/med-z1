@@ -23,6 +23,7 @@ from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.sessions import SessionMiddleware
 
 # Explicit imports from root-level config.py
 from config import (
@@ -30,6 +31,8 @@ from config import (
     CDWWORK_DB_CONFIG,
     MINIO_CONFIG,
     USE_MINIO,
+    SESSION_SECRET_KEY,
+    SESSION_COOKIE_MAX_AGE,
 )
 
 # Import routers
@@ -39,6 +42,19 @@ from app.routes import patient, dashboard, vitals, medications, demographics, en
 from app.middleware.auth import AuthMiddleware
 
 app = FastAPI(title="med-z1")
+
+# Add session middleware for Vista data caching
+# Session middleware must be added BEFORE auth middleware (executed AFTER in request flow)
+# This enables Vista cache storage in user sessions across page navigation
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=SESSION_SECRET_KEY,
+    max_age=SESSION_COOKIE_MAX_AGE,  # Session expires after timeout (15 min default)
+    https_only=False,  # Set to True in production with HTTPS
+    same_site="lax",  # CSRF protection
+    path="/"  # Ensure cookie is sent with all requests (not just the endpoint that set it)
+    # Note: Cookie name is always "session" (hardcoded in Starlette)
+)
 
 # Add authentication middleware
 # IMPORTANT: Middleware is applied in reverse order - last added is executed first
@@ -166,6 +182,34 @@ async def patient_test_page(request: Request):
             "request": request,
         },
     )
+
+
+@app.get("/test-session")
+async def test_session(request: Request):
+    """Test endpoint to verify SessionMiddleware is working."""
+    # Try to write to session
+    if "test_count" not in request.session:
+        request.session["test_count"] = 0
+
+    request.session["test_count"] += 1
+
+    # Get all cookies that came with the request
+    incoming_cookies = dict(request.cookies)
+
+    # Check what's in the session
+    session_contents = dict(request.session)
+
+    return {
+        "session_works": True,
+        "test_count": request.session["test_count"],
+        "session_data": session_contents,
+        "incoming_cookies": incoming_cookies,
+        "incoming_cookie_names": list(incoming_cookies.keys()),
+        "session_cookie_name_expected": "session",  # Starlette default
+        "session_cookie_present": "session" in incoming_cookies,
+        "session_id_cookie_present": "session_id" in incoming_cookies,
+        "note": "SessionMiddleware stores data IN the cookie itself (signed), not in a database"
+    }
 
 
 @app.post("/timer/start", response_class=HTMLResponse)

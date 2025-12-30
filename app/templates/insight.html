@@ -48,6 +48,29 @@
             </div>
         </div>
 
+        <!-- Vista Cache Status -->
+        {% if cache_info %}
+        {% set cached_domains = cache_info.values()|selectattr("cached")|selectattr("expired", "equalto", false)|list %}
+        <div class="info-box info-box--{% if cached_domains %}success{% else %}info{% endif %}" style="margin-bottom: 1.5rem;">
+            <i class="fa-solid fa-{% if cached_domains %}database{% else %}info-circle{% endif %}"></i>
+            <div class="info-box__content">
+                <strong>Data Sources:</strong>
+                {% if cached_domains %}
+                    AI analysis will automatically use cached Vista data.
+                    <strong>Cached domains:</strong>
+                    {% for domain, info in cache_info.items() if info.cached and not info.expired %}
+                        <span class="badge badge--success" style="margin-left: 0.5rem;" title="{{ info.record_count }} records from {{ info.sites|join(', ') }}">
+                            <i class="fa-solid fa-circle-check"></i>
+                            {{ domain|title }} ({{ info.age_minutes }} min ago)
+                        </span>
+                    {% endfor %}
+                {% else %}
+                    AI will use PostgreSQL data only. Use "Refresh from Vista" on clinical domain pages to enable real-time data analysis.
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
         <!-- Chat Container -->
         <div class="insight-container">
 

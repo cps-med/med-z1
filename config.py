@@ -212,6 +212,11 @@ POSTGRES_CONFIG = {
 # Authentication and Session Management configuration
 # -----------------------------------------------------------
 
+# Session secret key for signing session cookies
+# IMPORTANT: Set a strong random key in production (32+ bytes)
+# Generate with: python -c "import secrets; print(secrets.token_hex(32))"
+SESSION_SECRET_KEY = os.getenv("SESSION_SECRET_KEY", "dev-secret-key-change-in-production-32bytes")
+
 # Session timeout (in minutes) - configurable, not hardcoded
 SESSION_TIMEOUT_MINUTES = int(os.getenv("SESSION_TIMEOUT_MINUTES", "15"))
 
@@ -227,6 +232,7 @@ BCRYPT_ROUNDS = int(os.getenv("BCRYPT_ROUNDS", "12"))
 
 # Configuration dictionary
 AUTH_CONFIG = {
+    "secret_key": SESSION_SECRET_KEY,
     "session_timeout_minutes": SESSION_TIMEOUT_MINUTES,
     "cookie_name": SESSION_COOKIE_NAME,
     "cookie_secure": SESSION_COOKIE_SECURE,
