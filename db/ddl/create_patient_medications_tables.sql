@@ -60,6 +60,11 @@ CREATE TABLE clinical.patient_medications_outpatient (
     latest_quantity_dispensed   DECIMAL(12,4),              -- Latest quantity dispensed
     latest_days_supply          INTEGER,                    -- Latest days supply dispensed
 
+    -- Sig (medication directions)
+    sig                         TEXT,                       -- Complete signature/directions
+    sig_route                   VARCHAR(50),                -- Route (e.g., "ORAL", "TOPICAL")
+    sig_schedule                VARCHAR(50),                -- Schedule (e.g., "BID", "TID", "PRN")
+
     -- Dates
     expiration_date             TIMESTAMP,                  -- Expiration date
     discontinued_date           TIMESTAMP,                  -- Discontinued date

@@ -120,10 +120,10 @@
                     <span class="sidebar__text">Procedures</span>
                 </a>
 
-                <!-- AI Insights -->                
+                <!-- AI Insights -->
                 <a href="/insight"
-                   class="sidebar__link sidebar__link--disabled"
-                   data-tooltip="AI Insights (Coming Soon)">
+                   class="sidebar__link {{ 'sidebar__link--active' if active_page == 'insight' else '' }}"
+                   data-tooltip="AI Insights">
                     <i class="fa-regular fa-sparkles fa-lg"></i>
                     <span class="sidebar__text">Insights</span>
                 </a>

@@ -367,6 +367,83 @@ def extract_rxout_rxoutpatfill():
     return df
 
 
+def extract_rxout_rxoutpatsig():
+    """Extract RxOut.RxOutpatSig to Bronze layer."""
+    logger.info("Starting Bronze extraction: RxOut.RxOutpatSig")
+
+    minio_client = MinIOClient()
+
+    # Create SQLAlchemy connection string
+    conn_str = (
+        f"mssql+pyodbc://{CDWWORK_DB_CONFIG['user']}:"
+        f"{CDWWORK_DB_CONFIG['password']}@"
+        f"{CDWWORK_DB_CONFIG['server']}/"
+        f"{CDWWORK_DB_CONFIG['name']}?"
+        f"driver={CDWWORK_DB_CONFIG['driver']}&"
+        f"TrustServerCertificate=yes"
+    )
+
+    engine = create_engine(conn_str)
+
+    # Extract query - get all sig records
+    query = """
+    SELECT
+        RxOutpatSigSID,
+        RxOutpatSigIEN,
+        RxOutpatSID,
+        RxOutpatFillSID,
+        Sta3n,
+        PatientSID,
+        PatientIEN,
+        SegmentNumber,
+        DosageOrdered,
+        Verb,
+        DispenseUnitsPerDose,
+        Noun,
+        Route,
+        Schedule,
+        ScheduleType,
+        ScheduleTypeIEN,
+        Duration,
+        Conjunction,
+        AdminTimes,
+        CompleteSignature,
+        SigSequence,
+        LocalDrugSID,
+        NationalDrugSID
+    FROM RxOut.RxOutpatSig
+    """
+
+    # Read data using SQLAlchemy connection
+    with engine.connect() as conn:
+        df = pl.read_database(query, connection=conn)
+
+    logger.info(f"Extracted {len(df)} sig records from CDWWork")
+
+    # Add metadata columns
+    df = df.with_columns([
+        pl.lit("CDWWork").alias("SourceSystem"),
+        pl.lit(datetime.now(timezone.utc)).alias("LoadDateTime"),
+    ])
+
+    # Build Bronze path
+    object_key = build_bronze_path(
+        source_system="cdwwork",
+        domain="rxout_rxoutpatsig",
+        filename="rxout_rxoutpatsig_raw.parquet"
+    )
+
+    # Write to MinIO
+    minio_client.write_parquet(df, object_key)
+
+    logger.info(
+        f"Bronze extraction complete: {len(df)} sig records written to "
+        f"s3://{minio_client.bucket_name}/{object_key}"
+    )
+
+    return df
+
+
 def extract_bcma_medicationlog():
     """Extract BCMA.BCMAMedicationLog to Bronze layer."""
     logger.info("Starting Bronze extraction: BCMA.BCMAMedicationLog")
@@ -476,11 +553,12 @@ def extract_all_medications_bronze():
     logger.info("Starting Bronze extraction for all Medications tables")
     logger.info("=" * 60)
 
-    # Extract all 5 tables
+    # Extract all 6 tables
     local_drug_df = extract_local_drug_dim()
     national_drug_df = extract_national_drug_dim()
     rxoutpat_df = extract_rxout_rxoutpat()
     rxoutpatfill_df = extract_rxout_rxoutpatfill()
+    rxoutpatsig_df = extract_rxout_rxoutpatsig()
     bcma_medicationlog_df = extract_bcma_medicationlog()
 
     logger.info("=" * 60)
@@ -489,6 +567,7 @@ def extract_all_medications_bronze():
     logger.info(f"  - National Drugs: {len(national_drug_df)} rows")
     logger.info(f"  - Outpatient Prescriptions: {len(rxoutpat_df)} rows")
     logger.info(f"  - Prescription Fills: {len(rxoutpatfill_df)} rows")
+    logger.info(f"  - Sig Records: {len(rxoutpatsig_df)} rows")
     logger.info(f"  - BCMA Medication Log: {len(bcma_medicationlog_df)} rows")
     logger.info("=" * 60)
 
@@ -497,6 +576,7 @@ def extract_all_medications_bronze():
         "national_drug": national_drug_df,
         "rxoutpat": rxoutpat_df,
         "rxoutpatfill": rxoutpatfill_df,
+        "rxoutpatsig": rxoutpatsig_df,
         "bcma_medicationlog": bcma_medicationlog_df
     }
 

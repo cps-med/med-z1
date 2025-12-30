@@ -168,6 +168,11 @@ def transform_rxout_gold():
         "latest_quantity_dispensed",
         "latest_days_supply_dispensed",
 
+        # Sig (medication directions)
+        "sig",
+        "sig_route",
+        "sig_schedule",
+
         # Dates
         "expiration_datetime",
         "discontinued_datetime",

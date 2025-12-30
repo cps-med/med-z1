@@ -33,7 +33,7 @@ from config import (
 )
 
 # Import routers
-from app.routes import patient, dashboard, vitals, medications, demographics, encounters, labs, auth
+from app.routes import patient, dashboard, vitals, medications, demographics, encounters, labs, auth, insight
 
 # Import middleware
 from app.middleware.auth import AuthMiddleware
@@ -62,6 +62,7 @@ app.include_router(encounters.router)  # Encounters API routes
 app.include_router(encounters.page_router)  # Encounters full page routes
 app.include_router(labs.router)  # Labs API routes
 app.include_router(labs.page_router)  # Labs full page routes
+app.include_router(insight.page_router)  # AI Insights full page routes
 
 # Configure logging for the entire application
 logging.basicConfig(

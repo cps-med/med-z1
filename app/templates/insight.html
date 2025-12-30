@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}AI Insights - {{ patient.name_display if patient else 'Med-Z1' }}{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    {% if error %}
+        <!-- Error State -->
+        <div class="page-error">
+            <div class="page-error__icon">
+                <i class="fa-solid fa-triangle-exclamation fa-3x"></i>
+            </div>
+            <h2 class="page-error__title">Error Loading AI Insights</h2>
+            <p class="page-error__message">{{ error }}</p>
+            <a href="/" class="btn btn--primary">
+                <i class="fa-solid fa-house"></i>
+                Return to Dashboard
+            </a>
+        </div>
+    {% elif not patient %}
+        <!-- No Patient State -->
+        <div class="page-error">
+            <div class="page-error__icon">
+                <i class="fa-regular fa-user fa-3x"></i>
+            </div>
+            <h2 class="page-error__title">No Patient Selected</h2>
+            <p class="page-error__message">Please select a patient to access AI insights</p>
+            <a href="/" class="btn btn--primary">
+                <i class="fa-solid fa-house"></i>
+                Return to Dashboard
+            </a>
+        </div>
+    {% else %}
+        <!-- Page Header -->
+        <div class="page-header">
+            <div class="page-header__breadcrumb">
+                <a href="/" class="breadcrumb-link">
+                    <i class="fa-solid fa-house"></i>
+                    Dashboard
+                </a>
+                <i class="fa-solid fa-chevron-right"></i>
+                <span class="breadcrumb-current">AI Insights</span>
+            </div>
+            <div class="page-header__title-group">
+                <h1 class="page-header__title">
+                    Clinical Insights
+                </h1>
+            </div>
+        </div>
+
+        <!-- Chat Container -->
+        <div class="insight-container">
+
+            <!-- Suggested Questions (initially visible, hide after first message) -->
+            <div id="suggested-questions" class="suggested-questions">
+                <h3>Try asking:</h3>
+                <div class="suggestion-chips">
+                    {% for question in suggested_questions %}
+                    <button class="chip" onclick="askQuestion('{{ question | replace("'", "\\'") }}')">
+                        {% if 'drug' in question.lower() or 'ddi' in question.lower() %}
+                        <i class="fa-solid fa-pills"></i>
+                        {% elif 'summary' in question.lower() or 'summarize' in question.lower() %}
+                        <i class="fa-solid fa-file-medical"></i>
+                        {% elif 'risk' in question.lower() %}
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        {% elif 'gap' in question.lower() %}
+                        <i class="fa-solid fa-calendar-xmark"></i>
+                        {% else %}
+                        <i class="fa-solid fa-circle-question"></i>
+                        {% endif %}
+                        <span class="chip__text">{{ question }}</span>
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Chat History -->
+            <div id="chat-history" class="chat-history">
+                <!-- Messages will be appended here via HTMX -->
+                {% for msg in chat_messages %}
+                    {% include "partials/chat_message.html" %}
+                {% endfor %}
+            </div>
+
+            <!-- Input Form -->
+            <form
+                id="chat-form"
+                hx-post="/insight/chat"
+                hx-target="#chat-history"
+                hx-swap="beforeend"
+                hx-on::after-request="this.reset(); hideSuggestions();"
+                hx-indicator="#loading-indicator"
+            >
+                <input type="hidden" name="icn" value="{{ patient.icn }}">
+
+                <div class="chat-input-container">
+                    <textarea
+                        name="message"
+                        id="message-input"
+                        placeholder="Ask a question..."
+                        rows="2"
+                        required
+                        onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); this.form.requestSubmit(); }"
+                    ></textarea>
+
+                    <button type="submit" class="btn btn--primary btn--icon">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </div>
+
+                <!-- Loading Indicator -->
+                <div id="loading-indicator" class="htmx-indicator">
+                    <i class="fa-solid fa-circle-notch fa-spin"></i>
+                    Analyzing...
+                </div>
+            </form>
+
+            <!-- AI Disclaimer -->
+            <div class="ai-disclaimer">
+                <i class="fa-solid fa-info-circle"></i>
+                <strong>AI-generated insights.</strong> Always verify clinically before making decisions.
+                This tool provides decision support, not medical advice.
+            </div>
+
+        </div>
+    {% endif %}
+</div>
+
+<script>
+function askQuestion(question) {
+    document.getElementById('message-input').value = question;
+    document.getElementById('chat-form').requestSubmit();
+}
+
+function hideSuggestions() {
+    const suggestionsEl = document.getElementById('suggested-questions');
+    if (suggestionsEl) {
+        suggestionsEl.style.display = 'none';
+    }
+}
+</script>
+
+{% endblock %}

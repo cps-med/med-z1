@@ -81,6 +81,7 @@ def get_patient_allergies(patient_icn: str) -> List[Dict[str, Any]]:
                     "patient_key": row[1],
                     "allergen_local": row[2],
                     "allergen_standardized": row[3],
+                    "allergen_name": row[3],  # Alias for PatientContextBuilder compatibility
                     "allergen_type": row[4],
                     "severity": row[5],
                     "severity_rank": row[6],
@@ -162,6 +163,7 @@ def get_critical_allergies(patient_icn: str, limit: int = 6) -> List[Dict[str, A
                     "patient_key": row[1],
                     "allergen_local": row[2],
                     "allergen_standardized": row[3],
+                    "allergen_name": row[3],  # Alias for PatientContextBuilder compatibility
                     "allergen_type": row[4],
                     "severity": row[5],
                     "severity_rank": row[6],
@@ -237,6 +239,7 @@ def get_allergy_details(allergy_sid: int, patient_icn: str) -> Optional[Dict[str
                 "patient_key": row[1],
                 "allergen_local": row[2],
                 "allergen_standardized": row[3],
+                "allergen_name": row[3],  # Alias for PatientContextBuilder compatibility
                 "allergen_type": row[4],
                 "severity": row[5],
                 "severity_rank": row[6],

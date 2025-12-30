@@ -92,6 +92,11 @@ def load_medications_outpatient_to_postgresql():
         pl.col("latest_quantity_dispensed"),
         pl.col("latest_days_supply_dispensed").alias("latest_days_supply"),
 
+        # Sig (medication directions)
+        pl.col("sig"),
+        pl.col("sig_route"),
+        pl.col("sig_schedule"),
+
         # Dates
         pl.col("expiration_datetime").alias("expiration_date"),
         pl.col("discontinued_datetime").alias("discontinued_date"),

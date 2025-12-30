@@ -122,7 +122,10 @@ def _get_outpatient_medications(
             pharmacy_name,
             facility_name,
             cmop_indicator,
-            mail_indicator
+            mail_indicator,
+            sig,
+            sig_route,
+            sig_schedule
         FROM clinical.patient_medications_outpatient
         WHERE {where_clause}
         ORDER BY issue_date DESC
@@ -176,6 +179,9 @@ def _get_outpatient_medications(
                     "facility_name": row[29],
                     "cmop_indicator": row[30],
                     "mail_indicator": row[31],
+                    "sig": row[32],
+                    "sig_route": row[33],
+                    "sig_schedule": row[34],
                 })
 
             return medications

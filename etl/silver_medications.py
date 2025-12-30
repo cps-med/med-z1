@@ -165,6 +165,11 @@ def transform_rxout_silver():
     df_rxoutpatfill = minio_client.read_parquet(rxoutpatfill_path)
     logger.info(f"  - Loaded {len(df_rxoutpatfill)} prescription fills")
 
+    # Load RxOutpatSig table (medication directions)
+    rxoutpatsig_path = build_bronze_path("cdwwork", "rxout_rxoutpatsig", "rxout_rxoutpatsig_raw.parquet")
+    df_rxoutpatsig = minio_client.read_parquet(rxoutpatsig_path)
+    logger.info(f"  - Loaded {len(df_rxoutpatsig)} sig records")
+
     # Load lookup tables
     sta3n_lookup = load_sta3n_lookup()
     staff_lookup = load_staff_lookup()
@@ -226,6 +231,30 @@ def transform_rxout_silver():
     )
 
     logger.info(f"  - Joined {len(df)} prescriptions with fill data")
+
+    # ==================================================================
+    # Step 4.5: Join with Sig data (medication directions)
+    # ==================================================================
+    logger.info("Step 4.5: Joining with sig data (medication directions)...")
+
+    # Select relevant sig fields
+    df_sig_select = df_rxoutpatsig.select([
+        "RxOutpatSID",
+        pl.col("CompleteSignature").alias("sig"),
+        pl.col("Route").alias("sig_route"),
+        pl.col("Schedule").alias("sig_schedule"),
+    ])
+
+    # Join sig data (left join since not all prescriptions may have sig records)
+    df = df.join(
+        df_sig_select,
+        on="RxOutpatSID",
+        how="left"
+    )
+
+    # Log sig join results
+    sig_match_count = df.filter(pl.col("sig").is_not_null()).shape[0]
+    logger.info(f"  - Matched sig data for {sig_match_count}/{len(df)} prescriptions")
 
     # ==================================================================
     # Step 5: Resolve LocalDrug lookups
@@ -411,6 +440,11 @@ def transform_rxout_silver():
         pl.col("latest_fill_status"),
         pl.col("latest_quantity_dispensed"),
         pl.col("latest_days_supply_dispensed"),
+
+        # Sig (medication directions)
+        pl.col("sig"),
+        pl.col("sig_route"),
+        pl.col("sig_schedule"),
 
         # Dates
         pl.col("ExpirationDateTime").alias("expiration_datetime"),

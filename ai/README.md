@@ -1,93 +1,306 @@
-# AI/ML Subsystem
+# AI Clinical Insights Subsystem
 
-AI and machine learning layer for med-z1, providing intelligent clinical insights and decision support.
+**Status:** Phase 1 Week 1 Complete ✅
+**Last Updated:** 2025-12-29
 
 ## Overview
 
-The AI subsystem delivers AI-assisted capabilities to help clinicians quickly understand patient stories, identify key risks, and detect gaps in care. This component is designed to augment (not replace) clinical judgment by surfacing relevant patterns and insights from longitudinal health records.
+The AI Clinical Insights subsystem provides an intelligent chatbot interface to help clinicians discover insights about patients through natural language conversation. The system uses Agentic RAG (Retrieval-Augmented Generation) with LangGraph to query existing med-z1 data sources and provide evidence-based responses.
 
-**Current Status:** Placeholder (Phase 4 implementation planned)
+## Current Capabilities (Phase 1 Week 1)
 
-## Primary Use Cases
+### Available Tools (2)
 
-1. **Chart Overview Summarization**
-   - Generate concise patient story summaries from longitudinal data
-   - Highlight key clinical events and trends
-   - Surface most relevant information for current encounter
+1. **`check_ddi_risks`** - Drug-Drug Interaction Risk Assessment
+   - Analyzes patient medications for potential interactions
+   - Uses ~191K interaction database from DrugBank (via Kaggle)
+   - Returns natural language summary with interaction descriptions
+   - Example: "Found 1 interaction: GABAPENTIN + ALPRAZOLAM"
 
-2. **Drug-Drug Interaction (DDI) Risk Assessment**
-   - Identify potential medication interactions across VA and non-VA prescriptions
-   - Provide severity ratings and clinical guidance
-   - Alert clinicians to emerging risks
+2. **`get_patient_summary`** - Comprehensive Patient Clinical Summary
+   - Synthesizes demographics, medications, vitals, allergies, encounters
+   - Returns multi-section natural language overview
+   - Covers all 5 clinical domains
+   - Handles missing data gracefully ("No ... on record")
 
-3. **Patient Flag-Aware Risk Narratives**
-   - Generate contextual risk assessments based on active patient flags
-   - Synthesize risk indicators from multiple clinical domains
-   - Provide actionable recommendations for care management
+### Key Features
 
-## Technology Stack
+- ✅ **LangGraph Agent:** Uses GPT-4-turbo with tool binding (LangGraph 1.0.5 API)
+- ✅ **Intelligent Tool Selection:** Agent autonomously decides which tools to invoke
+- ✅ **Multi-Tool Synthesis:** Agent can combine multiple tools in a single response
+- ✅ **Natural Language Formatting:** All data converted from structured (dicts/lists) to prose
+- ✅ **Error Handling:** Graceful degradation when data is missing or unavailable
 
-**LLM Integration:**
-- OpenAI-compatible clients (GPT-4, Claude, or local models)
-- Support for multiple LLM providers via unified interface
+## Architecture
 
-**NLP and Embeddings:**
-- `transformers` - Hugging Face models for text processing
-- `sentence-transformers` - Semantic embeddings for similarity search
-- `langchain`/`langgraph` - Agent workflows and orchestration (optional)
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     LangGraph Agent                             │
+│                    (GPT-4-turbo, temp=0.3)                      │
+└──────────────────────┬──────────────────────────────────────────┘
+                       │ uses tools
+                       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    ai/tools/                                    │
+│  • check_ddi_risks (medication_tools.py)                        │
+│  • get_patient_summary (patient_tools.py)                       │
+└──────────────────────┬──────────────────────────────────────────┘
+                       │ wraps
+                       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                   ai/services/                                  │
+│  • DDIAnalyzer (ddi_analyzer.py)                                │
+│  • PatientContextBuilder (patient_context.py)                   │
+└──────────────────────┬──────────────────────────────────────────┘
+                       │ queries
+                       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│              app/db/ + app/services/                            │
+│  • get_patient_demographics()                                   │
+│  • get_patient_medications()                                    │
+│  • get_recent_vitals()                                          │
+│  • get_patient_allergies()                                      │
+│  • get_recent_encounters()                                      │
+│  • get_ddi_reference() (MinIO Parquet)                          │
+└──────────────────────┬──────────────────────────────────────────┘
+                       │
+                       ▼
+                PostgreSQL + MinIO
+```
 
-**Vector Storage:**
-- **Phase 4 (Initial):** Local vector stores (Chroma or FAISS)
-- **Later Phases:** pgvector in PostgreSQL for production deployment
-
-## Architecture Integration
-
-**Data Sources:**
-- Reads from Gold layer Parquet files (curated, query-friendly data)
-- May access PostgreSQL serving database for real-time patient context
-- No direct access to Bronze/Silver layers or raw CDW data
-
-**API Integration:**
-- Exposes endpoints via FastAPI (likely in `app/routes/ai.py`)
-- Called from main med-z1 web application as needed
-- Asynchronous processing for longer-running AI tasks
-
-**Configuration:**
-- Shares root-level `.env` and `config.py` for API keys and model settings
-- Environment variables: `OPENAI_API_KEY`, `LLM_PROVIDER`, `EMBEDDING_MODEL`, etc.
-
-## Future Directory Structure
+## Directory Structure
 
 ```
 ai/
-  models/         # Model wrappers and LLM clients
-  prompts/        # Prompt templates and chains
-  embeddings/     # Embedding generation and vector store management
-  agents/         # Agentic workflows (if using langchain/langgraph)
-  utils/          # Shared utilities (caching, retry logic, etc.)
-  tests/          # Unit and integration tests
-  README.md       # This file
+├── README.md                      # This file
+├── __init__.py                    # Package exports
+├── agents/
+│   ├── __init__.py
+│   └── insight_agent.py           # LangGraph agent with ToolNode
+├── tools/
+│   ├── __init__.py                # ALL_TOOLS export (2 tools)
+│   ├── medication_tools.py        # check_ddi_risks
+│   └── patient_tools.py           # get_patient_summary
+├── services/
+│   ├── __init__.py
+│   ├── ddi_analyzer.py            # DDI reference data analysis
+│   └── patient_context.py         # Patient data formatting
+└── prompts/
+    ├── __init__.py
+    └── system_prompts.py          # (Future: system prompts)
 ```
+
+## Implementation Details
+
+### Technology Stack
+
+- **LangChain:** 1.2.0
+- **LangGraph:** 1.0.5 (uses ToolNode API)
+- **LangChain-OpenAI:** 1.1.6
+- **OpenAI:** 2.14.0
+- **LLM:** GPT-4-turbo (temperature=0.3 for clinical accuracy)
+
+### Design Patterns
+
+1. **Synchronous Functions:** All functions are synchronous (matching existing `app/db/` pattern)
+   - Future consideration: Refactor to async/await for concurrent queries
+   - Future consideration: Session-based database access for connection pooling
+
+2. **No Database Sessions:** Tools create their own connections (via `app/db/` functions)
+   - Existing pattern uses SQLAlchemy engine directly, not session-based
+   - Simplifies tool signatures (no `db_session` parameter needed)
+
+3. **Natural Language Output:** All tools return plain text (not JSON/dicts)
+   - Optimized for LLM consumption
+   - Human-readable format
+
+4. **Graceful Degradation:** Missing data returns "None on record" messages
+   - Never fails due to missing data
+   - All sections always present in summaries
+
+## Testing
+
+### Test Scripts
+
+1. **`scripts/test_ddi_tool_with_agent.py`**
+   - Tests DDI tool integration with LangGraph agent
+   - Verifies ICN extraction from questions
+   - Validates agent tool invocation and response synthesis
+
+2. **`scripts/test_patient_summary.py`**
+   - Tests PatientContextBuilder individual sections
+   - Tests comprehensive patient summary
+   - Tests missing data handling
+   - Tests LangGraph agent integration with get_patient_summary
+
+### Test Results (ICN100010 - Alexander Aminor)
+
+```
+✅ Demographics: 60-year-old male veteran, SC 0%, Dayton OH
+✅ Medications: 2 active (GABAPENTIN, ALPRAZOLAM)
+✅ Vitals: No recent vitals (last 7 days)
+✅ Allergies: 2 known allergies
+✅ Encounters: 1 recent encounter (Bay Pines, FL)
+✅ DDI Risk: 1 interaction found (GABAPENTIN + ALPRAZOLAM)
+```
+
+**Notable Agent Behavior:**
+- Agent autonomously combined both tools in Test Case 1
+- When asked to "summarize clinical status", agent called:
+  1. `get_patient_summary` (for demographics, meds, vitals, allergies, encounters)
+  2. `check_ddi_risks` (for medication safety analysis)
+- Synthesized coherent multi-section response from both tool outputs
+
+## Usage Examples
+
+### Using Tools Directly
+
+```python
+from ai.tools import check_ddi_risks, get_patient_summary
+
+# Check DDI risks
+ddi_result = check_ddi_risks("ICN100010")
+print(ddi_result)
+# "Found 1 drug-drug interaction:
+#  ⚠️ Gabapentin + Alprazolam
+#     The risk or severity of adverse effects..."
+
+# Get patient summary
+summary = get_patient_summary("ICN100010")
+print(summary)
+# "PATIENT DEMOGRAPHICS
+#  60-year-old male veteran...
+#
+#  CURRENT MEDICATIONS
+#  Currently on 2 active medications..."
+```
+
+### Using LangGraph Agent
+
+```python
+from ai.agents.insight_agent import create_insight_agent
+from ai.tools import ALL_TOOLS
+from langchain_core.messages import HumanMessage
+
+# Create agent
+agent = create_insight_agent(ALL_TOOLS)
+
+# Invoke with question
+result = agent.invoke({
+    "messages": [HumanMessage(content="Check DDI risks for patient ICN100010")],
+    "patient_icn": "ICN100010",
+    "patient_name": "Alexander Aminor",
+    "tools_used": [],
+    "data_sources": [],
+    "error": None
+})
+
+# Get response
+print(result["messages"][-1].content)
+```
+
+## Configuration
+
+Required environment variables (in `.env`):
+
+```bash
+# OpenAI API
+OPENAI_API_KEY=sk-...
+OPENAI_MODEL=gpt-4-turbo
+OPENAI_TEMPERATURE=0.3
+```
+
+Configuration is centralized in `config.py` at project root:
+
+```python
+# AI Subsystem Config
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4-turbo")
+OPENAI_TEMPERATURE = float(os.getenv("OPENAI_TEMPERATURE", "0.3"))
+```
+
+## Next Steps
+
+### Phase 2: Web UI Integration (Week 2)
+
+Planned tasks:
+- [ ] Create `app/routes/insight.py` (FastAPI routes)
+- [ ] Create `app/templates/insight.html` (chat interface)
+- [ ] Create `app/templates/partials/chat_message.html` (message partial)
+- [ ] Add CSS styling to `app/static/styles.css`
+- [ ] Wire up HTMX chat form
+- [ ] Add "Insights" link to sidebar navigation
+- [ ] End-to-end testing with multiple patients
+
+### Phase 3: Vital Trends + Polish (Week 3)
+
+Planned tools:
+- [ ] `analyze_vitals_trends()` - Statistical trend analysis
+  - Linear regression for BP, HR trends
+  - Variance analysis
+  - Clinical norm comparisons
+
+## Documentation
+
+- **Design Specification:** `docs/spec/ai-insight-design.md` (v1.4)
+- **Architecture Decisions:** See Section 2 of design doc
+- **Use Cases:** See Section 4 of design doc (DDI Assessment, Patient Summary, Vital Trends)
+- **Implementation Phases:** See Section 10 of design doc
 
 ## Development Notes
 
-**Privacy and Security:**
-- All development uses ONLY synthetic, non-PHI/PII data
-- Production deployment will require PHI-safe LLM endpoints (VA-approved models)
-- Audit logging for all AI-generated content
+### Adding New Tools
 
-**Performance Considerations:**
-- AI operations may have 1-10 second latency (LLM API calls)
-- Use asynchronous processing and caching where appropriate
-- Display loading indicators in UI for AI-powered features
+1. Create tool function in `ai/tools/<domain>_tools.py`:
+   ```python
+   from langchain_core.tools import tool
 
-**Quality Assurance:**
-- AI-generated content should be clearly labeled in UI
-- Provide citations/sources for AI recommendations when possible
-- Allow clinicians to provide feedback on AI suggestions (future)
+   @tool
+   def my_new_tool(patient_icn: str) -> str:
+       """Tool description for LLM."""
+       # Implementation
+       return "formatted text result"
+   ```
 
-## Getting Started
+2. Create service layer if needed in `ai/services/`:
+   ```python
+   class MyAnalyzer:
+       def analyze(self, data):
+           # Business logic
+           return formatted_result
+   ```
 
-Phase 4 implementation planned for 3-6 weeks after Phases 0-3 complete. Until then, this subsystem serves as a placeholder for future AI/ML capabilities.
+3. Update `ai/tools/__init__.py`:
+   ```python
+   from ai.tools.my_tools import my_new_tool
 
-For full developer setup instructions, see `docs/guide/developer-setup-guide.md`.
+   ALL_TOOLS = [
+       check_ddi_risks,
+       get_patient_summary,
+       my_new_tool,  # Add here
+   ]
+   ```
+
+4. Test with `scripts/test_my_tool.py`
+
+### Code Style
+
+- Use descriptive docstrings (Google style)
+- Log important operations at INFO level
+- Log errors at ERROR level with stack traces
+- Return natural language text from tools (not JSON)
+- Handle missing data gracefully
+- Include data source attribution in responses
+
+## Support
+
+For questions or issues:
+- See design document: `docs/spec/ai-insight-design.md`
+- Review architecture decisions in design doc Section 2
+- Check test scripts for usage examples
+
+---
+
+**Phase 1 Week 1 Status:** ✅ **COMPLETE**
+**Tools Implemented:** 2/3 (DDI Risk Assessment, Patient Summary)
+**Ready For:** Phase 2 - Web UI Integration

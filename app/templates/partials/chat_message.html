@@ -1,0 +1,46 @@
+{% if message_type == "user" %}
+    <!-- User message -->
+    <div class="chat-message chat-message--user">
+        <div class="chat-message__avatar">
+            <i class="fa-solid fa-user"></i>
+        </div>
+        <div class="chat-message__content">
+            <div class="chat-message__text">{{ message_text }}</div>
+            {% if timestamp %}
+            <div class="chat-message__timestamp">{{ timestamp }}</div>
+            {% endif %}
+        </div>
+    </div>
+
+{% elif message_type == "ai" %}
+    <!-- AI message -->
+    <div class="chat-message chat-message--ai {% if is_error %}chat-message--error{% endif %}">
+        <div class="chat-message__avatar">
+            <i class="fa-solid fa-robot"></i>
+        </div>
+        <div class="chat-message__content">
+            <div class="chat-message__text">{{ message_text | safe }}</div>
+
+            {% if tools_used and tools_used | length > 0 %}
+            <div class="chat-message__metadata">
+                <i class="fa-solid fa-wrench"></i>
+                <span>Sources checked: {{ tools_used | join(', ') }}</span>
+            </div>
+            {% endif %}
+
+            {% if timestamp %}
+            <div class="chat-message__timestamp">{{ timestamp }}</div>
+            {% endif %}
+        </div>
+    </div>
+
+{% elif message_type == "system" %}
+    <!-- System message (errors, etc.) -->
+    <div class="chat-message chat-message--system {% if is_error %}chat-message--error{% endif %}">
+        <div class="chat-message__content">
+            <i class="fa-solid fa-exclamation-triangle"></i>
+            {{ message_text }}
+        </div>
+    </div>
+
+{% endif %}
