@@ -1234,6 +1234,16 @@ input:focus-visible,
     color: #ffffff;
 }
 
+.badge--secondary {
+    background: #6c757d;  /* Gray background for calculated values (BMI) */
+    color: #ffffff;
+}
+
+.badge--info-light {
+    background: #663399;  /* Rebecca purple for VistA site badges and cached data */
+    color: #ffffff;
+}
+
 /* Topbar flags badge (small notification badge) */
 #flags-badge {
     margin-left: 0.5rem;

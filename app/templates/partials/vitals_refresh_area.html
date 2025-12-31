@@ -56,6 +56,18 @@
                     {% if sort_by == 'abnormal_flag' %}selected{% endif %}>
                 Abnormal First
             </option>
+            <option value="/patient/{{ patient.icn }}/vitals?{% if vital_type_filter %}vital_type={{ vital_type_filter }}&{% endif %}sort_by=data_source&sort_order=asc"
+                    {% if sort_by == 'data_source' and sort_order == 'asc' %}selected{% endif %}>
+                Source (VistA First)
+            </option>
+            <option value="/patient/{{ patient.icn }}/vitals?{% if vital_type_filter %}vital_type={{ vital_type_filter }}&{% endif %}sort_by=data_source&sort_order=cerner"
+                    {% if sort_by == 'data_source' and sort_order == 'cerner' %}selected{% endif %}>
+                Source (Cerner First)
+            </option>
+            <option value="/patient/{{ patient.icn }}/vitals?{% if vital_type_filter %}vital_type={{ vital_type_filter }}&{% endif %}sort_by=data_source&sort_order=desc"
+                    {% if sort_by == 'data_source' and sort_order == 'desc' %}selected{% endif %}>
+                Source (Calc First)
+            </option>
         </select>
     </div>
 
@@ -91,6 +103,7 @@
                     <th>Value</th>
                     <th>Status</th>
                     <th>Details</th>
+                    <th>Source</th>
                 </tr>
             </thead>
             <tbody>
@@ -111,21 +124,6 @@
                         <div class="vital-type-label">{{ vital.vital_type }}</div>
                         <div class="vital-abbr">
                             ({{ vital.vital_abbr }})
-                            {% if vital.data_source %}
-                                {% if vital.data_source == 'CDWWork' %}
-                                    <span class="badge badge--info" title="VistA Data Source (CDWWork)" style="margin-left: 0.5rem; font-size: 0.75rem;">
-                                        <i class="fa-solid fa-v"></i> VistA
-                                    </span>
-                                {% elif vital.data_source == 'CDWWork2' %}
-                                    <span class="badge badge--success" title="Oracle Health Data Source (CDWWork2)" style="margin-left: 0.5rem; font-size: 0.75rem;">
-                                        <i class="fa-solid fa-c"></i> Cerner
-                                    </span>
-                                {% elif vital.data_source == 'CALCULATED' %}
-                                    <span class="badge badge--secondary" title="Calculated Value (BMI)" style="margin-left: 0.5rem; font-size: 0.75rem;">
-                                        <i class="fa-solid fa-calculator"></i> Calc
-                                    </span>
-                                {% endif %}
-                            {% endif %}
                         </div>
                     </td>
 
@@ -163,14 +161,6 @@
                         {% else %}
                             <span class="vital-status-none">—</span>
                         {% endif %}
-                        {# Show Vista badge for real-time data #}
-                        {% if vital.source == 'vista' and vital.source_site %}
-                            <div class="mt-1">
-                                <span class="badge badge--success" title="Real-time data from VistA Site {{ vital.source_site }}">
-                                    <i class="fa-solid fa-bolt"></i> Site {{ vital.source_site }}
-                                </span>
-                            </div>
-                        {% endif %}
                     </td>
 
                     <!-- Details -->
@@ -194,6 +184,33 @@
                         {% endif %}
                         {% if vital.entered_by %}
                             <div class="vital-meta">By: {{ vital.entered_by }}</div>
+                        {% endif %}
+                    </td>
+
+                    <!-- Source -->
+                    <td class="vital-cell vital-cell--source">
+                        {% if vital.data_source %}
+                            {% if vital.data_source == 'CDWWork' %}
+                                <span class="badge badge--info" title="VistA Data Source (CDWWork)" style="font-size: 0.75rem;">
+                                    VistA
+                                </span>
+                            {% elif vital.data_source == 'CDWWork2' %}
+                                <span class="badge badge--success" title="Oracle Health Data Source (CDWWork2)" style="font-size: 0.75rem;">
+                                    Cerner
+                                </span>
+                            {% elif vital.data_source == 'CALCULATED' %}
+                                <span class="badge badge--secondary" title="Calculated Value (BMI)" style="font-size: 0.75rem;">
+                                    Calc
+                                </span>
+                            {% endif %}
+                        {% endif %}
+                        {# Show Vista site badge for real-time data (stacked below data source badge) #}
+                        {% if vital.source == 'vista' and vital.source_site %}
+                            <div style="margin-top: 0.25rem;">
+                                <span class="badge badge--info-light" title="Real-time data from VistA Site {{ vital.source_site }}" style="font-size: 0.75rem;">
+                                    Site {{ vital.source_site }}
+                                </span>
+                            </div>
                         {% endif %}
                     </td>
                 </tr>
@@ -253,8 +270,7 @@
     {% endif %}
 
     {% if vista_cached %}
-        <span class="badge badge--success" style="margin-left: 0.75rem;" title="Vista data cached from sites: {{ cache_sites|join(', ') }}">
-            <i class="fa-solid fa-database"></i>
+        <span class="badge badge--info-light" style="margin-left: 0.75rem;" title="Vista data cached from sites: {{ cache_sites|join(', ') }}">
             Vista Cached (available to AI)
         </span>
     {% endif %}

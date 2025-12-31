@@ -202,8 +202,8 @@ async def get_vitals_page(
     request: Request,
     icn: str,
     vital_type: Optional[str] = None,
-    sort_by: Optional[str] = Query("taken_datetime", regex="^(taken_datetime|vital_type|abnormal_flag)$"),
-    sort_order: Optional[str] = Query("desc", regex="^(asc|desc)$")
+    sort_by: Optional[str] = Query("taken_datetime", regex="^(taken_datetime|vital_type|abnormal_flag|data_source)$"),
+    sort_order: Optional[str] = Query("desc", regex="^(asc|desc|cerner)$")
 ):
     """
     Full vitals page for a patient.
@@ -270,6 +270,18 @@ async def get_vitals_page(
             # Custom sort: CRITICAL > HIGH > LOW > NORMAL > None
             flag_order = {"CRITICAL": 4, "HIGH": 3, "LOW": 2, "NORMAL": 1, None: 0}
             vitals = sorted(vitals, key=lambda v: flag_order.get(v.get("abnormal_flag"), 0), reverse=reverse)
+        elif sort_by == "data_source":
+            # Custom sort with three options based on sort_order
+            if sort_order == "asc":
+                # VistA First: CDWWork, CDWWork2, CALCULATED
+                source_order = {"CDWWork": 1, "CDWWork2": 2, "CALCULATED": 3}
+            elif sort_order == "cerner":
+                # Cerner First: CDWWork2, CDWWork, CALCULATED
+                source_order = {"CDWWork2": 1, "CDWWork": 2, "CALCULATED": 3}
+            else:  # desc
+                # Calc First: CALCULATED, CDWWork, CDWWork2
+                source_order = {"CALCULATED": 1, "CDWWork": 2, "CDWWork2": 3}
+            vitals = sorted(vitals, key=lambda v: source_order.get(v.get("data_source"), 99))
 
         logger.info(f"Loaded vitals page for {icn}: {len(vitals)} vitals, filter={vital_type}, sort={sort_by} {sort_order}")
 
@@ -326,8 +338,8 @@ async def get_vitals_realtime(
     request: Request,
     icn: str,
     vital_type: Optional[str] = None,
-    sort_by: Optional[str] = Query("taken_datetime", regex="^(taken_datetime|vital_type|abnormal_flag)$"),
-    sort_order: Optional[str] = Query("desc", regex="^(asc|desc)$")
+    sort_by: Optional[str] = Query("taken_datetime", regex="^(taken_datetime|vital_type|abnormal_flag|data_source)$"),
+    sort_order: Optional[str] = Query("desc", regex="^(asc|desc|cerner)$")
 ):
     """
     VistA real-time refresh endpoint.
