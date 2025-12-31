@@ -2,8 +2,9 @@
 # gold_vitals.py
 # ---------------------------------------------------------------------
 # Create MinIO Parquet Gold version from Silver vitals data
-#  - Read Silver: vitals_cleaned.parquet
-#  - Add patient identity lookup (PatientSID → PatientICN)
+#  - Read Silver: vitals_merged.parquet (merged CDWWork + CDWWork2)
+#  - Preserve data_source column (CDWWork, CDWWork2, CALCULATED)
+#  - Add patient identity lookup (PatientSID → PatientICN for CDWWork)
 #  - Calculate BMI from height/weight pairs
 #  - Calculate abnormal flags based on reference ranges
 #  - Create patient-centric denormalized view
@@ -148,7 +149,25 @@ def calculate_abnormal_flag(vital_abbr: str, numeric_value: float, systolic: flo
         else:
             return "NORMAL"
 
-    # For HT, WT, BG, BMI - no abnormal flags
+    elif vital_abbr == "BMI":
+        if numeric_value is None:
+            return None
+        # BMI ranges (CDC/WHO adult guidelines):
+        # < 18.5: Underweight (LOW)
+        # 18.5-24.9: Normal weight (NORMAL)
+        # 25.0-29.9: Overweight (HIGH)
+        # 30.0-39.9: Obese (HIGH)
+        # ≥ 40.0: Severely obese (CRITICAL)
+        if numeric_value >= 40.0:
+            return "CRITICAL"
+        elif numeric_value >= 25.0:
+            return "HIGH"
+        elif numeric_value < 18.5:
+            return "LOW"
+        else:
+            return "NORMAL"
+
+    # For HT, WT, BG - no abnormal flags
     else:
         return None
 
@@ -159,27 +178,29 @@ def calculate_bmi_for_patient(vitals_df: pl.DataFrame) -> pl.DataFrame:
     Adds BMI as virtual vital signs to the dataframe.
 
     BMI = weight(kg) / (height(m))^2
+
+    Note: Uses patient_icn instead of patient_sid for consistency with merged data
     """
     logger.info("Calculating BMI for patients with height and weight data...")
 
-    # Get most recent height per patient
+    # Get most recent height per patient (using patient_icn)
     height_df = (
         vitals_df
         .filter(pl.col("vital_abbr") == "HT")
         .sort("taken_datetime", descending=True)
-        .group_by("patient_sid")
+        .group_by("patient_icn")
         .agg([
             pl.col("metric_value").first().cast(pl.Float64).alias("height_cm"),
             pl.col("taken_datetime").first().alias("height_date")
         ])
     )
 
-    # Get weight measurements per patient
+    # Get weight measurements per patient (using patient_icn)
     weight_df = (
         vitals_df
         .filter(pl.col("vital_abbr") == "WT")
         .select([
-            "patient_sid",
+            "patient_icn",
             "taken_datetime",
             pl.col("metric_value").cast(pl.Float64).alias("weight_kg")
         ])
@@ -188,14 +209,14 @@ def calculate_bmi_for_patient(vitals_df: pl.DataFrame) -> pl.DataFrame:
     # Join height with weights for same patient
     bmi_df = (
         weight_df
-        .join(height_df, on="patient_sid", how="inner")
+        .join(height_df, on="patient_icn", how="inner")
         .with_columns([
             # Calculate BMI: weight(kg) / (height(m))^2
             # height_cm is in centimeters, need to convert to meters
             (pl.col("weight_kg") / ((pl.col("height_cm") / 100) ** 2)).alias("bmi_value")
         ])
         .select([
-            "patient_sid",
+            "patient_icn",
             pl.col("taken_datetime").alias("weight_datetime"),
             "bmi_value",
             "height_cm",
@@ -219,29 +240,29 @@ def transform_vitals_gold():
     minio_client = MinIOClient()
 
     # ==================================================================
-    # Step 1: Load Silver vitals
+    # Step 1: Load Silver vitals (merged CDWWork + CDWWork2)
     # ==================================================================
     logger.info("Step 1: Loading Silver vitals...")
 
-    silver_path = build_silver_path("vitals", "vitals_cleaned.parquet")
+    silver_path = build_silver_path("vitals", "vitals_merged.parquet")
     df = minio_client.read_parquet(silver_path)
     logger.info(f"  - Loaded {len(df)} vitals from Silver layer")
 
+    # Check data source distribution
+    source_counts = df.group_by("data_source").agg([pl.len().alias("count")])
+    logger.info(f"  - Data sources: {source_counts.to_dicts()}")
+
     # ==================================================================
-    # Step 2: Generate patient ICN from patient_sid
+    # Step 2: Ensure patient_icn is populated for all vitals
     # ==================================================================
-    logger.info("Step 2: Generating patient ICN from patient_sid...")
+    logger.info("Step 2: Ensuring patient_icn is populated...")
 
     # Patient ICN Resolution Strategy:
     # --------------------------------
-    # Different CDW tables use different PatientSID surrogate key ranges:
-    #   - Vital.VitalSign uses PatientSID 1-36
-    #   - SPatient.SPatient uses PatientSID 1001-1036
+    # CDWWork2 (Oracle Health): patient_icn already present from Silver layer
+    # CDWWork (VistA): patient_icn may be null, generate from patient_sid if needed
     #
-    # This is normal in data warehouses - different tables can have different
-    # surrogate keys as long as they map to the same natural key (ICN).
-    #
-    # We generate ICN deterministically using the established pattern:
+    # For CDWWork, we generate ICN deterministically using the established pattern:
     #   ICN = "ICN" + str(100000 + patient_sid)
     #
     # This correctly resolves to:
@@ -249,23 +270,69 @@ def transform_vitals_gold():
     #   patient_sid=2  → ICN100002 (matches patient PatientSID=1002)
     #   ...
     #   patient_sid=36 → ICN100036 (matches patient PatientSID=1036)
-    #
-    # Benefits of this approach:
-    #   1. Correct - generates valid ICNs that match the patient master data
-    #   2. Elegant - simple, deterministic formula without database joins
-    #   3. Robust - works even if source tables have different SID ranges
-    #   4. Architecturally sound - ICN resolution belongs in Gold layer
+
+    # Check how many need ICN generation
+    null_icn_count = df.filter(pl.col("patient_icn").is_null()).height
+
+    if null_icn_count > 0:
+        logger.info(f"  - {null_icn_count} vitals need patient_icn generated from patient_sid")
+        # Generate ICN where it's null (CDWWork vitals)
+        df = df.with_columns([
+            pl.when(pl.col("patient_icn").is_null())
+                .then(pl.format("ICN{}", (100000 + pl.col("vital_record_id"))))
+                .otherwise(pl.col("patient_icn"))
+                .alias("patient_icn")
+        ])
+    else:
+        logger.info(f"  - All vitals already have patient_icn (from Silver layer)")
+
+    # Verify all vitals now have ICN
+    remaining_null = df.filter(pl.col("patient_icn").is_null()).height
+    logger.info(f"  - Vitals with ICN: {len(df) - remaining_null}/{len(df)}")
+    if remaining_null > 0:
+        logger.warning(f"  - WARNING: {remaining_null} vitals still missing patient_icn")
+
+    # ==================================================================
+    # Step 3: Generate vital_abbr for CDWWork2 (Oracle Health) vitals
+    # ==================================================================
+    logger.info("Step 3: Generating vital_abbr for CDWWork2 vitals...")
+
+    # CDWWork2 doesn't have abbreviations, so generate them from vital_type
+    # Use a mapping of common vital types to standard abbreviations
     df = df.with_columns([
-        pl.format("ICN{}", (100000 + pl.col("patient_sid"))).alias("patient_icn")
+        pl.when(pl.col("vital_abbr").is_null())
+            .then(
+                pl.when(pl.col("vital_type").str.to_uppercase() == "BLOOD PRESSURE")
+                    .then(pl.lit("BP"))
+                .when(pl.col("vital_type").str.to_uppercase() == "PULSE")
+                    .then(pl.lit("P"))
+                .when(pl.col("vital_type").str.to_uppercase() == "TEMPERATURE")
+                    .then(pl.lit("T"))
+                .when(pl.col("vital_type").str.to_uppercase() == "WEIGHT")
+                    .then(pl.lit("WT"))
+                .when(pl.col("vital_type").str.to_uppercase() == "HEIGHT")
+                    .then(pl.lit("HT"))
+                .when(pl.col("vital_type").str.to_uppercase() == "RESPIRATION")
+                    .then(pl.lit("R"))
+                .when(pl.col("vital_type").str.to_uppercase() == "PULSE OXIMETRY")
+                    .then(pl.lit("POX"))
+                .when(pl.col("vital_type").str.to_uppercase() == "PAIN")
+                    .then(pl.lit("PN"))
+                .when(pl.col("vital_type").str.to_uppercase() == "BLOOD GLUCOSE")
+                    .then(pl.lit("BG"))
+                .otherwise(pl.col("vital_type").str.slice(0, 3).str.to_uppercase())  # First 3 letters as fallback
+            )
+            .otherwise(pl.col("vital_abbr"))
+            .alias("vital_abbr")
     ])
 
-    logger.info(f"  - Generated patient ICN for all {len(df)} vitals")
-    logger.info(f"  - Sample ICNs: {df.select('patient_icn').unique().head(5)['patient_icn'].to_list()}")
+    abbr_generated_count = df.filter((pl.col("data_source") == "CDWWork2") & (pl.col("vital_abbr").is_not_null())).height
+    logger.info(f"  - Generated abbreviations for {abbr_generated_count} CDWWork2 vitals")
 
     # ==================================================================
-    # Step 3: Calculate abnormal flags
+    # Step 4: Calculate abnormal flags
     # ==================================================================
-    logger.info("Step 3: Calculating abnormal flags...")
+    logger.info("Step 4: Calculating abnormal flags...")
 
     # Apply abnormal flag calculation using when-then logic
     df = df.with_columns([
@@ -334,18 +401,17 @@ def transform_vitals_gold():
     logger.info(f"  - Calculated abnormal flags: {abnormal_count} abnormal vitals found")
 
     # ==================================================================
-    # Step 4: Calculate BMI
+    # Step 5: Calculate BMI
     # ==================================================================
-    logger.info("Step 4: Calculating BMI...")
+    logger.info("Step 5: Calculating BMI...")
 
     bmi_df = calculate_bmi_for_patient(df)
 
     # Create BMI vital sign records
     if len(bmi_df) > 0:
         bmi_vitals = bmi_df.with_columns([
-            pl.lit(None).cast(pl.Int64).alias("vital_sign_id"),  # No VitalSignSID for calculated BMI
-            "patient_sid",
-            pl.lit(None).cast(pl.Int64).alias("vital_type_id"),  # BMI is calculated, not in VitalType table
+            pl.lit(None).cast(pl.Int64).alias("vital_record_id"),  # No vital_record_id for calculated BMI
+            "patient_icn",  # Already present from BMI calculation
             pl.lit("BMI").alias("vital_type"),
             pl.lit("BMI").alias("vital_abbr"),
             pl.col("weight_datetime").alias("taken_datetime"),
@@ -358,33 +424,36 @@ def transform_vitals_gold():
             pl.lit("kg/m2").alias("unit_of_measure"),
             pl.lit("CALCULATED").alias("category"),
             pl.lit("[]").alias("qualifiers"),
-            pl.lit(None).cast(pl.Int32).alias("location_id"),
+            pl.lit(None).cast(pl.Int64).alias("location_id"),
             pl.lit(None).cast(pl.Utf8).alias("location_name"),
             pl.lit(None).cast(pl.Utf8).alias("location_type"),
+            pl.lit(None).cast(pl.Utf8).alias("entered_by"),
             pl.lit(None).cast(pl.Utf8).alias("sta3n"),
             pl.lit(None).cast(pl.Utf8).alias("facility_name"),
-            pl.lit("CALCULATED").alias("source_system"),
+            pl.lit("CALCULATED").alias("data_source"),  # BMI is calculated, not from CDWWork or CDWWork2
             pl.lit(datetime.now(timezone.utc)).alias("last_updated"),
-            pl.lit(None).cast(pl.Utf8).alias("patient_icn"),  # Will be joined next
-            pl.lit(None).cast(pl.Utf8).alias("abnormal_flag"),  # BMI abnormal ranges could be added later
-        ])
-
-        # Generate patient_icn for BMI records using same pattern
-        bmi_vitals = bmi_vitals.with_columns([
-            pl.format("ICN{}", (100000 + pl.col("patient_sid"))).alias("patient_icn")
+            # Compute BMI abnormal flag based on CDC/WHO ranges
+            pl.when(pl.col("bmi_value") >= 40.0)
+                .then(pl.lit("CRITICAL"))  # Severely obese
+            .when(pl.col("bmi_value") >= 25.0)
+                .then(pl.lit("HIGH"))  # Overweight/Obese
+            .when(pl.col("bmi_value") < 18.5)
+                .then(pl.lit("LOW"))  # Underweight
+            .otherwise(pl.lit("NORMAL"))  # Normal weight (18.5-24.9)
+                .alias("abnormal_flag"),
         ])
 
         # Append BMI vitals to main dataframe
-        # Use diagonal_relaxed to handle schema differences (Decimal vs Float64)
+        # Use diagonal_relaxed to handle schema differences
         df = pl.concat([df, bmi_vitals], how="diagonal_relaxed")
         logger.info(f"  - Added {len(bmi_vitals)} calculated BMI vitals")
     else:
         logger.info("  - No BMI calculations (no patients with both height and weight)")
 
     # ==================================================================
-    # Step 5: Create patient key for consistency
+    # Step 6: Create patient key for consistency
     # ==================================================================
-    logger.info("Step 5: Creating patient_key...")
+    logger.info("Step 6: Creating patient_key...")
 
     df = df.with_columns([
         # patient_key is same as patient_icn (already has ICN prefix)
@@ -392,16 +461,14 @@ def transform_vitals_gold():
     ])
 
     # ==================================================================
-    # Step 6: Select final columns for Gold layer
+    # Step 7: Select final columns for Gold layer
     # ==================================================================
-    logger.info("Step 6: Selecting final columns...")
+    logger.info("Step 7: Selecting final columns...")
 
     df = df.select([
-        "vital_sign_id",
-        "patient_sid",
+        "vital_record_id",
         "patient_icn",
         "patient_key",
-        "vital_type_id",
         "vital_type",
         "vital_abbr",
         "taken_datetime",
@@ -418,16 +485,17 @@ def transform_vitals_gold():
         "location_id",
         "location_name",
         "location_type",
+        "entered_by",
         "sta3n",
         "facility_name",
-        "source_system",
+        "data_source",  # Track origin: CDWWork, CDWWork2, or CALCULATED
         "last_updated",
     ])
 
     # ==================================================================
-    # Step 7: Write to Gold layer
+    # Step 8: Write to Gold layer
     # ==================================================================
-    logger.info("Step 7: Writing to Gold layer...")
+    logger.info("Step 8: Writing to Gold layer...")
 
     gold_path = build_gold_path("vitals", "vitals_final.parquet")
     minio_client.write_parquet(df, gold_path)

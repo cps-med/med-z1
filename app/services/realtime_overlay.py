@@ -89,19 +89,28 @@ def parse_vista_vitals(vista_response: str, site_sta3n: str) -> List[Dict[str, A
             logger.warning(f"Skipping vital with invalid date: {line}")
             continue
 
+        # Extract vital components
+        vital_abbr = _get_vital_abbr(vital_type)
+        numeric_value = _extract_numeric_value(value, vital_type)
+        systolic = _extract_systolic(value, vital_type)
+        diastolic = _extract_diastolic(value, vital_type)
+
+        # Compute abnormal flag based on vital type and value
+        abnormal_flag = _compute_abnormal_flag(vital_abbr, numeric_value, systolic, diastolic)
+
         # Create standardized vital record (matching PostgreSQL schema)
         vital = {
             "vital_id": None,  # No persistent ID for Vista data
             "patient_key": None,  # Will be set by caller
             "vital_sign_id": None,
             "vital_type": vital_type,
-            "vital_abbr": _get_vital_abbr(vital_type),
+            "vital_abbr": vital_abbr,
             "taken_datetime": taken_dt.strftime("%Y-%m-%d %H:%M:%S"),
             "entered_datetime": taken_dt.strftime("%Y-%m-%d %H:%M:%S"),
             "result_value": value,
-            "numeric_value": _extract_numeric_value(value, vital_type),
-            "systolic": _extract_systolic(value, vital_type),
-            "diastolic": _extract_diastolic(value, vital_type),
+            "numeric_value": numeric_value,
+            "systolic": systolic,
+            "diastolic": diastolic,
             "metric_value": None,  # Could be computed if needed
             "unit_of_measure": units,
             "qualifiers": None,
@@ -109,9 +118,11 @@ def parse_vista_vitals(vista_response: str, site_sta3n: str) -> List[Dict[str, A
             "location_name": f"VistA Site {site_sta3n}",
             "location_type": "VistA",
             "entered_by": entered_by,
-            "abnormal_flag": None,  # Could be computed based on ranges
+            "abnormal_flag": abnormal_flag,  # Computed based on clinical ranges
             "bmi": None,
-            # Vista-specific metadata
+            # Data source for badge display (template expects 'data_source' field)
+            "data_source": "CDWWork",  # VistA vitals show as CDWWork (blue badge)
+            # Vista-specific metadata for tracking
             "source": "vista",
             "source_site": site_sta3n,
             "is_realtime": True,
@@ -168,6 +179,120 @@ def _extract_diastolic(value: str, vital_type: str) -> Optional[int]:
         except (ValueError, IndexError, AttributeError):
             return None
     return None
+
+
+def _compute_abnormal_flag(vital_abbr: str, numeric_value: Optional[float],
+                          systolic: Optional[int], diastolic: Optional[int]) -> Optional[str]:
+    """
+    Compute abnormal flag based on vital type and value.
+
+    Reference Ranges:
+    - BP Systolic: 100-139 (normal), 90-99 (low), 140-179 (high), <90 or ≥180 (critical)
+    - BP Diastolic: 70-89 (normal), 60-69 (low), 90-119 (high), <60 or ≥120 (critical)
+    - Temperature: 97.0-99.9°F (normal), 95.0-96.9 (low), 100.5-103.0 (high), <95.0 or >103.0 (critical)
+    - Pulse: 60-100 (normal), 40-59 (low), 101-130 (high), <40 or >130 (critical)
+    - Respiration: 12-20 (normal), 8-11 (low), 21-28 (high), <8 or >28 (critical)
+    - Pulse Ox: ≥92% (normal), 88-91 (low), <88 (critical)
+    - Pain: 0-3 (normal), 4-7 (high), 8-10 (critical)
+
+    Returns: 'NORMAL', 'LOW', 'HIGH', 'CRITICAL', or None
+    """
+    if vital_abbr == "BP":
+        # Check both systolic and diastolic
+        if systolic is None or diastolic is None:
+            return None
+
+        # Critical
+        if systolic < 90 or systolic >= 180 or diastolic < 60 or diastolic >= 120:
+            return "CRITICAL"
+        # High
+        elif systolic >= 140 or diastolic >= 90:
+            return "HIGH"
+        # Low
+        elif systolic < 100 or diastolic < 70:
+            return "LOW"
+        # Normal
+        else:
+            return "NORMAL"
+
+    elif vital_abbr == "T":
+        if numeric_value is None:
+            return None
+        # Assume Fahrenheit (temperature should be in F)
+        if numeric_value < 95.0 or numeric_value > 103.0:
+            return "CRITICAL"
+        elif numeric_value >= 100.5:
+            return "HIGH"
+        elif numeric_value < 97.0:
+            return "LOW"
+        else:
+            return "NORMAL"
+
+    elif vital_abbr == "P":
+        if numeric_value is None:
+            return None
+        if numeric_value < 40 or numeric_value > 130:
+            return "CRITICAL"
+        elif numeric_value > 100:
+            return "HIGH"
+        elif numeric_value < 60:
+            return "LOW"
+        else:
+            return "NORMAL"
+
+    elif vital_abbr == "R":
+        if numeric_value is None:
+            return None
+        if numeric_value < 8 or numeric_value > 28:
+            return "CRITICAL"
+        elif numeric_value > 20:
+            return "HIGH"
+        elif numeric_value < 12:
+            return "LOW"
+        else:
+            return "NORMAL"
+
+    elif vital_abbr == "POX":
+        if numeric_value is None:
+            return None
+        if numeric_value < 88:
+            return "CRITICAL"
+        elif numeric_value < 92:
+            return "LOW"
+        else:
+            return "NORMAL"
+
+    elif vital_abbr == "PN":
+        if numeric_value is None:
+            return None
+        if numeric_value >= 8:
+            return "CRITICAL"
+        elif numeric_value >= 4:
+            return "HIGH"
+        else:
+            return "NORMAL"
+
+    elif vital_abbr == "BMI":
+        if numeric_value is None:
+            return None
+        # BMI ranges (CDC/WHO adult guidelines):
+        # < 18.5: Underweight (LOW)
+        # 18.5-24.9: Normal weight (NORMAL)
+        # 25.0-29.9: Overweight (HIGH)
+        # 30.0-39.9: Obese (HIGH)
+        # ≥ 40.0: Severely obese (CRITICAL)
+        if numeric_value >= 40.0:
+            return "CRITICAL"
+        elif numeric_value >= 25.0:
+            return "HIGH"
+        elif numeric_value < 18.5:
+            return "LOW"
+        else:
+            return "NORMAL"
+
+    # For HT, WT, BG - no abnormal flags
+    else:
+        return None
 
 
 def create_canonical_key(vital: Dict[str, Any]) -> str:
@@ -263,7 +388,9 @@ def merge_vitals_data(
 
     # Add PostgreSQL vitals (only if not already present)
     for vital in pg_vitals:
-        # Mark PostgreSQL vitals with source metadata
+        # PostgreSQL vitals already have 'data_source' field from database
+        # Don't overwrite it - preserve CDWWork/CDWWork2/CALCULATED values
+        # Add tracking metadata for debugging (doesn't affect template rendering)
         vital["source"] = "postgresql"
         vital["source_site"] = None
         vital["is_realtime"] = False

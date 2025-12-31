@@ -178,7 +178,24 @@
                             <!-- Type -->
                             <td class="vital-cell vital-cell--type">
                                 <div class="vital-type-label">{{ vital.vital_type }}</div>
-                                <div class="vital-abbr">({{ vital.vital_abbr }})</div>
+                                <div class="vital-abbr">
+                                    ({{ vital.vital_abbr }})
+                                    {% if vital.data_source %}
+                                        {% if vital.data_source == 'CDWWork' %}
+                                            <span class="badge badge--info" title="VistA Data Source (CDWWork)" style="margin-left: 0.5rem; font-size: 0.75rem;">
+                                                <i class="fa-solid fa-v"></i> VistA
+                                            </span>
+                                        {% elif vital.data_source == 'CDWWork2' %}
+                                            <span class="badge badge--success" title="Oracle Health Data Source (CDWWork2)" style="margin-left: 0.5rem; font-size: 0.75rem;">
+                                                <i class="fa-solid fa-c"></i> Cerner
+                                            </span>
+                                        {% elif vital.data_source == 'CALCULATED' %}
+                                            <span class="badge badge--secondary" title="Calculated Value (BMI)" style="margin-left: 0.5rem; font-size: 0.75rem;">
+                                                <i class="fa-solid fa-calculator"></i> Calc
+                                            </span>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
                             </td>
 
                             <!-- Value -->

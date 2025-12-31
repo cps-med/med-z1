@@ -64,7 +64,8 @@ def get_patient_vitals(
             location_type,
             entered_by,
             abnormal_flag,
-            bmi
+            bmi,
+            data_source
         FROM clinical.patient_vitals
         {where_clause}
         ORDER BY taken_datetime DESC
@@ -102,6 +103,7 @@ def get_patient_vitals(
                     "entered_by": row[17],
                     "abnormal_flag": row[18],
                     "bmi": float(row[19]) if row[19] is not None else None,
+                    "data_source": row[20],
                 })
 
             return vitals
@@ -143,7 +145,8 @@ def get_recent_vitals(icn: str) -> Dict[str, Any]:
             location_type,
             entered_by,
             abnormal_flag,
-            bmi
+            bmi,
+            data_source
         FROM clinical.patient_vitals
         WHERE patient_key = :icn
         ORDER BY vital_abbr, taken_datetime DESC
@@ -177,6 +180,7 @@ def get_recent_vitals(icn: str) -> Dict[str, Any]:
                     "entered_by": row[17],
                     "abnormal_flag": row[18],
                     "bmi": float(row[19]) if row[19] is not None else None,
+                    "data_source": row[20],
                 }
 
             return recent_vitals
@@ -224,7 +228,8 @@ def get_vital_type_history(
             location_type,
             entered_by,
             abnormal_flag,
-            bmi
+            bmi,
+            data_source
         FROM clinical.patient_vitals
         WHERE patient_key = :icn
           AND vital_type = :vital_type
@@ -262,6 +267,7 @@ def get_vital_type_history(
                     "entered_by": row[17],
                     "abnormal_flag": row[18],
                     "bmi": float(row[19]) if row[19] is not None else None,
+                    "data_source": row[20],
                 })
 
             return history

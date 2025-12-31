@@ -104,7 +104,7 @@ def extract_vital_sign():
 
     engine = create_engine(conn_str)
 
-    # Extract query with Location JOIN
+    # Extract query with Location and Staff JOINs
     query = """
     SELECT
         vs.VitalSignSID,
@@ -121,6 +121,7 @@ def extract_vital_sign():
         loc.LocationName,
         loc.LocationType,
         vs.EnteredByStaffSID,
+        staff.StaffName,
         vs.IsInvalid,
         vs.EnteredInError,
         vs.Sta3n,
@@ -128,6 +129,7 @@ def extract_vital_sign():
         vs.UpdatedDateTimeUTC
     FROM Vital.VitalSign vs
     LEFT JOIN Dim.Location loc ON vs.LocationSID = loc.LocationSID
+    LEFT JOIN SStaff.SStaff staff ON vs.EnteredByStaffSID = staff.StaffSID
     WHERE vs.IsInvalid = 'N' AND vs.EnteredInError = 'N'
     """
 

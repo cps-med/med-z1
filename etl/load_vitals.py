@@ -45,17 +45,29 @@ def load_vitals_to_postgresql():
     # ==================================================================
     logger.info("Step 2: Transforming to match PostgreSQL schema...")
 
-    # For calculated BMI records that have NULL vital_sign_id, generate synthetic IDs
-    # starting from a high number (100000+) to avoid conflicts with real IDs
-    max_real_vital_sign_id = df.filter(pl.col("vital_sign_id").is_not_null()).select(pl.col("vital_sign_id").max())[0, 0]
-    logger.info(f"  - Max real vital_sign_id: {max_real_vital_sign_id}")
+    # Handle overlapping vital_record_id values from dual sources (CDWWork + CDWWork2)
+    # CDWWork2 IDs need offset to avoid collision with CDWWork IDs
+    # Strategy: Add 10,000,000 to CDWWork2 vital_record_ids
+    logger.info(f"  - Offsetting CDWWork2 vital_record_ids to avoid collisions...")
+
+    df = df.with_columns([
+        pl.when(pl.col("data_source") == "CDWWork2")
+            .then(pl.col("vital_record_id") + 10000000)  # Offset CDWWork2 IDs
+            .otherwise(pl.col("vital_record_id"))
+            .alias("vital_record_id")
+    ])
+
+    # For calculated BMI records that have NULL vital_record_id, generate synthetic IDs
+    # starting from a high number (20000000+) to avoid conflicts with real IDs
+    max_real_vital_record_id = df.filter(pl.col("vital_record_id").is_not_null()).select(pl.col("vital_record_id").max())[0, 0]
+    logger.info(f"  - Max real vital_record_id after offsetting: {max_real_vital_record_id}")
 
     # Generate synthetic IDs for BMI records
     df = df.with_columns([
-        pl.when(pl.col("vital_sign_id").is_null())
-            .then(100000 + pl.int_range(pl.len()).over("vital_sign_id"))  # Start at 100000
-            .otherwise(pl.col("vital_sign_id"))
-            .alias("vital_sign_id")
+        pl.when(pl.col("vital_record_id").is_null())
+            .then(20000000 + pl.int_range(pl.len()).over("vital_record_id"))  # Start at 20M
+            .otherwise(pl.col("vital_record_id"))
+            .alias("vital_record_id")
     ])
 
     # Select and rename columns to match patient_vitals table schema
@@ -63,9 +75,9 @@ def load_vitals_to_postgresql():
     #   vital_id (auto), patient_key, vital_sign_id, vital_type, vital_abbr,
     #   taken_datetime, entered_datetime, result_value, numeric_value,
     #   systolic, diastolic, metric_value, unit_of_measure, qualifiers,
-    #   location_id, location_name, location_type, entered_by, abnormal_flag, bmi, last_updated
+    #   location_id, location_name, location_type, entered_by, abnormal_flag, bmi, data_source, last_updated
     df_pg = df.select([
-        pl.col("vital_sign_id"),
+        pl.col("vital_record_id").alias("vital_sign_id"),  # Renamed from vital_sign_id to vital_record_id in Gold
         pl.col("patient_key"),
         pl.col("vital_type"),
         pl.col("vital_abbr"),
@@ -81,9 +93,10 @@ def load_vitals_to_postgresql():
         pl.col("location_id").cast(pl.Int32),
         pl.col("location_name"),
         pl.col("location_type"),
-        pl.lit(None).cast(pl.Utf8).alias("entered_by"),  # Not in Gold layer
+        pl.col("entered_by"),  # Staff name from Gold layer
         pl.col("abnormal_flag"),
         pl.lit(None).cast(pl.Float64).alias("bmi"),  # BMI is in vitals as separate rows, not a column
+        pl.col("data_source"),  # Track origin: CDWWork, CDWWork2, or CALCULATED
     ])
 
     logger.info(f"  - Prepared {len(df_pg)} vitals for PostgreSQL (including {df.filter(pl.col('vital_abbr') == 'BMI').shape[0]} BMI records)")

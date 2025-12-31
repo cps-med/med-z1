@@ -1,12 +1,26 @@
 # CDWWork2 (Oracle Health/Cerner) Mock Database - Design Document
 
-**Document Version:** 1.2
+**Document Version:** 1.4
 **Date:** 2025-12-17
-**Last Updated:** 2025-12-18
-**Status:** ✅ Ready for Implementation - All Open Questions Resolved
-**Implementation Phase:** Not Started
+**Last Updated:** 2025-12-30
+**Status:** ✅ Phase 1 Complete - Ready for Phase 2 (Vitals Domain)
+**Implementation Phase:** Phase 2 (Vitals) - Starting
 
 **Changelog:**
+- **v1.4** (2025-12-30): Phase 1 Foundation Complete
+  - **Implementation Status:** Phase 1 complete - CDWWork2 database created and populated
+  - **Deliverables:** 6 tables created, 48 code values, 2 patients, 16 encounters
+  - **Testing:** Cross-database identity resolution verified and passing
+  - **Documentation:** 3 comprehensive READMEs created (mock/, cdwwork/, cdwwork2/)
+  - **Roadmap Updates:** Section 10 updated with Phase 1 completion status
+  - **Next Steps:** Ready to begin Phase 2 (Vitals domain implementation)
+- **v1.3** (2025-12-30): Updated for current implementation state and demo preparation
+  - **Patient Data Plan:** Updated Section 7.1 with specific test patients (Adam Dooree, Alexander Aminor)
+  - **Site Mapping:** Defined VistA-to-Cerner site transitions for demo patients (Section 7.2.2)
+  - **Implementation Context:** Added references to completed implementations (Labs UI, AI Insights, Auth)
+  - **Timeline Updates:** Revised implementation roadmap based on established patterns (Section 10)
+  - **ETL Patterns:** Updated code examples to reference actual implementation patterns
+  - **Demo Timeline:** Implementation aligned with January 2026 demo target
 - **v1.2** (2025-12-18): Incorporated peer review feedback
   - Added ICN as primary identity resolution key (Section 7.1)
   - Added SiteTransition reference table for go-live tracking (Section 6.6)
@@ -1172,20 +1186,39 @@ INSERT INTO VeteranMill.SPerson (PatientSID, PatientICN, PatientName, ...)
 VALUES (1001, '1000000001V123456', 'SMITH,JOHN ALPHA', ...);
 ```
 
-**Shared Patient Registry**:
+**Shared Patient Registry** (Updated for Demo - 2025-12-30):
 
-| PatientSID | ICN | Patient Name | VistA Sites (Sta3n) | Cerner Sites (Sta3n) | Total Sites |
-|-----------|-----|--------------|---------------------|---------------------|-------------|
-| 1001 | 1000000001V123456 | SMITH,JOHN ALPHA | 508, 509, 200 | 648 | 4 |
-| 1002 | 1000000002V234567 | DOE,JANE BRAVO | 508 | 648, 663 | 3 |
-| 1003 | 1000000003V345678 | JOHNSON,ROBERT CHARLIE | 509, 200, 500 | 531 | 4 |
-| 1004 | 1000000004V456789 | WILLIAMS,MARY DELTA | 630 | (none) | 1 |
+| PatientSID | ICN | Patient Name | Age | VistA Sites (Sta3n) | Cerner Sites (Sta3n) | Total Sites | Use Case |
+|-----------|-----|--------------|-----|---------------------|---------------------|-------------|----------|
+| 1001 | ICN100001 | Dooree, Adam | 45 | 508 (Atlanta) | 648 (Portland) | 2 | **Primary demo patient** - Cross-source merge, diabetes/HTN |
+| 1010 | ICN100010 | Aminor, Alexander | 59 | 552 (Dayton) | 663 (Seattle) | 2 | **Secondary demo patient** - Multi-site care, post-Vietnam veteran |
+
+**Current VistA Data (CDWWork) for Demo Patients**:
+
+**Adam Dooree (1001) - VistA Data at Sta3n 508 (Atlanta)**:
+- Demographics: Male, Age 45, DOB 1980-01-02
+- Clinical conditions: Diabetes (Type 2), Hypertension
+- Allergies: Drug allergies present
+- Vitals: Blood pressure, pulse, temperature readings
+- Medications: Chronic medications (diabetes + HTN management)
+- Labs: Glucose, A1C, lipid panels
+- Inpatient: Hospital admissions
+- Flags: Patient record flags
+
+**Alexander Aminor (1010) - VistA Data at Sta3n 552 (Dayton)**:
+- Demographics: Male, Age 59, DOB 1965-07-15
+- Service: Post-Vietnam veteran
+- Allergies: Drug allergies present
+- Vitals: Standard vital signs monitoring
+- Medications: Multiple chronic medications
+- Labs: Routine lab results
+- Flags: Patient record flags
 
 **Key Points**:
-- **Patient 1001**: Has data in CDWWork (3 VistA sites) AND CDWWork2 (1 Cerner site) - tests cross-source merge
-- **Patient 1002**: Has data in CDWWork (1 VistA site) AND CDWWork2 (2 Cerner sites) - tests multi-Cerner aggregation
-- **Patient 1003**: Has data in both databases - balanced distribution
-- **Patient 1004**: Has data ONLY in CDWWork - tests single-source scenario
+- **Patient 1001 (Adam)**: Primary demo patient for dual-source showcase - will have vitals + allergies in both VistA (Atlanta) and Cerner (Portland)
+- **Patient 1010 (Alexander)**: Secondary demo patient - will have vitals + allergies in both VistA (Dayton) and Cerner (Seattle)
+- Both patients demonstrate the **site transition scenario**: Veterans who received care at VistA sites and then at Cerner sites post-migration
+- **Demo Story**: "Adam received care at Atlanta VAMC (VistA) for years. In 2024, he relocated to Portland and now receives care at Portland VAMC (Cerner). med-z1 seamlessly shows his complete longitudinal record from both systems."
 
 ### 7.2 Site Assignment Strategy
 
@@ -1230,23 +1263,85 @@ VALUES (1001, '1000000001V123456', 'SMITH,JOHN ALPHA', ...);
 
 **Recommendation**: ✅ **No negative impacts identified. Safe to add these sites.**
 
-**Example - Patient 1001 Care Timeline**:
+#### 7.2.2 Demo Patient Site Mapping (2025-12-30)
+
+This section defines the specific VistA-to-Cerner site transitions for our demo patients, enabling a compelling dual-source demonstration for VA stakeholders.
+
+**Adam Dooree (PatientSID 1001, ICN100001)**:
+
+| Phase | Period | Site | Sta3n | EHR System | Database | Clinical Data |
+|-------|--------|------|-------|------------|----------|---------------|
+| Historical | 2020-2024 | Atlanta VAMC | 508 | VistA | CDWWork | Vitals (20+), Allergies (2-3), Meds (5+), Labs (15+) |
+| Current | 2024-present | Portland VAMC | 648 | Cerner (post-migration) | CDWWork2 | Vitals (5-10), Allergies (updates), Meds (current), Labs (recent) |
+
+**Demo Narrative for Adam**:
+> "Adam Dooree is a 45-year-old veteran with diabetes and hypertension who received care at Atlanta VAMC for years. In mid-2024, he relocated to Portland for work. Portland VAMC recently transitioned to Oracle Health (Cerner). When clinicians open Adam's record in med-z1, they see his complete vital signs history - 20+ readings from Atlanta's VistA system merged seamlessly with 10 recent readings from Portland's Cerner system. The UI shows a unified timeline, with subtle source indicators showing which system captured each measurement."
+
+**Alexander Aminor (PatientSID 1010, ICN100010)**:
+
+| Phase | Period | Site | Sta3n | EHR System | Database | Clinical Data |
+|-------|--------|------|-------|------------|----------|---------------|
+| Historical | 2018-2024 | Dayton VAMC | 552 | VistA | CDWWork | Vitals (15+), Allergies (1-2), Meds (8+), Labs (20+) |
+| Current | 2024-present | Seattle VAMC | 663 | Cerner (post-migration) | CDWWork2 | Vitals (5-10), Allergies (updates), Meds (current), Labs (recent) |
+
+**Demo Narrative for Alexander**:
+> "Alexander Aminor is a 59-year-old post-Vietnam veteran who received care at Dayton VAMC. In late 2024, he moved to Seattle to be closer to family. Seattle VAMC is one of VA's early Oracle Health sites. med-z1 shows Alexander's complete allergy history - including a penicillin allergy documented at Dayton (VistA) and a new sulfa allergy added at Seattle (Cerner) - all in one unified view. The system correctly deduplicates and merges data from both sources."
+
+**Site Transition Timeline** (for demo context):
+
 ```
-2020-2022: Treated at Atlanta VAMC (Sta3n 508) - VistA site
+2020-2023: VistA-Only Period
+           - Adam: Atlanta (508)
+           - Alexander: Dayton (552)
+           - All data in CDWWork
+
+2024 Q1-Q2: Cerner Go-Live
+           - Portland (648) migrates to Cerner
+           - Seattle (663) migrates to Cerner
+           - Historical data remains in CDWWork
+           - New data flows to CDWWork2
+
+2024 Q3-Q4: Patient Migration
+           - Adam moves to Portland (now Cerner site)
+           - Alexander moves to Seattle (now Cerner site)
+           - Both patients now have data in BOTH databases
+
+2024 Q4 (Current): Dual-Source Scenario
+           - Med-z1 Silver layer merges CDWWork + CDWWork2
+           - UI displays unified longitudinal record
+           - Demo showcases VA's future state
+```
+
+**Key Demo Points**:
+- ✅ **Real VA scenario**: Site transitions are happening now (Portland, Seattle, Spokane, Columbus, Walla Walla)
+- ✅ **Patient mobility**: Veterans frequently relocate and seek care at different sites
+- ✅ **Longitudinal continuity**: Clinicians need complete patient history regardless of EHR system
+- ✅ **Technical proof**: Demonstrates Silver layer harmonization, ICN-based identity resolution, source lineage tracking
+
+**Example - Adam Dooree (1001) Care Timeline** (Updated for Demo):
+```
+2020-2024: Treated at Atlanta VAMC (Sta3n 508) - VistA site
            → Data in CDWWork
-           → 15 vitals, 3 allergies, 10 medications
+           → 20+ vitals, 2-3 allergies, 5+ chronic medications (diabetes/HTN)
+           → 15+ lab results (glucose, A1C, lipids)
+           → Demonstrates longitudinal VistA care
 
-2023-2024 (pre-migration): Treated at Portland VAMC (Sta3n 648) - Still on VistA
-                           → Data in CDWWork (historical)
-                           → 8 vitals, 0 new allergies, 5 medications
+2024 (mid-year): Adam relocates to Portland, OR for work
+                → Portland VAMC (Sta3n 648) recently transitioned to Oracle Health (Cerner)
 
-2024 (Sept - Go-Live): Portland migrates to Cerner
-                       → New data in CDWWork2 (post-migration)
-                       → 5 vitals, 1 allergy update, 3 medications
+2024 (July-Dec): Active patient at Portland VAMC (Cerner site)
+                → New data flows to CDWWork2
+                → 5-10 vitals (recent BP readings, weight checks)
+                → Allergy list reviewed and confirmed (no new allergies)
+                → Medications transferred to Cerner system
+                → Recent labs at Portland (glucose monitoring)
 
-2024 (Dec - Current): Active patient at Portland (Cerner site)
-                      → Latest data in CDWWork2
-                      → Med-z1 UI shows COMBINED data from both sources
+2024 (Dec - Current): Med-z1 Demo Scenario
+                     → UI displays COMPLETE longitudinal record
+                     → Vitals timeline: 20+ Atlanta readings + 10 Portland readings = 30+ total
+                     → Source indicators: Blue badge (VistA) vs Green badge (Cerner)
+                     → Chronological sort: All vitals merged by datetime, regardless of source
+                     → Clinician sees unified patient story across both EHR systems
 ```
 
 ### 7.3 Historical Data Strategy
@@ -1874,58 +1969,92 @@ def get_all_vitals(icn: str) -> List[Dict[str, Any]]:
 - Add `source_record_id` (original SID from source database for traceability)
 - Backfill VistA `encounter_id` from `Inpat.Inpatient` for inpatient clinical records
 
+**Real-Time Data (T-0) Decision** (2025-12-30):
+- **Current Implementation**: CDWWork2 provides **T-1+ data only** (historical, batch loaded)
+- **VistA T-0**: VistA RPC Broker simulator provides real-time data for VistA sites (already implemented in `vista/` directory)
+- **Oracle Health T-0**: Deferred to post-demo enhancement
+  - **Rationale**: Focus demo on dual-source T-1+ capability (core value proposition), VistA T-0 already demonstrates real-time architecture pattern
+  - **Future Implementation**: Build Oracle Health API simulator (HL7 FHIR or FastAPI/JSON, to be decided)
+  - **Timeline**: Post-January 2026 demo, estimated 2-3 days implementation
+  - **Options Considered**: Single "Refresh Clinical Data" button (Option A) vs. dual buttons (Option B) vs. deferred (Option C - selected)
+- **Demo Story**: "Med-z1 merges historical data from VistA and Oracle Health. Real-time VistA integration works today, Oracle Health FHIR APIs on roadmap."
+
 ---
 
 ## 10. Implementation Roadmap
 
-### 10.1 Phase Breakdown
+### 10.1 Phase Breakdown (Updated 2025-12-30 for Demo Timeline)
 
-**Phase 1: Foundation** (2-3 weeks)
-- Create CDWWork2 database and schemas
-- Implement `NDimMill.CodeValue` with essential code sets (8-10 sets)
-- Create `VeteranMill.SPerson` (demographics)
-- Create `EncMill.Encounter` (core encounter table)
-- Populate 3-4 shared patients
-- Populate 10-15 encounters per patient at Cerner sites
-- Test cross-database patient identity (same PatientSID/ICN)
+**Context**: Implementation aligned with January 2026 demo timeline (2 weeks). Focus on proof-of-concept with 2 patients, 2 domains. Leverage established ETL patterns from Labs, Vitals, Allergies implementations.
 
-**Phase 2: First Clinical Domain - Vitals** (2-3 weeks)
+**Phase 1: Foundation** (Days 1-2) **⏱️ 2 days** ✅ **COMPLETE - 2025-12-30**
+- ✅ Create CDWWork2 database and schemas in SQL Server
+- ✅ Implement `NDimMill.CodeValue` with **essential code sets** (48 codes across 5 sets: VITAL_TYPE, UNIT, ALLERGEN, REACTION, SEVERITY)
+- ✅ Create `VeteranMill.SPerson` (demographics - minimal fields)
+- ✅ Create `EncMill.Encounter` (core encounter table)
+- ✅ Create `VitalMill.VitalResult` schema (ready for data)
+- ✅ Create `AllergyMill.PersonAllergy` and `AdverseReaction` schemas (ready for data)
+- ✅ Populate **2 patients** (Adam Dooree ICN100001/PersonSID 2001, Alexander Aminor ICN100010/PersonSID 2010)
+- ✅ Populate **8 encounters per patient** (16 total) at Cerner sites (648 Portland, 663 Seattle)
+- ✅ Test cross-database patient identity (ICN-based JOIN test - all tests passed)
+- ✅ Create comprehensive documentation (3 READMEs: mock/, cdwwork/, cdwwork2/)
+- ✅ **Success Criteria MET**: Can query patients from both CDWWork and CDWWork2 using ICN
+
+**Deliverables:**
+- `mock/sql-server/cdwwork2/create/` - 8 CREATE scripts + master
+- `mock/sql-server/cdwwork2/insert/` - 3 INSERT scripts + master
+- `scripts/test_cdwwork2_identity.sql` - Cross-database identity test
+- `mock/README.md`, `mock/sql-server/cdwwork/README.md`, `mock/sql-server/cdwwork2/README.md`
+
+**Phase 2: First Clinical Domain - Vitals** (Days 3-5) **⏱️ 3 days**
 - Create `VitalMill.VitalResult` schema
-- Populate 5-10 vitals per encounter (BP split into separate rows)
-- Enhance Bronze ETL: `extract_vitals_cdwwork2()`
-- Enhance Silver ETL: Harmonize VistA + Cerner vitals
-- Enhance Gold ETL: Add `data_source` column
-- Update PostgreSQL schema: Add `data_source` column
-- Update query layer: Include source in SELECT
-- Update UI: Display source badge/tooltip
-- Test merged vitals display for Patient 1001
+- Populate **5-10 vitals per patient** at Cerner sites (BP, pulse, temp, weight)
+- **Bronze ETL**: Create `etl/bronze_cdwwork2_vitals.py` (follow pattern from `bronze_vitals.py`)
+- **Silver ETL**: Enhance `etl/silver_vitals.py` to merge CDWWork + CDWWork2
+- **Gold ETL**: Enhance `etl/gold_vitals.py` to add `data_source` column
+- **PostgreSQL**: Add `data_source VARCHAR(20)` column to `patient_vitals` table (ALTER TABLE)
+- **Query Layer**: Update `app/db/vitals.py` to SELECT `data_source` column
+- **UI**: Add source badge to vitals page (subtle indicator: "V" for VistA, "C" for Cerner)
+- **Test**: View Adam Dooree vitals page - should show 20+ VistA + 10 Cerner = 30+ total vitals
+- **Success Criteria**: Unified vitals timeline with source indicators, no duplicates
 
-**Phase 3: Second Clinical Domain - Allergies** (2-3 weeks)
+**Phase 3: Second Clinical Domain - Allergies** (Days 6-8) **⏱️ 3 days**
 - Create `AllergyMill.PersonAllergy` and `AllergyMill.AdverseReaction` schemas
-- Populate 2-5 allergies per patient at Cerner sites
-- Enhance Bronze/Silver/Gold ETL (same pattern as Vitals)
-- Update PostgreSQL schema
-- Update query layer and UI
-- Test allergy merge and deduplication
+- Populate **2-3 allergies per patient** at Cerner sites
+- **Bronze ETL**: Create `etl/bronze_cdwwork2_allergies.py`
+- **Silver ETL**: Enhance `etl/silver_allergies.py` to merge and deduplicate
+- **Gold ETL**: Enhance `etl/gold_patient_allergies.py` to add `data_source`
+- **PostgreSQL**: Add `data_source` column to `patient_allergies` table
+- **Query Layer**: Update `app/db/allergies.py` to include source
+- **UI**: Add source badge to allergies page
+- **Test**: Verify deduplication (same allergy in both systems should show once)
+- **Success Criteria**: Combined allergy list with proper deduplication
 
-**Phase 4: Third Clinical Domain - Labs** (2-3 weeks)
-- Create `LabMill.LabResult` schema
-- Populate 10-20 lab results per patient
-- Enhance ETL pipeline (same pattern)
-- Update PostgreSQL, query layer, UI
-- Test lab result merge
+**Phase 4: Demo Polish & Buffer** (Days 9-10) **⏱️ 2 days**
+- Test complete dual-source workflow (both patients, both domains)
+- Performance validation (ETL runtime < 5 seconds total)
+- UI consistency check (source badges match, tooltips helpful)
+- Demo script preparation (see Section 11)
+- Documentation updates (this document, README files)
+- **Buffer**: Handle any discovered issues or edge cases
+- **Success Criteria**: Ready for internal demo dry run
 
-**Phase 5: Fourth Clinical Domain - Demographics** (1-2 weeks)
-- Enhance `VeteranMill.SPerson` with complete fields
-- Update Bronze/Silver/Gold ETL for demographics
-- Update `patient_demographics` table with `data_source`
-- Test demographics merge (prefer Cerner if present, VistA otherwise)
+**Total Timeline**: 10 days (2 weeks with buffer)
 
-**Phase 6: Testing and Validation** (1-2 weeks)
-- Create comprehensive cross-source test scenarios
-- Performance testing (ETL runtime with dual sources)
-- UI testing (verify source badges display correctly)
-- Documentation updates
+**Scope Control**:
+- ✅ **DO**: Focus on Vitals + Allergies (simplest, highest demo value)
+- ✅ **DO**: Use Adam Dooree as primary demo patient, Alexander as backup
+- ✅ **DO**: Minimal code sets (only what's needed for these 2 domains)
+- ✅ **DO**: Leverage existing ETL patterns (copy/modify, don't reinvent)
+- ❌ **DON'T**: Implement Labs, Meds, Demographics in CDWWork2 (defer to post-demo)
+- ❌ **DON'T**: Populate many patients or encounters (2 patients, 10 encounters each is sufficient)
+- ❌ **DON'T**: Implement advanced features (encounter linking optional, demographics merge can wait)
+
+**Post-Demo Phases** (Optional Future Work):
+- **Phase 5: Labs Domain** (2-3 days) - if time allows before demo
+- **Phase 6: Demographics Domain** (2-3 days) - merge logic is complex, defer
+- **Phase 7: Additional Patients** (1-2 days) - expand beyond Adam & Alexander
+- **Phase 8: Production Readiness** (1-2 weeks) - performance, error handling, monitoring
 
 ### 10.2 Detailed Task Breakdown (Phase 1)
 
@@ -1988,14 +2117,15 @@ def get_all_vitals(icn: str) -> List[Dict[str, Any]]:
 
 ### 10.3 Success Metrics
 
-**Phase 1 Complete When**:
-- ✅ CDWWork2 database created with 5 schemas
-- ✅ `NDimMill.CodeValue` populated with 100+ rows (8-10 code sets)
-- ✅ 3-4 patients in `VeteranMill.SPerson` with same PatientSID as CDWWork
-- ✅ 40-60 encounters in `EncMill.Encounter` (10-15 per patient)
-- ✅ SQL JOIN between `CDWWork.SPatient.Spatient` and `CDWWork2.VeteranMill.SPerson` returns shared patients
-- ✅ Configuration updated and tested
-- ✅ Documentation complete
+**Phase 1 Complete When**: ✅ **ALL CRITERIA MET - 2025-12-30**
+- ✅ CDWWork2 database created with 5 schemas (NDimMill, VeteranMill, EncMill, VitalMill, AllergyMill)
+- ✅ `NDimMill.CodeValue` populated with 48 rows (5 code sets: VITAL_TYPE, UNIT, ALLERGEN, REACTION, SEVERITY)
+- ✅ 2 patients in `VeteranMill.SPerson` (Adam ICN100001/PersonSID 2001, Alexander ICN100010/PersonSID 2010)
+- ✅ 16 encounters in `EncMill.Encounter` (8 per patient at Portland 648 and Seattle 663)
+- ✅ SQL JOIN between `CDWWork.SPatient.SPatient` and `CDWWork2.VeteranMill.SPerson` returns 2 shared patients
+- ✅ Cross-database identity resolution test passed (scripts/test_cdwwork2_identity.sql)
+- ✅ Documentation complete (3 comprehensive READMEs created)
+- ✅ Database rebuild tested (create + insert master scripts working)
 
 **Phase 2 Complete When** (Vitals):
 - ✅ `VitalMill.VitalResult` populated with 50+ vitals across all patients

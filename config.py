@@ -6,6 +6,7 @@ Usage:
     from config import (
         PROJECT_ROOT,
         CDWWORK_DB_CONFIG,
+        CDWWORK2_DB_CONFIG,
         EXTRACT_DB_CONFIG,
         MINIO_CONFIG,
         PATHS,
@@ -77,6 +78,29 @@ CDWWORK_DB_CONFIG = {
     "name": CDWWORK_DB_NAME,
     "user": CDWWORK_DB_USER,
     "password": CDWWORK_DB_PASSWORD,
+    "trust_connection": TRUST_CONNECTION,
+    "trust_cert": TRUST_CERT,
+}
+
+
+# -----------------------------------------------------------
+# CDWWork2 (Oracle Health / Cerner) database configuration
+# -----------------------------------------------------------
+
+CDWWORK2_DB_ENGINE = os.getenv("CDWWORK2_DB_ENGINE", CDWWORK_DB_ENGINE)
+CDWWORK2_DB_DRIVER = os.getenv("CDWWORK2_DB_DRIVER", CDWWORK_DB_DRIVER)
+CDWWORK2_DB_SERVER = os.getenv("CDWWORK2_DB_SERVER", CDWWORK_DB_SERVER)
+CDWWORK2_DB_NAME = os.getenv("CDWWORK2_DB_NAME", "CDWWork2")
+CDWWORK2_DB_USER = os.getenv("CDWWORK2_DB_USER", CDWWORK_DB_USER)
+CDWWORK2_DB_PASSWORD = os.getenv("CDWWORK2_DB_PASSWORD", CDWWORK_DB_PASSWORD)
+
+CDWWORK2_DB_CONFIG = {
+    "engine": CDWWORK2_DB_ENGINE,
+    "driver": CDWWORK2_DB_DRIVER,
+    "server": CDWWORK2_DB_SERVER,
+    "name": CDWWORK2_DB_NAME,
+    "user": CDWWORK2_DB_USER,
+    "password": CDWWORK2_DB_PASSWORD,
     "trust_connection": TRUST_CONNECTION,
     "trust_cert": TRUST_CERT,
 }
@@ -258,6 +282,7 @@ if __name__ != "__main__":
     logger.info(f"Loaded config from: {ENV_PATH}")
     logger.info(f"Project root: {PROJECT_ROOT}")
     logger.info(f"CDWWORK server: {CDWWORK_DB_SERVER} / DB: {CDWWORK_DB_NAME}")
+    logger.info(f"CDWWORK2 server: {CDWWORK2_DB_SERVER} / DB: {CDWWORK2_DB_NAME}")
     logger.info(f"EXTRACT server: {EXTRACT_DB_SERVER} / DB: {EXTRACT_DB_NAME}")
     logger.info(f"MinIO endpoint: {MINIO_ENDPOINT}, bucket: {MINIO_BUCKET_NAME}")
     logger.info(f"USE_MINIO: {USE_MINIO}")

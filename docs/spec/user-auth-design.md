@@ -1,12 +1,18 @@
 # User Authentication and Management - Design Document
 
-**Document Version:** 2.0
+**Document Version:** 2.1
 **Date:** 2025-12-23
-**Last Updated:** 2025-12-23
+**Last Updated:** 2025-12-30
 **Status:** ✅ Implementation Complete
 **Implementation Phase:** Phases 1-8 Complete (All)
 
 **Changelog:**
+- **v2.1** (2025-12-30): Consolidated implementation documentation
+  - **Added Section 16: File Inventory** - Complete categorized listing of all auth implementation files
+  - **Added Section 17: Deployment Checklist** - Development vs Production environment checklists with detailed security, monitoring, and compliance requirements
+  - **Enhanced Appendix D (Troubleshooting)** - Added 9 detailed troubleshooting scenarios with specific error messages, diagnostic steps, solutions, and verification commands
+  - **Updated Table of Contents** - Added new sections 16-17
+  - **Documentation Consolidation:** All content from `auth-implementation-summary.md` has been merged into this document, making it the single source of truth for authentication design and implementation
 - **v2.0** (2025-12-23): CCOW v2.0 integration and session timeout fixes
   - **Session Timeout Timezone Fix:** Fixed timezone-aware/naive datetime comparison in `ccow/auth_helper.py` (line 112-115)
   - **CCOW v2.0 Integration:** CCOW Context Vault now shares `auth.sessions` and `auth.users` tables with med-z1 app
@@ -49,10 +55,12 @@
 10. [Mock User Data](#10-mock-user-data)
 11. [FastAPI Integration](#11-fastapi-integration)
 12. [HTMX and UI Patterns](#12-htmx-and-ui-patterns)
-13. [Audit Logging](#13-audit-logging)
-14. [Implementation Roadmap](#14-implementation-roadmap)
-15. [Testing Strategy](#15-testing-strategy)
-16. [Future Enhancements](#16-future-enhancements)
+13. [Audit Logging](#12-audit-logging)
+14. [Implementation Roadmap](#13-implementation-roadmap)
+15. [Testing Strategy](#14-testing-strategy)
+16. [Future Enhancements](#15-future-enhancements)
+17. [File Inventory](#16-file-inventory)
+18. [Deployment Checklist](#17-deployment-checklist)
 
 ---
 
@@ -3734,6 +3742,192 @@ pytest tests/test_auth.py -v
 
 ---
 
+## 16. File Inventory
+
+This section provides a complete categorized listing of all authentication implementation files.
+
+### 16.1 Database Layer
+
+**Schema and Seeds**:
+- `db/ddl/create_auth_tables.sql` - PostgreSQL schema creation (users, sessions, audit_logs)
+- `db/seeds/auth_users.sql` - Mock user seed data (7 clinicians)
+
+**Query Layer**:
+- `app/db/auth.py` - Authentication database query functions (503 lines)
+  - User functions: `get_user_by_email()`, `get_user_by_id()`
+  - Password functions: `verify_password()`, `hash_password()`
+  - Session functions: `create_session()`, `get_session()`, `extend_session()`, `invalidate_session()`, `invalidate_user_sessions()`
+  - User management: `update_last_login()`
+  - Audit logging: `log_audit_event()`
+  - Maintenance: `cleanup_expired_sessions()`
+
+### 16.2 Application Layer
+
+**Routes**:
+- `app/routes/auth.py` - Authentication routes (338 lines)
+  - `GET /login` - Display login page (or redirect if already logged in)
+  - `POST /login` - Process login form submission
+  - `POST /logout` - Logout and invalidate session
+  - `GET /logout` - Redirect to POST /logout for bookmark handling
+
+**Middleware**:
+- `app/middleware/auth.py` - Authentication middleware (168 lines)
+  - Intercepts all HTTP requests before route handlers
+  - Validates sessions and injects user context into `request.state`
+  - Extends session timeout on activity (sliding window)
+  - Redirects unauthenticated requests to /login
+
+**Utilities**:
+- `app/utils/template_context.py` - Template context helper
+  - `get_base_context(request, **kwargs)` - Inject user context into templates
+
+### 16.3 Templates
+
+**Login Page**:
+- `app/templates/login.html` - Microsoft Entra ID-style login page
+  - Responsive design with accessibility features
+  - Demo credentials display
+  - Error message handling
+
+**Base Template**:
+- `app/templates/base.html` - Updated for user display
+  - User display name in sidebar footer
+  - Sign Out button with HTMX compatibility
+
+### 16.4 Scripts
+
+**Password Management**:
+- `scripts/generate_password_hash.py` - Password hash generation utility
+  - Generate bcrypt hashes for new users
+  - Regenerate all user SQL with `--generate-sql` flag
+
+**Testing**:
+- `scripts/test_auth_flow.py` - Authentication flow test suite
+  - 7 automated tests covering full login/logout flow
+  - Tests unauthenticated access, login validation, session management
+
+**Database Testing**:
+- `scripts/test_auth_db.py` - Database function tests (manual testing)
+  - Test user queries, password verification, session management
+
+### 16.5 Documentation
+
+**Design and Specifications**:
+- `docs/spec/user-auth-design.md` - **This document** (comprehensive design specification, v2.1)
+  - Single source of truth for authentication design and implementation
+  - Supersedes `auth-implementation-summary.md` (all content consolidated in v2.1)
+- `docs/mock-users.md` - Mock user documentation (credentials, roles, sites)
+
+**Related Documentation**:
+- `docs/spec/architecture.md` - Section 5: Authentication and Authorization
+- `docs/spec/session-timeout-behavior.md` - Complete session timeout behavior guide
+- `docs/spec/ccow-v2-implementation-summary.md` - CCOW v2.0 shared authentication
+- `docs/guide/environment-variables-guide.md` - Environment variable configuration
+
+### 16.6 Configuration
+
+**Environment Configuration**:
+- `.env` - Environment variables (session timeout, cookie settings, bcrypt rounds)
+- `config.py` - `AUTH_CONFIG` section with session management settings
+
+**Main Application**:
+- `app/main.py` - Updated to add AuthMiddleware and auth router
+  - Middleware ordering: SessionMiddleware → AuthMiddleware
+  - Auth router included at root level
+
+---
+
+## 17. Deployment Checklist
+
+### 17.1 Development Environment (Current Status)
+
+**Database**:
+- ✅ PostgreSQL database with `auth` schema
+- ✅ Mock users loaded (7 clinicians)
+- ✅ All tables created: `users`, `sessions`, `audit_logs`
+
+**Session Configuration**:
+- ✅ Session timeout: 15 minutes (configurable via `SESSION_TIMEOUT_MINUTES`)
+- ✅ HTTP cookies (not HTTPS - `SESSION_COOKIE_SECURE=false`)
+- ✅ Cookie flags: `httponly=true`, `samesite=lax`
+
+**Security**:
+- ✅ Bcrypt password hashing (12 rounds)
+- ✅ Parameterized queries (SQL injection protection)
+- ✅ XSS protection via Jinja2 auto-escaping
+- ✅ All audit logging enabled
+
+**Application**:
+- ✅ AuthMiddleware active and enforcing authentication
+- ✅ Public routes defined: `/login`, `/static`, `/favicon.ico`, `/docs`, `/openapi.json`, `/redoc`
+- ✅ User context injected into all authenticated requests
+- ✅ Template context helper available for all routes
+
+### 17.2 Production Environment (Future Requirements)
+
+**HTTPS and Cookie Security**:
+- [ ] Update `SESSION_COOKIE_SECURE=true` (require HTTPS)
+- [ ] Configure reverse proxy (nginx/Apache) for SSL termination
+- [ ] Obtain and configure SSL certificates
+- [ ] Redirect all HTTP requests to HTTPS
+
+**Database Security**:
+- [ ] Configure production DATABASE_URL with secure credentials
+- [ ] Use connection pooling (QueuePool instead of NullPool)
+- [ ] Enable SSL for PostgreSQL connections
+- [ ] Set up database backups for auth schema
+- [ ] Configure backup retention policy
+
+**Session Management**:
+- [ ] Set up session cleanup cron job (`cleanup_expired_sessions()`)
+  - Recommended: Run every 1 hour
+  - Example: `0 * * * * /path/to/cleanup_sessions.sh`
+- [ ] Consider Redis for session storage (faster than PostgreSQL for high traffic)
+- [ ] Monitor session table size and query performance
+
+**Security Hardening**:
+- [ ] Review and increase bcrypt rounds if needed (12 is good, 14 for higher security)
+- [ ] Implement rate limiting for login endpoint
+  - Suggested: 5 login attempts per IP per minute
+  - Use Redis or in-memory cache
+  - Return 429 Too Many Requests on limit
+- [ ] Configure CORS settings if needed
+- [ ] Set up Web Application Firewall (WAF) rules
+- [ ] Implement account lockout after N failed attempts
+
+**Logging and Monitoring**:
+- [ ] Configure proper logging (syslog, CloudWatch, Splunk, etc.)
+- [ ] Set up monitoring for failed login attempts
+  - Alert on >10 failed attempts from single IP in 5 minutes
+  - Alert on >50 failed attempts globally in 5 minutes
+- [ ] Set up alerts for:
+  - Database connection failures
+  - Session table growth rate
+  - Average session duration anomalies
+- [ ] Configure log retention policy for audit logs
+  - Recommended: 90 days for compliance
+
+**Audit and Compliance**:
+- [ ] Review audit log coverage (ensure all auth events logged)
+- [ ] Set up audit log shipping to SIEM (Security Information and Event Management)
+- [ ] Configure compliance reporting tools
+- [ ] Document audit log retention policy (7 years for HIPAA)
+- [ ] Implement audit log archival strategy
+
+**Performance**:
+- [ ] Enable connection pooling (SQLAlchemy QueuePool)
+- [ ] Add indexes for common queries (if not already present)
+- [ ] Monitor session query performance
+- [ ] Configure database read replicas if needed (high traffic)
+
+**Disaster Recovery**:
+- [ ] Test database backup restoration
+- [ ] Document rollback procedures
+- [ ] Configure multi-region deployment (if needed)
+- [ ] Set up session replication for high availability
+
+---
+
 ## Appendices
 
 ### Appendix A: Password Security Best Practices
@@ -3805,30 +3999,328 @@ pytest tests/test_auth.py -v
 
 ### Appendix D: Troubleshooting Guide
 
-**Problem**: User cannot log in (valid credentials)
-- Check: Is `is_active = TRUE` in `auth.users`?
-- Check: Is password hash correct in database?
-- Check: Are there any errors in application logs?
-- Check: Is PostgreSQL connection working?
+This appendix provides solutions to common authentication issues with specific error messages and diagnostic steps.
 
-**Problem**: Session expires immediately
-- Check: Is system clock correct (session timeout calculation)?
-- Check: Is `expires_at` being set correctly in database?
-- Check: Is middleware calling `extend_session()`?
+#### Error: "No session cookie found"
 
-**Problem**: User redirected to login on every request
-- Check: Is session cookie being set (`httponly`, `secure` flags)?
-- Check: Is middleware checking correct cookie name (`session_id`)?
-- Check: Is session in database and `is_active = TRUE`?
+**Symptom**: User redirected to `/login` on every request, even after successful login
 
-**Problem**: Multiple users can log in with same email
-- Check: Is `email` column marked as UNIQUE?
-- Check: Database constraints enforced?
+**Cause**: Session cookie not being set or not being sent by browser
 
-**Problem**: Audit logs not recording events
-- Check: Is `log_audit_event()` being called?
-- Check: Are there database permissions on `auth.audit_logs`?
-- Check: Are there any SQL errors in logs?
+**Diagnostic Steps**:
+1. Check browser Developer Tools → Application → Cookies
+2. Look for `session_id` cookie with correct domain
+3. Verify cookie flags: `HttpOnly`, `SameSite=Lax`
+4. Check if cookie is being cleared by browser extensions
+
+**Solutions**:
+- Ensure `response.set_cookie()` is called in `POST /login` route
+- Verify cookie domain matches application domain
+- Check for browser privacy settings blocking cookies
+- In development: Ensure `SESSION_COOKIE_SECURE=false` (HTTPS not required)
+
+**Verification**:
+```bash
+# Test cookie is set after login
+curl -i -c cookies.txt -X POST http://localhost:8000/login \
+  -d "email=clinician.alpha@va.gov" \
+  -d "password=VaDemo2025!"
+
+# Check cookies.txt for session_id
+cat cookies.txt
+```
+
+---
+
+#### Error: "Invalid or expired session"
+
+**Symptom**: Middleware redirects to login with error in logs
+
+**Cause**: Session not found in database or expired
+
+**Diagnostic Steps**:
+1. Check `auth.sessions` table for user's session:
+   ```sql
+   SELECT session_id, user_id, created_at, last_activity_at, expires_at, is_active
+   FROM auth.sessions
+   WHERE user_id = (SELECT user_id FROM auth.users WHERE email = 'clinician.alpha@va.gov');
+   ```
+2. Verify `is_active = TRUE`
+3. Check if `expires_at` is in the future
+4. Review middleware logs for session validation errors
+
+**Solutions**:
+- **Session expired**: Normal behavior after 15 minutes inactivity, user should log in again
+- **Session not found**: Database may have been cleared, user should log in again
+- **Session inactive**: Check if logout was called or if single-session enforcement invalidated old session
+- **Timezone issue**: Ensure server clock is correct and timezone-aware datetimes are used
+
+**Verification**:
+```bash
+# Check if session exists and is active
+docker exec -it postgres16 psql -U postgres -d medz1 \
+  -c "SELECT * FROM auth.sessions WHERE is_active = TRUE;"
+```
+
+---
+
+#### Error: "Account inactive" or "Account locked"
+
+**Symptom**: Login page shows "Account is inactive" or "Account is locked"
+
+**Cause**: User account disabled in database
+
+**Diagnostic Steps**:
+1. Check user status:
+   ```sql
+   SELECT user_id, email, is_active, is_locked, failed_login_attempts
+   FROM auth.users
+   WHERE email = 'clinician.alpha@va.gov';
+   ```
+2. Review audit logs for account lock events:
+   ```sql
+   SELECT * FROM auth.audit_logs
+   WHERE email = 'clinician.alpha@va.gov'
+   ORDER BY event_timestamp DESC
+   LIMIT 10;
+   ```
+
+**Solutions**:
+- **Account inactive**: Update `is_active = TRUE`
+  ```sql
+  UPDATE auth.users SET is_active = TRUE WHERE email = 'clinician.alpha@va.gov';
+  ```
+- **Account locked**: Update `is_locked = FALSE` and reset failed attempts
+  ```sql
+  UPDATE auth.users
+  SET is_locked = FALSE, failed_login_attempts = 0
+  WHERE email = 'clinician.alpha@va.gov';
+  ```
+
+**Prevention**:
+- Implement account unlock procedure (time-based or admin intervention)
+- Set up alerts for locked accounts
+
+---
+
+#### Error: "Database connection error"
+
+**Symptom**: Application logs show database connection failures, login page returns 500 error
+
+**Cause**: PostgreSQL not running or wrong credentials in `DATABASE_URL`
+
+**Diagnostic Steps**:
+1. Check PostgreSQL is running:
+   ```bash
+   docker ps | grep postgres16
+   # Should show running container
+   ```
+2. Test database connection:
+   ```bash
+   docker exec -it postgres16 psql -U postgres -d medz1 -c "SELECT 1;"
+   # Should return: 1
+   ```
+3. Verify `DATABASE_URL` in `.env`:
+   ```bash
+   grep DATABASE_URL .env
+   # Should be: postgresql://postgres:postgres@localhost:5432/medz1
+   ```
+4. Check application logs for SQLAlchemy errors
+
+**Solutions**:
+- **PostgreSQL not running**: Start container
+  ```bash
+  docker start postgres16
+  ```
+- **Wrong credentials**: Update `DATABASE_URL` in `.env` and restart app
+- **Wrong database name**: Ensure `medz1` database exists
+  ```bash
+  docker exec -it postgres16 psql -U postgres -c "\l" | grep medz1
+  ```
+
+---
+
+#### Error: "Module not found" or Import errors
+
+**Symptom**: Application fails to start with import errors for bcrypt, SQLAlchemy, etc.
+
+**Cause**: Missing Python packages
+
+**Solutions**:
+1. Install requirements:
+   ```bash
+   pip install -r requirements.txt
+   ```
+2. Verify bcrypt is installed:
+   ```bash
+   python -c "import bcrypt; print(bcrypt.__version__)"
+   ```
+3. Verify SQLAlchemy is installed:
+   ```bash
+   python -c "import sqlalchemy; print(sqlalchemy.__version__)"
+   ```
+
+**Common Missing Packages**:
+- `bcrypt` - Password hashing
+- `sqlalchemy` - Database ORM
+- `python-dotenv` - Environment variable loading
+
+---
+
+#### Error: Login works but user display shows "Unknown User"
+
+**Symptom**: User logs in successfully but sidebar shows "Unknown User" instead of name
+
+**Cause**: Route handler not passing user context to template
+
+**Diagnostic Steps**:
+1. Check if route uses `get_base_context()`:
+   ```python
+   # ❌ Wrong - Missing user context
+   return templates.TemplateResponse("dashboard.html", {"request": request})
+
+   # ✅ Correct - Includes user context
+   from app.utils.template_context import get_base_context
+   return templates.TemplateResponse("dashboard.html", get_base_context(request))
+   ```
+2. Verify `request.state.user` is set by middleware:
+   ```python
+   # Add temporary debug logging to route
+   logger.info(f"User context: {request.state.user}")
+   ```
+
+**Solutions**:
+- Update route handler to use `get_base_context(request, **kwargs)`
+- Ensure middleware is properly configured in `app/main.py`
+- Check middleware ordering: AuthMiddleware should run before route handlers
+
+**Example Fix**:
+```python
+# Before
+@router.get("/dashboard")
+async def get_dashboard(request: Request):
+    return templates.TemplateResponse("dashboard.html", {
+        "request": request,
+        "patient": patient
+    })
+
+# After
+@router.get("/dashboard")
+async def get_dashboard(request: Request):
+    return templates.TemplateResponse("dashboard.html",
+        get_base_context(request, patient=patient)
+    )
+```
+
+---
+
+#### Error: Session timeout not working (user never logged out)
+
+**Symptom**: User stays logged in indefinitely, even after hours of inactivity
+
+**Cause**: Session timeout not being enforced or `expires_at` not being checked
+
+**Diagnostic Steps**:
+1. Check session expiration in database:
+   ```sql
+   SELECT session_id, last_activity_at, expires_at,
+          NOW() > expires_at AS is_expired
+   FROM auth.sessions
+   WHERE is_active = TRUE;
+   ```
+2. Verify middleware is checking expiration:
+   - Check `app/middleware/auth.py` line ~90-110
+   - Ensure timezone-aware datetime comparison
+3. Check `SESSION_TIMEOUT_MINUTES` configuration:
+   ```bash
+   grep SESSION_TIMEOUT_MINUTES .env
+   # Should be: SESSION_TIMEOUT_MINUTES=15
+   ```
+
+**Solutions**:
+- **Timezone issue**: Fixed in v2.0, ensure using `datetime.now(timezone.utc)`
+- **Middleware not checking**: Verify middleware is installed and running
+- **Wrong timeout value**: Update `SESSION_TIMEOUT_MINUTES` in `.env`
+
+**Reference**: See `docs/spec/session-timeout-behavior.md` for complete guide
+
+---
+
+#### Error: Multiple users can log in with same email
+
+**Symptom**: Different sessions exist for same email address
+
+**Cause**: UNIQUE constraint not enforced on `email` column
+
+**Diagnostic Steps**:
+1. Check for duplicate emails:
+   ```sql
+   SELECT email, COUNT(*)
+   FROM auth.users
+   GROUP BY email
+   HAVING COUNT(*) > 1;
+   ```
+2. Verify UNIQUE constraint exists:
+   ```sql
+   SELECT constraint_name, constraint_type
+   FROM information_schema.table_constraints
+   WHERE table_name = 'users' AND table_schema = 'auth';
+   ```
+
+**Solutions**:
+- Add UNIQUE constraint if missing:
+  ```sql
+  ALTER TABLE auth.users ADD CONSTRAINT unique_email UNIQUE (email);
+  ```
+- Remove duplicate users (keep most recent):
+  ```sql
+  DELETE FROM auth.users
+  WHERE user_id NOT IN (
+    SELECT MAX(user_id) FROM auth.users GROUP BY email
+  );
+  ```
+
+---
+
+#### Error: Audit logs not recording events
+
+**Symptom**: `auth.audit_logs` table is empty or missing events
+
+**Cause**: `log_audit_event()` not being called or database permissions issue
+
+**Diagnostic Steps**:
+1. Check if audit logs exist:
+   ```sql
+   SELECT COUNT(*) FROM auth.audit_logs;
+   ```
+2. Check recent audit events:
+   ```sql
+   SELECT * FROM auth.audit_logs ORDER BY event_timestamp DESC LIMIT 10;
+   ```
+3. Review application logs for audit logging errors
+4. Verify database permissions:
+   ```sql
+   SELECT has_table_privilege('postgres', 'auth.audit_logs', 'INSERT');
+   ```
+
+**Solutions**:
+- Ensure `log_audit_event()` is called in auth routes:
+  - `POST /login` should log 'login' or 'login_failed'
+  - `POST /logout` should log 'logout'
+- Check for SQL errors in application logs
+- Verify database user has INSERT permission on `auth.audit_logs`
+
+**Test Audit Logging**:
+```bash
+# Trigger login event
+curl -X POST http://localhost:8000/login \
+  -d "email=clinician.alpha@va.gov" \
+  -d "password=WrongPassword"
+
+# Check audit log
+docker exec -it postgres16 psql -U postgres -d medz1 \
+  -c "SELECT * FROM auth.audit_logs ORDER BY event_timestamp DESC LIMIT 1;"
+```
 
 ---
 
@@ -3836,17 +4328,32 @@ pytest tests/test_auth.py -v
 
 **Authors**: Claude Code (AI Assistant)
 **Reviewers**: Chuck Sylvester (Product Owner)
-**Status**: Ready for Implementation
-**Version**: 1.0
-**Date**: 2025-12-18
+**Status**: Implementation Complete, Living Document
+**Version**: 2.1
+**Date**: 2025-12-18 (Initial), 2025-12-30 (Latest)
 
 **Related Documents**:
-- `docs/architecture.md` - System architecture and routing patterns
+- `docs/spec/architecture.md` - System architecture and routing patterns (Section 5: Authentication)
+- `docs/spec/session-timeout-behavior.md` - Complete session timeout behavior guide
+- `docs/spec/ccow-v2-implementation-summary.md` - CCOW v2.0 shared authentication
+- `docs/guide/environment-variables-guide.md` - Environment variable configuration
+- `docs/spec/ccow-v2-testing-guide.md` - API testing guide
+- `docs/mock-users.md` - Mock user credentials and profiles
 - `docs/med-z1-plan.md` - Product roadmap
 - `app/README.md` - Application setup guide
-- `docs/cdwwork2-design.md` - CDWWork2 dual-source data integration
+
+**Supersedes**:
+- `docs/spec/auth-implementation-summary.md` - All content consolidated into this document (v2.1)
 
 **Change Log**:
+- **v2.1** (2025-12-30): Documentation consolidation
+  - Added Section 16: File Inventory
+  - Added Section 17: Deployment Checklist
+  - Enhanced Appendix D with 9 detailed troubleshooting scenarios
+  - Consolidated all content from auth-implementation-summary.md
+  - Now serves as single source of truth for authentication design and implementation
+- **v2.0** (2025-12-23): CCOW v2.0 integration and session timeout fixes
+- **v1.1** (2025-12-18): Implementation complete (Phases 1-8)
 - **v1.0** (2025-12-18): Initial comprehensive design document
 
 ---

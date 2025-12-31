@@ -5,31 +5,24 @@ Generates 30-50 vital signs per patient over 12-18 months
 
 Patient ID Strategy:
 -------------------
-This script uses PatientSID values 1-36 for simplicity, while SPatient.SPatient
-uses PatientSID 1001-1036. This is intentional and acceptable because:
+This script uses PatientSID values 1001-1036 to match SPatient.SPatient table.
+All vitals must reference valid PatientSID foreign keys to enable proper
+Bronze/Silver/Gold ETL processing and patient-vitals JOINs.
 
-1. Different CDW tables can have different surrogate key ranges
-2. Both resolve to the same ICN values using the pattern:
-   ICN = "ICN" + str(100000 + patient_sid)
-   - PatientSID 1  → ICN100001 (matches patient ICN)
-   - PatientSID 2  → ICN100002 (matches patient ICN)
-   - PatientSID 36 → ICN100036 (matches patient ICN)
-
-3. The Gold ETL layer handles ICN resolution deterministically
-4. This mimics real VA CDW where different tables have independent surrogate keys
-
-For consistency in future mock data, consider using the same PatientSID range
-(1001-1036), but this difference does not affect data quality or pipeline
-correctness. The Gold layer properly resolves all vitals to the correct ICN.
+Mapping:
+- PatientSID 1001 → ICN100001 (Adam Dooree)
+- PatientSID 1002 → ICN100002 (Betty Smith)
+- ...
+- PatientSID 1036 → ICN100036 (Last patient)
 """
 
 import random
 from datetime import datetime, timedelta
 from typing import List, Tuple
 
-# Patient SIDs: Using 1-36 for simplicity (see module docstring for rationale)
-# SPatient.SPatient uses 1001-1036, but both map to ICN100001-ICN100036
-PATIENT_SIDS = list(range(1, 37))
+# Patient SIDs: Using 1001-1036 to match SPatient.SPatient table
+# This ensures vitals can be properly JOINed to patients via PatientSID foreign key
+PATIENT_SIDS = list(range(1001, 1037))
 
 # Vital types (from Dim.VitalType)
 VITAL_TYPES = {
@@ -46,8 +39,14 @@ VITAL_TYPES = {
 # Stations (facilities)
 STATIONS = [518, 589, 528, 402]
 
-# Staff SIDs (from SStaff.SStaff - using reasonable range)
-STAFF_SIDS = list(range(1, 21))
+# Staff SIDs (from SStaff.SStaff - using actual range 1001-1006)
+STAFF_SIDS = list(range(1001, 1007))  # 6 staff members
+
+# Location SIDs (from Dim.Location - using Outpatient clinic locations primarily)
+# Outpatient clinics: 13-185 (68 locations)
+# Also include some Inpatient wards: 1-48
+OUTPATIENT_LOCATION_SIDS = list(range(13, 186))  # 68 outpatient clinics
+INPATIENT_LOCATION_SIDS = list(range(1, 49))      # 48 inpatient wards
 
 def generate_bp_reading():
     """Generate realistic blood pressure reading"""
@@ -134,6 +133,13 @@ def generate_vital_measurement(patient_sid: int, vital_type_sid: int, taken_date
 
     entered_datetime = taken_datetime + timedelta(minutes=random.randint(1, 30))
     staff_sid = random.choice(STAFF_SIDS)
+
+    # Assign random location (90% outpatient clinics, 10% inpatient wards)
+    if random.random() < 0.9:
+        location_sid = random.choice(OUTPATIENT_LOCATION_SIDS)
+    else:
+        location_sid = random.choice(INPATIENT_LOCATION_SIDS)
+
     is_invalid = 'N'
     entered_in_error = 'N'
 
@@ -141,49 +147,49 @@ def generate_vital_measurement(patient_sid: int, vital_type_sid: int, taken_date
     if vital_type_sid == 1:  # BP
         systolic, diastolic, result = generate_bp_reading()
         return (patient_sid, vital_type_sid, taken_datetime, entered_datetime,
-                result, None, systolic, diastolic, None, None, staff_sid,
+                result, None, systolic, diastolic, None, location_sid, staff_sid,
                 is_invalid, entered_in_error, sta3n)
 
     elif vital_type_sid == 2:  # Temperature
         temp_f, temp_c = generate_temperature()
         return (patient_sid, vital_type_sid, taken_datetime, entered_datetime,
-                f"{temp_f}", temp_f, None, None, temp_c, None, staff_sid,
+                f"{temp_f}", temp_f, None, None, temp_c, location_sid, staff_sid,
                 is_invalid, entered_in_error, sta3n)
 
     elif vital_type_sid == 3:  # Pulse
         pulse = generate_pulse()
         return (patient_sid, vital_type_sid, taken_datetime, entered_datetime,
-                f"{pulse}", pulse, None, None, None, None, staff_sid,
+                f"{pulse}", pulse, None, None, None, location_sid, staff_sid,
                 is_invalid, entered_in_error, sta3n)
 
     elif vital_type_sid == 4:  # Respiration
         resp = generate_respiration()
         return (patient_sid, vital_type_sid, taken_datetime, entered_datetime,
-                f"{resp}", resp, None, None, None, None, staff_sid,
+                f"{resp}", resp, None, None, None, location_sid, staff_sid,
                 is_invalid, entered_in_error, sta3n)
 
     elif vital_type_sid == 5:  # Height
         height_in, height_cm = generate_height()
         return (patient_sid, vital_type_sid, taken_datetime, entered_datetime,
-                f"{height_in}", height_in, None, None, height_cm, None, staff_sid,
+                f"{height_in}", height_in, None, None, height_cm, location_sid, staff_sid,
                 is_invalid, entered_in_error, sta3n)
 
     elif vital_type_sid == 6:  # Weight
         weight_lb, weight_kg = generate_weight()
         return (patient_sid, vital_type_sid, taken_datetime, entered_datetime,
-                f"{weight_lb}", weight_lb, None, None, weight_kg, None, staff_sid,
+                f"{weight_lb}", weight_lb, None, None, weight_kg, location_sid, staff_sid,
                 is_invalid, entered_in_error, sta3n)
 
     elif vital_type_sid == 7:  # Pain
         pain = generate_pain()
         return (patient_sid, vital_type_sid, taken_datetime, entered_datetime,
-                f"{pain}", pain, None, None, None, None, staff_sid,
+                f"{pain}", pain, None, None, None, location_sid, staff_sid,
                 is_invalid, entered_in_error, sta3n)
 
     elif vital_type_sid == 8:  # Pulse Oximetry
         pox = generate_pox()
         return (patient_sid, vital_type_sid, taken_datetime, entered_datetime,
-                f"{pox}", pox, None, None, None, None, staff_sid,
+                f"{pox}", pox, None, None, None, location_sid, staff_sid,
                 is_invalid, entered_in_error, sta3n)
 
 def generate_vitals_for_patient(patient_sid: int) -> List[Tuple]:
