@@ -96,44 +96,6 @@ logger.info("med-z1 application starting up")
 # Templates and static dirs, using BASE_DIR
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
-
-# NOTE: Dashboard route (/) now handled by app.routes.dashboard
-# Old index route commented out - replaced with patient-centric dashboard
-
-# @app.get("/", response_class=HTMLResponse)
-# async def index(request: Request):
-#     """Render the main dashboard page."""
-#     # In a real app, pull these from a database or ETL process
-#     summary = {
-#         "total_records": 15423,
-#         "jobs_running": 3,
-#         "last_run": "Today 07:32",
-#         "alerts": 2,
-#         # Example: surface a few config values for sanity/debug
-#         "cdwwork_db_server": CDWWORK_DB_CONFIG["server"],
-#         "use_minio": USE_MINIO,
-#         "minio_bucket": MINIO_CONFIG["bucket_name"],
-#         "cps_comment": "This is only a test..."
-#     }
-#
-#     recent_activity = [
-#         "Job #42 completed successfully.",
-#         "New dataset 'dd_interactions_2025.parquet' loaded.",
-#         "Alert resolved: Missing values in lab_results.",
-#         "User 'csylvester' updated ETL configuration.",
-#     ]
-#
-#     return templates.TemplateResponse(
-#         "index.html",
-#         {
-#             "request": request,
-#             "summary": summary,
-#             "recent_activity": recent_activity,
-#             "active_page": "overview",
-#         },
-#     )
-
-
 @app.get("/time", response_class=HTMLResponse)
 async def get_time(request: Request):
     """Return a small HTML snippet with the current time."""
