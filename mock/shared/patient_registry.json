@@ -148,6 +148,42 @@
           "_note": "✅ Orphaned Vista vitals DFN mapped 2025-12-19 - enables additional vitals testing"
         }
       ]
+    },
+    {
+      "_note": "Patient 4 - Added 2025-12-31 for VistA real-time testing (193 total vitals in PostgreSQL from CDWWork)",
+      "icn": "ICN100002",
+      "ssn": "987-65-4321",
+      "name_last": "MIIFAA",
+      "name_first": "BARRY",
+      "name_middle": "",
+      "dob": "1975-01-02",
+      "sex": "F",
+      "treating_facilities": [
+        {
+          "sta3n": "200",
+          "name": "ALEXANDRIA",
+          "dfn": "100020",
+          "first_seen": "2020-03-15",
+          "last_seen": "T-5",
+          "_note": "Recent care - primary site for this patient"
+        },
+        {
+          "sta3n": "500",
+          "name": "ANCHORAGE",
+          "dfn": "500020",
+          "first_seen": "2021-08-10",
+          "last_seen": "T-15",
+          "_note": "Secondary care site"
+        },
+        {
+          "sta3n": "630",
+          "name": "PALO_ALTO",
+          "dfn": "630020",
+          "first_seen": "2022-11-05",
+          "last_seen": "T-45",
+          "_note": "Occasional visits"
+        }
+      ]
     }
   ]
 }

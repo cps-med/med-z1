@@ -79,6 +79,19 @@
       "diagnosis_code": "R10.9",
       "admit_provider": "BROWN,PATRICIA",
       "_note": "ICN100010 (correct DFN) - ER visit, observation, discharged today"
+    },
+    {
+      "dfn": "100020",
+      "inpatient_id": "285045",
+      "admit_datetime": "T-10.1430",
+      "admit_location": "4C MEDICAL",
+      "status": "DISCHARGED",
+      "discharge_datetime": "T-7.1015",
+      "discharge_location": "HOME",
+      "length_of_stay": "3",
+      "diagnosis_code": "J44.1",
+      "admit_provider": "ANDERSON,PAUL",
+      "_note": "✅ Added 2025-12-31 for ICN100002 (MIIFAA, BARRY) - COPD exacerbation"
     }
   ]
 }

@@ -66,6 +66,19 @@
       "diagnosis_code": "J44.1",
       "admit_provider": "CLARK,NANCY",
       "_note": "ICN100013 (correct DFN) - COPD exacerbation, discharged today"
+    },
+    {
+      "dfn": "630020",
+      "inpatient_id": "730134",
+      "admit_datetime": "T-60.1015",
+      "admit_location": "CARDIOLOGY",
+      "status": "DISCHARGED",
+      "discharge_datetime": "T-55.1430",
+      "discharge_location": "HOME",
+      "length_of_stay": "5",
+      "diagnosis_code": "I48.91",
+      "admit_provider": "THOMPSON,MARK",
+      "_note": "✅ Added 2025-12-31 for ICN100002 (MIIFAA, BARRY) - Atrial fibrillation"
     }
   ]
 }

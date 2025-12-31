@@ -100,6 +100,17 @@
       "originating_site": "630",
       "entered_by": "DOCTOR,NANCY",
       "_note": "ICN100013 (THOMPSON, IRVING - mapped orphan DFN) - NSAID sensitivity"
+    },
+    {
+      "dfn": "630020",
+      "allergen_name": "SHELLFISH",
+      "severity": "SEVERE",
+      "reaction_datetime": "T-600.1330",
+      "reactions": "ANAPHYLAXIS,THROAT SWELLING",
+      "allergy_type": "FOOD",
+      "originating_site": "630",
+      "entered_by": "ALLERGIST,ROBERT",
+      "_note": "✅ Added 2025-12-31 for ICN100002 (MIIFAA, BARRY) - Severe shellfish allergy"
     }
   ]
 }

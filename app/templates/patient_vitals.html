@@ -260,26 +260,20 @@
                             <td class="vital-cell vital-cell--source">
                                 {% if vital.data_source %}
                                     {% if vital.data_source == 'CDWWork' %}
-                                        <span class="badge badge--info" title="VistA Data Source (CDWWork)" style="font-size: 0.75rem;">
-                                            VistA
-                                        </span>
+                                        <span title="VistA Data Source (CDWWork)">VistA</span>
                                     {% elif vital.data_source == 'CDWWork2' %}
-                                        <span class="badge badge--success" title="Oracle Health Data Source (CDWWork2)" style="font-size: 0.75rem;">
-                                            Cerner
-                                        </span>
+                                        <span title="Oracle Health Data Source (CDWWork2)">Cerner</span>
                                     {% elif vital.data_source == 'CALCULATED' %}
-                                        <span class="badge badge--secondary" title="Calculated Value (BMI)" style="font-size: 0.75rem;">
-                                            Calc
-                                        </span>
+                                        <span title="Calculated Value (BMI)">Calc</span>
                                     {% endif %}
                                 {% endif %}
-                                {# Show Vista site badge for real-time data (stacked below data source badge) #}
+                                {# Show Vista site badge for real-time data (stacked below data source) #}
                                 {% if vital.source == 'vista' and vital.source_site %}
-                                    <div style="margin-top: 0.25rem;">
-                                        <span class="badge badge--info-light" title="Real-time data from VistA Site {{ vital.source_site }}" style="font-size: 0.75rem;">
-                                            Site {{ vital.source_site }}
-                                        </span>
-                                    </div>
+                                <div style="margin: 0.25rem 0 0 0;">
+                                    <span class="badge badge--success" title="Real-time data from VistA Site {{ vital.source_site }}" style="font-size: 0.75rem; margin: 0;">
+                                        Site {{ vital.source_site }}
+                                    </span>
+                                </div>
                                 {% endif %}
                             </td>
                         </tr>

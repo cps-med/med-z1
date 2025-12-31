@@ -78,6 +78,17 @@
       "originating_site": "200",
       "entered_by": "PHARMACIST,DAVID",
       "_note": "ICN100013 (THOMPSON, IRVING - mapped orphan DFN) - Aspirin sensitivity"
+    },
+    {
+      "dfn": "100020",
+      "allergen_name": "CODEINE",
+      "severity": "MODERATE",
+      "reaction_datetime": "T-280.1115",
+      "reactions": "NAUSEA,DIZZINESS",
+      "allergy_type": "DRUG",
+      "originating_site": "200",
+      "entered_by": "PHARMACIST,THOMAS",
+      "_note": "✅ Added 2025-12-31 for ICN100002 (MIIFAA, BARRY) - Codeine sensitivity"
     }
   ]
 }

@@ -78,6 +78,17 @@
       "originating_site": "500",
       "entered_by": "RADIOLOGIST,MARK",
       "_note": "ICN100013 (THOMPSON, IRVING - mapped orphan DFN) - Iodine contrast allergy"
+    },
+    {
+      "dfn": "500020",
+      "allergen_name": "LATEX",
+      "severity": "MILD",
+      "reaction_datetime": "T-420.0830",
+      "reactions": "CONTACT DERMATITIS",
+      "allergy_type": "ENVIRONMENTAL",
+      "originating_site": "500",
+      "entered_by": "NURSE,VICTORIA",
+      "_note": "✅ Added 2025-12-31 for ICN100002 (MIIFAA, BARRY) - Latex sensitivity"
     }
   ]
 }

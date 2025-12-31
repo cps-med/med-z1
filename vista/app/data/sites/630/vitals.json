@@ -206,6 +206,51 @@
       "date_time": "T-0.0845",
       "entered_by": "NURSE,BETTY",
       "_note": "✅ Added 2025-12-19 for ICN100013 (THOMPSON, IRVING) - Correct registry DFN"
+    },
+    {
+      "dfn": "630020",
+      "type": "BLOOD PRESSURE",
+      "value": "122/80",
+      "units": "mmHg",
+      "date_time": "T-0.0915",
+      "entered_by": "NURSE,DIANE",
+      "_note": "✅ Added 2025-12-31 for ICN100002 (MIIFAA, BARRY) - Enable VistA real-time testing"
+    },
+    {
+      "dfn": "630020",
+      "type": "TEMPERATURE",
+      "value": "98.5",
+      "units": "F",
+      "date_time": "T-0.0915",
+      "entered_by": "NURSE,DIANE",
+      "_note": "✅ Added 2025-12-31 for ICN100002 (MIIFAA, BARRY) - Enable VistA real-time testing"
+    },
+    {
+      "dfn": "630020",
+      "type": "PULSE",
+      "value": "74",
+      "units": "/min",
+      "date_time": "T-0.0915",
+      "entered_by": "NURSE,DIANE",
+      "_note": "✅ Added 2025-12-31 for ICN100002 (MIIFAA, BARRY) - Enable VistA real-time testing"
+    },
+    {
+      "dfn": "630020",
+      "type": "RESPIRATION",
+      "value": "16",
+      "units": "/min",
+      "date_time": "T-0.0915",
+      "entered_by": "NURSE,DIANE",
+      "_note": "✅ Added 2025-12-31 for ICN100002 (MIIFAA, BARRY) - Enable VistA real-time testing"
+    },
+    {
+      "dfn": "630020",
+      "type": "PULSE OXIMETRY",
+      "value": "98",
+      "units": "%",
+      "date_time": "T-0.0915",
+      "entered_by": "NURSE,DIANE",
+      "_note": "✅ Added 2025-12-31 for ICN100002 (MIIFAA, BARRY) - Enable VistA real-time testing"
     }
   ]
 }
