@@ -96,7 +96,6 @@ async def get_insight_page(request: Request, icn: str):
             "What are the key clinical risks for this patient?",
             "Are there any drug-drug interaction concerns?",
             "Summarize this patient's recent clinical activity",
-            "What gaps in care should I be aware of?",
         ]
 
         # Get Vista cache status for this patient
