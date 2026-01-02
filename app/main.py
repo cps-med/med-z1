@@ -50,9 +50,9 @@ app.add_middleware(
     SessionMiddleware,
     secret_key=SESSION_SECRET_KEY,
     max_age=SESSION_COOKIE_MAX_AGE,  # Session expires after timeout (15 min default)
-    https_only=False,  # Set to True in production with HTTPS
-    same_site="lax",  # CSRF protection
-    path="/"  # Ensure cookie is sent with all requests (not just the endpoint that set it)
+    https_only=False,                # Set to True in production with HTTPS
+    same_site="lax",                 # CSRF protection
+    path="/"                         # Ensure cookie is sent with all requests
     # Note: Cookie name is always "session" (hardcoded in Starlette)
 )
 
@@ -65,20 +65,20 @@ app.add_middleware(AuthMiddleware)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 # Include routers
-app.include_router(auth.router)  # Authentication routes (login/logout)
-app.include_router(dashboard.router)  # Dashboard handles / and /dashboard
+app.include_router(auth.router)               # Authentication routes (login/logout)
+app.include_router(dashboard.router)          # Dashboard handles / and /dashboard
 app.include_router(patient.router)
-app.include_router(patient.page_router)  # Patient pages (Allergies full page)
+app.include_router(patient.page_router)       # Patient pages (Allergies full page)
 app.include_router(vitals.router)
-app.include_router(vitals.page_router)  # Vitals full page routes
+app.include_router(vitals.page_router)        # Vitals full page routes
 app.include_router(medications.router)
-app.include_router(medications.page_router)  # Medications full page routes
+app.include_router(medications.page_router)   # Medications full page routes
 app.include_router(demographics.page_router)  # Demographics full page routes
-app.include_router(encounters.router)  # Encounters API routes
-app.include_router(encounters.page_router)  # Encounters full page routes
-app.include_router(labs.router)  # Labs API routes
-app.include_router(labs.page_router)  # Labs full page routes
-app.include_router(insight.page_router)  # AI Insights full page routes
+app.include_router(encounters.router)         # Encounters API routes
+app.include_router(encounters.page_router)    # Encounters full page routes
+app.include_router(labs.router)               # Labs API routes
+app.include_router(labs.page_router)          # Labs full page routes
+app.include_router(insight.page_router)       # AI Insights full page routes
 
 # Configure logging for the entire application
 logging.basicConfig(
@@ -95,6 +95,7 @@ logger.info("med-z1 application starting up")
 
 # Templates and static dirs, using BASE_DIR
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+
 
 @app.get("/time", response_class=HTMLResponse)
 async def get_time(request: Request):

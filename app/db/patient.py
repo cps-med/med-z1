@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 engine = create_engine(
     DATABASE_URL,
     poolclass=NullPool,  # Simple pooling for development
-    echo=False,  # Set to True to see SQL queries in logs
+    echo=False,          # Set to True to see SQL queries in logs
 )
 
 

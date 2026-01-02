@@ -1,10 +1,10 @@
 # AI Clinical Insights Design Specification
 
-**Document Version:** v1.6
-**Created:** 2025-12-28
-**Updated:** 2025-12-30 (Phase 3 Week 3 Complete - Vital Trends + Vista Session Caching ✅)
-**Status:** Production Ready - Phase 1 MVP Complete (All 3 Weeks ✅)
-**Completion Date:** 2025-12-30
+**Document Version:** v1.6  
+**Created:** 2025-12-28  
+**Updated:** 2025-12-30 (Phase 3 Week 3 Complete - Vital Trends + Vista Session Caching ✅)  
+**Status:** Production Ready - Phase 1 MVP Complete (All 3 Weeks ✅)  
+**Completion Date:** 2025-12-30  
 
 ---
 
@@ -66,11 +66,11 @@ This provides access to all Pro icon variants (solid, regular, light, thin, duot
 
 ### 1.4 Design Principles
 
-✅ **Leverage Existing Infrastructure** - Reuse `app/services/` layer, PostgreSQL, Vista RPC
-✅ **Transparency** - Show which data sources were queried
-✅ **Clinical Safety** - Always display AI-generated disclaimer
-✅ **Consistency** - Follow FastAPI + HTMX patterns from rest of med-z1
-✅ **Extensibility** - Easy to add new tools/capabilities later
+**Leverage Existing Infrastructure** - Reuse `app/services/` layer, PostgreSQL, Vista RPC  
+**Transparency** - Show which data sources were queried  
+**Clinical Safety** - Always display AI-generated disclaimer  
+**Consistency** - Follow FastAPI + HTMX patterns from rest of med-z1  
+**Extensibility** - Easy to add new tools/capabilities later  
 
 ---
 
@@ -146,10 +146,10 @@ This provides access to all Pro icon variants (solid, regular, light, thin, duot
 **Decision:** Wrap existing `app/db/` layer rather than creating new data access code.
 
 **Rationale:**
-- ✅ Reuses 8 months of existing med-z1 development
-- ✅ Single source of truth for data access logic
-- ✅ Easier maintenance (one place to update queries)
-- ✅ Faster implementation (no duplicate work)
+- Reuses existing med-z1 development
+- Single source of truth for data access logic
+- Easier maintenance (one place to update queries)
+- Faster implementation (no duplicate work)
 
 **Pattern:**
 ```python
@@ -286,17 +286,17 @@ app.add_middleware(
 - **Cleanup**: `request.session.clear()` on logout (both cookies deleted)
 
 **Key Design Decisions:**
-1. ✅ **Store RPC responses, not merged data** - Reduces session size from ~40KB to ~1.5KB
-2. ✅ **Merge on-demand** - Page loads and AI tools merge PG + cached Vista as needed
-3. ✅ **Session cookie, not server-side storage** - Simple, stateless, no Redis/database needed
-4. ✅ **Automatic cleanup on logout** - Clears both `session_id` (auth) and `session` (Vista cache) cookies
+1. **Store RPC responses, not merged data** - Reduces session size from ~40KB to ~1.5KB
+2. **Merge on-demand** - Page loads and AI tools merge PG + cached Vista as needed
+3. **Session cookie, not server-side storage** - Simple, stateless, no Redis/database needed
+4. **Automatic cleanup on logout** - Clears both `session_id` (auth) and `session` (Vista cache) cookies
 
 **Benefits:**
-- ✅ AI tools automatically use real-time Vista data when available
-- ✅ No separate "Refresh Vista for AI" button needed
-- ✅ Transparent to users - cache status shown with green badge
-- ✅ Performance: ~1-3 second merge latency (acceptable for AI analysis)
-- ✅ Scalability: No server-side session storage required
+- AI tools automatically use real-time Vista data when available
+- No separate "Refresh Vista for AI" button needed
+- Transparent to users - cache status shown with green badge
+- Performance: ~1-3 second merge latency (acceptable for AI analysis)
+- Scalability: No server-side session storage required
 
 **Files Modified:**
 - `app/services/vista_cache.py` - Cache management service
@@ -2138,10 +2138,10 @@ def test_chat_endpoint():
 ### 12.1 Transparency Requirements
 
 **MUST Display:**
-1. ✅ Clear "AI-generated" disclaimer on every page
-2. ✅ Show which tools/data sources were queried
-3. ✅ Timestamp for when data was retrieved
-4. ✅ Indication of data freshness (T-0 vs T-1)
+1. Clear "AI-generated" disclaimer on every page
+2. Show which tools/data sources were queried
+3. Timestamp for when data was retrieved
+4. Indication of data freshness (T-0 vs T-1)
 
 **Example:**
 ```
@@ -2171,10 +2171,10 @@ Vista RPC (real-time query at 14:23)
 ### 12.3 Data Privacy
 
 **VA Requirements:**
-- ✅ All patient data stays within VA network (no external API calls with PHI)
-- ✅ OpenAI API: Send only de-identified summaries, NOT raw PHI
-- ✅ No logging of patient-specific queries to external services
-- ✅ Comply with VHA Directive 6500 (Information Security Program)
+- All patient data stays within VA network (no external API calls with PHI)
+- OpenAI API: Send only de-identified summaries, NOT raw PHI
+- No logging of patient-specific queries to external services
+- Comply with VHA Directive 6500 (Information Security Program)
 
 **De-identification Pattern:**
 ```python
