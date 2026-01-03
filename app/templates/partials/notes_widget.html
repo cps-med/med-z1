@@ -1,0 +1,130 @@
+<!-- Clinical Notes Widget Content (2x1 Compact) -->
+<!-- Widget Header -->
+<div class="widget__header">
+    <div class="widget__title-group">
+        <i class="fa-solid fa-file-medical widget__icon"></i>
+        <h3 class="widget__title">Clinical Notes</h3>
+    </div>
+    {% if total_notes > 0 %}
+        <span class="badge badge--info">{{ total_notes }} Total</span>
+    {% endif %}
+</div>
+
+<!-- Widget Body -->
+<div class="widget__body">
+    <div class="widget-notes">
+        {% if error %}
+            <p class="text-muted" style="padding: 1rem; text-align: center;">
+                <i class="fa-solid fa-circle-exclamation"></i> Error loading notes
+            </p>
+        {% elif not has_notes %}
+            <p class="text-muted" style="padding: 1rem; text-align: center;">No clinical notes recorded</p>
+        {% else %}
+            <!-- Summary Pills (Document Class Distribution) -->
+            {% if notes_by_class %}
+            <div class="notes-summary-pills">
+                {% if notes_by_class.get('Progress Notes', 0) > 0 %}
+                <span class="note-class-pill note-class-pill--progress">
+                    <i class="fa-solid fa-stethoscope"></i>
+                    {{ notes_by_class['Progress Notes'] }} Progress
+                </span>
+                {% endif %}
+                {% if notes_by_class.get('Consults', 0) > 0 %}
+                <span class="note-class-pill note-class-pill--consult">
+                    <i class="fa-solid fa-user-doctor"></i>
+                    {{ notes_by_class['Consults'] }} Consult{{ 's' if notes_by_class['Consults'] > 1 }}
+                </span>
+                {% endif %}
+                {% if notes_by_class.get('Discharge Summaries', 0) > 0 %}
+                <span class="note-class-pill note-class-pill--discharge">
+                    <i class="fa-solid fa-clipboard-check"></i>
+                    {{ notes_by_class['Discharge Summaries'] }} Discharge
+                </span>
+                {% endif %}
+                {% if notes_by_class.get('Imaging', 0) > 0 %}
+                <span class="note-class-pill note-class-pill--imaging">
+                    <i class="fa-solid fa-x-ray"></i>
+                    {{ notes_by_class['Imaging'] }} Imaging
+                </span>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Recent Notes List (Compact for 2x1 widget) -->
+            <div class="notes-list-widget">
+                {% for note in notes %}
+                <div class="note-item-widget">
+                    <!-- Note Header with Class and Status -->
+                    <div class="note-item-widget__header">
+                        <div class="note-item-widget__class-label">
+                            {% if note.document_class == 'Progress Notes' %}
+                                <i class="fa-solid fa-stethoscope"></i>
+                                <span>Progress Note</span>
+                            {% elif note.document_class == 'Consults' %}
+                                <i class="fa-solid fa-user-doctor"></i>
+                                <span>Consult</span>
+                            {% elif note.document_class == 'Discharge Summaries' %}
+                                <i class="fa-solid fa-clipboard-check"></i>
+                                <span>Discharge Summary</span>
+                            {% elif note.document_class == 'Imaging' %}
+                                <i class="fa-solid fa-x-ray"></i>
+                                <span>Imaging Report</span>
+                            {% else %}
+                                <i class="fa-solid fa-file-medical"></i>
+                                <span>{{ note.document_class }}</span>
+                            {% endif %}
+                        </div>
+                        {% if note.status and note.status != 'COMPLETED' %}
+                            {% if note.status == 'UNSIGNED' %}
+                                <span class="badge badge--warning badge--sm">{{ note.status }}</span>
+                            {% elif note.status == 'AMENDED' %}
+                                <span class="badge badge--info badge--sm">{{ note.status }}</span>
+                            {% elif note.status == 'RETRACTED' %}
+                                <span class="badge badge--danger badge--sm">{{ note.status }}</span>
+                            {% else %}
+                                <span class="badge badge--secondary badge--sm">{{ note.status }}</span>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+
+                    <!-- Note Title -->
+                    <div class="note-item-widget__title">
+                        {{ note.document_title }}
+                    </div>
+
+                    <!-- Note Metadata (Condensed single line for 2x1 widget) -->
+                    <div class="note-item-widget__meta-compact">
+                        {% if note.reference_datetime %}
+                            {{ note.reference_datetime[:10] }}
+                        {% endif %}
+                        {% if note.author_name %}
+                            • {{ note.author_name }}
+                        {% endif %}
+                        {% if note.facility_name %}
+                            • {{ note.facility_name }}
+                        {% endif %}
+                    </div>
+
+                    <!-- Note Text Preview (Compact - 2 lines max) -->
+                    {% if note.text_preview %}
+                    <div class="note-item-widget__preview note-item-widget__preview--compact">
+                        {{ note.text_preview }}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- View All Link -->
+            <div class="widget-action">
+                <a href="/patient/{{ icn }}/notes" class="btn btn--link btn--sm">
+                    <i class="fa-regular fa-arrow-up-right-from-square"></i>
+                    View All Notes
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Widget Footer (minimal spacing) -->
+<div class="widget__footer"></div>

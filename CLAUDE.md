@@ -24,7 +24,7 @@ med-z1/
   mock/          # Mock data subsystem (simulates CDW, SDP, etc.)
     sql-server/  # Microsoft SQL Server schemas and data
       cdwwork/   # VistA-like mock data
-      cdwwork1/  # New EHR-like mock data
+      cdwwork2/  # Cerner/Oracle Health-like mock data
     shared/      # Shared patient registry (ICN/DFN mappings)
   ai/            # AI/ML and agentic components
   db/            # Serving DB DDL, migrations (create when needed)
@@ -135,12 +135,12 @@ med-z1 follows **strong, opinionated patterns** to ensure maintainability as the
 **Source Systems (Development):**
 - Mock CDW running in Docker (SQL Server 2019)
   - `CDWWork` database: VistA-like data (maps to real CDWWORK)
-  - `CDWWork1` database: Oracle Health-like data (maps to real CDWWORK2)
+  - `CDWWork2` database: Cerner/Oracle Health-like data (maps to real CDWWORK2)
 - Both populated with synthetic, non-PHI/PII data only
 
 **Medallion Pipeline:**
 - **Bronze Layer:** Raw data from mock CDW, minimal transformation, stored as Parquet in MinIO
-- **Silver Layer:** Cleaned and harmonized data across CDWWork and CDWWork1, unified patient identity (ICN/PatientKey)
+- **Silver Layer:** Cleaned and harmonized data across CDWWork and CDWWork2, unified patient identity (ICN/PatientKey)
 - **Gold Layer:** Curated, query-friendly views optimized for UI consumption
 
 **Serving Database:**
@@ -154,21 +154,30 @@ med-z1 follows **strong, opinionated patterns** to ensure maintainability as the
 - Each core table has a `*SID` column (e.g., `PatientSID`, `InpatientSID`, `RxOutpatSID`) serving as surrogate primary key
 - `Sta3n` indicates facility/station
 - Foreign key constraints are lightweight or omitted in mock environment for simplicity
-- CDWWork1 intentionally uses different naming conventions to exercise Silver-layer harmonization
+- CDWWork2 intentionally uses different naming conventions to exercise Silver-layer harmonization
 
 **Major Schemas in CDWWork:**
-- `Dim` (dimensions: Sta3n, State, PatientRecordFlag, etc.)
+- `Dim` (dimensions: Sta3n, State, PatientRecordFlag, TIUDocumentDefinition, etc.)
 - `SPatient` (patient demographics, addresses, insurance, PatientRecordFlagAssignment, PatientRecordFlagHistory)
 - `SStaff` (staff/providers)
 - `Inpat` (inpatient encounters)
 - `RxOut` (outpatient medications)
 - `BCMA` (medication administration)
-- Future: Labs, Vitals, Orders, Notes, Imaging
+- `Vital` (vital signs)
+- `Allergy` (patient allergies and reactions)
+- `Chem` (laboratory results)
+- `TIU` (clinical notes - Text Integration Utilities)
+- Future: Orders, Imaging, Immunizations, Problems, Procedures
 
 **Patient Flags Tables (added 2025-12-10):**
 - `Dim.PatientRecordFlag` - Flag definitions (National Cat I, Local Cat II)
 - `SPatient.PatientRecordFlagAssignment` - Patient → Flag assignments with review tracking
 - `SPatient.PatientRecordFlagHistory` - Audit trail with sensitive narrative text
+
+**Clinical Notes Tables (added 2026-01-02):**
+- `Dim.TIUDocumentDefinition` - Note type definitions (Progress Notes, Consults, Discharge Summaries, Imaging Reports)
+- `TIU.TIUDocument_8925` - Clinical note metadata (VistA File #8925)
+- `TIU.TIUDocumentText` - Full clinical note narrative text (SOAP format)
 
 ### Web Application Architecture
 
@@ -371,6 +380,19 @@ When creating SQL Server scripts for the mock CDW, follow these conventions:
 - Location: `mock/sql-server/cdwwork/create/` and `mock/sql-server/cdwwork/insert/`
 - Use GO statements to batch commands appropriately
 - Include PRINT statements for execution feedback
+
+**Master Script Maintenance (CRITICAL):**
+- **ALWAYS update `_master.sql` scripts when adding new tables**
+- Location: `mock/sql-server/cdwwork/create/_master.sql` and `mock/sql-server/cdwwork/insert/_master.sql`
+- These scripts orchestrate the creation and population of the entire mock CDW database
+- New developers and database rebuilds depend on these scripts being complete and current
+- **Update timing:** Immediately upon completing Day 1 (schema + seed data) of any new domain
+- **Dependency order matters:**
+  - Dimension tables must be listed before fact tables that reference them
+  - Parent tables must be created/populated before child tables with FK constraints
+  - Example: `Dim.TIUDocumentDefinition` → `TIU.TIUDocument_8925` → `TIU.TIUDocumentText`
+- **Both databases:** Remember to update CDWWork2 master scripts when implementing Cerner/Oracle Health schemas
+- **Verification:** After updating master scripts, test by running them in a clean container to ensure all dependencies are satisfied
 
 ### Database Schema Management
 

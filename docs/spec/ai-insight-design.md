@@ -1,10 +1,11 @@
 # AI Clinical Insights Design Specification
 
-**Document Version:** v1.6  
-**Created:** 2025-12-28  
-**Updated:** 2025-12-30 (Phase 3 Week 3 Complete - Vital Trends + Vista Session Caching ✅)  
-**Status:** Production Ready - Phase 1 MVP Complete (All 3 Weeks ✅)  
-**Completion Date:** 2025-12-30  
+**Document Version:** v1.7
+**Created:** 2025-12-28
+**Updated:** 2026-01-02 (Phase 4 Plan Added - Clinical Notes Integration 📝)
+**Status:** Phase 1-3 Complete ✅ | Phase 4 Ready for Implementation 📝
+**Phase 1-3 Completion Date:** 2025-12-30
+**Phase 4 Start Date:** 2026-01-02 (Estimated)  
 
 ---
 
@@ -33,8 +34,9 @@
 
 The **AI Clinical Insights** feature adds an intelligent chatbot interface to med-z1 that helps clinicians discover insights about patients through natural language conversation. The system uses Agentic RAG (Retrieval-Augmented Generation) to query existing med-z1 data sources and provide evidence-based responses.
 
-### 1.2 Key Capabilities (Phase 1 MVP)
+### 1.2 Key Capabilities
 
+**Phase 1-3 Complete ✅:**
 1. **Drug-Drug Interaction (DDI) Risk Assessment**
    - Analyzes patient medications for potential interactions
    - Leverages existing notebook DDI reference data
@@ -49,6 +51,17 @@ The **AI Clinical Insights** feature adds an intelligent chatbot interface to me
    - Identifies concerning trends in blood pressure, heart rate, temperature
    - Compares against clinical norms
    - Flags abnormal patterns
+
+**Phase 4 (Clinical Notes Integration) 📝:**
+4. **Clinical Notes Summary**
+   - Provides narrative clinical context from recent notes
+   - Summarizes Progress Notes, Consults, Discharge Summaries, Imaging Reports
+   - Answers note-specific queries ("What did the cardiology consult say?")
+
+5. **Enhanced Patient Context**
+   - Integrates narrative clinical documentation with structured data
+   - Bridges the gap between "what happened" (structured) and "why/how" (narrative)
+   - Enriches AI responses with clinician observations and assessments
 
 ### 1.3 User Interface
 
@@ -309,13 +322,35 @@ app.add_middleware(
 
 ## 3. Data Sources
 
-### 3.1 Primary Data Sources (Phase 1)
+### 3.1 Primary Data Sources
+
+**Phase 1-3 (Complete ✅):**
 
 | Data Source | Type | Content | Access Method |
 |-------------|------|---------|---------------|
 | **PostgreSQL (T-1)** | Relational DB | Demographics, Medications, Vitals, Allergies, Encounters, Labs | `app/services/*_service.py` |
 | **Vista RPC (T-0)** | Real-time API | Current-day vitals, medications | `app/services/vista_client.py` |
 | **DDI Reference** | Parquet/MinIO | ~191K drug-drug interactions from DrugBank (via Kaggle) | Refactored from `notebook/src/ddi_transforms.py` |
+
+**Phase 4 (Clinical Notes Integration 📝):**
+
+| Data Source | Type | Content | Access Method |
+|-------------|------|---------|---------------|
+| **Clinical Notes (PostgreSQL)** | Relational DB | 106 clinical notes across 36 patients (Progress Notes, Consults, Discharge Summaries, Imaging Reports) | `app/db/notes.py` |
+
+**Clinical Notes Data Details:**
+- **Source:** VistA CDWWork (TIU.TIUDocument_8925, TIU.TIUDocumentText)
+- **Format:** Full narrative SOAP documentation (Subjective, Objective, Assessment, Plan)
+- **Schema:** `patient_clinical_notes` table with 19 columns
+- **Key Fields:**
+  - `document_text` - Full note narrative (TEXT, avg ~2000 tokens)
+  - `text_preview` - First 200 characters (VARCHAR)
+  - `document_class` - Note type (Progress Notes, Consults, Discharge Summaries, Imaging)
+  - `reference_datetime` - Clinical date of note
+  - `author_name`, `facility_name`, `status`
+  - **AI-Ready Columns:** `embedding_vector` (VECTOR - pgvector), `ai_summary` (TEXT), `key_entities` (JSONB)
+- **Coverage:** 106 notes across 36 patients (avg 2.9 notes per patient, max 8 notes for ICN100001)
+- **Access Functions:** `get_recent_notes()`, `get_notes_summary()`, `get_all_notes()`, `get_note_detail()`, `get_note_authors()`
 
 **DDI Reference Data Details:**
 - **Source:** Kaggle DrugBank dataset (https://www.kaggle.com/datasets/mghobashy/drug-drug-interactions/data)
@@ -473,6 +508,107 @@ _"Are there any concerning trends in vital signs?"_
 
 Data sources: PostgreSQL vitals (47 readings over 90 days)
 ```
+
+### 4.4 Use Case 4: Clinical Notes Summary (Phase 4 📝)
+
+**User Prompt:**
+_"Summarize the recent clinical notes for this patient"_
+
+**Agent Flow:**
+1. Parse intent: User wants clinical notes overview
+2. Invoke tool: `get_patient_summary(patient_icn)` (enhanced version includes notes)
+3. Tool logic:
+   - Get patient demographics, medications, vitals, allergies, encounters (existing)
+   - **NEW:** Get recent clinical notes (last 3 notes, default 90 days)
+   - Format note summaries with type, date, author, preview text
+4. LLM synthesizes response combining structured and narrative data
+5. Return: Comprehensive patient overview with clinical narrative context
+
+**Example Response:**
+```
+**Patient Clinical Summary**
+
+Demographics: 68-year-old male, Service-Connected 70%, Primary Care at Atlanta VA
+
+Active Medications (5):
+- Lisinopril 20mg daily (HTN)
+- Metformin 1000mg twice daily (Diabetes)
+- Atorvastatin 40mg daily (Hyperlipidemia)
+- Aspirin 81mg daily (CAD prophylaxis)
+- Gabapentin 300mg three times daily (Neuropathy)
+
+Recent Vitals: BP 142/88, HR 76, Weight 185 lbs, BMI 27.4
+
+Allergies: Penicillin (rash), Morphine (nausea)
+
+Recent Clinical Notes (Last 3):
+1. **2025-12-28 Progress Note** by Dr. Jonathan Smith, MD (Atlanta VA)
+   - "SUBJECTIVE: Patient presents for routine follow-up of hypertension and diabetes. Reports good medication compliance. Blood sugars have been running 120-140 mg/dL..."
+   - Type: Primary Care Follow-up
+
+2. **2025-12-15 Cardiology Consult** by Dr. Emily Johnson, MD (Atlanta VA)
+   - "REASON FOR CONSULT: Evaluate for coronary artery disease. Patient with chest pain on exertion. HISTORY OF PRESENT ILLNESS: 68-year-old male with HTN, DM, hyperlipidemia..."
+   - Type: Specialty Consultation
+
+3. **2025-11-20 Discharge Summary** by Dr. Michael Williams, MD (Bay Pines VA)
+   - "ADMISSION DATE: 11/17/2025. DISCHARGE DATE: 11/20/2025. ADMITTING DIAGNOSIS: Acute exacerbation of COPD. HOSPITAL COURSE: Patient admitted with dyspnea and productive cough..."
+   - Type: Hospital Discharge
+
+Data sources: PostgreSQL (demographics, medications, vitals, allergies, encounters, clinical notes - 106 total notes)
+```
+
+### 4.5 Use Case 5: Note-Specific Queries (Phase 4 📝)
+
+**User Prompt:**
+_"What did the cardiology consult recommend?"_
+
+**Agent Flow:**
+1. Parse intent: User wants specific information from a clinical note
+2. Invoke tool: `get_clinical_notes_summary(patient_icn, note_type="Consults", days=90)`
+3. Tool logic:
+   - Query clinical notes filtered by type (Consults)
+   - Retrieve recent consult notes (default 90 days)
+   - Extract note text, metadata, key recommendations
+4. LLM analyzes note content and extracts relevant information
+5. Return: Specific answer from note with citation
+
+**Example Response:**
+```
+**Cardiology Consult Recommendations (12/15/2025)**
+
+The cardiology consult by Dr. Emily Johnson on 12/15/2025 made the following recommendations:
+
+1. **Diagnostic Testing:**
+   - Schedule exercise stress test (or pharmacologic stress if unable to exercise)
+   - Echocardiogram to assess left ventricular function
+   - Lipid panel and HbA1c (due to diabetes)
+
+2. **Medication Changes:**
+   - Started metoprolol 25mg twice daily (beta-blocker for angina)
+   - Continue aspirin 81mg daily
+   - Optimize statin therapy (atorvastatin 40mg is appropriate)
+
+3. **Follow-up:**
+   - Return to cardiology in 2 weeks after stress test results
+   - Patient education on chest pain recognition and when to seek emergency care
+   - Encouraged cardiac rehabilitation referral if stress test positive
+
+4. **Risk Factors:**
+   - Emphasized diabetes control (target HbA1c < 7%)
+   - Smoking cessation counseling (patient denies current smoking)
+   - Weight management (BMI 27.4, encouraged 5-10 lb weight loss)
+
+**Clinical Context:**
+Patient presented with exertional chest pain, concerning for possible coronary artery disease. Multiple cardiac risk factors present: age, male, HTN, DM, hyperlipidemia.
+
+Data source: Clinical Notes - Cardiology Consult (12/15/2025) by Dr. Emily Johnson, MD
+```
+
+**Additional Example Queries Enabled:**
+- "What was the reason for the hospital admission in November?"
+- "Show me imaging reports from the last 6 months"
+- "What medications were mentioned in the discharge summary?"
+- "Has the patient seen a specialist recently?"
 
 ---
 
@@ -829,6 +965,94 @@ async def get_patient_allergies(patient_icn: str, db_session) -> str:
     # Wrap allergies_service.get_patient_allergies()
     ...
 ```
+
+### 6.5 Tool: get_clinical_notes_summary (Phase 4 📝)
+
+**Purpose:** Retrieve and summarize clinical notes for a patient with optional filtering
+
+**Implementation:**
+```python
+# ai/tools/notes_tools.py
+
+from langchain_core.tools import tool
+from typing import Annotated, Optional
+from app.db.notes import get_recent_notes, get_all_notes
+
+@tool
+def get_clinical_notes_summary(
+    patient_icn: Annotated[str, "Patient ICN (Integrated Care Number)"],
+    note_type: Annotated[Optional[str], "Note type filter: 'all', 'Progress Notes', 'Consults', 'Discharge Summaries', 'Imaging'"] = None,
+    days: Annotated[Optional[int], "Number of days to look back (default 90)"] = 90,
+    limit: Annotated[Optional[int], "Maximum number of notes to return (default 5)"] = 5
+) -> str:
+    """
+    Retrieve recent clinical notes for a patient with optional filtering.
+
+    Provides narrative clinical context including SOAP documentation,
+    consultant recommendations, discharge summaries, and imaging reports.
+
+    Args:
+        patient_icn: Patient ICN
+        note_type: Optional filter by note class ('Progress Notes', 'Consults', etc.)
+        days: Number of days to look back (default 90)
+        limit: Maximum notes to return (default 5, max 10 for performance)
+
+    Returns:
+        Formatted string with note summaries including type, date, author, and preview text
+    """
+    from app.db.notes import get_all_notes
+
+    # Query notes with filters
+    result = get_all_notes(
+        icn=patient_icn,
+        note_class=note_type or 'all',
+        date_range=days,
+        limit=min(limit, 10),  # Cap at 10 for performance
+        offset=0
+    )
+
+    notes = result["notes"]
+
+    if not notes:
+        return f"No clinical notes found for this patient in the last {days} days."
+
+    # Format notes for LLM
+    output = f"**Clinical Notes Summary (Last {days} days)**\n"
+    output += f"Found {len(notes)} note(s)\n\n"
+
+    for idx, note in enumerate(notes, 1):
+        output += f"{idx}. **{note['reference_datetime'][:10]} {note['document_class']}**\n"
+        output += f"   - Author: {note['author_name'] or 'Unknown'}\n"
+        output += f"   - Facility: {note['facility_name'] or 'N/A'}\n"
+        output += f"   - Title: {note['document_title']}\n"
+
+        if note.get('text_preview'):
+            output += f"   - Preview: {note['text_preview']}...\n"
+
+        output += "\n"
+
+    output += f"Data source: PostgreSQL clinical_notes table ({result['pagination']['total_count']} total notes for this patient)"
+
+    return output
+```
+
+**Usage Examples:**
+```python
+# Get all recent notes (last 90 days, limit 5)
+get_clinical_notes_summary("ICN100001")
+
+# Get recent consult notes only
+get_clinical_notes_summary("ICN100001", note_type="Consults", days=180)
+
+# Get imaging reports from last 6 months
+get_clinical_notes_summary("ICN100001", note_type="Imaging", days=180, limit=3)
+```
+
+**Performance Considerations:**
+- Default limit of 5 notes balances context richness vs LLM token usage
+- Max limit of 10 notes (~20,000 tokens) to stay within GPT-4 context window
+- Text preview (200 chars) used for summaries; full text available via separate query if needed
+- Query time: <100ms for filtered note retrieval
 
 ---
 
@@ -1997,6 +2221,167 @@ Following Phase 1 Week 1 completion, data quality improvements were implemented 
 
 ---
 
+### Phase 4: Clinical Notes Integration (Week 4) 📝 **READY FOR IMPLEMENTATION**
+
+**Prerequisites:**
+- ✅ Clinical Notes domain fully implemented (106 notes in PostgreSQL)
+- ✅ Clinical Notes UI complete (dashboard widget + full page)
+- ✅ Query functions available in `app/db/notes.py`
+- ✅ AI-ready schema columns present (embedding_vector, ai_summary, key_entities)
+- ✅ LangGraph agent infrastructure operational (Phases 1-3 complete)
+
+**Estimated Time:** 8-11 hours over 2 weeks (4-6 hours/week)
+
+---
+
+**Day 1-2: Enhance Patient Summary Tool with Clinical Notes** ⏳
+
+**Tasks:**
+1. Update `ai/services/patient_context.py` → `PatientContextBuilder`:
+   - Add `get_notes_summary()` method
+   - Call `app.db.notes.get_recent_notes(icn, limit=3)`
+   - Format notes: `[Date] [Type]: [Preview (150 chars)]...`
+   - Add to existing `build_context()` output (after Encounters section)
+
+2. Update `ai/tools/patient_tools.py` → `get_patient_summary()`:
+   - No code changes (PatientContextBuilder handles it)
+   - Tool automatically includes notes in output
+
+3. Test enhanced patient summary:
+   - Verify notes appear in summary for patients with clinical notes
+   - Verify graceful handling when no notes exist
+   - Check token usage (ensure < 10K tokens with notes included)
+
+**Deliverables:**
+- [ ] Updated `PatientContextBuilder.get_notes_summary()` method
+- [ ] Enhanced `get_patient_summary()` output includes recent notes
+- [ ] Manual testing with 3-5 patients (with/without notes)
+
+**Estimated Time:** 2-3 hours
+
+**Example Output (Enhanced):**
+```
+Recent Encounters:
+- Observation on 2025-11-30 at VA Atlanta
+
+Recent Clinical Notes (Last 3):
+- 2025-12-28 Progress Note: "SUBJECTIVE: Patient presents for follow-up of hypertension and diabetes. Reports good medication compliance. Blood sugars running 120-140 mg/dL..."
+- 2025-12-15 Cardiology Consult: "REASON FOR CONSULT: Evaluate for coronary artery disease. Patient with chest pain on exertion..."
+- 2025-11-20 Discharge Summary: "ADMISSION DATE: 11/17/2025. DISCHARGE DATE: 11/20/2025. ADMITTING DIAGNOSIS: Acute exacerbation of COPD..."
+```
+
+---
+
+**Day 3-4: Create get_clinical_notes_summary() Tool** ⏳
+
+**Tasks:**
+1. Create new file: `ai/tools/notes_tools.py`:
+   - Implement `get_clinical_notes_summary()` tool (see Section 6.5 for full code)
+   - Parameters: `patient_icn`, `note_type` (optional), `days` (default 90), `limit` (default 5)
+   - Wraps `app.db.notes.get_all_notes()` with formatting
+   - Include note type, date, author, facility, preview text
+
+2. Update `ai/tools/__init__.py`:
+   - Import new tool: `from ai.tools.notes_tools import get_clinical_notes_summary`
+   - Add to `ALL_TOOLS` list
+   - Update `__all__` exports
+
+3. Test tool independently:
+   - Test with `note_type` filter (Consults, Progress Notes, etc.)
+   - Test date range parameter (30, 90, 180 days)
+   - Test limit parameter (3, 5, 10 notes)
+   - Verify performance (<200ms query time)
+
+4. Test LangGraph agent integration:
+   - Ask: "What did the cardiology consult say?"
+   - Ask: "Show me recent progress notes"
+   - Ask: "What imaging studies were done recently?"
+   - Verify agent autonomously invokes correct tool with appropriate parameters
+
+**Deliverables:**
+- [ ] New file `ai/tools/notes_tools.py` with `get_clinical_notes_summary()` tool
+- [ ] Updated `ai/tools/__init__.py` (ALL_TOOLS now has 4 tools)
+- [ ] LangGraph agent successfully invokes new tool for note-specific queries
+- [ ] Manual testing with 5-7 sample queries
+
+**Estimated Time:** 3-4 hours
+
+**Example Queries Enabled:**
+- "What did the last cardiology consult recommend?"
+- "Summarize the discharge summary from November"
+- "What imaging studies were done in the last 6 months?"
+- "Has the patient seen a specialist recently?"
+- "Show me progress notes from the last month"
+
+---
+
+**Day 5: System Prompt Update + Testing** ⏳
+
+**Tasks:**
+1. Update `ai/prompts/system_prompts.py`:
+   - Add clinical notes to system prompt description
+   - Update available tools list to include `get_clinical_notes_summary`
+   - Add guidance on when to use notes tool vs patient summary
+
+2. Update suggested questions in `app/templates/insight.html`:
+   - Replace one existing question with note-based query
+   - Example: "What did recent clinical notes say about this patient?"
+
+3. Comprehensive integration testing:
+   - Test with 5-10 patients (variety of note types)
+   - Test combined queries (e.g., "Check DDIs and summarize recent notes")
+   - Test edge cases (no notes, single note, 10+ notes)
+   - Verify performance (<5 sec p90 response time)
+   - Check token usage and LLM costs
+
+4. Documentation updates:
+   - Update this document (mark Phase 4 complete)
+   - Add Phase 4 notes to `app/README.md`
+   - Update `CLAUDE.md` with new AI capabilities
+
+**Deliverables:**
+- [ ] Updated system prompt includes clinical notes guidance
+- [ ] Updated suggested questions in UI
+- [ ] Comprehensive testing checklist completed
+- [ ] Documentation updated
+- [ ] Phase 4 marked complete ✅
+
+**Estimated Time:** 3-4 hours
+
+---
+
+**Phase 4 Success Criteria:**
+- [ ] `get_patient_summary()` automatically includes recent clinical notes (last 3)
+- [ ] New `get_clinical_notes_summary()` tool available and functional
+- [ ] LangGraph agent autonomously invokes notes tool for relevant queries
+- [ ] Response time < 5 seconds for note-based queries (p90)
+- [ ] Token usage remains reasonable (< 15K tokens for complex queries)
+- [ ] Manual testing with 10+ patients confirms accurate note retrieval
+- [ ] UI suggested questions include at least one note-based query
+
+---
+
+**Phase 4 Deliverables Summary:**
+- ✅ Enhanced `PatientContextBuilder` with notes integration (2-3 hours)
+- ✅ New `get_clinical_notes_summary()` tool (3-4 hours)
+- ✅ Updated system prompts and UI (1-2 hours)
+- ✅ Comprehensive testing and documentation (2-2 hours)
+- ✅ **Total: 8-11 hours over 2 weeks**
+
+---
+
+**Post-Phase 4 Opportunities (Phase 5+):**
+Once Phase 4 is stable, consider these advanced enhancements:
+1. **Care Gap Analysis Tool** - Extract unfulfilled recommendations from notes
+2. **Clinical Timeline Generator** - Chronological patient story from notes + structured data
+3. **Semantic Note Search** - Vector embeddings for similarity search (use `embedding_vector` column)
+4. **AI-Generated Note Summaries** - Populate `ai_summary` column via ETL
+5. **Entity Extraction** - Extract medications, diagnoses, procedures from narrative text
+
+See **Clinical Notes Enhancement Opportunities Assessment** (Section 14.3) for detailed specifications.
+
+---
+
 ## 11. Testing Strategy
 
 ### 11.1 Unit Tests
@@ -2291,6 +2676,249 @@ Vista RPC (real-time query at 14:23)
 - Cardiology tools (CHADS2-VASc score, GRACE risk)
 - Mental health tools (PHQ-9 trends, suicide risk)
 - Oncology tools (TNM staging, chemotherapy contraindications)
+
+### 14.3 Clinical Notes Enhancement Opportunities (Phase 5+)
+
+**Background:**
+With Phase 4 complete, the AI system will have access to 106 clinical notes containing rich narrative data (SOAP documentation, consultant recommendations, discharge summaries, imaging reports). These notes represent the highest-value unstructured data for AI-powered clinical insights. The following enhancements build on Phase 4's foundation.
+
+---
+
+**Priority 1: Care Gap Analysis Tool (2-4 weeks, 8-12 hours)**
+
+**Purpose:** Extract action items, follow-ups, and recommendations from clinical notes to identify care plan items that may not have been completed.
+
+**Implementation:**
+- LLM-based extraction from note text (focus on PLAN sections of SOAP notes)
+- Pattern matching for keywords: "follow-up", "schedule", "refer to", "order", "recheck", "monitor"
+- Cross-reference with subsequent notes and orders to identify gaps
+- Report unfulfilled items with original date and clinician
+
+**Example Output:**
+```
+⚠️ **Care Gaps Identified:**
+
+1. Cardiology follow-up recommended on 12/15/2025
+   - Source: Cardiology consult by Dr. Emily Johnson
+   - Recommendation: "Return to cardiology in 2 weeks after stress test results"
+   - Status: No cardiology encounter found in subsequent 30 days
+   - Action needed: Schedule cardiology follow-up
+
+2. Stress test ordered on 12/15/2025
+   - Source: Cardiology consult
+   - Recommendation: "Schedule exercise stress test"
+   - Status: No imaging report found for stress test
+   - Action needed: Verify if test was scheduled/completed
+
+3. HbA1c check recommended on 12/28/2025
+   - Source: Progress note by Dr. Jonathan Smith
+   - Recommendation: "Check HbA1c at next visit"
+   - Status: No lab result found in last 30 days
+   - Action needed: Order HbA1c
+```
+
+**Technical Approach:**
+- Use LLM to extract recommendations from each note (focus on PLAN section)
+- Store extracted actions with source note ID and date
+- Query subsequent notes/orders/labs for evidence of follow-through
+- Flag items with no evidence of completion
+
+---
+
+**Priority 2: Clinical Timeline Generator (2-4 weeks, 10-15 hours)**
+
+**Purpose:** Build chronological patient story combining clinical notes and structured data to understand disease progression and treatment response.
+
+**Implementation:**
+- Merge notes, encounters, medications, vitals, labs by date
+- LLM summarization of key events at each timepoint
+- Identify turning points: admissions, new diagnoses, treatment changes, significant test results
+
+**Example Output:**
+```
+**Clinical Timeline for Patient ICN100001**
+
+📅 **2025-11-17** - Hospital Admission
+   - Event: Admitted for COPD exacerbation (Discharge Summary)
+   - Vitals: BP 152/92, HR 94, O2 sat 88% on room air
+   - Treatment: Started on prednisone and nebulizers
+   - Outcome: Discharged 11/20 after 3-day stay
+
+📅 **2025-11-30** - Follow-up Visit
+   - Event: Post-discharge observation visit (Encounter)
+   - Vitals: BP 142/88, HR 76 (improved from admission)
+   - Assessment: COPD stable, recovering well
+   - Plan: Continue medications, return PRN
+
+📅 **2025-12-15** - Specialty Consultation
+   - Event: Cardiology consult for chest pain (Consult Note)
+   - New symptoms: Exertional chest pain concerning for CAD
+   - Risk factors: HTN, DM, hyperlipidemia, age 68
+   - Diagnostic plan: Stress test + echo ordered
+   - Medication change: Started metoprolol 25mg BID
+
+📅 **2025-12-28** - Routine Follow-up
+   - Event: Primary care visit (Progress Note)
+   - Diabetes control: Blood sugars 120-140 mg/dL (good)
+   - Hypertension: BP well-controlled on current regimen
+   - Plan: Continue current meds, RTC 3 months
+```
+
+**Technical Approach:**
+- Query all notes and structured data for date range
+- Sort chronologically
+- Use LLM to identify significant events and transitions
+- Format as narrative timeline with clinical context
+
+---
+
+**Priority 3: Semantic Note Search with Vector Embeddings (4-6 weeks, 15-20 hours)**
+
+**Purpose:** Enable natural language search across all clinical notes without requiring exact keyword matching.
+
+**Implementation:**
+- Generate embeddings for all note text using OpenAI text-embedding-ada-002 (or similar)
+- Populate `embedding_vector` column in PostgreSQL (pgvector extension already installed!)
+- Create `search_clinical_notes(query, patient_icn, top_k=5)` tool
+- Use cosine similarity for retrieval
+
+**Example Queries:**
+- "Find notes mentioning heart failure symptoms" (without saying "heart failure")
+- "Show me when the patient complained of shortness of breath"
+- "What notes discuss kidney function?"
+- "Search for medication compliance issues"
+
+**Technical Details:**
+- **ETL Addition:** Add embedding generation step to Silver or Gold layer
+- **Storage:** VECTOR(1536) column in PostgreSQL (OpenAI ada-002 embeddings)
+- **Query:** pgvector cosine similarity search (`<=>` operator)
+- **Performance:** <500ms for top-5 search with proper indexes
+
+**Example Tool:**
+```python
+@tool
+def search_clinical_notes(
+    query: str,
+    patient_icn: str,
+    top_k: int = 5
+) -> str:
+    """Search clinical notes using semantic similarity."""
+    # Generate query embedding
+    query_embedding = openai.Embedding.create(input=query, model="text-embedding-ada-002")
+
+    # Search using pgvector
+    results = db.query("""
+        SELECT document_title, document_class, reference_datetime, text_preview,
+               1 - (embedding_vector <=> :query_emb) as similarity
+        FROM patient_clinical_notes
+        WHERE patient_icn = :icn
+        ORDER BY embedding_vector <=> :query_emb
+        LIMIT :top_k
+    """, query_emb=query_embedding, icn=patient_icn, top_k=top_k)
+
+    return format_search_results(results)
+```
+
+---
+
+**Priority 4: AI-Generated Note Summaries (3-5 weeks, 12-18 hours)**
+
+**Purpose:** Populate `ai_summary` column with LLM-generated 2-3 sentence abstracts for faster note scanning.
+
+**Implementation:**
+- Background ETL job: Generate summaries for each note using GPT-3.5-turbo (cheaper for bulk)
+- Store in `ai_summary` column (TEXT)
+- Use in widgets, AI tool responses, and search results
+- Regenerate when notes are amended
+
+**Example Summaries:**
+```
+Progress Note (2025-12-28):
+AI Summary: "68yo male veteran with routine follow-up for HTN and DM. Blood sugars well-controlled (120-140 mg/dL). No new complaints. Continue current medications."
+
+Cardiology Consult (2025-12-15):
+AI Summary: "Evaluated for exertional chest pain concerning for CAD. Multiple cardiac risk factors present. Stress test and echo ordered. Started beta-blocker therapy."
+```
+
+**ETL Integration:**
+```python
+# etl/generate_note_summaries.py
+
+def generate_summary(note_text: str) -> str:
+    prompt = f"""Summarize this clinical note in 2-3 sentences. Focus on:
+    1. Patient presentation/reason for visit
+    2. Key findings or assessments
+    3. Plan or recommendations
+
+    Note:
+    {note_text[:2000]}  # Truncate long notes
+
+    Summary:"""
+
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.3,
+        max_tokens=100
+    )
+
+    return response.choices[0].message.content
+
+# Run for all notes, update ai_summary column
+```
+
+---
+
+**Priority 5: Clinical Entity Extraction (NER) (6-8 weeks, 20-30 hours)**
+
+**Purpose:** Extract structured entities from narrative text (medications, diagnoses, procedures, lab values) and populate `key_entities` JSONB column.
+
+**Implementation:**
+- Use LLM or specialized NER model (spaCy ScispaCy, BioBERT, or GPT-4)
+- Extract: medications, diseases/diagnoses, procedures, labs, body sites, symptoms
+- Store in `key_entities` column as JSON
+- Enable entity-based search and cross-referencing with structured data
+
+**Example Extracted Entities:**
+```json
+{
+  "medications": ["lisinopril", "metformin", "atorvastatin", "aspirin"],
+  "diagnoses": ["hypertension", "diabetes mellitus type 2", "hyperlipidemia", "CAD"],
+  "procedures": ["stress test", "echocardiogram"],
+  "labs": {
+    "blood sugar": "120-140 mg/dL",
+    "HbA1c": "6.8%",
+    "blood pressure": "142/88 mmHg"
+  },
+  "symptoms": ["chest pain", "exertional dyspnea"],
+  "body_sites": ["chest", "cardiac"]
+}
+```
+
+**Use Cases:**
+- "Find all notes that mention chest pain" → Search key_entities.symptoms
+- "What diagnoses are documented in notes?" → Extract key_entities.diagnoses
+- "Reconcile medications in notes vs med list" → Compare key_entities.medications with patient_medications table
+
+---
+
+**Summary of Phase 5+ Enhancements:**
+
+| Enhancement | Effort | Impact | Dependencies |
+|-------------|--------|--------|--------------|
+| Care Gap Analysis | 8-12 hours | VERY HIGH | Phase 4 complete |
+| Clinical Timeline | 10-15 hours | HIGH | Phase 4 complete |
+| Semantic Search | 15-20 hours | VERY HIGH | Phase 4 + embeddings ETL |
+| AI Note Summaries | 12-18 hours | HIGH | Phase 4 + ETL pipeline |
+| Entity Extraction | 20-30 hours | VERY HIGH | Phase 4 + NER model |
+
+**Recommended Implementation Order:**
+1. **Phase 4** - Basic notes integration (current focus)
+2. **Care Gap Analysis** - Immediate clinical value
+3. **Clinical Timeline** - Builds on gap analysis
+4. **AI Summaries** - Improves UX, enables next features
+5. **Semantic Search** - Requires embeddings infrastructure
+6. **Entity Extraction** - Advanced feature, highest complexity
 
 ### 14.3 LLM Provider Alternatives
 

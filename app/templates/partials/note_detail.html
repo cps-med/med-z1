@@ -1,0 +1,124 @@
+<!-- Full Clinical Note Detail (loaded via HTMX) -->
+<div class="note-detail">
+    <!-- Note Header -->
+    <div class="note-detail__header">
+        <div class="note-detail__header-left">
+            <h3 class="note-detail__title">{{ note.document_title }}</h3>
+            {% if note.vha_standard_title and note.vha_standard_title != note.document_title %}
+                <p class="note-detail__subtitle">{{ note.vha_standard_title }}</p>
+            {% endif %}
+        </div>
+        <div class="note-detail__header-right">
+            {% if note.document_class == 'Progress Notes' %}
+                <span class="note-badge note-badge--progress note-badge--lg">
+                    <i class="fa-solid fa-stethoscope"></i>
+                    Progress Note
+                </span>
+            {% elif note.document_class == 'Consults' %}
+                <span class="note-badge note-badge--consult note-badge--lg">
+                    <i class="fa-solid fa-user-doctor"></i>
+                    Consult
+                </span>
+            {% elif note.document_class == 'Discharge Summaries' %}
+                <span class="note-badge note-badge--discharge note-badge--lg">
+                    <i class="fa-solid fa-clipboard-check"></i>
+                    Discharge Summary
+                </span>
+            {% elif note.document_class == 'Imaging' %}
+                <span class="note-badge note-badge--imaging note-badge--lg">
+                    <i class="fa-solid fa-x-ray"></i>
+                    Imaging Report
+                </span>
+            {% else %}
+                <span class="note-badge note-badge--lg">{{ note.document_class }}</span>
+            {% endif %}
+
+            {% if note.status and note.status != 'COMPLETED' %}
+                {% if note.status == 'UNSIGNED' %}
+                    <span class="badge badge--warning">Unsigned</span>
+                {% elif note.status == 'AMENDED' %}
+                    <span class="badge badge--info">Amended</span>
+                {% elif note.status == 'RETRACTED' %}
+                    <span class="badge badge--danger">Retracted</span>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Note Metadata -->
+    <div class="note-detail__metadata">
+        <div class="note-detail__metadata-item">
+            <i class="fa-solid fa-calendar-days"></i>
+            <strong>Date:</strong>
+            {{ note.reference_datetime[:16].replace('T', ' ') if note.reference_datetime else 'N/A' }}
+        </div>
+        {% if note.author_name %}
+        <div class="note-detail__metadata-item">
+            <i class="fa-solid fa-user-doctor"></i>
+            <strong>Author:</strong>
+            {{ note.author_name }}
+        </div>
+        {% endif %}
+        {% if note.cosigner_name %}
+        <div class="note-detail__metadata-item">
+            <i class="fa-solid fa-user-pen"></i>
+            <strong>Cosigner:</strong>
+            {{ note.cosigner_name }}
+        </div>
+        {% endif %}
+        {% if note.facility_name %}
+        <div class="note-detail__metadata-item">
+            <i class="fa-solid fa-hospital"></i>
+            <strong>Facility:</strong>
+            {{ note.facility_name }}
+        </div>
+        {% endif %}
+        {% if note.entry_datetime %}
+        <div class="note-detail__metadata-item">
+            <i class="fa-solid fa-clock"></i>
+            <strong>Entered:</strong>
+            {{ note.entry_datetime[:16].replace('T', ' ') }}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Note Text Content -->
+    <div class="note-detail__content">
+        {% if note.document_text %}
+            <pre class="note-detail__text">{{ note.document_text }}</pre>
+        {% else %}
+            <p class="text-muted" style="font-style: italic;">Note text is not available.</p>
+        {% endif %}
+    </div>
+
+    <!-- Note Footer -->
+    <div class="note-detail__footer">
+        <div class="note-detail__footer-info">
+            {% if note.text_length %}
+                <span class="note-detail__footer-item">
+                    <i class="fa-solid fa-file-lines"></i>
+                    {{ note.text_length }} characters
+                </span>
+            {% endif %}
+            {% if note.days_since_note is not none %}
+                <span class="note-detail__footer-item">
+                    <i class="fa-solid fa-calendar-clock"></i>
+                    {{ note.days_since_note }} days ago
+                </span>
+            {% endif %}
+            {% if note.note_age_category %}
+                <span class="note-detail__footer-item">
+                    <i class="fa-solid fa-tag"></i>
+                    {{ note.note_age_category }}
+                </span>
+            {% endif %}
+        </div>
+
+        <!-- Collapse Button -->
+        <button class="btn btn--secondary btn--sm"
+                onclick="document.getElementById('note-detail-{{ note.note_id }}').style.display='none'; document.getElementById('note-detail-{{ note.note_id }}').previousElementSibling.querySelector('button').style.display='block';">
+            <i class="fa-solid fa-chevron-up"></i>
+            Collapse Note
+        </button>
+    </div>
+</div>

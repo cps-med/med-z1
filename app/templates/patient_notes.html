@@ -1,0 +1,367 @@
+{% extends "base.html" %}
+
+{% block title %}Clinical Notes - {{ patient.name_display if patient else 'Med-Z1' }}{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    {% if error %}
+        <!-- Error State -->
+        <div class="page-error">
+            <div class="page-error__icon">
+                <i class="fa-solid fa-triangle-exclamation fa-3x"></i>
+            </div>
+            <h2 class="page-error__title">Error Loading Clinical Notes</h2>
+            <p class="page-error__message">{{ error }}</p>
+            <a href="/" class="btn btn--primary">
+                <i class="fa-solid fa-house"></i>
+                Return to Dashboard
+            </a>
+        </div>
+    {% elif not patient %}
+        <!-- No Patient State -->
+        <div class="page-error">
+            <div class="page-error__icon">
+                <i class="fa-regular fa-user fa-3x"></i>
+            </div>
+            <h2 class="page-error__title">No Patient Selected</h2>
+            <p class="page-error__message">Please select a patient to view their clinical notes</p>
+            <a href="/" class="btn btn--primary">
+                <i class="fa-solid fa-house"></i>
+                Return to Dashboard
+            </a>
+        </div>
+    {% else %}
+        <!-- Page Header -->
+        <div class="page-header">
+            <div class="page-header__breadcrumb">
+                <a href="/" class="breadcrumb-link">
+                    <i class="fa-solid fa-house"></i>
+                    Dashboard
+                </a>
+                <i class="fa-solid fa-chevron-right"></i>
+                <span class="breadcrumb-current">Clinical Notes</span>
+            </div>
+            <div class="page-header__title-group">
+                <h1 class="page-header__title">
+                    Clinical Notes
+                </h1>
+            </div>
+        </div>
+
+        <!-- Summary Stats Bar -->
+        <div class="notes-summary-bar">
+            <div class="note-stat-card">
+                <div class="note-stat-card__value">{{ total_count }}</div>
+                <div class="note-stat-card__label">Total Notes</div>
+            </div>
+            {% if note_counts.get('Progress Notes', 0) > 0 %}
+            <div class="note-stat-card note-stat-card--progress">
+                <div class="note-stat-card__value">{{ note_counts['Progress Notes'] }}</div>
+                <div class="note-stat-card__label">Progress Notes</div>
+            </div>
+            {% endif %}
+            {% if note_counts.get('Consults', 0) > 0 %}
+            <div class="note-stat-card note-stat-card--consult">
+                <div class="note-stat-card__value">{{ note_counts['Consults'] }}</div>
+                <div class="note-stat-card__label">Consults</div>
+            </div>
+            {% endif %}
+            {% if note_counts.get('Discharge Summaries', 0) > 0 %}
+            <div class="note-stat-card note-stat-card--discharge">
+                <div class="note-stat-card__value">{{ note_counts['Discharge Summaries'] }}</div>
+                <div class="note-stat-card__label">Discharge Summaries</div>
+            </div>
+            {% endif %}
+            {% if note_counts.get('Imaging', 0) > 0 %}
+            <div class="note-stat-card note-stat-card--imaging">
+                <div class="note-stat-card__value">{{ note_counts['Imaging'] }}</div>
+                <div class="note-stat-card__label">Imaging Reports</div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Filters and Controls -->
+        <div class="notes-controls">
+            <!-- Filter Section -->
+            <form class="notes-filters"
+                  hx-get="/patient/{{ patient.icn }}/notes"
+                  hx-target="#notes-table-container"
+                  hx-select="#notes-table-container"
+                  hx-trigger="change">
+                <div class="filter-row">
+                    <!-- Note Class Filter -->
+                    <div class="filter-group">
+                        <label class="filter-group__label">
+                            <i class="fa-solid fa-filter"></i>
+                            Note Type:
+                        </label>
+                        <select name="note_class" class="filter-select">
+                            <option value="all" {% if note_class_filter == 'all' %}selected{% endif %}>All Types</option>
+                            <option value="Progress Notes" {% if note_class_filter == 'Progress Notes' %}selected{% endif %}>Progress Notes</option>
+                            <option value="Consults" {% if note_class_filter == 'Consults' %}selected{% endif %}>Consults</option>
+                            <option value="Discharge Summaries" {% if note_class_filter == 'Discharge Summaries' %}selected{% endif %}>Discharge Summaries</option>
+                            <option value="Imaging" {% if note_class_filter == 'Imaging' %}selected{% endif %}>Imaging</option>
+                        </select>
+                    </div>
+
+                    <!-- Date Range Filter -->
+                    <div class="filter-group">
+                        <label class="filter-group__label">
+                            <i class="fa-solid fa-calendar-days"></i>
+                            Date Range:
+                        </label>
+                        <select name="date_range" class="filter-select">
+                            <option value="30" {% if date_range_filter == 30 %}selected{% endif %}>Last 30 Days</option>
+                            <option value="90" {% if date_range_filter == 90 %}selected{% endif %}>Last 90 Days</option>
+                            <option value="180" {% if date_range_filter == 180 %}selected{% endif %}>Last 6 Months</option>
+                            <option value="365" {% if date_range_filter == 365 %}selected{% endif %}>Last Year</option>
+                            <option value="all" {% if date_range_filter == 'all' %}selected{% endif %}>All Notes</option>
+                        </select>
+                    </div>
+
+                    <!-- Author Filter -->
+                    <div class="filter-group">
+                        <label class="filter-group__label">
+                            <i class="fa-solid fa-user-doctor"></i>
+                            Author:
+                        </label>
+                        <select name="author" class="filter-select">
+                            <option value="">All Authors</option>
+                            {% for auth in authors %}
+                                <option value="{{ auth }}" {% if author_filter == auth %}selected{% endif %}>{{ auth }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Status Filter -->
+                    <div class="filter-group">
+                        <label class="filter-group__label">
+                            <i class="fa-solid fa-circle-check"></i>
+                            Status:
+                        </label>
+                        <select name="status" class="filter-select">
+                            <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Statuses</option>
+                            <option value="COMPLETED" {% if status_filter == 'COMPLETED' %}selected{% endif %}>Completed</option>
+                            <option value="UNSIGNED" {% if status_filter == 'UNSIGNED' %}selected{% endif %}>Unsigned</option>
+                            <option value="AMENDED" {% if status_filter == 'AMENDED' %}selected{% endif %}>Amended</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Hidden fields to preserve sort and pagination -->
+                <input type="hidden" name="sort_by" value="{{ sort_by }}">
+                <input type="hidden" name="sort_order" value="{{ sort_order }}">
+                <input type="hidden" name="page" value="1">
+            </form>
+        </div>
+
+        <!-- Notes Table Container (HTMX target) -->
+        <div id="notes-table-container">
+            {% if notes %}
+                <!-- Notes Table -->
+                <div class="notes-table">
+                    <!-- Table Header -->
+                    <div class="notes-table__header">
+                        <div class="notes-table__header-cell notes-table__header-cell--date">
+                            <a href="/patient/{{ patient.icn }}/notes?note_class={{ note_class_filter }}&date_range={{ date_range_filter }}&author={{ author_filter or '' }}&status={{ status_filter }}&sort_by=reference_datetime&sort_order={{ 'asc' if sort_by == 'reference_datetime' and sort_order == 'desc' else 'desc' }}&page={{ page }}"
+                               hx-get="/patient/{{ patient.icn }}/notes?note_class={{ note_class_filter }}&date_range={{ date_range_filter }}&author={{ author_filter or '' }}&status={{ status_filter }}&sort_by=reference_datetime&sort_order={{ 'asc' if sort_by == 'reference_datetime' and sort_order == 'desc' else 'desc' }}&page={{ page }}"
+                               hx-target="#notes-table-container"
+                               hx-select="#notes-table-container"
+                               hx-push-url="true">
+                                Date
+                                {% if sort_by == 'reference_datetime' %}
+                                    <i class="fa-solid fa-sort-{{ 'down' if sort_order == 'desc' else 'up' }}"></i>
+                                {% else %}
+                                    <i class="fa-solid fa-sort"></i>
+                                {% endif %}
+                            </a>
+                        </div>
+                        <div class="notes-table__header-cell notes-table__header-cell--type">
+                            <a href="/patient/{{ patient.icn }}/notes?note_class={{ note_class_filter }}&date_range={{ date_range_filter }}&author={{ author_filter or '' }}&status={{ status_filter }}&sort_by=document_class&sort_order={{ 'asc' if sort_by == 'document_class' and sort_order == 'desc' else 'desc' }}&page={{ page }}"
+                               hx-get="/patient/{{ patient.icn }}/notes?note_class={{ note_class_filter }}&date_range={{ date_range_filter }}&author={{ author_filter or '' }}&status={{ status_filter }}&sort_by=document_class&sort_order={{ 'asc' if sort_by == 'document_class' and sort_order == 'desc' else 'desc' }}&page={{ page }}"
+                               hx-target="#notes-table-container"
+                               hx-select="#notes-table-container"
+                               hx-push-url="true">
+                                Type
+                                {% if sort_by == 'document_class' %}
+                                    <i class="fa-solid fa-sort-{{ 'down' if sort_order == 'desc' else 'up' }}"></i>
+                                {% else %}
+                                    <i class="fa-solid fa-sort"></i>
+                                {% endif %}
+                            </a>
+                        </div>
+                        <div class="notes-table__header-cell notes-table__header-cell--status">
+                            Status
+                        </div>
+                        <div class="notes-table__header-cell notes-table__header-cell--title">
+                            Title
+                        </div>
+                        <div class="notes-table__header-cell notes-table__header-cell--author">
+                            <a href="/patient/{{ patient.icn }}/notes?note_class={{ note_class_filter }}&date_range={{ date_range_filter }}&author={{ author_filter or '' }}&status={{ status_filter }}&sort_by=author_name&sort_order={{ 'asc' if sort_by == 'author_name' and sort_order == 'desc' else 'desc' }}&page={{ page }}"
+                               hx-get="/patient/{{ patient.icn }}/notes?note_class={{ note_class_filter }}&date_range={{ date_range_filter }}&author={{ author_filter or '' }}&status={{ status_filter }}&sort_by=author_name&sort_order={{ 'asc' if sort_by == 'author_name' and sort_order == 'desc' else 'desc' }}&page={{ page }}"
+                               hx-target="#notes-table-container"
+                               hx-select="#notes-table-container"
+                               hx-push-url="true">
+                                Author
+                                {% if sort_by == 'author_name' %}
+                                    <i class="fa-solid fa-sort-{{ 'down' if sort_order == 'desc' else 'up' }}"></i>
+                                {% else %}
+                                    <i class="fa-solid fa-sort"></i>
+                                {% endif %}
+                            </a>
+                        </div>
+                        <div class="notes-table__header-cell notes-table__header-cell--facility">
+                            Facility
+                        </div>
+                    </div>
+
+                    <!-- Table Body -->
+                    <div class="notes-table__body">
+                        {% for note in notes %}
+                        <div class="note-row" id="note-row-{{ note.note_id }}">
+                            <!-- Collapsed Row (default state) -->
+                            <div class="note-row__collapsed">
+                                <div class="note-row__cell note-row__cell--date">
+                                    {{ note.reference_datetime[:10] if note.reference_datetime else 'N/A' }}
+                                </div>
+                                <div class="note-row__cell note-row__cell--type">
+                                    {% if note.document_class == 'Progress Notes' %}
+                                        <span class="note-badge note-badge--progress">
+                                            <i class="fa-solid fa-stethoscope"></i>
+                                            Progress
+                                        </span>
+                                    {% elif note.document_class == 'Consults' %}
+                                        <span class="note-badge note-badge--consult">
+                                            <i class="fa-solid fa-user-doctor"></i>
+                                            Consult
+                                        </span>
+                                    {% elif note.document_class == 'Discharge Summaries' %}
+                                        <span class="note-badge note-badge--discharge">
+                                            <i class="fa-solid fa-clipboard-check"></i>
+                                            Discharge
+                                        </span>
+                                    {% elif note.document_class == 'Imaging' %}
+                                        <span class="note-badge note-badge--imaging">
+                                            <i class="fa-solid fa-x-ray"></i>
+                                            Imaging
+                                        </span>
+                                    {% else %}
+                                        <span class="note-badge">{{ note.document_class }}</span>
+                                    {% endif %}
+                                </div>
+                                <div class="note-row__cell note-row__cell--status">
+                                    {% if note.status == 'COMPLETED' %}
+                                        <span class="badge badge--success badge--sm">Completed</span>
+                                    {% elif note.status == 'UNSIGNED' %}
+                                        <span class="badge badge--warning badge--sm">Unsigned</span>
+                                    {% elif note.status == 'AMENDED' %}
+                                        <span class="badge badge--info badge--sm">Amended</span>
+                                    {% elif note.status == 'RETRACTED' %}
+                                        <span class="badge badge--danger badge--sm">Retracted</span>
+                                    {% else %}
+                                        <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </div>
+                                <div class="note-row__cell note-row__cell--title">
+                                    <strong>{{ note.document_title }}</strong>
+                                </div>
+                                <div class="note-row__cell note-row__cell--author">
+                                    {{ note.author_name or 'Unknown' }}
+                                </div>
+                                <div class="note-row__cell note-row__cell--facility">
+                                    {{ note.facility_name or 'N/A' }}
+                                </div>
+                            </div>
+
+                            <!-- Preview Row -->
+                            <div class="note-row__preview">
+                                {{ note.text_preview if note.text_preview else 'No preview available' }}
+                            </div>
+
+                            <!-- Expand Button -->
+                            <div class="note-row__actions">
+                                <button class="btn btn--link btn--sm"
+                                        hx-get="/patient/{{ patient.icn }}/notes/{{ note.note_id }}/detail"
+                                        hx-target="#note-detail-{{ note.note_id }}"
+                                        hx-swap="innerHTML"
+                                        onclick="this.style.display='none'; document.getElementById('note-detail-{{ note.note_id }}').style.display='block';">
+                                    <i class="fa-solid fa-chevron-down"></i>
+                                    Expand to read full note
+                                </button>
+                            </div>
+
+                            <!-- Expanded Detail (hidden by default) -->
+                            <div id="note-detail-{{ note.note_id }}" class="note-row__detail" style="display: none;">
+                                <!-- Will be populated by HTMX from note_detail.html partial -->
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Pagination -->
+                {% if total_pages > 1 %}
+                <div class="pagination">
+                    <div class="pagination__info">
+                        Showing {{ (page - 1) * per_page + 1 }} - {{ page * per_page if page * per_page < total_count else total_count }} of {{ total_count }} notes
+                    </div>
+                    <div class="pagination__controls">
+                        {% if page > 1 %}
+                        <a href="/patient/{{ patient.icn }}/notes?note_class={{ note_class_filter }}&date_range={{ date_range_filter }}&author={{ author_filter or '' }}&status={{ status_filter }}&sort_by={{ sort_by }}&sort_order={{ sort_order }}&page={{ page - 1 }}"
+                           hx-get="/patient/{{ patient.icn }}/notes?note_class={{ note_class_filter }}&date_range={{ date_range_filter }}&author={{ author_filter or '' }}&status={{ status_filter }}&sort_by={{ sort_by }}&sort_order={{ sort_order }}&page={{ page - 1 }}"
+                           hx-target="#notes-table-container"
+                           hx-select="#notes-table-container"
+                           hx-push-url="true"
+                           class="btn btn--secondary btn--sm">
+                            <i class="fa-solid fa-chevron-left"></i>
+                            Previous
+                        </a>
+                        {% else %}
+                        <button class="btn btn--secondary btn--sm" disabled>
+                            <i class="fa-solid fa-chevron-left"></i>
+                            Previous
+                        </button>
+                        {% endif %}
+
+                        <span class="pagination__current">Page {{ page }} of {{ total_pages }}</span>
+
+                        {% if page < total_pages %}
+                        <a href="/patient/{{ patient.icn }}/notes?note_class={{ note_class_filter }}&date_range={{ date_range_filter }}&author={{ author_filter or '' }}&status={{ status_filter }}&sort_by={{ sort_by }}&sort_order={{ sort_order }}&page={{ page + 1 }}"
+                           hx-get="/patient/{{ patient.icn }}/notes?note_class={{ note_class_filter }}&date_range={{ date_range_filter }}&author={{ author_filter or '' }}&status={{ status_filter }}&sort_by={{ sort_by }}&sort_order={{ sort_order }}&page={{ page + 1 }}"
+                           hx-target="#notes-table-container"
+                           hx-select="#notes-table-container"
+                           hx-push-url="true"
+                           class="btn btn--secondary btn--sm">
+                            Next
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </a>
+                        {% else %}
+                        <button class="btn btn--secondary btn--sm" disabled>
+                            Next
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+            {% else %}
+                <!-- Empty State -->
+                <div class="page-empty">
+                    <div class="page-empty__icon">
+                        <i class="fa-solid fa-file-medical fa-3x"></i>
+                    </div>
+                    <h2 class="page-empty__title">No Clinical Notes Found</h2>
+                    <p class="page-empty__message">
+                        {% if note_class_filter != 'all' or date_range_filter != 90 or author_filter or status_filter != 'all' %}
+                            No notes match the current filter criteria. Try adjusting your filters.
+                        {% else %}
+                            No clinical notes have been recorded for this patient.
+                        {% endif %}
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

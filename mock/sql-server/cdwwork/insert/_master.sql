@@ -42,6 +42,9 @@
 -- Laboratory dimensions
 :r Dim.LabTest.sql
 
+-- Clinical notes dimensions
+:r Dim.TIUDocumentDefinition.sql
+
 -- =======================================================================
 -- PATIENT TABLES
 -- =======================================================================
@@ -91,4 +94,8 @@
 
 -- Laboratory results
 :r Chem.LabChem.sql
+
+-- Clinical Notes (TIU - Text Integration Utilities)
+:r TIU.TIUDocument_8925.sql
+:r TIU.TIUDocumentText.sql
 

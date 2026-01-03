@@ -79,6 +79,25 @@
                 </div>
             </div>
 
+            <!-- Clinical Notes Widget (2x1 - Compact) -->
+            <div class="widget widget--2x1"
+                 id="widget-notes"
+                 hx-get="/api/patient/dashboard/widget/notes/{{ patient.icn }}"
+                 hx-trigger="load"
+                 hx-swap="innerHTML">
+                <div class="widget__body">
+                    <div class="widget__spinner"></div>
+                </div>
+            </div>
+
+            <!-- Immunizations Widget (1x1 - Standard) - Placeholder -->
+            {{ placeholder_widget(
+                size='1x1',
+                icon='fa-solid fa-syringe',
+                title='Immunizations',
+                description='Vaccination history and status'
+            ) }}
+
             <!-- Problems/Diagnoses Widget (1x1 - Standard) - Placeholder -->
             {{ placeholder_widget(
                 size='1x1',
@@ -95,12 +114,12 @@
                 description='Recent and pending orders'
             ) }}
 
-            <!-- Notes/Documents Widget (1x1 - Standard) - Placeholder -->
+            <!-- Procedures Widget (1x1 - Standard) - Placeholder -->
             {{ placeholder_widget(
                 size='1x1',
-                icon='fa-solid fa-file-lines',
-                title='Notes/Documents',
-                description='Clinical notes and documents'
+                icon='fa-solid fa-user-doctor',
+                title='Procedures',
+                description='Surgical and procedural history'
             ) }}
 
             <!-- Radiology/Imaging Widget (1x1 - Standard) - Placeholder -->
@@ -109,22 +128,6 @@
                 icon='fa-solid fa-x-ray',
                 title='Radiology/Imaging',
                 description='Imaging studies and reports'
-            ) }}
-
-            <!-- Immunizations Widget (1x1 - Standard) - Placeholder -->
-            {{ placeholder_widget(
-                size='1x1',
-                icon='fa-solid fa-syringe',
-                title='Immunizations',
-                description='Vaccination history and status'
-            ) }}
-
-            <!-- Procedures Widget (1x1 - Standard) - Placeholder -->
-            {{ placeholder_widget(
-                size='1x1',
-                icon='fa-solid fa-user-doctor',
-                title='Procedures',
-                description='Surgical and procedural history'
             ) }}
         </div>
 
