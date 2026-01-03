@@ -517,10 +517,37 @@ User Response (markdown → HTML)
 
 **Key Components:**
 - **System Prompts:** `ai/prompts/system_prompts.py` - Centralized prompt management
+- **Suggested Questions:** `ai/prompts/suggested_questions.py` - UI question chips (system-wide)
 - **Agent:** `ai/agents/insight_agent.py` - LangGraph orchestration
 - **Tools:** `ai/tools/*.py` - LangChain @tool decorated functions
 - **Context Builder:** `ai/services/patient_context.py` - Formats DB queries for LLM
 - **Routes:** `app/routes/insight.py` - FastAPI endpoints for chat interface
+
+### Suggested Questions
+
+**Purpose:** Guide clinicians toward high-value queries that showcase agent capabilities.
+
+**Location:** `ai/prompts/suggested_questions.py`
+
+**Current Questions:**
+1. "What are the key clinical risks for this patient?"
+2. "Are there any drug-drug interaction concerns?"
+3. "What did recent clinical notes say about this patient?"
+
+**Design Principles:**
+- Demonstrate available tools (DDI, vitals, notes, patient summary)
+- Broad enough to apply to most patients
+- Specific enough to yield actionable insights
+
+**Usage:**
+```python
+# app/routes/insight.py
+from ai.prompts.suggested_questions import SUGGESTED_QUESTIONS
+
+suggested_questions = SUGGESTED_QUESTIONS
+```
+
+**To modify questions:** Edit the `SUGGESTED_QUESTIONS` list in `ai/prompts/suggested_questions.py`
 
 ### Configuration (config.py)
 
@@ -577,12 +604,14 @@ uvicorn app.main:app --reload
 
 **What Changed (2026-01-03):**
 - ✅ Created `ai/prompts/system_prompts.py` (centralized prompt architecture)
+- ✅ Created `ai/prompts/suggested_questions.py` (system-wide question management)
 - ✅ Added 5 AI notes config parameters to `config.py`
 - ✅ Created `get_recent_notes_for_ai()` in `app/db/notes.py` (500-char previews)
 - ✅ Enhanced `PatientContextBuilder` with `get_notes_summary()` method
 - ✅ Updated `build_comprehensive_summary()` to include notes section
 - ✅ Created `get_clinical_notes_summary()` tool in `ai/tools/notes_tools.py`
 - ✅ Updated `ALL_TOOLS` to include 4th tool
+- ✅ Refactored suggested questions from inline list to `ai/prompts/` module
 - ✅ Updated suggested questions to include note-based query
 - ✅ Integrated system prompt into `app/routes/insight.py`
 

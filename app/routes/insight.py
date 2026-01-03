@@ -21,6 +21,7 @@ from app.services.vista_cache import VistaSessionCache
 from ai.agents.insight_agent import create_insight_agent
 from ai.tools import ALL_TOOLS, set_request_context
 from ai.prompts.system_prompts import get_system_prompt
+from ai.prompts.suggested_questions import SUGGESTED_QUESTIONS
 
 # Page router for full insight pages (no prefix for flexibility)
 page_router = APIRouter(tags=["insight-pages"])
@@ -92,13 +93,8 @@ async def get_insight_page(request: Request, icn: str):
                 )
             )
 
-        # Initial suggested questions
-        # Phase 4: Added note-based query to showcase new clinical notes tool
-        suggested_questions = [
-            "What are the key clinical risks for this patient?",
-            "Are there any drug-drug interaction concerns?",
-            "What did recent clinical notes say about this patient?",
-        ]
+        # Suggested questions for UI (managed in ai/prompts/suggested_questions.py)
+        suggested_questions = SUGGESTED_QUESTIONS
 
         # Get Vista cache status for this patient
         cache_info = VistaSessionCache.get_cache_info(request, icn)
