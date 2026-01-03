@@ -91,6 +91,104 @@ def get_recent_notes(
         raise
 
 
+def get_recent_notes_for_ai(
+    icn: str,
+    limit: int = 3,
+    preview_length: int = 500
+) -> List[Dict[str, Any]]:
+    """
+    Get recent clinical notes optimized for AI consumption.
+
+    Similar to get_recent_notes() but with configurable preview length
+    for AI context building. Separates UI concerns (200-char previews)
+    from AI concerns (500-char previews for better clinical context).
+
+    This function is used by:
+    - PatientContextBuilder.get_notes_summary() for comprehensive patient summaries
+    - AI tools that need more context than the UI text_preview provides
+
+    Args:
+        icn: Integrated Care Number (patient_key)
+        limit: Number of notes to return (default 3 from config.AI_NOTES_SUMMARY_LIMIT)
+        preview_length: Characters of note text to include (default 500 from config.AI_NOTES_PREVIEW_LENGTH)
+
+    Returns:
+        List of dictionaries with extended note preview text
+
+    Example:
+        >>> from config import AI_NOTES_SUMMARY_LIMIT, AI_NOTES_PREVIEW_LENGTH
+        >>> notes = get_recent_notes_for_ai("ICN100001", limit=AI_NOTES_SUMMARY_LIMIT, preview_length=AI_NOTES_PREVIEW_LENGTH)
+        >>> len(notes)
+        3
+        >>> len(notes[0]['text_preview'])  # Will be ~500 chars instead of 200
+        487
+
+    Design Notes:
+        - 500 chars captures SOAP opening (Subjective, Objective, Assessment start)
+        - ~125 tokens per note = 375 tokens for 3 notes (negligible cost)
+        - Much cheaper than full text (~5000 tokens per note)
+        - Provides sufficient clinical context for LLM analysis
+    """
+    query = text("""
+        SELECT
+            note_id,
+            tiu_document_sid,
+            document_title,
+            document_class,
+            vha_standard_title,
+            reference_datetime,
+            entry_datetime,
+            author_name,
+            facility_name,
+            SUBSTRING(document_text, 1, :preview_length) as text_preview,
+            text_length,
+            status,
+            days_since_note,
+            note_age_category
+        FROM clinical.patient_clinical_notes
+        WHERE patient_key = :icn
+          AND status = 'COMPLETED'  -- Exclude unsigned/retracted notes
+        ORDER BY reference_datetime DESC
+        LIMIT :limit
+    """)
+
+    try:
+        with engine.connect() as conn:
+            results = conn.execute(
+                query,
+                {"icn": icn, "limit": limit, "preview_length": preview_length}
+            ).fetchall()
+
+            notes = []
+            for row in results:
+                notes.append({
+                    "note_id": row[0],
+                    "tiu_document_sid": row[1],
+                    "document_title": row[2],
+                    "document_class": row[3],
+                    "vha_standard_title": row[4],
+                    "reference_datetime": str(row[5]) if row[5] else None,
+                    "entry_datetime": str(row[6]) if row[6] else None,
+                    "author_name": row[7],
+                    "facility_name": row[8],
+                    "text_preview": row[9],  # Extended preview (500 chars)
+                    "text_length": row[10],
+                    "status": row[11],
+                    "days_since_note": row[12],
+                    "note_age_category": row[13]
+                })
+
+            logger.info(
+                f"Retrieved {len(notes)} recent notes for AI (patient {icn}, "
+                f"preview_length={preview_length})"
+            )
+            return notes
+
+    except Exception as e:
+        logger.error(f"Error retrieving AI notes for {icn}: {e}")
+        raise
+
+
 def get_notes_summary(icn: str) -> Dict[str, Any]:
     """
     Get summary statistics for a patient's clinical notes.

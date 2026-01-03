@@ -26,6 +26,7 @@ from app.db.medications import get_patient_medications
 from app.db.vitals import get_recent_vitals
 from app.db.patient_allergies import get_patient_allergies
 from app.db.encounters import get_recent_encounters
+from app.db.notes import get_recent_notes_for_ai
 
 logger = logging.getLogger(__name__)
 
@@ -304,6 +305,77 @@ class PatientContextBuilder:
 
         return text.strip()
 
+    def get_notes_summary(self) -> str:
+        """
+        Get recent clinical notes formatted as natural language text.
+
+        Shows up to 3 most recent notes with preview text (500 chars).
+        Includes note type, date, author, facility, and clinical preview.
+
+        Returns:
+            Natural language notes summary
+
+        Example:
+            "Recent Clinical Notes (Last 3):
+             - 2025-12-28 Progress Note by Dr. Smith (VA Alexandria):
+               'SUBJECTIVE: Patient presents for follow-up of hypertension and diabetes...'
+             - 2025-12-15 Cardiology Consult by Dr. Johnson (VA Alexandria):
+               'REASON FOR CONSULT: Evaluate for coronary artery disease...'
+             - 2025-11-20 Discharge Summary by Dr. Williams (VA Alexandria):
+               'ADMISSION DATE: 11/17/2025. DISCHARGE DATE: 11/20/2025...'"
+        """
+        from config import AI_NOTES_SUMMARY_LIMIT, AI_NOTES_PREVIEW_LENGTH
+
+        notes = get_recent_notes_for_ai(
+            self.icn,
+            limit=AI_NOTES_SUMMARY_LIMIT,
+            preview_length=AI_NOTES_PREVIEW_LENGTH
+        )
+
+        if not notes:
+            return "No recent clinical notes on record (last 90 days)"
+
+        count = len(notes)
+        text = f"Recent Clinical Notes (Last {count}):\n"
+
+        for note in notes:
+            # Date and note type
+            note_date = note.get('reference_datetime', 'unknown date')
+            if note_date and ' ' in note_date:
+                # Extract date part from datetime (format: "2025-12-28 10:30:00" -> "2025-12-28")
+                note_date = note_date.split(' ')[0]
+
+            note_type = note.get('document_class', 'Clinical Note')
+            text += f"- {note_date} {note_type}"
+
+            # Author
+            author = note.get('author_name')
+            if author:
+                text += f" by {author}"
+
+            # Facility
+            facility = note.get('facility_name')
+            if facility:
+                text += f" ({facility})"
+
+            text += ":\n"
+
+            # Preview text (500 chars, captures SOAP opening)
+            preview = note.get('text_preview')
+            if preview:
+                # Clean up preview text (remove extra whitespace, limit line breaks)
+                preview_clean = ' '.join(preview.split())
+                # Truncate if still too long and add ellipsis
+                if len(preview_clean) > 500:
+                    preview_clean = preview_clean[:497] + "..."
+                text += f"  '{preview_clean}'\n"
+            else:
+                text += f"  (No text preview available)\n"
+
+            text += "\n"
+
+        return text.strip()
+
     def build_comprehensive_summary(self) -> str:
         """
         Build comprehensive patient summary combining all clinical domains.
@@ -340,6 +412,7 @@ class PatientContextBuilder:
         vitals = self.get_vitals_summary()
         allergies = self.get_allergies_summary()
         encounters = self.get_encounters_summary()
+        notes = self.get_notes_summary()  # Phase 4: Add clinical notes
 
         # Build multi-section summary
         summary = f"""PATIENT DEMOGRAPHICS
@@ -357,7 +430,10 @@ ALLERGIES
 RECENT ENCOUNTERS (last 90 days)
 {encounters}
 
-Data sources: PostgreSQL (demographics, medications, vitals, allergies, encounters)"""
+RECENT CLINICAL NOTES (last 90 days)
+{notes}
+
+Data sources: PostgreSQL (demographics, medications, vitals, allergies, encounters, clinical_notes)"""
 
         logger.info(f"Comprehensive summary built for patient {self.icn} ({len(summary)} characters)")
 

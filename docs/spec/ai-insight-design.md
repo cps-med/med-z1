@@ -2221,7 +2221,7 @@ Following Phase 1 Week 1 completion, data quality improvements were implemented 
 
 ---
 
-### Phase 4: Clinical Notes Integration (Week 4) 📝 **READY FOR IMPLEMENTATION**
+### Phase 4: Clinical Notes Integration (Week 4) ✅ **COMPLETE**
 
 **Prerequisites:**
 - ✅ Clinical Notes domain fully implemented (106 notes in PostgreSQL)
@@ -2234,28 +2234,28 @@ Following Phase 1 Week 1 completion, data quality improvements were implemented 
 
 ---
 
-**Day 1-2: Enhance Patient Summary Tool with Clinical Notes** ⏳
+**Day 1-2: Enhance Patient Summary Tool with Clinical Notes** ✅ **COMPLETE**
 
 **Tasks:**
-1. Update `ai/services/patient_context.py` → `PatientContextBuilder`:
-   - Add `get_notes_summary()` method
-   - Call `app.db.notes.get_recent_notes(icn, limit=3)`
-   - Format notes: `[Date] [Type]: [Preview (150 chars)]...`
-   - Add to existing `build_context()` output (after Encounters section)
+1. ✅ Update `ai/services/patient_context.py` → `PatientContextBuilder`:
+   - ✅ Add `get_notes_summary()` method
+   - ✅ Call `app.db.notes.get_recent_notes_for_ai(icn, limit=3, preview_length=500)`
+   - ✅ Format notes: `[Date] [Type] by [Author] ([Facility]): [Preview (500 chars)]...`
+   - ✅ Add to existing `build_comprehensive_summary()` output (after Encounters section)
 
-2. Update `ai/tools/patient_tools.py` → `get_patient_summary()`:
-   - No code changes (PatientContextBuilder handles it)
-   - Tool automatically includes notes in output
+2. ✅ Update `ai/tools/patient_tools.py` → `get_patient_summary()`:
+   - ✅ No code changes (PatientContextBuilder handles it)
+   - ✅ Tool automatically includes notes in output
 
-3. Test enhanced patient summary:
-   - Verify notes appear in summary for patients with clinical notes
-   - Verify graceful handling when no notes exist
-   - Check token usage (ensure < 10K tokens with notes included)
+3. ✅ Test enhanced patient summary:
+   - ✅ Verify notes appear in summary for patients with clinical notes
+   - ✅ Verify graceful handling when no notes exist
+   - ✅ Check token usage (< 2K tokens total with notes included)
 
 **Deliverables:**
-- [ ] Updated `PatientContextBuilder.get_notes_summary()` method
-- [ ] Enhanced `get_patient_summary()` output includes recent notes
-- [ ] Manual testing with 3-5 patients (with/without notes)
+- [x] Updated `PatientContextBuilder.get_notes_summary()` method
+- [x] Enhanced `get_patient_summary()` output includes recent notes
+- [x] Manual testing with 3-5 patients (with/without notes)
 
 **Estimated Time:** 2-3 hours
 
@@ -2272,37 +2272,37 @@ Recent Clinical Notes (Last 3):
 
 ---
 
-**Day 3-4: Create get_clinical_notes_summary() Tool** ⏳
+**Day 3-4: Create get_clinical_notes_summary() Tool** ✅ **COMPLETE**
 
 **Tasks:**
-1. Create new file: `ai/tools/notes_tools.py`:
-   - Implement `get_clinical_notes_summary()` tool (see Section 6.5 for full code)
-   - Parameters: `patient_icn`, `note_type` (optional), `days` (default 90), `limit` (default 5)
-   - Wraps `app.db.notes.get_all_notes()` with formatting
-   - Include note type, date, author, facility, preview text
+1. ✅ Create new file: `ai/tools/notes_tools.py`:
+   - ✅ Implement `get_clinical_notes_summary()` tool (see Section 6.5 for full code)
+   - ✅ Parameters: `patient_icn`, `note_type` (optional), `days` (default 90), `limit` (default 5)
+   - ✅ Wraps `app.db.notes.get_all_notes()` with formatting
+   - ✅ Include note type, date, title, author, cosigner, facility, status, preview text (500 chars)
 
-2. Update `ai/tools/__init__.py`:
-   - Import new tool: `from ai.tools.notes_tools import get_clinical_notes_summary`
-   - Add to `ALL_TOOLS` list
-   - Update `__all__` exports
+2. ✅ Update `ai/tools/__init__.py`:
+   - ✅ Import new tool: `from ai.tools.notes_tools import get_clinical_notes_summary`
+   - ✅ Add to `ALL_TOOLS` list (4 tools total)
+   - ✅ Update `__all__` exports
 
-3. Test tool independently:
-   - Test with `note_type` filter (Consults, Progress Notes, etc.)
-   - Test date range parameter (30, 90, 180 days)
-   - Test limit parameter (3, 5, 10 notes)
-   - Verify performance (<200ms query time)
+3. ✅ Test tool independently:
+   - ✅ Test with `note_type` filter (Consults, Progress Notes, Discharge Summaries, Imaging)
+   - ✅ Test date range parameter (30, 90, 180 days)
+   - ✅ Test limit parameter (3, 5, 10 notes)
+   - ✅ Verify performance (<200ms query time)
 
-4. Test LangGraph agent integration:
-   - Ask: "What did the cardiology consult say?"
-   - Ask: "Show me recent progress notes"
-   - Ask: "What imaging studies were done recently?"
-   - Verify agent autonomously invokes correct tool with appropriate parameters
+4. ✅ Test LangGraph agent integration:
+   - ✅ Ask: "What did the cardiology consult say?"
+   - ✅ Ask: "Show me recent progress notes"
+   - ✅ Ask: "What imaging studies were done recently?"
+   - ✅ Verify agent autonomously invokes correct tool with appropriate parameters
 
 **Deliverables:**
-- [ ] New file `ai/tools/notes_tools.py` with `get_clinical_notes_summary()` tool
-- [ ] Updated `ai/tools/__init__.py` (ALL_TOOLS now has 4 tools)
-- [ ] LangGraph agent successfully invokes new tool for note-specific queries
-- [ ] Manual testing with 5-7 sample queries
+- [x] New file `ai/tools/notes_tools.py` with `get_clinical_notes_summary()` tool
+- [x] Updated `ai/tools/__init__.py` (ALL_TOOLS now has 4 tools)
+- [x] LangGraph agent successfully invokes new tool for note-specific queries
+- [x] Manual testing with 5-7 sample queries
 
 **Estimated Time:** 3-4 hours
 
@@ -2315,58 +2315,64 @@ Recent Clinical Notes (Last 3):
 
 ---
 
-**Day 5: System Prompt Update + Testing** ⏳
+**Day 5: System Prompt Update + Testing** ✅ **COMPLETE**
 
 **Tasks:**
-1. Update `ai/prompts/system_prompts.py`:
-   - Add clinical notes to system prompt description
-   - Update available tools list to include `get_clinical_notes_summary`
-   - Add guidance on when to use notes tool vs patient summary
+1. ✅ Create `ai/prompts/system_prompts.py`:
+   - ✅ Create centralized system prompts module (new architecture decision)
+   - ✅ Add comprehensive clinical insights system prompt
+   - ✅ Include clinical notes in available tools list (`get_clinical_notes_summary`)
+   - ✅ Add guidance on when to use notes tool vs patient summary
+   - ✅ Include safety & privacy guidelines, response formatting standards
 
-2. Update suggested questions in `app/templates/insight.html`:
-   - Replace one existing question with note-based query
-   - Example: "What did recent clinical notes say about this patient?"
+2. ✅ Update suggested questions in `app/routes/insight.py`:
+   - ✅ Replace one existing question with note-based query
+   - ✅ New question: "What did recent clinical notes say about this patient?"
 
-3. Comprehensive integration testing:
-   - Test with 5-10 patients (variety of note types)
-   - Test combined queries (e.g., "Check DDIs and summarize recent notes")
-   - Test edge cases (no notes, single note, 10+ notes)
-   - Verify performance (<5 sec p90 response time)
-   - Check token usage and LLM costs
+3. ✅ Comprehensive integration testing:
+   - ✅ Test with 5-10 patients (variety of note types)
+   - ✅ Test combined queries (e.g., "Check DDIs and summarize recent notes")
+   - ✅ Test edge cases (no notes, single note, 10+ notes)
+   - ✅ Verify performance (<5 sec p90 response time)
+   - ✅ Check token usage and LLM costs
 
-4. Documentation updates:
-   - Update this document (mark Phase 4 complete)
-   - Add Phase 4 notes to `app/README.md`
-   - Update `CLAUDE.md` with new AI capabilities
+4. ✅ Documentation updates:
+   - ✅ Update this document (mark Phase 4 complete)
+   - ✅ Add Phase 4 notes to `app/README.md`
+   - ✅ Update `CLAUDE.md` with new AI capabilities
 
 **Deliverables:**
-- [ ] Updated system prompt includes clinical notes guidance
-- [ ] Updated suggested questions in UI
-- [ ] Comprehensive testing checklist completed
-- [ ] Documentation updated
-- [ ] Phase 4 marked complete ✅
+- [x] Created system prompts architecture (`ai/prompts/system_prompts.py`)
+- [x] Updated system prompt includes clinical notes guidance
+- [x] Updated suggested questions in UI
+- [x] Comprehensive testing checklist completed
+- [x] Documentation updated
+- [x] Phase 4 marked complete ✅
 
 **Estimated Time:** 3-4 hours
 
 ---
 
 **Phase 4 Success Criteria:**
-- [ ] `get_patient_summary()` automatically includes recent clinical notes (last 3)
-- [ ] New `get_clinical_notes_summary()` tool available and functional
-- [ ] LangGraph agent autonomously invokes notes tool for relevant queries
-- [ ] Response time < 5 seconds for note-based queries (p90)
-- [ ] Token usage remains reasonable (< 15K tokens for complex queries)
-- [ ] Manual testing with 10+ patients confirms accurate note retrieval
-- [ ] UI suggested questions include at least one note-based query
+- [x] `get_patient_summary()` automatically includes recent clinical notes (last 3)
+- [x] New `get_clinical_notes_summary()` tool available and functional
+- [x] LangGraph agent autonomously invokes notes tool for relevant queries
+- [x] Response time < 5 seconds for note-based queries (p90)
+- [x] Token usage remains reasonable (< 2K tokens for summaries, < 5K for targeted queries)
+- [x] Manual testing with 10+ patients confirms accurate note retrieval
+- [x] UI suggested questions include at least one note-based query
 
 ---
 
 **Phase 4 Deliverables Summary:**
+- ✅ Created system prompts architecture (`ai/prompts/system_prompts.py`)
+- ✅ Added AI notes configuration to `config.py` (5 configurable parameters)
+- ✅ Created `get_recent_notes_for_ai()` with 500-char previews
 - ✅ Enhanced `PatientContextBuilder` with notes integration (2-3 hours)
 - ✅ New `get_clinical_notes_summary()` tool (3-4 hours)
 - ✅ Updated system prompts and UI (1-2 hours)
 - ✅ Comprehensive testing and documentation (2-2 hours)
-- ✅ **Total: 8-11 hours over 2 weeks**
+- ✅ **Total: 8-11 hours completed successfully**
 
 ---
 

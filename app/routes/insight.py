@@ -20,6 +20,7 @@ from app.utils.template_context import get_base_context
 from app.services.vista_cache import VistaSessionCache
 from ai.agents.insight_agent import create_insight_agent
 from ai.tools import ALL_TOOLS, set_request_context
+from ai.prompts.system_prompts import get_system_prompt
 
 # Page router for full insight pages (no prefix for flexibility)
 page_router = APIRouter(tags=["insight-pages"])
@@ -92,10 +93,11 @@ async def get_insight_page(request: Request, icn: str):
             )
 
         # Initial suggested questions
+        # Phase 4: Added note-based query to showcase new clinical notes tool
         suggested_questions = [
             "What are the key clinical risks for this patient?",
             "Are there any drug-drug interaction concerns?",
-            "Summarize this patient's recent clinical activity",
+            "What did recent clinical notes say about this patient?",
         ]
 
         # Get Vista cache status for this patient
@@ -164,20 +166,23 @@ async def post_chat_message(
         set_request_context(request)
 
         try:
-            # Create system message with patient context
+            # Get comprehensive system prompt from prompts module
+            base_system_prompt = get_system_prompt("clinical_insights")
+
+            # Add patient-specific context to system prompt
             system_message = SystemMessage(
-                content=f"""You are a clinical decision support AI assistant analyzing patient data.
+                content=f"""{base_system_prompt}
 
 CURRENT PATIENT CONTEXT:
 - Patient Name: {patient_name}
 - Patient ICN: {icn}
 
-You have access to tools that can query this patient's clinical data.
-If the user has refreshed data from Vista during this session, tools will automatically use that cached data.
 When the user asks questions about "this patient" or "the patient", they are referring to {patient_name} (ICN: {icn}).
 
-Use the available tools to gather relevant clinical information and provide evidence-based insights.
-Always cite which data sources you used in your analysis (PostgreSQL, Vista, or both)."""
+Vista Data Integration:
+- If the user has refreshed data from Vista during this session, tools will automatically use that cached data
+- Tools will cite which data source was used (PostgreSQL historical data vs Vista real-time data)
+- Always mention the data source in your response for transparency"""
             )
 
             # Invoke LangGraph agent with system context + user message

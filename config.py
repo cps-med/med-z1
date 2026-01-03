@@ -267,11 +267,57 @@ AUTH_CONFIG = {
 }
 
 # -----------------------------------------------------------
-# AI Subsystem Info
-# ----------------------------------------------------------- 
+# AI Subsystem Configuration
+# -----------------------------------------------------------
+
+# OpenAI LLM Settings
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4-turbo")
 OPENAI_TEMPERATURE = float(os.getenv("OPENAI_TEMPERATURE", "0.3"))  # Low temp for clinical accuracy
+
+# Clinical Notes Integration for AI (Phase 4)
+# Controls how clinical notes are included in AI analysis and responses
+
+# Preview length for AI context (characters)
+# - UI uses 200 chars for display (text_preview column in database)
+# - AI uses 500 chars for better clinical context (enough for SOAP opening)
+# - Balances information density vs token usage
+# - 500 chars ≈ 125 tokens per note (negligible cost)
+AI_NOTES_PREVIEW_LENGTH = int(os.getenv("AI_NOTES_PREVIEW_LENGTH", "500"))
+
+# Number of notes in patient comprehensive summary
+# - Included automatically in get_patient_summary() tool
+# - Default: 3 most recent notes
+# - Range: 2-5 recommended (more may dilute focus or exceed token limits)
+AI_NOTES_SUMMARY_LIMIT = int(os.getenv("AI_NOTES_SUMMARY_LIMIT", "3"))
+
+# Default lookback period for note queries (days)
+# - Used by get_clinical_notes_summary() tool when no date_range specified
+# - Default: 90 days (3 months of recent clinical activity)
+# - Common alternatives: 30 (last month), 180 (6 months), 365 (1 year)
+AI_NOTES_QUERY_DAYS = int(os.getenv("AI_NOTES_QUERY_DAYS", "90"))
+
+# Maximum notes returned by tool (performance/cost cap)
+# - Hard limit to prevent excessive token usage
+# - Even if user requests more, cap at this value
+# - Default: 10 notes × 500 chars ≈ 1,250 tokens (reasonable for GPT-4)
+AI_NOTES_MAX_LIMIT = int(os.getenv("AI_NOTES_MAX_LIMIT", "10"))
+
+# Estimated tokens per note preview (for monitoring)
+# - Used for cost estimation and performance tracking
+# - Based on 500 char preview ≈ 125 tokens (empirical)
+AI_NOTES_TOKENS_PER_PREVIEW = int(os.getenv("AI_NOTES_TOKENS_PER_PREVIEW", "125"))
+
+AI_CONFIG = {
+    "openai_api_key": OPENAI_API_KEY,
+    "openai_model": OPENAI_MODEL,
+    "openai_temperature": OPENAI_TEMPERATURE,
+    "notes_preview_length": AI_NOTES_PREVIEW_LENGTH,
+    "notes_summary_limit": AI_NOTES_SUMMARY_LIMIT,
+    "notes_query_days": AI_NOTES_QUERY_DAYS,
+    "notes_max_limit": AI_NOTES_MAX_LIMIT,
+    "notes_tokens_per_preview": AI_NOTES_TOKENS_PER_PREVIEW,
+}
 
 # -----------------------------------------------------------
 # Optional logging of config (without secrets)

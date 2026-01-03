@@ -258,23 +258,61 @@ med-z1 follows **strong, opinionated patterns** to ensure maintainability as the
 
 ### AI/ML Components
 
-**Primary Use Cases (Early Phases):**
-- Chart overview summarization
+**AI Clinical Insights (Implemented - Phase 4 Complete 2026-01-03):**
+The med-z1 AI subsystem provides LangGraph-powered clinical decision support via a conversational interface at `/insight`.
+
+**Implementation Status:**
+- ✅ **Phase 1-3:** Core agent infrastructure, DDI analysis, vitals trends, patient summaries
+- ✅ **Phase 4:** Clinical notes integration (completed 2026-01-03)
+  - System prompts architecture (`ai/prompts/system_prompts.py`)
+  - Clinical notes automatically included in patient summaries
+  - Dedicated `get_clinical_notes_summary()` tool for targeted note queries
+  - 500-char note previews for optimal context vs cost balance
+
+**Available AI Tools (4 total):**
+1. **`check_ddi_risks`** - Drug-drug interaction analysis with severity assessment
+2. **`get_patient_summary`** - Comprehensive patient overview (demographics, meds, vitals, allergies, encounters, recent notes)
+3. **`analyze_vitals_trends`** - Statistical vitals analysis with clinical interpretation
+4. **`get_clinical_notes_summary`** - Query clinical notes with filtering by type and date range ⭐ **NEW (Phase 4)**
+
+**Enabled Query Types:**
+- "What are the key clinical risks for this patient?"
+- "Are there any drug-drug interaction concerns?"
+- "What did recent clinical notes say about this patient?" ⭐ **NEW**
+- "Show me consult notes from the last 6 months" ⭐ **NEW**
+- "What did the cardiology consult recommend?" ⭐ **NEW**
+- "Summarize recent progress notes" ⭐ **NEW**
+
+**Primary Use Cases:**
+- Chart overview summarization with clinical notes context
 - Drug-drug interaction (DDI) risk assessment
 - Patient flag-aware risk narratives
+- Clinical note analysis and synthesis
+- Vital sign trend analysis with statistical significance
 
-**Libraries:**
-- OpenAI-compatible clients or other LLM APIs
-- `transformers`, `sentence-transformers` for embeddings
-- `langchain`/`langgraph` for agent workflows (optional)
+**Technical Stack:**
+- **LLM:** OpenAI GPT-4 Turbo (configured via `config.py`)
+- **Agent Framework:** LangGraph (LangChain)
+- **Prompt Management:** Centralized in `ai/prompts/system_prompts.py`
+- **Context Building:** `PatientContextBuilder` service wraps database queries
+- **Configuration:** AI-specific settings in `config.py` (AI_NOTES_PREVIEW_LENGTH, AI_NOTES_SUMMARY_LIMIT, etc.)
 
-**Vector Store:**
-- Initially local (Chroma/FAISS)
-- Later: pgvector in PostgreSQL
+**Performance:**
+- Response time: <5 seconds (p90) for note-based queries
+- Token usage: ~375 tokens for 3-note summaries (500 chars each)
+- Cost: $0.0004 per patient summary with notes (negligible)
+
+**Future Enhancements (Phase 5+):**
+- Care gap analysis from clinical notes
+- Semantic note search using vector embeddings
+- AI-generated note summaries
+- Entity extraction (medications, diagnoses, procedures from narrative text)
+
+**Design Reference:** `docs/spec/ai-insight-design.md`
 
 ### Clinical Domains (Complete Scope)
 
-**Implemented Domains (7):**
+**Implemented Domains (8):**
 1. ✅ Dashboard - Patient overview with clinical widgets
 2. ✅ Demographics - Full implementation (widget + dedicated page with comprehensive information)
 3. ✅ Vitals - Full implementation (widget + dedicated page with charts)
@@ -282,14 +320,15 @@ med-z1 follows **strong, opinionated patterns** to ensure maintainability as the
 5. ✅ Allergies - Full implementation (widget + dedicated page)
 6. ✅ Medications - Full implementation (2x1 widget + dedicated page)
 7. ✅ Encounters - Full implementation (1x1 widget + dedicated page with pagination) - **Completed 2025-12-15**
+8. ✅ **Clinical Notes** - Full implementation (widget + dedicated page with filtering, 106 notes in PostgreSQL) - **Completed 2026-01-02**
+   - **AI Integration:** Phase 4 complete (2026-01-03) - Notes included in AI insights with dedicated query tool
 
 **ETL Complete, UI Pending (1):**
-8. 🔧 Labs - **ETL pipeline complete** (Bronze/Silver/Gold/Load), 58 results in PostgreSQL. UI implementation pending (3x1 widget recommended) - **ETL Completed 2025-12-16**
+9. 🔧 Labs - **ETL pipeline complete** (Bronze/Silver/Gold/Load), 58 results in PostgreSQL. UI implementation pending (3x1 widget recommended) - **ETL Completed 2025-12-16**
 
-**Placeholder Domains (6):**
-9. 🚧 Problems - Diagnoses and problem list
-10. 🚧 Orders - Clinical orders and requests
-11. 🚧 Notes - Clinical notes and documents
+**Placeholder Domains (5):**
+10. 🚧 Problems - Diagnoses and problem list
+11. 🚧 Orders - Clinical orders and requests
 12. 🚧 Imaging - Radiology and imaging studies
 13. 🚧 Immunizations - Vaccination history (Later Phase)
 14. 🚧 Procedures - Surgical and procedural history (Later Phase)

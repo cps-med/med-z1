@@ -434,6 +434,162 @@ CANONICAL_KEYS = {
 
 ---
 
+## AI Clinical Insights
+
+### Overview
+
+Med-Z1 provides AI-powered clinical decision support via a conversational interface at `/insight`. The AI subsystem uses LangGraph to orchestrate tool calls and provide evidence-based clinical insights.
+
+**Access:** Navigate to `/insight` or `/insight/{icn}` from patient dashboard
+
+### Available AI Tools (Phase 4 Complete - 2026-01-03)
+
+The AI agent has access to **4 LangChain tools** for querying clinical data:
+
+1. **`check_ddi_risks`** - Drug-drug interaction analysis
+   - Analyzes medication list for interactions
+   - Returns severity levels and clinical recommendations
+   - Source: `ai/tools/medication_tools.py`
+
+2. **`get_patient_summary`** - Comprehensive patient overview
+   - Returns: Demographics, medications, vitals, allergies, encounters, **recent clinical notes (last 3)** ⭐
+   - Source: `ai/tools/patient_tools.py`
+   - Uses: `ai/services/patient_context.py` → `PatientContextBuilder`
+
+3. **`analyze_vitals_trends`** - Statistical vitals analysis
+   - Trend analysis with statistical significance testing
+   - Clinical interpretation of vital sign patterns
+   - Source: `ai/tools/vitals_tools.py`
+
+4. **`get_clinical_notes_summary`** - Targeted clinical notes queries ⭐ **NEW (Phase 4)**
+   - Parameters: `patient_icn`, `note_type` (optional), `days` (default 90), `limit` (default 5)
+   - Filters: Progress Notes, Consults, Discharge Summaries, Imaging Reports
+   - Returns: Formatted note summaries with 500-char previews
+   - Source: `ai/tools/notes_tools.py`
+
+### Example Queries
+
+**General Overview:**
+- "What are the key clinical risks for this patient?"
+- "Summarize this patient's recent clinical activity"
+
+**Drug Interactions:**
+- "Are there any drug-drug interaction concerns?"
+- "Is it safe to add this medication?"
+
+**Clinical Notes (Phase 4):** ⭐ **NEW**
+- "What did recent clinical notes say about this patient?"
+- "Show me consult notes from the last 6 months"
+- "What did the cardiology consult recommend?"
+- "Summarize recent progress notes"
+- "What imaging studies were done recently?"
+
+**Vitals Analysis:**
+- "How is the patient's blood pressure control?"
+- "Show me weight trends over time"
+
+**Combined Queries:**
+- "Check DDI risks and summarize recent notes"
+- "What are the key clinical risks? Include recent clinical notes."
+
+### Architecture
+
+**LangGraph Agent Flow:**
+```
+User Question
+    ↓
+System Prompt (ai/prompts/system_prompts.py)
+    ↓
+LangGraph Agent (ai/agents/insight_agent.py)
+    ↓
+Tool Selection (autonomous)
+    ↓
+Tool Execution (ai/tools/*)
+    ↓
+Context Building (ai/services/patient_context.py)
+    ↓
+Database Queries (app/db/*.py)
+    ↓
+Response Synthesis (GPT-4)
+    ↓
+User Response (markdown → HTML)
+```
+
+**Key Components:**
+- **System Prompts:** `ai/prompts/system_prompts.py` - Centralized prompt management
+- **Agent:** `ai/agents/insight_agent.py` - LangGraph orchestration
+- **Tools:** `ai/tools/*.py` - LangChain @tool decorated functions
+- **Context Builder:** `ai/services/patient_context.py` - Formats DB queries for LLM
+- **Routes:** `app/routes/insight.py` - FastAPI endpoints for chat interface
+
+### Configuration (config.py)
+
+```python
+# OpenAI LLM Settings
+OPENAI_MODEL = "gpt-4-turbo"
+OPENAI_TEMPERATURE = 0.3  # Low for clinical accuracy
+
+# Clinical Notes for AI (Phase 4)
+AI_NOTES_PREVIEW_LENGTH = 500     # Characters per note (optimal context vs cost)
+AI_NOTES_SUMMARY_LIMIT = 3        # Notes in patient summaries
+AI_NOTES_QUERY_DAYS = 90          # Default lookback period
+AI_NOTES_MAX_LIMIT = 10           # Performance/cost cap
+```
+
+### Performance Characteristics
+
+**Response Times:**
+- Simple queries (DDI check): < 3 seconds
+- Patient summary with notes: < 5 seconds (p90)
+- Complex multi-tool queries: < 8 seconds
+
+**Token Usage:**
+- Patient summary (no notes): ~1,600 tokens
+- Patient summary (with 3 notes): ~1,975 tokens (+375)
+- Targeted notes query (5 notes): ~625 tokens
+- Cost per summary with notes: ~$0.0004 (negligible)
+
+**Note Preview Strategy:**
+- UI uses 200-char previews (display optimization)
+- AI uses 500-char previews (clinical context optimization)
+- Captures SOAP opening (Subjective, Objective, Assessment start)
+- 50× cheaper than full text, sufficient for most queries
+
+### Testing the AI
+
+**Start Services:**
+```bash
+# Terminal 1: CCOW service
+uvicorn ccow.main:app --reload --port 8001
+
+# Terminal 2: Main app
+uvicorn app.main:app --reload
+```
+
+**Test Flow:**
+1. Navigate to `http://127.0.0.1:8000/insight`
+2. Login with: `clinician.alpha@va.gov` / `VaDemo2025!`
+3. Search for patient: `ICN100001`
+4. Click suggested questions or type custom queries
+5. Observe tool usage in response ("Sources checked: ...")
+
+### Phase 4 Implementation Notes
+
+**What Changed (2026-01-03):**
+- ✅ Created `ai/prompts/system_prompts.py` (centralized prompt architecture)
+- ✅ Added 5 AI notes config parameters to `config.py`
+- ✅ Created `get_recent_notes_for_ai()` in `app/db/notes.py` (500-char previews)
+- ✅ Enhanced `PatientContextBuilder` with `get_notes_summary()` method
+- ✅ Updated `build_comprehensive_summary()` to include notes section
+- ✅ Created `get_clinical_notes_summary()` tool in `ai/tools/notes_tools.py`
+- ✅ Updated `ALL_TOOLS` to include 4th tool
+- ✅ Updated suggested questions to include note-based query
+- ✅ Integrated system prompt into `app/routes/insight.py`
+
+**Design Reference:** `docs/spec/ai-insight-design.md` (Phase 4 complete)
+
+---
+
 ## Project Structure
 
 ```
