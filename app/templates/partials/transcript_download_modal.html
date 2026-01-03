@@ -1,0 +1,91 @@
+<!-- app/templates/partials/transcript_download_modal.html -->
+<!-- AI Clinical Insights - Transcript Download PHI Warning Modal -->
+
+<div id="transcript-download-modal" class="modal" style="display: none;">
+    <div class="modal__overlay" data-modal-close="transcript-download-modal"></div>
+    <div class="modal__container">
+        <div class="modal__header">
+            <h2>⚠️ Protected Health Information Warning</h2>
+            <button
+                class="modal__close"
+                data-modal-close="transcript-download-modal"
+                aria-label="Close"
+            >
+                &times;
+            </button>
+        </div>
+
+        <div class="modal__body">
+            <p style="margin-bottom: 1.5rem; line-height: 1.6;">
+                You are about to download a transcript containing <strong>Protected Health Information (PHI)</strong>.
+            </p>
+
+            <p style="margin-bottom: 1.5rem; line-height: 1.6;">
+                By downloading this file, you acknowledge and agree to:
+            </p>
+
+            <ul style="margin-bottom: 1.5rem; line-height: 1.5; list-style: none; padding-left: 0;">
+                <li style="margin-bottom: 0.25rem;">
+                    <i class="fa-solid fa-circle" style="font-size: 0.4rem; margin-right: 0.5rem;"></i>
+                    Store the file on an encrypted, VA-approved device only
+                </li>
+                <li style="margin-bottom: 0.25rem;">
+                    <i class="fa-solid fa-circle" style="font-size: 0.4rem; margin-right: 0.5rem;"></i>
+                    NOT share via unsecured channels (email, text message, cloud storage)
+                </li>
+                <li style="margin-bottom: 0.25rem;">
+                    <i class="fa-solid fa-circle" style="font-size: 0.4rem; margin-right: 0.5rem;"></i>
+                    Delete the file when it is no longer clinically necessary
+                </li>
+                <li style="margin-bottom: 0.25rem;">
+                    <i class="fa-solid fa-circle" style="font-size: 0.4rem; margin-right: 0.5rem;"></i>
+                    Follow all VA and HIPAA data handling policies
+                </li>
+                <li style="margin-bottom: 0.25rem;">
+                    <i class="fa-solid fa-circle" style="font-size: 0.4rem; margin-right: 0.5rem;"></i>
+                    Take full responsibility for the security of this file
+                </li>
+            </ul>
+
+            <p style="margin-bottom: 1.5rem; line-height: 1.6; font-style: italic; color: #6b7280;">
+                This transcript is for clinical reference and documentation purposes only.
+                All AI-generated insights must be verified before making clinical decisions.
+            </p>
+
+            <p style="margin-bottom: 1.5rem; line-height: 1.6; font-weight: 600;">
+                Which format would you like to download?
+            </p>
+
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                <button
+                    type="button"
+                    class="btn btn--primary"
+                    onclick="downloadTranscript('text')"
+                    style="flex: 1 1 auto; min-width: 200px;"
+                >
+                    <i class="fa-solid fa-file-lines"></i>
+                    Download Plain Text (.txt)
+                </button>
+                <button
+                    type="button"
+                    class="btn btn--primary"
+                    onclick="downloadTranscript('markdown')"
+                    style="flex: 1 1 auto; min-width: 200px;"
+                >
+                    <i class="fa-brands fa-markdown"></i>
+                    Download Markdown (.md)
+                </button>
+            </div>
+
+            <div style="margin-top: 1rem; text-align: center;">
+                <button
+                    type="button"
+                    class="btn btn--secondary"
+                    data-modal-close="transcript-download-modal"
+                >
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

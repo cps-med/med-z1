@@ -1,0 +1,30 @@
+<!-- app/templates/partials/suggested_questions_modal.html -->
+<!-- AI Clinical Insights - Suggested Questions Modal -->
+
+<div id="suggested-questions-modal" class="modal" style="display: none;">
+    <div class="modal__overlay" data-modal-close="suggested-questions-modal"></div>
+    <div class="modal__container">
+        <div class="modal__header">
+            <h2>Suggested Questions</h2>
+            <button
+                class="modal__close"
+                data-modal-close="suggested-questions-modal"
+                aria-label="Close"
+            >
+                &times;
+            </button>
+        </div>
+
+        <div class="modal__body">
+            <ul class="suggested-questions-list">
+                {% for question in suggested_questions %}
+                <li class="suggested-questions-list__item" data-question="{{ question }}">
+                    <button type="button" class="suggested-question-btn" onclick="selectSuggestedQuestion('{{ question | replace("'", "\\'") }}')">
+                        {{ question }}
+                    </button>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>

@@ -1,11 +1,13 @@
 # AI Clinical Insights Design Specification
 
-**Document Version:** v1.7
+**Document Version:** v1.9
 **Created:** 2025-12-28
-**Updated:** 2026-01-02 (Phase 4 Plan Added - Clinical Notes Integration 📝)
-**Status:** Phase 1-3 Complete ✅ | Phase 4 Ready for Implementation 📝
+**Updated:** 2026-01-03 (Phase 5 Day 1 Complete ✅)
+**Status:** Phase 1-4 Complete ✅ | Post-Phase 4 Enhancements Complete ✅ | Phase 5 Day 1 Complete ✅ | Phase 5 Day 2 Ready 📝
 **Phase 1-3 Completion Date:** 2025-12-30
-**Phase 4 Start Date:** 2026-01-02 (Estimated)  
+**Phase 4 Completion Date:** 2026-01-03
+**Post-Phase 4 Enhancements Completion Date:** 2026-01-03
+**Phase 5 Day 1 Completion Date:** 2026-01-03  
 
 ---
 
@@ -2376,6 +2378,225 @@ Recent Clinical Notes (Last 3):
 
 ---
 
+### Post-Phase 4 UX & Configuration Enhancements ✅ **COMPLETE**
+
+**Completion Date:** 2026-01-03
+**Total Time:** 4-5 hours
+
+Following Phase 4 completion, several UX improvements and configuration enhancements were implemented to improve usability, maintainability, and clinical data completeness.
+
+---
+
+#### **Enhancement 1: Suggested Questions Modal Refactoring** ✅ **COMPLETE**
+
+**Problem:** Suggested question chips consumed vertical space on initial page load and were no longer visible after first message submission.
+
+**Solution:** Replaced static chips with modal-based suggested questions accessible anytime during conversation.
+
+**Implementation:**
+
+1. **Created Suggested Questions Modal** (1 hour)
+   - Location: `app/templates/partials/suggested_questions_modal.html`
+   - Pattern: Follows existing `patient_flags_modal.html` structure
+   - Features:
+     - Scrollable list of suggested questions (max-height: 60vh)
+     - Each question is a clickable button
+     - Clicking a question populates textarea (does not auto-submit)
+     - User can edit question before submitting
+   - Integration: Uses existing app.js modal handlers (data-modal-open/close)
+
+2. **Added Sparkle Icon Button** (30 min)
+   - Location: Left of "Ask a question..." textarea in `app/templates/insight.html`
+   - Icon: `fa-solid fa-sparkles` (Font Awesome)
+   - Styling: 36px × 36px, gradient background (cyan to purple), gold icon
+   - Tooltip: "Suggested questions"
+   - Layout: `[Sparkle Icon] [spacing] [Textarea] [Submit Button]`
+   - Opens modal via `data-modal-open="suggested-questions-modal"`
+
+3. **Removed Suggested Question Chips** (15 min)
+   - Deleted chips section from `insight.html` (lines 78-99)
+   - Removed chip CSS (retain for potential future use)
+   - Simplified page layout
+
+4. **Updated JavaScript** (30 min)
+   - Created `selectSuggestedQuestion(question)` function
+   - Populates textarea with selected question
+   - Closes modal
+   - Focuses textarea for editing
+   - Retained `hideSuggestions()` as no-op for HTMX compatibility
+
+**Benefits:**
+- ✅ Cleaner initial page layout (no chips cluttering interface)
+- ✅ Suggested questions accessible anytime (not just on initial load)
+- ✅ User control: populate textarea but don't auto-submit
+- ✅ Consistent with modal patterns across med-z1
+
+**Files Modified:**
+- `app/templates/insight.html` - Removed chips, added sparkle button, included modal
+- `app/templates/partials/suggested_questions_modal.html` (NEW) - Modal structure
+- `app/static/styles.css` - Added sparkle button and modal list styles
+
+---
+
+#### **Enhancement 2: Suggested Questions Configuration Refactoring** ✅ **COMPLETE**
+
+**Problem:** Suggested questions were hardcoded in `app/routes/insight.py`, making them difficult to maintain and update.
+
+**Solution:** Centralized suggested questions in dedicated module following system prompts pattern.
+
+**Implementation:**
+
+1. **Created Suggested Questions Module** (45 min)
+   - Location: `ai/prompts/suggested_questions.py`
+   - Pattern: Matches `ai/prompts/system_prompts.py` architecture
+   - Content:
+     - `SUGGESTED_QUESTIONS` list (simple Python list)
+     - Design principles documented in docstring
+     - Clear instructions for modifying questions
+
+2. **Simplified from Initial Over-Engineering** (15 min)
+   - Initially implemented with function wrapper and future-proofing
+   - User feedback: "Remove future scope, keep it simple"
+   - Refactored to single list constant (no function wrapper)
+   - Removed category support, rotation, A/B testing complexity
+
+3. **Updated Imports** (15 min)
+   - Updated `ai/prompts/__init__.py` to export `SUGGESTED_QUESTIONS`
+   - Updated `app/routes/insight.py` to import constant directly
+   - Simplified usage: `suggested_questions = SUGGESTED_QUESTIONS`
+
+**Current Questions (as of 2026-01-03):**
+```python
+SUGGESTED_QUESTIONS = [
+    "What are the key clinical risks for this patient?",
+    "Are there any drug-drug interaction concerns?",
+    "Summarize this patient's recent clinical activity.",
+    "What did recent clinical notes say about this patient?",
+    "Has the patient seen cardiology?",
+    "What imaging studies were done recently?",
+]
+```
+
+**Benefits:**
+- ✅ Single source of truth for suggested questions
+- ✅ Easy to modify (edit one file)
+- ✅ Follows established pattern (system_prompts.py)
+- ✅ Simple architecture (no over-engineering)
+- ✅ AI content separated from technical config
+
+**Files Modified:**
+- `ai/prompts/suggested_questions.py` (NEW) - Question list
+- `ai/prompts/__init__.py` - Export SUGGESTED_QUESTIONS
+- `app/routes/insight.py` - Import and use constant
+- `app/README.md` - Documented pattern
+
+---
+
+#### **Enhancement 3: Chat Button Styling Consistency** ✅ **COMPLETE**
+
+**Problem:** Submit button (paper plane) had default primary button styling, inconsistent with new sparkle button.
+
+**Solution:** Unified button styling using Insights branding colors (matches active sidebar menu).
+
+**Implementation:**
+
+1. **Sparkle Button Styling** (15 min)
+   - Size: 36px × 36px (matches chat avatar icons)
+   - Background: `linear-gradient(135deg, #06b6d4, #4f46e5)` (cyan to purple)
+   - Icon Color: `gold` (yellow sparkles)
+   - Hover: Opacity + subtle scale effect
+   - Vertical alignment with chat robot avatars
+
+2. **Submit Button Styling** (15 min)
+   - Updated to match sparkle button
+   - Added `chat-submit-btn` class
+   - Size: 36px × 36px (was 48px, now consistent)
+   - Background: Same gradient as sparkle button
+   - Icon Color: `gold` (yellow paper plane)
+   - Tooltip: "Submit question"
+
+**Visual Result:**
+```
+Chat Avatar (36px)     Sparkle (36px)    [Textarea]    Submit (36px)
+     🤖                     ✨                              ✈️
+  (robot icon)         (gold sparkles)                (gold plane)
+   Gradient               Gradient                      Gradient
+```
+
+**Benefits:**
+- ✅ Consistent visual language across all chat interface buttons
+- ✅ Insights branding throughout (matches active sidebar menu colors)
+- ✅ Perfect vertical alignment with chat avatars
+- ✅ Professional, cohesive appearance
+
+**Files Modified:**
+- `app/static/styles.css` - Added `.chat-sparkle-btn` and `.chat-submit-btn` styles
+- `app/templates/insight.html` - Added tooltip to submit button
+
+---
+
+#### **Enhancement 4: Patient Demographics - Date of Birth Integration** ✅ **COMPLETE**
+
+**Problem:** AI agent could not answer "What is the patient's date of birth?" despite DOB being available in database.
+
+**Root Cause:** `PatientContextBuilder.get_demographics_summary()` used calculated age but ignored `dob` field from `get_patient_demographics()`.
+
+**Solution:** Enhanced demographics summary to include both age and date of birth.
+
+**Implementation:**
+
+1. **Updated Demographics Summary** (15 min)
+   - Location: `ai/services/patient_context.py`
+   - Method: `get_demographics_summary()`
+   - Change: Added DOB field extraction and formatting
+   - Format: `"45-year-old male veteran (DOB: 1979-05-15), service-connected..."`
+
+2. **Updated Documentation** (10 min)
+   - Updated method docstring examples
+   - Updated class-level examples
+
+**Before:**
+```
+Date of Birth/Age: The patient is 45 years old. The exact date of birth is not provided in the summary.
+```
+
+**After:**
+```
+Date of Birth: 1979-05-15
+Age: 45 years old
+Gender: Male
+```
+
+**Benefits:**
+- ✅ Complete demographic information available to AI
+- ✅ Answers DOB queries accurately
+- ✅ Graceful fallback if DOB missing
+
+**Files Modified:**
+- `ai/services/patient_context.py` - Enhanced `get_demographics_summary()`
+
+---
+
+**Post-Phase 4 Enhancement Summary:**
+
+**Total Enhancements:** 4 completed
+**Total Time:** 4-5 hours
+**Completion Date:** 2026-01-03
+
+**Deliverables:**
+1. ✅ Suggested questions modal with sparkle icon button
+2. ✅ Centralized suggested questions configuration module
+3. ✅ Unified chat button styling (sparkle + submit)
+4. ✅ Enhanced demographics with date of birth
+
+**Impact:**
+- Improved UX: Cleaner interface, persistent access to suggested questions
+- Improved maintainability: Centralized configuration, clear patterns
+- Improved visual consistency: Unified branding across all buttons
+- Improved data completeness: AI can now answer DOB queries
+
+---
+
 **Post-Phase 4 Opportunities (Phase 5+):**
 Once Phase 4 is stable, consider these advanced enhancements:
 1. **Care Gap Analysis Tool** - Extract unfulfilled recommendations from notes
@@ -2385,6 +2606,820 @@ Once Phase 4 is stable, consider these advanced enhancements:
 5. **Entity Extraction** - Extract medications, diagnoses, procedures from narrative text
 
 See **Clinical Notes Enhancement Opportunities Assessment** (Section 14.3) for detailed specifications.
+
+---
+
+### Phase 5: Conversation Transcript Download (MVP) 🚧 **IN PROGRESS - Day 1 Complete ✅**
+
+**Prerequisites:**
+- ✅ Clinical Insights chat interface operational (Phase 2 complete)
+- ✅ Chat messages rendered in DOM via HTMX
+- ✅ Patient context available on page
+- ✅ Existing modal patterns established (Patient Flags modal)
+
+**Estimated Time:** 3-4 hours
+
+**Overview:**
+Enable clinicians to download AI Clinical Insights conversation transcripts to their local computer for clinical documentation, reference, or record-keeping purposes. This MVP implements client-side file generation (no server storage) in two formats: plaintext (.txt) and markdown (.md).
+
+**Design Philosophy:**
+- **Privacy-First:** Files generated client-side (never touches server), minimizing PHI exposure
+- **Simple & Practical:** Text-based formats (no PDF/Word complexity in MVP)
+- **User Control:** Explicit download action with PHI warning
+- **Session-Only:** Captures current page session (lost on refresh - acceptable for MVP)
+
+---
+
+#### **Day 1: PHI Warning Modal + Download Button (1.5 hours)** ✅ **COMPLETE**
+
+**Tasks:**
+
+1. **Create PHI Warning Modal** ✅ (45 min)
+   - Location: `app/templates/partials/transcript_download_modal.html`
+   - Pattern: Follow existing `patient_flags_modal.html` structure
+   - Content: PHI/HIPAA handling warning with 5 acknowledgment items
+   - Actions: [Cancel] [Download Plain Text (.txt)] [Download Markdown (.md)]
+   - **Implementation Notes:**
+     - Used standard black bullet points (`fa-circle`, 0.4rem) instead of green checkmarks
+     - Reduced vertical spacing (`line-height: 1.5`, `margin-bottom: 0.25rem`) to eliminate scrolling
+     - Shortened disclaimer text: "All AI-generated insights must be verified before making clinical decisions."
+
+2. **Add Download Button to Insights Page** ✅ (30 min)
+   - Location: `app/templates/insight.html` (lines 135-146)
+   - Position: Below chat form, above AI disclaimer
+   - **Final Design Decision:** Single "Download Transcript" button (UX improvement)
+     - Initial spec called for two buttons (Text and Markdown)
+     - User feedback: Modal already offers both formats → consolidate to one button
+     - Button aligned with textarea (same width, left/right alignment)
+     - Reduced vertical spacing (`margin-top: 0.5rem`)
+
+   ```html
+   <!-- Transcript Download Actions -->
+   <div class="transcript-download-actions">
+       <button
+           type="button"
+           class="btn btn--secondary"
+           data-modal-open="transcript-download-modal"
+           title="Download conversation transcript"
+       >
+           <i class="fa-solid fa-download"></i>
+           Download Transcript
+       </button>
+   </div>
+   ```
+
+   **CSS Styling** (`app/static/styles.css` lines 5105-5126):
+   ```css
+   /* Transcript Download Actions */
+   .transcript-download-actions {
+       margin-top: 0.5rem;
+       margin-bottom: 1rem;
+       padding-left: calc(36px + 0.75rem);  /* Sparkle button width + gap */
+       padding-right: calc(36px + 0.75rem); /* Submit button width + gap */
+   }
+
+   .transcript-download-actions .btn {
+       width: 100%;
+   }
+
+   @media (max-width: 768px) {
+       .transcript-download-actions {
+           padding-left: 0;
+           padding-right: 0;
+       }
+
+       .transcript-download-actions .btn {
+           width: 100%;
+       }
+   }
+   ```
+
+3. **Include Modal in Page** ✅ (15 min)
+   - Added `{% include "partials/transcript_download_modal.html" %}` to `insight.html` (line 172)
+   - Modal open/close behavior working using existing app.js handlers
+
+**Deliverables:**
+- ✅ `app/templates/partials/transcript_download_modal.html` created with optimized formatting
+- ✅ Single download button added to Insights page (aligned with textarea)
+- ✅ Modal opens on button click, offers both format options
+- ✅ Responsive CSS styling for mobile and desktop
+
+**Actual Time:** ~1.5 hours (including UX refinements)
+
+---
+
+#### **Day 2: JavaScript Transcript Generation (2-2.5 hours)**
+
+**Tasks:**
+
+1. **Create Transcript JavaScript Module** (2 hours)
+   - Location: `app/static/transcript.js`
+   - Functions:
+     - `prepareTranscriptDownload(format)` - Sets download format, opens modal
+     - `generatePlaintextTranscript()` - Formats chat as plaintext
+     - `generateMarkdownTranscript()` - Formats chat as markdown
+     - `collectChatMessages()` - Extracts messages from DOM
+     - `downloadFile(content, mimeType, extension)` - Triggers browser download
+     - `generateMetadata()` - Collects patient/user/timestamp data
+     - `generateDisclaimer()` - Adds AI disclaimer footer
+
+2. **Add Script to Insights Page** (15 min)
+   - Include `<script src="{{ url_for('static', path='/transcript.js') }}"></script>` in `insight.html`
+
+3. **Wire Up Modal Buttons** (30 min)
+   - Connect "Download Text" button to `downloadTranscript('text')`
+   - Connect "Download Markdown" button to `downloadTranscript('markdown')`
+   - Close modal after download initiated
+
+**Deliverables:**
+- [ ] `app/static/transcript.js` created (~200 lines)
+- [ ] Plaintext and markdown generation functional
+- [ ] Browser download triggered with proper filenames
+
+**Estimated Time:** 2-2.5 hours
+
+---
+
+#### **Technical Specifications**
+
+##### **5.1 Plaintext Format (.txt)**
+
+**File Naming Convention:**
+```
+clinical_insights_ICN{patient_icn}_{timestamp}.txt
+Example: clinical_insights_ICN100001_20260103_143205.txt
+```
+
+**Format Structure:**
+```
+========================================
+AI CLINICAL INSIGHTS TRANSCRIPT
+========================================
+
+Generated: January 3, 2026 2:32:05 PM
+Patient: MOORE, ROBERT (ICN: ICN100001)
+Clinician: clinician.alpha@va.gov
+Session ID: {browser_session_id}
+
+========================================
+
+[14:25:12] USER:
+What are the key clinical risks for this patient?
+
+[14:25:18] AI:
+Based on the patient's clinical data, here are the key risks:
+
+1. Drug-Drug Interactions:
+   - GABAPENTIN + HYDROCODONE: Moderate severity
+   - Recommendation: Monitor for increased CNS depression
+
+2. Blood Pressure Control:
+   - Recent BP: 145/92 mmHg (Stage 1 Hypertension)
+   - Trend: Increasing over last 30 days
+   - Recommendation: Consider medication adjustment
+
+3. Medication Adherence:
+   - 7 active prescriptions
+   - Last refill gap: GABAPENTIN (14 days overdue)
+
+Sources Checked: get_patient_summary, check_ddi_risks, analyze_vitals_trends
+
+========================================
+
+[14:28:45] USER:
+What did recent clinical notes say about this patient?
+
+[14:28:51] AI:
+Based on recent clinical notes (last 90 days):
+
+**Progress Note (2025-12-28)**
+Author: Dr. Smith, Alexandria VAMC
+Key Points:
+- Patient presents for HTN/DM follow-up
+- Reports good medication compliance
+- Blood sugars: 120-140 mg/dL
+- BP today: 145/92 (elevated)
+- Plan: Increase lisinopril to 20mg daily
+
+**Cardiology Consult (2025-12-15)**
+Author: Dr. Johnson, Alexandria VAMC
+Reason: Evaluate for coronary artery disease
+Findings:
+- Stress test: Negative for ischemia
+- EKG: Normal sinus rhythm
+- Recommendation: Continue current cardiac medications
+
+Sources Checked: get_clinical_notes_summary
+
+========================================
+
+DISCLAIMER:
+This transcript contains AI-generated clinical insights. All information
+must be independently verified by qualified healthcare professionals before
+making clinical decisions. This tool provides decision support, not medical
+advice.
+
+Protected Health Information (PHI):
+This document contains sensitive patient information protected under HIPAA.
+Handle according to VA/HIPAA data security policies. Store on encrypted
+devices only. Do not transmit via unsecured channels (email, SMS).
+
+Generated by: Med-Z1 AI Clinical Insights v1.0
+https://github.com/department-of-veterans-affairs/med-z1
+```
+
+**Key Features:**
+- ✅ Clear section delimiters (========)
+- ✅ Timestamps for each message
+- ✅ USER vs AI attribution
+- ✅ Preserves multi-paragraph formatting
+- ✅ Lists tools/sources checked
+- ✅ Comprehensive metadata header
+- ✅ PHI/HIPAA disclaimer footer
+
+---
+
+##### **5.2 Markdown Format (.md)**
+
+**File Naming Convention:**
+```
+clinical_insights_ICN{patient_icn}_{timestamp}.md
+Example: clinical_insights_ICN100001_20260103_143205.md
+```
+
+**Format Structure:**
+```markdown
+# AI Clinical Insights Transcript
+
+**Generated:** January 3, 2026 2:32:05 PM
+**Patient:** MOORE, ROBERT (ICN: ICN100001)
+**Clinician:** clinician.alpha@va.gov
+**Session ID:** {browser_session_id}
+
+---
+
+## [14:25:12] User Question
+What are the key clinical risks for this patient?
+
+## [14:25:18] AI Response
+Based on the patient's clinical data, here are the key risks:
+
+### 1. Drug-Drug Interactions
+- **GABAPENTIN + HYDROCODONE:** Moderate severity
+- **Recommendation:** Monitor for increased CNS depression
+
+### 2. Blood Pressure Control
+- **Recent BP:** 145/92 mmHg (Stage 1 Hypertension)
+- **Trend:** Increasing over last 30 days
+- **Recommendation:** Consider medication adjustment
+
+### 3. Medication Adherence
+- 7 active prescriptions
+- Last refill gap: GABAPENTIN (14 days overdue)
+
+*Sources Checked: get_patient_summary, check_ddi_risks, analyze_vitals_trends*
+
+---
+
+## [14:28:45] User Question
+What did recent clinical notes say about this patient?
+
+## [14:28:51] AI Response
+Based on recent clinical notes (last 90 days):
+
+### Progress Note (2025-12-28)
+**Author:** Dr. Smith, Alexandria VAMC
+**Key Points:**
+- Patient presents for HTN/DM follow-up
+- Reports good medication compliance
+- Blood sugars: 120-140 mg/dL
+- BP today: 145/92 (elevated)
+- **Plan:** Increase lisinopril to 20mg daily
+
+### Cardiology Consult (2025-12-15)
+**Author:** Dr. Johnson, Alexandria VAMC
+**Reason:** Evaluate for coronary artery disease
+**Findings:**
+- Stress test: Negative for ischemia
+- EKG: Normal sinus rhythm
+- **Recommendation:** Continue current cardiac medications
+
+*Sources Checked: get_clinical_notes_summary*
+
+---
+
+## Disclaimer
+
+⚠️ **AI-Generated Clinical Insights**
+
+This transcript contains AI-generated clinical insights. All information must be independently verified by qualified healthcare professionals before making clinical decisions. This tool provides decision support, not medical advice.
+
+### Protected Health Information (PHI)
+
+This document contains sensitive patient information protected under HIPAA. Handle according to VA/HIPAA data security policies:
+- Store on encrypted devices only
+- Do not transmit via unsecured channels (email, SMS)
+- Delete when no longer clinically necessary
+
+---
+
+*Generated by: Med-Z1 AI Clinical Insights v1.0*
+*https://github.com/department-of-veterans-affairs/med-z1*
+```
+
+**Key Features:**
+- ✅ Structured headings (H1/H2/H3)
+- ✅ **Bold** for emphasis on key clinical terms
+- ✅ *Italic* for tool attribution
+- ✅ Horizontal rules (---) between sections
+- ✅ Bulleted lists for clinical data
+- ✅ Preserves markdown from AI responses (tables, code blocks)
+- ✅ Human-readable as plain text
+- ✅ Can be rendered as HTML in markdown viewers
+
+---
+
+##### **5.3 PHI Warning Modal Content**
+
+**Modal Title:** ⚠️ Protected Health Information Warning
+
+**Body Content:**
+```
+You are about to download a transcript containing Protected Health
+Information (PHI).
+
+By downloading this file, you acknowledge and agree to:
+
+✓ Store the file on an encrypted, VA-approved device only
+✓ NOT share via unsecured channels (email, text message, cloud storage)
+✓ Delete the file when it is no longer clinically necessary
+✓ Follow all VA and HIPAA data handling policies
+✓ Take full responsibility for the security of this file
+
+This transcript is for clinical reference and documentation purposes only.
+All AI-generated insights must be independently verified before making
+clinical decisions.
+
+Which format would you like to download?
+```
+
+**Buttons:**
+- `[Cancel]` - Close modal, no download
+- `[Download Plain Text (.txt)]` - Download plaintext format
+- `[Download Markdown (.md)]` - Download markdown format
+
+---
+
+##### **5.4 JavaScript Implementation Details**
+
+**Core Functions:**
+
+```javascript
+// app/static/transcript.js
+
+let pendingDownloadFormat = null;
+
+/**
+ * Prepare transcript download by setting format and opening PHI warning modal
+ * @param {string} format - 'text' or 'markdown'
+ */
+function prepareTranscriptDownload(format) {
+    pendingDownloadFormat = format;
+    // Modal opens automatically via data-modal-open attribute
+}
+
+/**
+ * Execute transcript download after user acknowledges PHI warning
+ * Called by modal button click
+ */
+function downloadTranscript(format) {
+    const downloadFormat = format || pendingDownloadFormat;
+
+    if (!downloadFormat) {
+        console.error('No download format specified');
+        return;
+    }
+
+    let content, mimeType, extension;
+
+    if (downloadFormat === 'text') {
+        content = generatePlaintextTranscript();
+        mimeType = 'text/plain';
+        extension = 'txt';
+    } else if (downloadFormat === 'markdown') {
+        content = generateMarkdownTranscript();
+        mimeType = 'text/markdown';
+        extension = 'md';
+    } else {
+        console.error('Unknown format:', downloadFormat);
+        return;
+    }
+
+    // Generate filename: clinical_insights_ICN{icn}_{timestamp}.{ext}
+    const patientICN = getPatientICN();
+    const timestamp = formatTimestamp(new Date());
+    const filename = `clinical_insights_${patientICN}_${timestamp}.${extension}`;
+
+    // Trigger download
+    downloadFile(content, mimeType, filename);
+
+    // Close modal
+    closeModal('transcript-download-modal');
+
+    // Reset pending format
+    pendingDownloadFormat = null;
+}
+
+/**
+ * Collect all chat messages from DOM
+ * @returns {Array} Array of message objects {type: 'user'|'ai', text: string, timestamp: string, tools: array}
+ */
+function collectChatMessages() {
+    const messages = [];
+    const chatHistory = document.getElementById('chat-history');
+
+    if (!chatHistory) {
+        return messages;
+    }
+
+    const messageElements = chatHistory.querySelectorAll('.chat-message');
+
+    messageElements.forEach(msgEl => {
+        const isUser = msgEl.classList.contains('chat-message--user');
+        const type = isUser ? 'user' : 'ai';
+
+        // Extract message text
+        const contentEl = msgEl.querySelector('.chat-message__content');
+        const text = contentEl ? contentEl.textContent.trim() : '';
+
+        // Extract timestamp (if available)
+        const timestampEl = msgEl.querySelector('.chat-message__timestamp');
+        const timestamp = timestampEl ? timestampEl.textContent.trim() : 'Just now';
+
+        // Extract tools used (AI messages only)
+        let tools = [];
+        if (!isUser) {
+            const toolsEl = msgEl.querySelector('.chat-message__tools');
+            if (toolsEl) {
+                const toolsText = toolsEl.textContent;
+                // Parse "Sources checked: tool1, tool2, tool3"
+                const match = toolsText.match(/Sources checked:\s*(.+)/);
+                if (match) {
+                    tools = match[1].split(',').map(t => t.trim());
+                }
+            }
+        }
+
+        messages.push({type, text, timestamp, tools});
+    });
+
+    return messages;
+}
+
+/**
+ * Generate plaintext transcript
+ * @returns {string} Formatted plaintext transcript
+ */
+function generatePlaintextTranscript() {
+    const metadata = generateMetadata();
+    const messages = collectChatMessages();
+    const disclaimer = generateDisclaimer();
+
+    let transcript = '';
+
+    // Header
+    transcript += '========================================\n';
+    transcript += 'AI CLINICAL INSIGHTS TRANSCRIPT\n';
+    transcript += '========================================\n\n';
+
+    // Metadata
+    transcript += `Generated: ${metadata.generated}\n`;
+    transcript += `Patient: ${metadata.patientName} (ICN: ${metadata.patientICN})\n`;
+    transcript += `Clinician: ${metadata.clinicianEmail}\n`;
+    transcript += `Session ID: ${metadata.sessionId}\n\n`;
+    transcript += '========================================\n\n';
+
+    // Messages
+    messages.forEach(msg => {
+        const label = msg.type === 'user' ? 'USER' : 'AI';
+        transcript += `[${msg.timestamp}] ${label}:\n`;
+        transcript += `${msg.text}\n\n`;
+
+        if (msg.tools && msg.tools.length > 0) {
+            transcript += `Sources Checked: ${msg.tools.join(', ')}\n\n`;
+        }
+
+        transcript += '========================================\n\n';
+    });
+
+    // Disclaimer
+    transcript += disclaimer;
+
+    return transcript;
+}
+
+/**
+ * Generate markdown transcript
+ * @returns {string} Formatted markdown transcript
+ */
+function generateMarkdownTranscript() {
+    const metadata = generateMetadata();
+    const messages = collectChatMessages();
+    const disclaimer = generateDisclaimer('markdown');
+
+    let transcript = '';
+
+    // Header
+    transcript += '# AI Clinical Insights Transcript\n\n';
+
+    // Metadata
+    transcript += `**Generated:** ${metadata.generated}  \n`;
+    transcript += `**Patient:** ${metadata.patientName} (ICN: ${metadata.patientICN})  \n`;
+    transcript += `**Clinician:** ${metadata.clinicianEmail}  \n`;
+    transcript += `**Session ID:** ${metadata.sessionId}\n\n`;
+    transcript += '---\n\n';
+
+    // Messages
+    messages.forEach(msg => {
+        const label = msg.type === 'user' ? 'User Question' : 'AI Response';
+        transcript += `## [${msg.timestamp}] ${label}\n`;
+        transcript += `${msg.text}\n\n`;
+
+        if (msg.tools && msg.tools.length > 0) {
+            transcript += `*Sources Checked: ${msg.tools.join(', ')}*\n\n`;
+        }
+
+        transcript += '---\n\n';
+    });
+
+    // Disclaimer
+    transcript += disclaimer;
+
+    return transcript;
+}
+
+/**
+ * Generate metadata object from page context
+ * @returns {object} Metadata {generated, patientName, patientICN, clinicianEmail, sessionId}
+ */
+function generateMetadata() {
+    const now = new Date();
+
+    // Extract patient info from page
+    const patientNameEl = document.querySelector('.patient-header__name');
+    const patientName = patientNameEl ? patientNameEl.textContent.trim() : 'Unknown Patient';
+
+    const patientICN = getPatientICN();
+
+    // Extract clinician from user context (if available)
+    const clinicianEmail = getUserEmail() || 'unknown@va.gov';
+
+    // Generate session ID (browser-generated unique ID)
+    const sessionId = generateSessionId();
+
+    return {
+        generated: formatDateTimeLong(now),
+        patientName,
+        patientICN,
+        clinicianEmail,
+        sessionId
+    };
+}
+
+/**
+ * Generate disclaimer text
+ * @param {string} format - 'text' or 'markdown'
+ * @returns {string} Formatted disclaimer
+ */
+function generateDisclaimer(format = 'text') {
+    if (format === 'markdown') {
+        return `## Disclaimer
+
+⚠️ **AI-Generated Clinical Insights**
+
+This transcript contains AI-generated clinical insights. All information must be independently verified by qualified healthcare professionals before making clinical decisions. This tool provides decision support, not medical advice.
+
+### Protected Health Information (PHI)
+
+This document contains sensitive patient information protected under HIPAA. Handle according to VA/HIPAA data security policies:
+- Store on encrypted devices only
+- Do not transmit via unsecured channels (email, SMS)
+- Delete when no longer clinically necessary
+
+---
+
+*Generated by: Med-Z1 AI Clinical Insights v1.0*
+*https://github.com/department-of-veterans-affairs/med-z1*
+`;
+    } else {
+        return `DISCLAIMER:
+This transcript contains AI-generated clinical insights. All information
+must be independently verified by qualified healthcare professionals before
+making clinical decisions. This tool provides decision support, not medical
+advice.
+
+Protected Health Information (PHI):
+This document contains sensitive patient information protected under HIPAA.
+Handle according to VA/HIPAA data security policies. Store on encrypted
+devices only. Do not transmit via unsecured channels (email, SMS).
+
+Generated by: Med-Z1 AI Clinical Insights v1.0
+https://github.com/department-of-veterans-affairs/med-z1
+`;
+    }
+}
+
+/**
+ * Trigger browser download
+ * @param {string} content - File content
+ * @param {string} mimeType - MIME type (text/plain, text/markdown)
+ * @param {string} filename - Filename with extension
+ */
+function downloadFile(content, mimeType, filename) {
+    const blob = new Blob([content], {type: mimeType});
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+
+    // Cleanup
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// Helper functions (implement as needed)
+function getPatientICN() {
+    // Extract from page context or hidden form field
+    const icnInput = document.querySelector('input[name="icn"]');
+    return icnInput ? icnInput.value : 'UNKNOWN';
+}
+
+function getUserEmail() {
+    // Extract from session/page if available
+    // For MVP, may return null
+    return null;
+}
+
+function generateSessionId() {
+    // Simple browser-generated ID
+    return 'SESSION_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+}
+
+function formatTimestamp(date) {
+    // Format: YYYYMMDD_HHMMSS
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    const hh = String(date.getHours()).padStart(2, '0');
+    const min = String(date.getMinutes()).padStart(2, '0');
+    const ss = String(date.getSeconds()).padStart(2, '0');
+    return `${yyyy}${mm}${dd}_${hh}${min}${ss}`;
+}
+
+function formatDateTimeLong(date) {
+    // Format: "January 3, 2026 2:32:05 PM"
+    return date.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+    });
+}
+
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+}
+```
+
+**Lines of Code:** ~200 lines (including comments)
+
+---
+
+##### **5.5 CSS Styling (Optional)**
+
+Add minimal styling for download buttons if needed:
+
+```css
+/* app/static/styles.css */
+
+.transcript-download-actions {
+    margin-top: 1rem;
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.transcript-download-actions .btn {
+    flex: 1 1 auto;
+    min-width: 200px;
+}
+
+@media (max-width: 768px) {
+    .transcript-download-actions {
+        flex-direction: column;
+    }
+
+    .transcript-download-actions .btn {
+        width: 100%;
+    }
+}
+```
+
+---
+
+#### **Phase 5 Success Criteria:**
+
+- [ ] PHI warning modal displays before download
+- [ ] User must acknowledge warning to proceed
+- [ ] Plaintext transcript (.txt) downloads correctly
+- [ ] Markdown transcript (.md) downloads correctly
+- [ ] Filenames include patient ICN and timestamp
+- [ ] Transcripts include all messages from current session
+- [ ] Metadata (patient, clinician, timestamp) included in header
+- [ ] PHI/HIPAA disclaimer included in footer
+- [ ] Tools/sources attribution preserved in transcripts
+- [ ] Download buttons disabled when no messages present
+- [ ] Manual testing with 5+ conversation scenarios
+
+---
+
+#### **Phase 5 Deliverables:**
+
+**Day 1 - Complete ✅:**
+1. ✅ `app/templates/partials/transcript_download_modal.html` - PHI warning modal with optimized formatting
+2. ✅ Single download button added to `app/templates/insight.html` (aligned with textarea)
+3. ✅ CSS styling in `app/static/styles.css` for responsive button layout
+4. ✅ Modal integration with existing app.js handlers
+5. ✅ UX refinements (single button, black bullets, reduced spacing, shortened disclaimer)
+
+**Day 2 - Pending 📝:**
+1. [ ] `app/static/transcript.js` - Client-side transcript generation (~200 lines)
+2. [ ] Both plaintext and markdown formats functional
+3. [ ] Browser download triggered with proper filenames
+4. [ ] Comprehensive testing with sample conversations
+
+**Total Estimated Time:** 3-4 hours (Day 1: ~1.5 hours complete, Day 2: ~2 hours remaining)
+
+---
+
+#### **Future Enhancements (Post-MVP):**
+
+**Phase 5.1: Server-Side Session Storage** (6-8 hours)
+- Store chat history in server session
+- Enable download of conversations after page refresh
+- Add "Download Previous Transcript" option
+
+**Phase 5.2: PDF Export** (4-6 hours)
+- Add PDF format using jsPDF library (client-side) or reportlab (server-side)
+- Professional formatting with headers, footers, page numbers
+- VA branding/logo
+
+**Phase 5.3: Persistent Transcript History** (2-3 days)
+- Database table: `clinical_insights_transcripts`
+- Transcript management UI (view past conversations)
+- Search/filter old transcripts
+- Retention policies (auto-delete after 90 days)
+
+**Phase 5.4: Advanced Features** (Future)
+- Email transcript (encrypted, VA-approved channels only)
+- Copy-to-clipboard option
+- Print-friendly view
+- Transcript annotations (clinician notes)
+- Audit logging (who downloaded what, when)
+
+---
+
+#### **Security & Compliance Considerations:**
+
+**PHI Handling:**
+- ✅ Transcripts generated client-side (minimize server exposure)
+- ✅ Explicit user acknowledgment required before download
+- ✅ Clear PHI/HIPAA warnings in modal and file footer
+- ✅ Filenames sanitized (avoid patient names, use ICN only)
+- ✅ User responsible for file security post-download
+
+**Audit Logging (Future):**
+- Consider logging download events (who, what patient, when) for compliance
+- Store in separate audit table, not in transcript content
+
+**Data Retention:**
+- MVP: No server storage (client-side only)
+- Future: Define retention policy for persistent transcripts (e.g., 90-day auto-delete)
+
+**Access Control:**
+- Only authenticated clinicians can access Insights page
+- Download buttons only visible to logged-in users
+- Future: Role-based permissions for transcript management
 
 ---
 
@@ -3317,6 +4352,11 @@ Follow the same export style and documentation conventions used elsewhere in the
 | v1.2 | 2025-12-29 | Updated DDI reference data documentation (Section 3.1) with actual Kaggle/DrugBank source, schema, and MinIO paths. Removed severity field assumptions from Phase 1 MVP (Sections 4.1, 6.1, 7.1). Added DDI severity classification as Phase 2 enhancement (Section 14.1). Marked Days 1-2 complete. | Claude + User |
 | v1.3 | 2025-12-29 | Marked Days 3-4 complete. Added implementation notes for DDI Tool (ETL pipeline, DDIAnalyzer, LangGraph integration). Updated success criteria with actual test results (ICN100010: GABAPENTIN + ALPRAZOLAM interaction found). | Claude + User |
 | v1.4 | 2025-12-29 | Marked Day 5 complete. Added synchronous pattern notes to Section 2.2. Added implementation notes for PatientContextBuilder service and get_patient_summary tool. Updated success criteria. **Phase 1 Week 1 (MVP Foundation) Complete** - 2 tools implemented (check_ddi_risks, get_patient_summary). | Claude + User |
+| v1.5 | 2025-12-30 | **Phase 1-3 Complete**. Marked all Phase 1-3 tasks complete. Added implementation notes for Phase 2 (Web UI Integration) and Phase 3 (Vital Trends + Vista Session Caching). | Claude + User |
+| v1.6 | 2026-01-02 | Added Phase 4 specification (Clinical Notes Integration). Documented Days 1-5 implementation plan with detailed tasks, deliverables, and success criteria. | Claude + User |
+| v1.7 | 2026-01-03 | **Phase 4 Complete**. Marked all Phase 4 tasks complete. Added implementation notes for system prompts architecture, clinical notes tool, enhanced patient summary, and testing results. | Claude + User |
+| v1.8 | 2026-01-03 | **Post-Phase 4 UX Enhancements Complete**. Added new section documenting 4 completed enhancements: (1) Suggested questions modal refactoring with sparkle icon button, (2) Centralized suggested questions configuration module, (3) Unified chat button styling (sparkle + submit buttons), (4) Enhanced demographics with date of birth. Added Phase 5 specification (Conversation Transcript Download MVP). Updated document status. | Claude + User |
+| v1.9 | 2026-01-03 | **Phase 5 Day 1 Complete**. Updated Phase 5 specification with actual implementation details: (1) Single "Download Transcript" button (UX improvement from initial two-button spec), (2) Button aligned with textarea using calc() padding, (3) PHI warning modal with black bullet points and reduced spacing, (4) Shortened disclaimer text to eliminate vertical scrolling. Marked Day 1 deliverables complete, Day 2 ready for implementation. Updated document status to reflect progress. | Claude + User |
 
 ---
 

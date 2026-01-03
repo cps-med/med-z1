@@ -75,29 +75,6 @@
         <!-- Chat Container -->
         <div class="insight-container">
 
-            <!-- Suggested Questions (initially visible, hide after first message) -->
-            <div id="suggested-questions" class="suggested-questions">
-                <h3>Try asking:</h3>
-                <div class="suggestion-chips">
-                    {% for question in suggested_questions %}
-                    <button class="chip" onclick="askQuestion('{{ question | replace("'", "\\'") }}')">
-                        {% if 'drug' in question.lower() or 'ddi' in question.lower() %}
-                        <i class="fa-solid fa-pills"></i>
-                        {% elif 'summary' in question.lower() or 'summarize' in question.lower() %}
-                        <i class="fa-solid fa-file-medical"></i>
-                        {% elif 'risk' in question.lower() %}
-                        <i class="fa-solid fa-triangle-exclamation"></i>
-                        {% elif 'gap' in question.lower() %}
-                        <i class="fa-solid fa-calendar-xmark"></i>
-                        {% else %}
-                        <i class="fa-solid fa-circle-question"></i>
-                        {% endif %}
-                        <span class="chip__text">{{ question }}</span>
-                    </button>
-                    {% endfor %}
-                </div>
-            </div>
-
             <!-- Chat History -->
             <div id="chat-history" class="chat-history">
                 <!-- Messages will be appended here via HTMX -->
@@ -118,6 +95,17 @@
                 <input type="hidden" name="icn" value="{{ patient.icn }}">
 
                 <div class="chat-input-container">
+                    <!-- Sparkle button to open suggested questions modal -->
+                    <button
+                        type="button"
+                        class="btn btn--icon chat-sparkle-btn"
+                        data-modal-open="suggested-questions-modal"
+                        title="Suggested questions"
+                        aria-label="View suggested questions"
+                    >
+                        <i class="fa-solid fa-sparkles"></i>
+                    </button>
+
                     <textarea
                         name="message"
                         id="message-input"
@@ -127,7 +115,12 @@
                         onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); this.form.requestSubmit(); }"
                     ></textarea>
 
-                    <button type="submit" class="btn btn--primary btn--icon">
+                    <button
+                        type="submit"
+                        class="btn btn--primary btn--icon chat-submit-btn"
+                        title="Submit question"
+                        aria-label="Submit question"
+                    >
                         <i class="fa-solid fa-paper-plane"></i>
                     </button>
                 </div>
@@ -139,6 +132,19 @@
                 </div>
             </form>
 
+            <!-- Transcript Download Actions -->
+            <div class="transcript-download-actions">
+                <button
+                    type="button"
+                    class="btn btn--secondary"
+                    data-modal-open="transcript-download-modal"
+                    title="Download conversation transcript"
+                >
+                    <i class="fa-solid fa-download"></i>
+                    Download Transcript
+                </button>
+            </div>
+
             <!-- AI Disclaimer -->
             <div class="ai-disclaimer">
                 <i class="fa-solid fa-info-circle"></i>
@@ -147,20 +153,36 @@
             </div>
 
         </div>
+
+        <!-- Suggested Questions Modal -->
+        {% include "partials/suggested_questions_modal.html" %}
+
+        <!-- Transcript Download Modal -->
+        {% include "partials/transcript_download_modal.html" %}
+
     {% endif %}
 </div>
 
 <script>
-function askQuestion(question) {
+// Select a suggested question from the modal
+function selectSuggestedQuestion(question) {
+    // Populate the textarea
     document.getElementById('message-input').value = question;
-    document.getElementById('chat-form').requestSubmit();
+
+    // Close the modal
+    const modal = document.getElementById('suggested-questions-modal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+
+    // Focus the textarea so user can edit if desired
+    document.getElementById('message-input').focus();
 }
 
+// No-op function for HTMX compatibility (chips removed)
 function hideSuggestions() {
-    const suggestionsEl = document.getElementById('suggested-questions');
-    if (suggestionsEl) {
-        suggestionsEl.style.display = 'none';
-    }
+    // Chips removed - no action needed
 }
 </script>
 

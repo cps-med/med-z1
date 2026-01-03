@@ -5064,6 +5064,106 @@ input:focus-visible,
     justify-content: center;
 }
 
+/* Sparkle button for suggested questions */
+.chat-sparkle-btn {
+    width: 36px;  /* Match chat avatar size (override .btn--icon 48px) */
+    height: 36px; /* Match chat avatar size (override .btn--icon 48px) */
+    background: linear-gradient(135deg, #06b6d4, #4f46e5); /* Match active sidebar menu */
+    border: 1px solid transparent;
+    color: gold; /* Match active sidebar menu */
+    transition: all 0.2s ease;
+}
+
+.chat-sparkle-btn:hover {
+    opacity: 0.9;
+    transform: scale(1.05);
+}
+
+.chat-sparkle-btn i {
+    font-size: 1rem;
+}
+
+/* Submit button - match sparkle button styling for consistency */
+.chat-submit-btn {
+    width: 36px;  /* Match sparkle button and chat avatar */
+    height: 36px; /* Match sparkle button and chat avatar */
+    background: linear-gradient(135deg, #06b6d4, #4f46e5) !important; /* Override .btn--primary */
+    border: 1px solid transparent !important;
+    color: gold !important; /* Override .btn--primary white text */
+    transition: all 0.2s ease;
+}
+
+.chat-submit-btn:hover {
+    opacity: 0.9;
+    transform: scale(1.05);
+}
+
+.chat-submit-btn i {
+    font-size: 1rem;
+}
+
+/* Transcript Download Actions */
+.transcript-download-actions {
+    margin-top: 0.5rem;
+    margin-bottom: 1rem;
+    padding-left: calc(36px + 0.75rem);  /* Sparkle button width + gap */
+    padding-right: calc(36px + 0.75rem); /* Submit button width + gap */
+}
+
+.transcript-download-actions .btn {
+    width: 100%;
+}
+
+@media (max-width: 768px) {
+    .transcript-download-actions {
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    .transcript-download-actions .btn {
+        width: 100%;
+    }
+}
+
+/* Suggested Questions Modal List */
+.suggested-questions-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.suggested-questions-list__item {
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.suggested-questions-list__item:last-child {
+    border-bottom: none;
+}
+
+.suggested-question-btn {
+    width: 100%;
+    text-align: left;
+    padding: 1rem;
+    background: white;
+    border: none;
+    cursor: pointer;
+    font-size: 0.95rem;
+    color: #374151;
+    transition: background 0.15s ease;
+    line-height: 1.5;
+}
+
+.suggested-question-btn:hover {
+    background: #f9fafb;
+    color: #06b6d4;
+}
+
+.suggested-question-btn:active {
+    background: #f3f4f6;
+}
+
 /* Loading indicator */
 #loading-indicator {
     display: none;

@@ -17,5 +17,8 @@ To modify questions: Edit the SUGGESTED_QUESTIONS list below.
 SUGGESTED_QUESTIONS = [
     "What are the key clinical risks for this patient?",
     "Are there any drug-drug interaction concerns?",
+    "Summarize this patient's recent clinical activity.",
     "What did recent clinical notes say about this patient?",
+    "Has the patient seen cardiology?",
+    "What imaging studies were done recently?",
 ]
