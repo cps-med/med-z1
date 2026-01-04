@@ -10,6 +10,7 @@ from fastapi import APIRouter, HTTPException, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from typing import Optional
+from datetime import datetime
 import logging
 import markdown
 
@@ -158,6 +159,10 @@ async def post_chat_message(
 
         logger.info(f"Processing chat message for {icn}: '{message[:100]}...'")
 
+        # Generate timestamp for this message exchange
+        # Format: "2:45:32 PM" (12-hour format with seconds for precision)
+        message_timestamp = datetime.now().strftime('%I:%M:%S %p')
+
         # Set request context for tools (enables Vista cache access)
         set_request_context(request)
 
@@ -216,13 +221,13 @@ Vista Data Integration:
             user_message_html = templates.get_template("partials/chat_message.html").render(
                 message_type="user",
                 message_text=message,
-                timestamp="Just now"
+                timestamp=message_timestamp
             )
 
             ai_message_html = templates.get_template("partials/chat_message.html").render(
                 message_type="ai",
                 message_text=ai_response_html,  # Already converted to HTML
-                timestamp="Just now",
+                timestamp=message_timestamp,
                 tools_used=tools_used if tools_used else None
             )
 
@@ -236,10 +241,11 @@ Vista Data Integration:
     except Exception as e:
         logger.error(f"Error processing chat message for {icn}: {e}")
         # Return error message as AI response
+        error_timestamp = datetime.now().strftime('%I:%M:%S %p')
         error_html = templates.get_template("partials/chat_message.html").render(
             message_type="ai",
             message_text=f"I'm sorry, I encountered an error: {str(e)}",
-            timestamp="Just now",
+            timestamp=error_timestamp,
             is_error=True
         )
         return HTMLResponse(content=error_html)
