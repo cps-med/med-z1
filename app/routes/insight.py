@@ -155,7 +155,7 @@ async def post_chat_message(
             logger.error(f"Patient {icn} not found in chat handler")
             raise HTTPException(status_code=404, detail="Patient not found")
 
-        patient_name = patient.get("name", "Unknown Patient")
+        patient_name = patient.get("name_display", "Unknown Patient")
 
         logger.info(f"Processing chat message for {icn}: '{message[:100]}...'")
 

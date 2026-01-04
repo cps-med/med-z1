@@ -70,7 +70,8 @@ class PatientContextBuilder:
             Natural language demographics summary
 
         Example:
-            "45-year-old male veteran (DOB: 1979-05-15), service-connected disability 70%
+            "Patient Name: MOORE, ROBERT
+             45-year-old male veteran (DOB: 1979-05-15), service-connected disability 70%
              Primary care: Alexandria VA Medical Center
              Address: Alexandria, VA 22314"
         """
@@ -79,6 +80,10 @@ class PatientContextBuilder:
         if not demo:
             return "No demographic data on record"
 
+        # Patient name (first line)
+        name = demo.get('name_display', 'Unknown Patient')
+        text = f"Patient Name: {name}\n"
+
         # Build age/gender/veteran status line
         age = demo.get('age', 'unknown age')
         dob = demo.get('dob')  # Date of birth (format: YYYY-MM-DD or similar)
@@ -86,9 +91,9 @@ class PatientContextBuilder:
 
         # Include both DOB and age for comprehensive demographic info
         if dob:
-            text = f"{age}-year-old {sex} veteran (DOB: {dob})"
+            text += f"{age}-year-old {sex} veteran (DOB: {dob})"
         else:
-            text = f"{age}-year-old {sex} veteran"
+            text += f"{age}-year-old {sex} veteran"
 
         # Add service-connected percentage if available
         sc_pct = demo.get('service_connected_percent')

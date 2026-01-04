@@ -93,6 +93,7 @@
                 hx-indicator="#loading-indicator"
             >
                 <input type="hidden" name="icn" value="{{ patient.icn }}">
+                <input type="hidden" id="clinician-email" value="{{ user.email if user else 'unknown@va.gov' }}">
 
                 <div class="chat-input-container">
                     <!-- Sparkle button to open suggested questions modal -->

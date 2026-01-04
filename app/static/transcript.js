@@ -121,9 +121,13 @@ function generateMetadata() {
         now.getMinutes().toString().padStart(2, '0') +
         now.getSeconds().toString().padStart(2, '0');
 
-    // Clinician email (if available in session/DOM, otherwise placeholder)
-    // Note: In production, this would come from authenticated user session
-    metadata.clinician = 'clinician@va.gov';  // Placeholder
+    // Clinician email (from authenticated user session)
+    const clinicianEmailInput = document.getElementById('clinician-email');
+    if (clinicianEmailInput) {
+        metadata.clinician = clinicianEmailInput.value;
+    } else {
+        metadata.clinician = 'unknown@va.gov';  // Fallback if not found
+    }
 
     // Session ID (use browser-generated random ID)
     if (!sessionStorage.getItem('transcript_session_id')) {
