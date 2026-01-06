@@ -121,8 +121,3 @@ ORDER BY email;
 -- Print summary
 SELECT 'Inserted ' || COUNT(*) || ' mock users' AS summary
 FROM auth.users;
-
--- =====================================================
--- Copy the above SQL and save to:
---   db/seeds/auth_users.sql
--- =====================================================

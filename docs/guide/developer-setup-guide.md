@@ -6,7 +6,14 @@ This guide provides instructions for installing, configuring, and running the **
 
 ## GIT Setup
 
-Prior to getting started, ensure that you have a current version of git installed and configured on your local machine. For macOS environments, it is recommended that you use the standard Apple Xcode developer tools. Installation of the xCODE app is not required. Instead, you can install the **Command Line Tools** via the command below:
+Prior to getting started, ensure that you have a current version of git installed and configured on your local machine. One way to check for the existance of git is to run the command:  
+
+```bash
+which git
+```
+
+**macOS**  
+For macOS environments, it is recommended that you use the standard Apple Xcode developer tools. Installation of the xCODE app is not required. Instead, you can install the **Command Line Tools** via the command below:
 
 Install macOS Developer Tools
 ```bash
@@ -22,6 +29,22 @@ git --version
 xcode-select -p
 ```
 
+**Linux**
+Most Linux distributions (including Pop!_OS) come with git pre-installed.  
+
+If git is not installed, install via apt
+```bash
+sudo apt-get update
+sudo apt-get install git
+```
+
+Verify
+```bash
+# Check git version
+git --version
+```
+
+**GIT Configuration**
 Set up basic information about yourself
 ```bash
 git config --global user.name "Chuck Sylvester"
@@ -87,57 +110,56 @@ Place .env in the project root folder, or copy/paste contents into .env file
 cp .env ~/swdev/med/med-z1/
 ```
 
+No additional configuration is required at this time. Once you have obtain the project-wide .env file and placed it in the project root directory, you should be good to go.  
+
 ## Verify Python v3.10 or v3.11 Availability
 
-For Macbook users, macOS comes with a system version of Python pre-installed, but it is often outdated and not recommended for development.
+For Macbook users, macOS comes with a system version of Python pre-installed, but it is often outdated and not recommended for development. For Linux users, your machine will likely have version 3.10.x or 3.11.x preinstalled.  
 
 You can check the version:
 ```bash
 python3 --version
 ```
 
-If it's an older version, consider a new installation via Homebrew.
+**macOS**
+If your machine is running a version prior to or newer than 3.11, consider a new installation via Homebrew, the macOS package manager.  
 
-
-**Install Homebrew (if needed)**  
-
-Homebrew is a package manager for macOS. Check if already installed:
-
+Check if already installed:
 ```bash
 brew --version
 ```
 
 If not installed, install Homebrew:
-
 ```bash
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
 
 Follow the post-installation instructions to add Homebrew to your PATH.
 
-**Install Python 3.11**  
-
-Recommended Version: Python 3.11.x (avoid 3.12+ due to virtual environment quirks)
+Recommended Python Version: 3.11.x (avoid 3.12+ due to virtual environment quirks)
 
 If you don't have Python 3.11.x, install it:
-
 ```bash
 brew install python@3.11
 ```
 
-After installation, you may need to add Python 3.11 to your PATH. Homebrew will provide instructions, typically:
+After installation, you may need to add Python 3.11 to your PATH.
 
+Homebrew will provide instructions, typically:
 ```bash
 # Add to ~/.zshrc or ~/.bash_profile
 echo 'export PATH="$(brew --prefix)/opt/python@3.11/libexec/bin:$PATH"' >> ~/.zshrc
 source ~/.zshrc
 ```
 
-**Verify Installation**:
+Verify Installation:
 ```bash
 python3 --version  # Should show 3.11.x
 pip3 --version     # Should show 24.x or 25.x
 ```
+
+**Linux**
+The recommended Python version is 3.10 or 3.11. If your development machine is not running either version, please takes steps to install. Specific instructions for Python installation on a Linux environment are not yet documented in this guide.  
 
 ## Create Python Virtual Environment
 
@@ -179,9 +201,15 @@ To deactivate a Pythone virtual environment:
 deactivate
 ```
 
-## Install and Run Docker Desktop
+## Install and Run Docker
 
-The **med-z1** application uses three core services that run within Docker container images: Microsoft SQL Server 2019, PostgreSQL 16, and MinIO. On macOS, these services are managed using Docker Desktop; however, there are significant performance gains on Linux by managing these services natively through the command line.  
+The **med-z1** application uses three core services that run within Docker container images:  
+
+- Microsoft SQL Server 2019
+- PostgreSQL 16
+- MinIO  
+
+On macOS, these services are managed using Docker Desktop; however, there are significant performance gains on Linux by managing these services natively through the command line.  
 
 ### macOS Setup
 
@@ -285,7 +313,7 @@ sudo apt-get update
 sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 ```
 
-The Linux intallation uses a docker-compose.yaml file located in the project root directory, to define and start the required conatiner images.  
+The Linux intallation uses a docker compose yaml file, which is under version control and located in the project root directory. this file, `docker-compose.yaml`, is used to define and start the required conatiner images.  
 
 Run docker-compose.yaml script (from project root directory)
 ```bash
@@ -326,17 +354,22 @@ docker logs med-insight-minio
 
 ## PostgreSQL Database Setup
 
-Before running any ETL pipelines or setting up user authentication, you must create the `medz1` database.  
+Before running any ETL pipelines or setting up user authentication, you must create the `medz1` database. The instructions below are for creating the database only; steps for creating the required schemas and tables are provided later.  
 
 **Creation:**  
 ```bash
 # Connect to the default 'postgres' database
 docker exec -it postgres16 psql -U postgres -d postgres
 
+# List the current set of databases within the postgress server
+# For firsttime setup, the list will not include medz1.
+\l
+
 # Create the medz1 database from psql prompt
 CREATE DATABASE medz1;
 
 # Verify creation
+# Should now include medz1
 \l
 
 # Exit
@@ -358,7 +391,7 @@ SELECT current_database();
 
 ## PostgreSQL User Authentication Setup
 
-This section guides you through setting up the user authentication schema and tables within the PostgreSQL `medz1` database and populating these tables with mock user data.
+This section guides you through setting up the user authentication schema and tables within the PostgreSQL `medz1` database and populating these tables with mock user data. This one-line command uses the PostgreSQL DDL script shown below.
 
 Create Authentication Schema and Tables
 ```bash
@@ -415,7 +448,7 @@ Password: VaDemo2025!
 
 ## MinIO Setup and Bucket Creation
 
-The med-z1 application uses MinIO as an S3-compatible object storage system for the data lake. MinIO must be properly configured before running ETL pipelines, as the pipelines write and read Parquet files from MinIO.  
+The med-z1 application uses MinIO as an S3-compatible object storage system for the data lake. The primary file types that will be managed within MinIO are csv and Parquet. MinIO must be properly configured before running ETL pipelines, as the pipelines reads and writes parquet files to and from MinIO.  
 
 The MinIO service should already be running from the `docker compose up -d` command executed earlier.  
 
@@ -542,7 +575,7 @@ sqlcmd -S 127.0.0.1,1433 -U sa -P 'MyS3cur3P@ssw0rd' -C -Q "SELECT @@VERSION"
 
 ## Create and Populate SQL Server Mock Data
 
-The **med-z1** application uses Microsoft SQL Server 2019 to simulate the VA Corporate Data Warehouse (CDW) for local development. The mock CDW contains synthetic patient data across multiple clinical domains.
+The **med-z1** application uses Microsoft SQL Server 2019 to simulate the VA Corporate Data Warehouse (CDW) for local development. The mock CDW contains synthetic patient data for a number of VistA sites (aka "stations") and spans multiple clinical domains, such as Allergies, Vitals, Labs, and Encounters.
 
 This section guides you through creating the **CDWWork** database schema and populating it with mock patient data.
 
@@ -688,7 +721,9 @@ Expected output should list tables in the `clinical` schema:
 
 ### Running ETL Pipelines by Domain
 
-Each clinical domain has a complete pipeline (Bronze → Silver → Gold → Load). Run pipelines in the order shown below to respect data dependencies.
+Each clinical domain has a complete pipeline (Bronze → Silver → Gold → Load). Run pipelines in the order shown below to respect data dependencies.  
+
+Note that all domain pipelines can be run via a single shells script, as described later in this guide.  
 
 All ETL scripts are run as Python modules from the project root:
 
@@ -846,13 +881,22 @@ With the ETL pipelines complete, you now have:
 - Bronze/Silver/Gold Parquet files in MinIO (data lake)
 - Query-optimized data in PostgreSQL (serving database for UI)
 
-You can now start the FastAPI application and view patient data in the UI:
+You can now start the FastAPI application and view patient data in the UI. Below are instructions for starting the three core FastAPI servers. You can start the services in any order, but it's best to start them in the order presented below.
 
+From the project root directory:
 ```bash
-# Start the main med-z1 web application
-uvicorn app.main:app --reload
+# Start the Vista RPC Broker Simulator (port 8003, separate terminal or tab)
+uvicorn vista.app.main:app --reload --port 8003
+
+# Start the CCOW Context Vault service (port 8001, separate terminal or tab)
+uvicorn ccow.main:app --reload --port 8001
+
+# Start the main med-z1 web application (port 8000, separate terminal or tab)
+# Note that the port argument is optional, since it will default to 8000
+uvicorn app.main:app --reload --port 8000
 
 # Open browser to http://127.0.0.1:8000
+# Optional URL: localhost:8000
 # Login with: clinician.alpha@va.gov / VaDemo2025!
 # Search for patient by ICN (e.g., ICN100001)
 ```

@@ -436,8 +436,9 @@ xcode-select -p
 
 ### Linux Setup
 
-Most Linux distributions (including Pop!_OS) come with git pre-installed. Verify installation:
+Most Linux distributions (including Pop!_OS) come with git pre-installed.  
 
+Verify installation:
 ```bash
 # Check git version
 git --version
