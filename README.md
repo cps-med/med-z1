@@ -5,7 +5,7 @@
 Refer to med-z1/docs/med-z1-plan.md for more information on this project.
 
 ## Local Environment Setup
-Refer to the README.md files in each of the primary code subsystems (ai, app, ccow, etl, mock, vista, etc.) for information on the respective tech stack, local development environment setup, and general guidance.  
+Refer to the Developer Setup Guide for information on local development environment setup, and general guidance. This document is located at: `docs/guide/developer-setup-guide.md`.
 
 You may need to reach out to a peer developer to get secret and sensitive information that is not under version control, such as the contents of .env files.  
 
