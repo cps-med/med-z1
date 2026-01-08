@@ -741,7 +741,7 @@ Expected output should list **11 tables** in the `clinical` schema:
 
 Each clinical domain has a complete pipeline (Bronze → Silver → Gold → Load). Run pipelines in the order shown below to respect data dependencies.  
 
-Note that all domain pipelines can be run via a single shells script, as described later in this guide.  
+Note that **_all of the clinical domain pipelines detailed below can be run via a single shell script_**, as described later in this guide.  
 
 All ETL scripts are run as Python modules from the project root:
 
@@ -874,7 +874,17 @@ python -m etl.load_labs
 
 #### 8. Clinical Notes Pipeline
 ```bash
-# To-Do: add this section
+# Bronze: Extract Clinical Notes
+python -m etl.bronze_clinical_notes_vista
+
+# Silver: Clean and harmonize
+python -m etl.silver_clinical_notes
+
+# Gold: Create query-optimized clinical notes
+python -m etl.gold_clinical_notes
+
+# Load: Insert into PostgreSQL
+python -m etl.load_clinical_notes
 ```
 
 **Verify ETL Pipeline Results**
