@@ -75,11 +75,5 @@ PRINT '=======================================================================';
 PRINT '';
 PRINT 'Next Steps:';
 PRINT '  1. Run insert/_master.sql to populate demo data';
-PRINT '  2. Test cross-database patient identity resolution';
-PRINT '  3. Proceed to Phase 2: Vitals ETL implementation (Days 3-5)';
-PRINT '';
-PRINT 'Demo Patients:';
-PRINT '  - Adam Dooree (ICN100001) at Portland VAMC (648)';
-PRINT '  - Alexander Aminor (ICN100010) at Seattle VAMC (663)';
 PRINT '';
 GO

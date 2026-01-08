@@ -13,7 +13,7 @@ sleep 2
 echo "══════════════════════════════════════════════════"
 echo ">>> Running Patient Demographics pipeline..."
 echo "══════════════════════════════════════════════════"
-sleep 2
+sleep 3
 python -m etl.bronze_patient
 python -m etl.bronze_patient_address
 python -m etl.bronze_patient_disability
@@ -27,8 +27,9 @@ python -m etl.load_postgres_patient
 echo "══════════════════════════════════════════════════"
 echo ">>> Running Vitals pipeline..."
 echo "══════════════════════════════════════════════════"
-sleep 2
+sleep 3
 python -m etl.bronze_vitals
+python -m etl.bronze_cdwwork2_vitals
 python -m etl.silver_vitals
 python -m etl.gold_vitals
 python -m etl.load_vitals
@@ -37,7 +38,7 @@ python -m etl.load_vitals
 echo "══════════════════════════════════════════════════"
 echo ">>> Running Allergies pipeline..."
 echo "══════════════════════════════════════════════════"
-sleep 2
+sleep 3
 python -m etl.bronze_allergen
 python -m etl.bronze_reaction
 python -m etl.bronze_allergy_severity
@@ -51,7 +52,7 @@ python -m etl.load_patient_allergies
 echo "══════════════════════════════════════════════════"
 echo ">>> Running Medications pipeline..."
 echo "══════════════════════════════════════════════════"
-sleep 2
+sleep 3
 python -m etl.bronze_medications
 python -m etl.silver_medications
 python -m etl.gold_patient_medications
@@ -61,7 +62,7 @@ python -m etl.load_medications
 echo "══════════════════════════════════════════════════"
 echo ">>> Running Patient Flags pipeline..."
 echo "══════════════════════════════════════════════════"
-sleep 2
+sleep 3
 python -m etl.bronze_patient_flags
 python -m etl.silver_patient_flags
 python -m etl.gold_patient_flags
@@ -71,7 +72,7 @@ python -m etl.load_patient_flags
 echo "══════════════════════════════════════════════════"
 echo ">>> Running Encounters pipeline..."
 echo "══════════════════════════════════════════════════"
-sleep 2
+sleep 3
 python -m etl.bronze_inpatient
 python -m etl.silver_inpatient
 python -m etl.gold_inpatient
@@ -81,11 +82,21 @@ python -m etl.load_encounters
 echo "══════════════════════════════════════════════════"
 echo ">>> Running Laboratory Results pipeline..."
 echo "══════════════════════════════════════════════════"
-sleep 2
+sleep 3
 python -m etl.bronze_labs
 python -m etl.silver_labs
 python -m etl.gold_labs
 python -m etl.load_labs
+
+# Clinical Notes
+echo "══════════════════════════════════════════════════"
+echo ">>> Running Clinical Notes pipeline..."
+echo "══════════════════════════════════════════════════"
+sleep 3
+python -m etl.bronze_clinical_notes_vista
+python -m etl.silver_clinical_notes
+python -m etl.gold_clinical_notes
+python -m etl.load_clinical_notes
 
 echo "══════════════════════════════════════════"
 echo "All ETL pipelines completed successfully!"
