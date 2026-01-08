@@ -721,7 +721,7 @@ docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_medi
 docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_flags_tables.sql
 docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_encounters_table.sql
 docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_labs_table.sql
-docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_clinical_notes_table.sql
+docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_clinical_notes_table.sql
 ```
 
 Verify tables were created:
