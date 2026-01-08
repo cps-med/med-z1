@@ -389,6 +389,17 @@ SELECT current_database();
 \q
 ```
 
+**Dropping an Existing Database:**  
+If you need to completely remove an existing database, e.g., to begin a fresh installation, follow the instructions below:  
+
+```bash
+-- Connect to the default 'postgres' database
+\c postgres
+
+-- 2. Drop the existing database (forcing active connections to close)
+DROP DATABASE medz1 WITH (FORCE);
+```
+
 ## PostgreSQL User Authentication Setup
 
 This section guides you through setting up the user authentication schema and tables within the PostgreSQL `medz1` database and populating these tables with mock user data. This one-line command uses the PostgreSQL DDL script shown below.
