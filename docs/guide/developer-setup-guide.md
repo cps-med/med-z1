@@ -577,6 +577,8 @@ sqlcmd -S 127.0.0.1,1433 -U sa -P 'MyS3cur3P@ssw0rd' -C -Q "SELECT @@VERSION"
 
 The **med-z1** application uses Microsoft SQL Server 2019 to simulate the VA Corporate Data Warehouse (CDW) for local development. The mock CDW contains synthetic patient data for a number of VistA sites (aka "stations") and spans multiple clinical domains, such as Allergies, Vitals, Labs, and Encounters.
 
+### CDWWork Database (VistA)
+
 This section guides you through creating the **CDWWork** database schema and populating it with mock patient data.
 
 Verify SQL Server Container is Running
@@ -680,6 +682,17 @@ GO
 EXIT
 ```
 
+### CDWWork2 Database (Cerner / Oracle Health)
+
+This section guides you through creating the **CDWWork2** database schema and populating it with mock patient data.  
+
+**CDWWork2** simulates VA medical centers that have migrated to Oracle Health EHR system.
+
+Follow the steps outlined above for CDWWork Option 1 or Option 2, but from the following locations:
+
+ - med-z1/mock/sql-server/cdwwork2/create
+ - med-z1/mock/sql-server/cdwwork2/insert
+
 ## Run ETL Data Pipelines
 
 The **med-z1** ETL (Extract, Transform, Load) pipelines transform raw data from the SQL Server mock CDW into curated, query-optimized data for the PostgreSQL serving database. The pipelines follow the **medallion architecture** with three layers stored as Parquet files in MinIO, followed by loading into PostgreSQL.
@@ -708,6 +721,7 @@ docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_medi
 docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_flags_tables.sql
 docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_encounters_table.sql
 docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_labs_table.sql
+docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_clinical_notes_table.sql
 ```
 
 Verify tables were created:
@@ -715,9 +729,13 @@ Verify tables were created:
 docker exec -it postgres16 psql -U postgres -d medz1 -c "\dt clinical.*"
 ```
 
-Expected output should list tables in the `clinical` schema:
+Expected output should list **11 tables** in the `clinical` schema:
 
-- patient_demographics, patient_vitals, patient_allergies, patient_allergy_reactions, patient_medications_outpatient, patient_medications_inpatient, patient_flags, patient_flag_history, patient_encounters, patient_labs
+- patient_demographics, patient_vitals
+- patient_allergies, patient_allergy_reactions
+- patient_medications_outpatient, patient_medications_inpatient
+- patient_flags, patient_flag_history,
+- patient_encounters, patient_labs, patient_clinical_notes
 
 ### Running ETL Pipelines by Domain
 
@@ -756,8 +774,9 @@ python -m etl.load_postgres_patient
 #### 2. Vitals Pipeline
 
 ```bash
-# Bronze: Extract vitals from SQL Server
+# Bronze: Extract vitals from SQL Server (CDWWork and CDWWork2)
 python -m etl.bronze_vitals
+python -m etl.bronze_cdwwork2_vitals
 
 # Silver: Clean and harmonize
 python -m etl.silver_vitals
@@ -851,6 +870,11 @@ python -m etl.gold_labs
 
 # Load: Insert into PostgreSQL
 python -m etl.load_labs
+```
+
+#### 8. Clinical Notes Pipeline
+```bash
+# To-Do: add this section
 ```
 
 **Verify ETL Pipeline Results**

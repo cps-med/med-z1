@@ -29,6 +29,7 @@ CREATE TABLE clinical.patient_vitals (
     entered_by              VARCHAR(100),               -- Staff name
     abnormal_flag           VARCHAR(20),                -- 'CRITICAL', 'HIGH', 'LOW', 'NORMAL'
     bmi                     DECIMAL(5,2),               -- Calculated BMI (if WT and HT available)
+    data_source             VARCHAR(20),                -- Track origin: CDWWork, CDWWork2, CALCULATED
     last_updated            TIMESTAMP DEFAULT NOW()
 );
 
@@ -52,6 +53,10 @@ CREATE INDEX idx_patient_vitals_abnormal
 CREATE INDEX idx_patient_vitals_location_type
     ON clinical.patient_vitals (location_type);
 
+-- Index for data source filtering (VistA vs Cerner)
+CREATE INDEX idx_patient_vitals_data_source
+    ON clinical.patient_vitals (data_source);
+
 -- Comments
 COMMENT ON TABLE clinical.patient_vitals IS 'Patient vital signs data from Gold layer';
 COMMENT ON COLUMN clinical.patient_vitals.patient_key IS 'Patient ICN (Integrated Care Number)';
@@ -59,6 +64,7 @@ COMMENT ON COLUMN clinical.patient_vitals.vital_sign_id IS 'Source VitalSignSID 
 COMMENT ON COLUMN clinical.patient_vitals.qualifiers IS 'JSON array of qualifiers (position, site, method, cuff size)';
 COMMENT ON COLUMN clinical.patient_vitals.abnormal_flag IS 'CRITICAL, HIGH, LOW, or NORMAL based on clinical thresholds';
 COMMENT ON COLUMN clinical.patient_vitals.bmi IS 'Body Mass Index calculated from height and weight';
+COMMENT ON COLUMN clinical.patient_vitals.data_source IS 'Data origin: CDWWork (VistA), CDWWork2 (Cerner), or CALCULATED (derived)';
 
 -- Grant permissions
 GRANT SELECT ON clinical.patient_vitals TO PUBLIC;

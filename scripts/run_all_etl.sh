@@ -29,6 +29,7 @@ echo ">>> Running Vitals pipeline..."
 echo "══════════════════════════════════════════════════"
 sleep 2
 python -m etl.bronze_vitals
+python -m etl.bronze_cdwwork2_vitals
 python -m etl.silver_vitals
 python -m etl.gold_vitals
 python -m etl.load_vitals
@@ -86,6 +87,13 @@ python -m etl.bronze_labs
 python -m etl.silver_labs
 python -m etl.gold_labs
 python -m etl.load_labs
+
+# Clinical Notes
+echo "══════════════════════════════════════════════════"
+echo ">>> Running Clinical Notes pipeline..."
+echo "══════════════════════════════════════════════════"
+sleep 2
+# To-Do: add this section
 
 echo "══════════════════════════════════════════"
 echo "All ETL pipelines completed successfully!"
