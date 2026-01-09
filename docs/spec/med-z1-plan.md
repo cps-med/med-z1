@@ -826,7 +826,7 @@ Maintain documentation as part of the med-z1 repo under `docs/`:
 
   * Refined problem statement, target users, and user stories.
 
-* `docs/architecture.md` (optional, to be created)
+* `docs/spec/med-z1-architecture.md` (optional, to be created)
 
   * Diagrams and explanations of:
 

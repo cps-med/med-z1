@@ -300,7 +300,7 @@ After Phase 1 completion, proceed with:
 ## References
 
 - **Design Document:** `/docs/spec/cdwwork2-design.md` (v1.3)
-- **Architecture:** `/docs/architecture.md`
+- **Architecture:** `/docs/spec/med-z1-architecture.md`
 - **Main Application:** `/app/README.md`
 - **ETL Patterns:** `/etl/README.md`
 

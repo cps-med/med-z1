@@ -2304,7 +2304,7 @@ Chart.js requires stable DOM elements for canvas rendering. When HTMX swaps widg
    - Mobile/tablet responsive design
 4. Update documentation:
    - `app/README.md` (add Labs routing example)
-   - `docs/architecture.md` (add 3x1 widget pattern, confirm Pattern B decision)
+   - `docs/spec/med-z1-architecture.md` (add 3x1 widget pattern, confirm Pattern B decision)
    - This design document (mark sections complete)
 5. Code review and cleanup
 

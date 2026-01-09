@@ -338,7 +338,7 @@ No configuration changes required. CCOW vault automatically:
 - **Design Document**: `docs/ccow-multi-user-enhancement.md` (v2.0 full specification)
 - **Original Design**: `docs/ccow-vault-design.md` (v1.1 baseline)
 - **User Auth Design**: `docs/user-auth-design.md` (session management)
-- **Architecture**: `docs/architecture.md` (system-wide patterns)
+- **Architecture**: `docs/spec/med-z1-architecture.md` (system-wide patterns)
 
 ---
 

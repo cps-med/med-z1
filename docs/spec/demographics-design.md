@@ -1227,7 +1227,7 @@ Add "View Full Demographics" link:
 ### 12.1 Related Documents
 
 - `docs/patient-dashboard-design.md` - Dashboard widget specification
-- `docs/architecture.md` - Routing patterns and architectural decisions
+- `docs/spec/med-z1-architecture.md` - Routing patterns and architectural decisions
 - `docs/implementation-roadmap.md` - Overall project roadmap
 - `docs/vitals-design.md` - Vitals page pattern (template for demographics page)
 - `docs/allergies-design.md` - Allergies page pattern (template for demographics page)

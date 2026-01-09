@@ -417,7 +417,7 @@ ORDER BY cdw.PatientICN;
 - **CDWWork (VistA) Details:** `mock/sql-server/cdwwork/README.md`
 - **CDWWork2 (Cerner) Details:** `mock/sql-server/cdwwork2/README.md`
 - **Design Specification:** `docs/spec/cdwwork2-design.md` (v1.3)
-- **Architecture Decisions:** `docs/architecture.md`
+- **Architecture Decisions:** `docs/spec/med-z1-architecture.md`
 - **ETL Pipeline:** `etl/README.md`
 
 ---

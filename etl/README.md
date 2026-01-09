@@ -129,7 +129,7 @@ python -m etl.load_labs
 **Status:** ✅ ETL Complete (2025-12-16). UI implementation pending.
 
 **Important Note - Location Field Pattern:**
-This domain was the first to implement the standardized three-column location pattern from day one. All location references include ID, name, and type for consistency with Vitals and Encounters domains. See `docs/architecture.md` Section 4.3 for detailed pattern documentation.
+This domain was the first to implement the standardized three-column location pattern from day one. All location references include ID, name, and type for consistency with Vitals and Encounters domains. See `docs/spec/med-z1-architecture.md` Section 4.3 for detailed pattern documentation.
 
 ## Prerequisites
 

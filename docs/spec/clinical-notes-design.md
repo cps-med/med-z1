@@ -3063,7 +3063,7 @@ Row 6:  [ Imaging      ] [             ] [             ]
    - Mobile/tablet responsive design
 4. Update documentation:
    - `app/README.md` (add Clinical Notes routing example)
-   - `docs/architecture.md` (confirm Pattern B decision)
+   - `docs/spec/med-z1-architecture.md` (confirm Pattern B decision)
    - This design document (mark sections complete)
 5. Code review and cleanup
 

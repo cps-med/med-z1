@@ -2704,7 +2704,7 @@ med-z1/
 
 **Primary References**:
 - `docs/cdwwork2-database-research.md` - Initial research findings (AI agent report)
-- `docs/architecture.md` - System architecture and routing decisions
+- `docs/spec/med-z1-architecture.md` - System architecture and routing decisions
 - `docs/med-z1-plan.md` - Overall product roadmap
 - `mock/README.md` - Mock data subsystem overview (UPDATE with CDWWork2)
 - `CLAUDE.md` - Project guidance (UPDATE with CDWWork2 patterns)

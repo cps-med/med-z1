@@ -2795,7 +2795,7 @@ df_pandas.to_sql(
 
 ### 14.1 Architecture and Planning
 
-- **`docs/architecture.md`** - System architecture and routing decisions (Document v1.0) ✅ Complete
+- **`docs/spec/med-z1-architecture.md`** - System architecture and routing decisions (Document v1.0) ✅ Complete
 - **`med-z1-plan.md`** - High-level strategic plan and architecture overview
 - **`ccow-vault-design.md`** - CCOW Context Vault technical specification (v1.1)
 - **`patient-topbar-redesign-spec.md`** - Patient topbar UI detailed specification (v2.0)

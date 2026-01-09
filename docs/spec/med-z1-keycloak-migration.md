@@ -901,7 +901,7 @@ rm -rf ccow/
 |----------|-----------------|
 | `CLAUDE.md` | Remove CCOW subsystem, reference med-z8 |
 | `README.md` | Update auth setup (Keycloak), remove session config |
-| `docs/architecture.md` | Add ADR for Keycloak migration |
+| `docs/spec/med-z1-architecture.md` | Add ADR for Keycloak migration |
 | `app/README.md` | Update authentication patterns |
 
 ---

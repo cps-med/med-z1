@@ -223,7 +223,7 @@ curl http://localhost:8000/api/patient/current
 - `docs/patient-dashboard-design.md` - Dashboard widget specifications
 - `docs/vitals-design.md` - Chronological table UI pattern reference
 - `docs/allergies-design.md` - Card-based UI and dimension table patterns
-- `docs/architecture.md` - API routing patterns (Pattern A vs Pattern B)
+- `docs/spec/med-z1-architecture.md` - API routing patterns (Pattern A vs Pattern B)
 - `docs/med-z1-plan.md` - Overall project plan
 - VA VistA Pharmacy documentation (Outpatient Pharmacy PSO, BCMA)
 
@@ -955,7 +955,7 @@ def load_medications_to_postgres():
 
 ### 7.1 Medications API Endpoints
 
-Following **Pattern B** from `docs/architecture.md` - Medications is a complex domain requiring dedicated router.
+Following **Pattern B** from `docs/spec/med-z1-architecture.md` - Medications is a complex domain requiring dedicated router.
 
 **File:** `app/routes/medications.py`
 

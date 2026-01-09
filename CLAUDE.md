@@ -86,45 +86,45 @@ pip install -r requirements.txt
 
 ### Architecture Decision Records and Design Patterns
 
-**IMPORTANT:** Before implementing new features or making design decisions, consult `docs/architecture.md` for established patterns and architectural guidance.
+**IMPORTANT:** Before implementing new features or making design decisions, consult `docs/spec/med-z1-architecture.md` for established patterns and architectural guidance.
 
 **Key Architecture Documents:**
-- **`docs/architecture.md`** - Central repository for architectural decisions, patterns, and rationale
+- **`docs/spec/med-z1-architecture.md`** - Central repository for architectural decisions, patterns, and rationale
   - API routing patterns (when to use patient.py vs dedicated routers)
   - Data architecture (Medallion pattern, identity resolution)
   - Technology choices (FastAPI, HTMX, PostgreSQL)
   - Architecture Decision Records (ADRs) documenting major decisions
 
-**When to Consult architecture.md:**
+**When to Consult med-z1-architecture.md:**
 - ✅ Before adding API endpoints for a new clinical domain
 - ✅ When deciding between routing patterns (Pattern A vs Pattern B)
 - ✅ Before making changes that affect system-wide patterns
 - ✅ When questioning why something was implemented a certain way
 - ✅ Before proposing alternative architectural approaches
 
-**When to Update architecture.md:**
+**When to Update med-z1-architecture.md:**
 - ✅ After making a significant architectural decision
 - ✅ When establishing a new pattern that should be followed consistently
 - ✅ When rejecting an alternative approach (document why)
 - ✅ When resolving architectural inconsistencies or ambiguities
 
 **Development Workflow:**
-1. Check if architecture.md addresses your design question
+1. Check if med-z1-architecture.md addresses your design question
 2. If pattern exists, follow it for consistency
 3. If pattern doesn't exist or doesn't fit, propose new pattern
-4. Document new architectural decisions in architecture.md as ADRs
+4. Document new architectural decisions in med-z1-architecture.md as ADRs
 5. Update relevant subsystem READMEs (e.g., `app/README.md`) with practical guidance
 
 **Example: Adding a New Clinical Domain**
 ```
 Question: "Should I create app/routes/medications.py or add to app/routes/patient.py?"
 
-1. Consult: docs/architecture.md Section 3 (API Routing Architecture)
+1. Consult: docs/spec/med-z1-architecture.md Section 3 (API Routing Architecture)
 2. Decision Matrix: Does domain need full page view with complex filtering?
    - Yes → Pattern B: Create dedicated router (like Vitals)
    - No → Pattern A: Add to patient.py (like Flags, Allergies)
 3. Follow established pattern for consistency
-4. If neither pattern fits, document new pattern as ADR in architecture.md
+4. If neither pattern fits, document new pattern as ADR in med-z1-architecture.md
 ```
 
 **Consistency Over Flexibility:**
@@ -337,7 +337,7 @@ The med-z1 AI subsystem provides LangGraph-powered clinical decision support via
 - **Patient Flags**: Modal-only (accessible via topbar "View Flags" button with badge count). No dashboard widget or dedicated page per design decision 2025-12-14.
 - **Encounters**: First domain to implement pagination (ADR-005). Shows inpatient admissions only (outpatient visits deferred to Phase 2). Default page size: 20, supports 10/20/50/100 per page.
 - **Laboratory Results**: Recommended as 3x1 full-width widget to display multiple lab panels side-by-side with trend sparklines.
-- **All other domains**: Follow Pattern A (patient.py routes) or Pattern B (dedicated router) based on complexity (see `docs/architecture.md` Section 3).
+- **All other domains**: Follow Pattern A (patient.py routes) or Pattern B (dedicated router) based on complexity (see `docs/spec/med-z1-architecture.md` Section 3).
 
 **DoD-specific views** (CHCS/AHLTA) are explicitly out of scope for early versions.
 
@@ -496,7 +496,7 @@ The project uses:
 ### Core Architecture and Planning Documents
 
 **Primary Reference (Consult First):**
-- **`docs/architecture.md`** - System architecture and routing decisions (Document version v1.0) ✅ Complete
+- **`docs/spec/med-z1-architecture.md`** - System architecture and routing decisions (Document version v1.0) ✅ Complete
   - **Purpose:** Authoritative source for architectural decisions, patterns, and rationale
   - **When to Use:** Before designing new features, when choosing between patterns, when questioning existing designs
   - **Contents:** API routing patterns, data architecture, ADRs (Architecture Decision Records)
@@ -528,7 +528,7 @@ The project uses:
   - Quick reference for API routing decisions (Pattern A vs Pattern B)
   - Real-time data integration patterns (Vista RPC Broker)
   - Code examples for implementing new domains
-  - Links to `docs/architecture.md` for detailed rationale
+  - Links to `docs/spec/med-z1-architecture.md` for detailed rationale
 - `ccow/README.md` - CCOW Context Vault setup and usage
 - `vista/README.md` - VistA RPC Broker simulator setup and RPC reference (future)
 - `etl/README.md` - ETL setup instructions and data-specific notes
@@ -538,10 +538,10 @@ The project uses:
 ### Document Hierarchy and When to Use Each
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│ "Why was this decision made?" → docs/architecture.md            │
-│   (Authoritative architectural decisions and ADRs)              │
-└────────────────────────┬────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│ "Why was this decision made?" → docs/spec/med-z1-architecture.md       │
+│   (Authoritative architectural decisions and ADRs)                      │
+└────────────────────────┬────────────────────────────────────────────────┘
                          │
 ┌────────────────────────┴────────────────────────────────────────┐
 │ "How do I implement this?" → app/README.md, etl/README.md, etc. │
@@ -555,10 +555,10 @@ The project uses:
 ```
 
 **Typical Workflow:**
-1. **Planning a new feature?** → Start with `docs/architecture.md` to understand patterns
+1. **Planning a new feature?** → Start with `docs/spec/med-z1-architecture.md` to understand patterns
 2. **Implementing the feature?** → Check `app/README.md` for quick code examples
 3. **Documenting the feature?** → Create/update `docs/<domain>-design.md` with implementation details
-4. **Made a new architectural decision?** → Add ADR to `docs/architecture.md`
+4. **Made a new architectural decision?** → Add ADR to `docs/spec/med-z1-architecture.md`
 
 ## Development Phases
 

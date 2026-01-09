@@ -73,7 +73,7 @@ async def get_vitals_page(request: Request, icn: str):
     return templates.TemplateResponse("patient_vitals.html", {...})
 ```
 
-**For detailed architecture decisions and rationale, see:** `docs/architecture.md`
+**For detailed architecture decisions and rationale, see:** `docs/spec/med-z1-architecture.md`
 
 ---
 
@@ -297,7 +297,7 @@ query = text("""
 - Empty widget displays ("No vitals found") despite 8,730 records in database
 - Fix: Updated 3 query functions + 1 template reference
 
-**See Also:** `docs/architecture.md` Section 4.3 (Location Field Patterns) for complete architectural guidance
+**See Also:** `docs/spec/med-z1-architecture.md` Section 4.3 (Location Field Patterns) for complete architectural guidance
 
 ---
 

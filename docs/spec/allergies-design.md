@@ -2957,7 +2957,7 @@ med-z1/
 - Differs from Vitals which uses dedicated router with separate page_router (Pattern B for full page views)
 - **Rationale:** Allergies currently only has JSON API endpoints; widget/page routes will be added to patient.py in Days 6-7
 - Both patterns are valid architectural choices based on domain maturity and UI requirements
-- **See:** `docs/architecture.md` Section 3 for detailed routing architecture decisions and criteria
+- **See:** `docs/spec/med-z1-architecture.md` Section 3 for detailed routing architecture decisions and criteria
 
 ### 13.4 Days 6-7 Completion Summary ✅
 
