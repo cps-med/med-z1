@@ -1,13 +1,12 @@
 # med-z1 – Product & Technical Development Plan
 
-December 20, 2025 • Document version v1.6
+January 10, 2026 • Document version v1.7
 
-> **Related Documentation:**
-> - **Tactical Implementation & Current Status:** See `implementation-roadmap.md` for detailed execution plan, current implementation status, and development phases
-> - **Architecture Decisions & Patterns:** See `architecture.md` for ADRs (Architecture Decision Records) and design patterns
-> - **Domain-Specific Specifications:** See `vitals-design.md`, `allergies-design.md`, `medications-design.md`, `patient-flags-design.md`, etc.
+**Related Documentation:**
+Refer to `docs/guide/` and `docs/spec/` for project background, implementation approach, developer setup guides, and design specifications for each clinical domain.
 
 **Changelog:**
+- **v1.7 (January 10, 2026):** Updated implementation status to reflect 8 clinical domains complete (added Clinical Notes). Updated AI/ML status to reflect Phase 4 completion (AI Clinical Insights operational with 4 tools). Corrected Python dependencies section (polars, uvicorn, Jinja2). Removed SSN search and facility filter from patient search specification per VA policy decisions.
 - **v1.6 (December 20, 2025):** Updated CCOW Context Management to v2.0 (multi-user enhancement complete). Added session timeout behavior documentation. Fixed timezone bug in session validation. See `docs/ccow-v2-implementation-summary.md`, `docs/session-timeout-behavior.md`, and `docs/environment-variables-guide.md`.
 - **v1.5 (December 18, 2025):** Added User Authentication and Management implementation status. All 8 authentication phases complete (database, routes, middleware, login UI, session management, testing). See `docs/user-auth-design.md` and `docs/auth-implementation-summary.md`.
 - **v1.4 (December 16, 2025):** Updated current status to reflect 7 clinical domains implemented (added Encounters). Noted Laboratory Results ETL completion (UI implementation pending). Updated "Next Priorities" section.
@@ -22,8 +21,9 @@ December 20, 2025 • Document version v1.6
 
 - Replace and modernize the current **Joint Longitudinal Viewer (JLV)**.
 - Provide fast, consistent access to patient data by sourcing from the **VA Corporate Data Warehouse (CDW)** instead of RPC calls to 140+ VistA instances.
-- Seamlessly blend **legacy VistA data** (CDWWork, representing VistA) and **new EHR data** (CDWWork1, representing Oracle Health) in the mock environment, mirroring real CDWWORK/CDWWORK2.
-- Introduce **AI-assisted** and **agentic AI** capabilities to help busy clinicians quickly understand a patient’s story, key risks, and gaps in care.
+- Seamlessly blend **legacy VistA data** (CDWWork, representing VistA) and **new EHR data** (CDWWork2, representing Oracle Health) in the mock environment, mirroring real CDWWORK/CDWWORK2.
+- Simulate real-time RPC calls to VistA sites for current data for designated clinical domains.
+- Introduce **AI-assisted** capabilities to help clinicians understand a patient’s history, risks, and care plan.
 
 The application will be built primarily in **Python**, including:
 
@@ -40,12 +40,13 @@ med-z1 will use a **hybrid** architecture:
   - A **local mock CDW** running in Docker using **Microsoft SQL Server 2019**.
   - Two databases:
     - `CDWWork` (mock VistA data; conceptually maps to real CDWWORK).
-    - `CDWWork1` (mock new EHR data; conceptually maps to real CDWWORK2).
+    - `CDWWork2` (mock new EHR data; conceptually maps to real CDWWORK2).
   - Both populated with **synthetic, non-PHI/PII data**.
+  - Mock **VistA sites** available via RPC endpoints.
 
 - **Core medallion pipeline:** **Parquet/Delta** files stored in **MinIO** (S3/ADLS Gen2 compatible) on the local Mac.
 
-- **Serving database for the UI:** A small relational DB (preferably **PostgreSQL**, with **SQL Server** as an alternative) to support low-latency per-patient queries.
+- **Serving database for the UI:** A PostgreSQL relational database to support low-latency per-patient queries and RAG-enhanced agentic AI functionality.
 
 In a real deployment, the mock CDW would be replaced by the actual VA CDW, but the medallion + serving architecture remains the same.
 
@@ -64,19 +65,21 @@ In a real deployment, the mock CDW would be replaced by the actual VA CDW, but t
 
 For the initial versions of med-z1, the primary clinical domains are:
 
-- **Admissions / Encounters** (inpatient and outpatient)
-- **Allergies**
-- **Demographics**
-- **Orders**
-- **Problems / Diagnoses**
+- **Patient Demographics**
+- **Patient Flags**
+- **Vital Signs**
+- **Inpatient Encounters**
+- **Allergies & Adverse Reactions**
 - **Medications**
 - **Laboratory Results**
-- **Notes / Documents**
+- **Clinical Notes**
+- **Immunizations**
+- **Problems / Diagnoses**
+- **Orders**
+- **Procedures**
 - **Radiology / Imaging**
-- **Vitals**
-- **Patient Flags**
 
-**DoD-specific views** and data (e.g., CHCS/AHLTA, purely DoD-only domains) are explicitly **out of scope** for early versions. The focus is **VA-internal data** sourced from CDW.
+**DoD-specific views** and data (e.g., CHCS/AHLTA, purely DoD-only domains) are explicitly **out of scope** for early versions. The focus is **VA-internal data** sourced from CDW and the mock real-time VistA service.
 
 ### 2.3 Core Use Cases (Initial Scope)
 
@@ -91,7 +94,7 @@ For the initial versions of med-z1, the primary clinical domains are:
      - Display "No patient selected" (or similar) in header.
      - User can search for and select a patient via header search UI.
    - **Patient search and context setting workflow:**
-     - User enters search criteria (name, SSN, ICN, EDIPI) via header search.
+     - User enters search criteria (name, ICN, EDIPI) via header search.
      - Search results display matching patients with key identifiers.
      - User selects a patient from results.
      - User explicitly clicks "Set Context" or similar action to update CCOW vault.
@@ -99,7 +102,7 @@ For the initial versions of med-z1, the primary clinical domains are:
    - CCOW context is checked **only on initial page load** (no periodic polling in Phase 1).
 
 2. **Patient Longitudinal Summary**
-   - Integrated timeline of encounters, problems, medications, labs, and procedures across VistA (from `CDWWork`) and the new EHR (from `CDWWork1`).
+   - Integrated timeline of encounters, problems, medications, labs, and procedures across VistA (from `CDWWork`) and the new EHR (from `CDWWork2`).
    - Display clear source provenance (facility, system, time).
 
 3. **Domain-Specific Views**
@@ -112,22 +115,25 @@ For the initial versions of med-z1, the primary clinical domains are:
    - Retrieve and display Patient Flags from CDW.
    - Use flags as part of the risk and summary story (Phase 2+).
 
-5. **AI-Assisted Chart Overview (Phase 2+)**
-   - Natural-language **chart overview**:
+5. **AI-Assisted Chart Overview** ✅ **IMPLEMENTED**
+   - Natural-language **chart overview** via `/insight` conversational interface:
      - Major chronic conditions.
      - Recent admissions/ED visits.
      - Key labs and trends.
+     - Clinical notes analysis.
      - Notable flags and orders.
+   - Powered by LangGraph agent with OpenAI GPT-4 Turbo.
 
-6. **AI-Supported Medication Safety (Phase 2+)**
+6. **AI-Supported Medication Safety** ✅ **IMPLEMENTED**
    - Identify **drug-drug interaction (DDI) risk** for the current medication list.
-   - Highlight combinations that may warrant pharmacist or clinician review.
-   - Eventually integrate multiple sources (e.g., CDW meds + external DDI knowledge base).
+   - Severity assessment with clinical recommendations.
+   - Patient flag-aware risk narratives.
+   - Integrated with comprehensive patient summaries.
 
-7. **Future AI Use of Patient Flags**
-   - Incorporate Patient Flag data into risk assessment:
-     - Behavioral flags, safety alerts, suicide risk, etc. (as appropriate).
-   - Make AI summaries aware of patient flags and incorporate them into the narrative.
+7. **AI-Aware Patient Flags** ✅ **IMPLEMENTED**
+   - Patient Flag data incorporated into AI risk assessment.
+   - AI summaries are flag-aware and include relevant safety alerts in narratives.
+   - Behavioral flags, safety alerts, and clinical risks surfaced in AI responses.
 
 ---
 
@@ -149,7 +155,7 @@ med-z1 will use a **dashboard-style layout** with:
     - Display "No patient selected" or similar message.
   - **Patient search UI** embedded in header:
     - Search bar or button to initiate patient search.
-    - Search by: name, SSN, ICN, EDIPI.
+    - Search by: name, ICN, EDIPI.
     - Search results displayed inline or as dropdown/overlay.
     - User selects patient from results, then explicitly clicks "Set Context" to update CCOW vault.
   - **On initial page load**:
@@ -159,31 +165,34 @@ med-z1 will use a **dashboard-style layout** with:
 
 - A **left-hand side navigation bar**:
   - Collapsible (e.g., hamburger icon at top-left).
-  - Contains navigation links for:
-    - Patient Overview.
-    - Admissions/Encounters.
-    - Problems.
-    - Medications.
-    - Labs.
-    - Notes/Documents.
-    - Imaging.
-    - Vitals.
-    - Orders.
-    - Patient Flags.
-    - (Future) AI/Insights.
+  - Contains navigation icons and links for:
+    - Dashboard
+    - Demographics
+    - Vitals
+    - Encounters
+    - Allergies
+    - Medications
+    - Labs
+    - Notes
+    - Immunizations
+    - Problems
+    - Orders
+    - Procedures
+    - Imaging
+    - Insights
 
 - A **main content area on the right**:
   - Scrollable main content section below patient header.
 
 The design will favor a **single primary page per patient** with:
 
-- A **Patient Overview** page showing:
-  - Demographics & identifiers (also shown in header).
-  - Key problems and flags.
-  - Brief AI-generated overview (Phase 2+).
-  - A longitudinal timeline visualization (Phase 2 or 3).
+- A **Dashboard** page showing:
+  - A single widget for each clinical domain
+  - Widgets vary in size, from 1 to 3 columns wide by 1 row deep
 
-Domain-specific pages are accessible from the side navigation, each focused and uncluttered.
+- Multiple **domain-specific pages** are accessible from the side navigation, each focused and uncluttered.
+
+- An AI-assisted **Insights** page that provides RAG and Agentic AI prompts and responses.
 
 ### 3.2 Patient Search & Identity Resolution
 
@@ -191,10 +200,9 @@ Domain-specific pages are accessible from the side navigation, each focused and 
 
 - Entry point is a **patient search UI in the header** (always accessible).
 - User can search by:
-  - Patient **Name** (with optional facility filter).
-  - **SSN** (full or partial).
-  - **ICN** (Integrated Care Number).
-  - **EDIPI** (DoD ID).
+  - Patient **Name**
+  - **ICN** (Integrated Care Number)
+  - **EDIPI** (DoD ID)
   - Other identifiers (as available in serving DB).
 
 - Search results display matching patients with:
@@ -305,8 +313,8 @@ med-z1 implements a **medallion data architecture** (Bronze → Silver → Gold)
 **Implementation:**
 - **Container:** Microsoft SQL Server 2019 (Docker)
 - **Databases:**
-  - `CDWWork` – VistA-like data (36 synthetic patients)
-  - `CDWWork1` – Oracle Health-like data (future)
+  - `CDWWork` – VistA-like data
+  - `CDWWork2` – Oracle Health-like data
 - **Schemas:** `Dim`, `SPatient`, `SStaff`, `Inpat`, `RxOut`, `BCMA`, `Vital`, `LabChem`, etc.
 
 **Key Conventions:**
@@ -314,9 +322,7 @@ med-z1 implements a **medallion data architecture** (Bronze → Silver → Gold)
 - Station identifier: `Sta3n` field in most tables
 - Foreign key constraints lightweight or omitted for simplicity
 
-**Data:** Version-controlled DDL and INSERT scripts in `mock/sql-server/cdwwork/`
-
-> **For complete mock CDW schema details and conventions, see `docs/implementation-roadmap.md` Section 10.**
+**Data:** Version-controlled DDL and INSERT scripts in `mock/sql-server/cdwwork/` and `mock/sql-server/cdwwork2/`.
 
 ### 4.5 CCOW Context Management (v2.0 - Multi-User)
 
@@ -369,45 +375,59 @@ med-z1 implements a **medallion data architecture** (Bronze → Silver → Gold)
 
 ### 4.6 AI & Agentic
 
-* **LLM/AI Access:**
+**✅ IMPLEMENTED (Phase 4 Complete - January 3, 2026)**
 
-  * OpenAI-compatible client or other cloud/local model APIs.
+* **LLM:** OpenAI GPT-4 Turbo (`gpt-4-turbo-preview`)
+
+* **Framework:** LangGraph for agent workflow orchestration
 
 * **Libraries:**
+  * `langchain==1.2.0` - LLM application framework
+  * `langchain-openai==1.1.6` - OpenAI integration
+  * `langgraph==1.0.5` - Agent workflow orchestration
+  * `openai==2.14.0` - OpenAI API client
+  * `markdown==3.10` - Markdown rendering for AI responses
 
-  * `transformers`, `openai`-style clients.
-  * `sentence-transformers` (or equivalent) for embeddings.
-  * `langchain` / `langgraph` for agent workflows (optional but likely).
+* **Operational AI Tools (4):**
+  1. `check_ddi_risks` - Drug-drug interaction analysis with severity assessment
+  2. `get_patient_summary` - Comprehensive patient overview including demographics, medications, vitals, allergies, encounters, and clinical notes
+  3. `analyze_vitals_trends` - Statistical vitals analysis with clinical interpretation
+  4. `get_clinical_notes_summary` - Clinical note queries with filtering by type and date range
 
-* **Primary AI Use Cases (early):**
+* **User Interface:** `/insight` conversational AI page with LangGraph agent and chat interface
 
-  * **Chart overview** summarization.
-  * **Drug-drug interaction risk** assessment based on med list and possibly lab/flag context.
-  * Early use of **Patient Flag data** in risk narratives.
+* **Implemented Use Cases:**
+  * ✅ Chart overview summarization with clinical notes context
+  * ✅ Drug-drug interaction (DDI) risk assessment
+  * ✅ Patient flag-aware risk narratives
+  * ✅ Clinical note analysis and synthesis
+  * ✅ Vital sign trend analysis with statistical significance
 
-* **Vector Store:**
+* **Vector Store:** Not yet implemented (future: pgvector in PostgreSQL for semantic search)
 
-  * Initially: local (Chroma/FAISS).
-  * Later: **pgvector** in PostgreSQL if desired.
+> **For complete AI implementation details, see `docs/spec/ai-insight-design.md`**
 
 ### 4.7 Tooling & Dev Experience
 
 * **IDE:** VS Code (Python, Jupyter, Docker, SQL extensions)
 * **Environment:** `venv` + `.env` with python-dotenv
 * **Testing:** `pytest`
-* **Linting/Formatting:** `ruff`, `black`, `mypy` (optional)
 * **Containers:** Docker for SQL Server, MinIO, PostgreSQL
 
 **Key Python Dependencies (requirements.txt):**
 - `boto3==1.35.76` - MinIO/S3 client
-- `polars==1.18.0` - DataFrame library
+- `polars>=1.0.0` - DataFrame library (flexible versioning)
 - `pyarrow==18.1.0` - Parquet support
 - `sqlalchemy==2.0.36` - Database ORM
 - `pyodbc==5.2.0` - SQL Server driver
-- `psycopg2-binary` - PostgreSQL driver
+- `psycopg2-binary==2.9.11` - PostgreSQL driver
 - `fastapi==0.123.9` - Web framework
+- `uvicorn==0.38.0` - ASGI server
+- `Jinja2==3.1.6` - Template engine
 - `python-dotenv==1.2.1` - Environment configuration
 - `connectorx==0.3.3` - Available but optional (compatibility issues with Polars 1.x)
+
+Note: AI/ML dependencies (langchain, langgraph, openai) detailed in section 4.6.
 
 ### 4.8 Vista RPC Broker - Real-Time Data Layer
 
@@ -617,7 +637,7 @@ med-z1/
 - Comprehensive test suite (21 unit tests, 14 integration tests)
 - **See:** `docs/ccow-multi-user-enhancement.md` (design), `docs/ccow-v2-implementation-summary.md` (summary), `docs/ccow-v2-testing-guide.md` (API testing)
 
-**✅ Clinical Domains Implemented: 7 DOMAINS**
+**✅ Clinical Domains Implemented: 8 DOMAINS**
 1. **Dashboard** - Patient overview with clinical widgets (widget grid system)
 2. **Demographics** - Full implementation (2x1 widget + dedicated page with comprehensive information)
 3. **Patient Flags** - Modal-only implementation (topbar button with badge count, no dashboard widget)
@@ -625,6 +645,7 @@ med-z1/
 5. **Allergies** - Full implementation (1x1 widget + dedicated page)
 6. **Medications** - Full implementation (2x1 widget + dedicated page, RxOut + BCMA integration)
 7. **Encounters** - Full implementation (1x1 widget + dedicated page with pagination, inpatient admissions only)
+8. **Clinical Notes** - Full implementation (1x1 widget + dedicated page with filtering by type and date range, 106 notes in PostgreSQL) - **Completed 2026-01-02**
 
 **✅ Vista RPC Broker Simulator: PHASE 1 COMPLETE**
 - Foundation for real-time data (T-0) overlay alongside PostgreSQL (T-1 historical)
@@ -634,18 +655,25 @@ med-z1/
 - 82 unit tests, 100% passing
 - Comprehensive documentation (`vista/README.md`)
 
+**✅ AI Clinical Insights: PHASE 4 COMPLETE** (January 3, 2026)
+- LangGraph-powered clinical decision support at `/insight`
+- 4 AI tools operational: DDI analysis, patient summaries, vitals trends, clinical notes analysis
+- Clinical notes automatically included in AI-generated patient summaries
+- OpenAI GPT-4 Turbo integration complete
+- **See:** `docs/spec/ai-insight-design.md`
+
 **🔧 ETL Complete, UI Pending:**
 - **Laboratory Results** - Complete Bronze/Silver/Gold/Load pipeline (58 lab results in PostgreSQL), UI implementation pending
 
 **📋 Next Priorities:**
 - Laboratory Results UI (trending and charting widgets/pages)
 - Problems/Diagnoses
-- Orders, Notes, Imaging
+- Orders, Imaging
 
 **🔮 Future Work:**
-- AI/ML integration (chart summarization, DDI detection)
 - Vista Phase 2-6 (additional RPC handlers for real-time data)
-- Production hardening (authentication, comprehensive testing)
+- Production hardening (comprehensive testing, observability)
+- Advanced AI features (care gap analysis, semantic search, vector embeddings)
 
 > **For detailed implementation status, roadmap, and technical patterns, see `docs/implementation-roadmap.md`.**
 
@@ -680,7 +708,7 @@ med-z1 implements a **medallion data architecture** with three layers of increas
 - Includes metadata: `SourceSystem`, `SourceDatabase`, `LoadDateTime`
 
 **Silver Layer (Cleaned & Harmonized):**
-- Cleans and standardizes data across CDWWork and CDWWork1
+- Cleans and standardizes data across CDWWork and CDWWork2
 - Harmonizes patient identity across systems (ICN/PatientKey)
 - Consistent schemas across clinical domains
 - Stored as Parquet in MinIO (`lake/silver/`)
@@ -763,7 +791,7 @@ Mock CDW (SQL Server) → Bronze → Silver → Gold → PostgreSQL Serving DB �
       * Display "No patient selected" message in header.
   * **Implement patient search UI in header:**
     * Search bar/button in header area (always accessible).
-    * Search form accepts: name, SSN, ICN, EDIPI.
+    * Search form accepts: name, ICN, EDIPI.
     * Query serving DB for matching patients.
     * Display search results with key demographics and identifiers.
   * **Implement patient selection and CCOW context setting:**
@@ -783,11 +811,15 @@ Mock CDW (SQL Server) → Bronze → Silver → Gold → PostgreSQL Serving DB �
     * Test "Set Context" action and header refresh.
     * Test app restart with existing CCOW context (verify patient header populates correctly).
 
-### 9.5 Phase 4 – AI-Assisted Features (Experimental) (3–6 weeks)
+### 9.5 Phase 4 – AI-Assisted Features ✅ **COMPLETE** (January 3, 2026)
 
-* Implement chart overview summarization using Gold data.
-* Prototype DDI risk analysis based on Gold medications.
-* Experiment with patient flag–aware risk messaging.
+* ✅ Implemented chart overview summarization using Gold data + clinical notes
+* ✅ Implemented DDI risk analysis based on Gold medications with severity assessment
+* ✅ Implemented patient flag–aware risk messaging
+* ✅ Deployed LangGraph conversational AI interface at `/insight`
+* ✅ 4 operational AI tools with OpenAI GPT-4 Turbo integration
+
+**See:** `docs/spec/ai-insight-design.md` for complete implementation details.
 
 ### 9.6 Phase 5 – Hardening, Observability & UX Iteration (Ongoing)
 
@@ -803,61 +835,14 @@ Mock CDW (SQL Server) → Bronze → Silver → Gold → PostgreSQL Serving DB �
 * MinIO on local macOS is adequate to simulate ADLS Gen2/S3 patterns for early medallion work.
 * PostgreSQL is available and acceptable for serving DB tasks; if not, SQL Server can be used.
 
-**Open questions (to be refined over time):**
+**Resolved Questions:**
 
-* Exact schema design for CDWWork1 (how much to diverge from CDWWork to best exercise Silver harmonization).
-* Which AI model(s) to use for:
+* ✅ AI model selection: OpenAI GPT-4 Turbo chosen for clinical decision support (chart overview, DDI risk, clinical notes analysis)
+* ✅ Clinical notes integration: Completed with 500-char previews for context optimization
+* ✅ AI framework selection: LangGraph chosen for agent workflow orchestration
 
-  * Chart overview summarization.
-  * DDI risk commentary.
-* When and how to introduce a proper orchestration layer (e.g., Prefect, Airflow, or ADF).
+**Open Questions (to be refined over time):**
 
----
-
-## 11. Documentation & Learning Artifacts
-
-Maintain documentation as part of the med-z1 repo under `docs/`:  
-
-* `docs/med-z1-plan.md`
-
-  * Contains this plan (Document version v1 and future revisions).
-
-* `docs/vision.md` (optional, to be created)
-
-  * Refined problem statement, target users, and user stories.
-
-* `docs/spec/med-z1-architecture.md` (optional, to be created)
-
-  * Diagrams and explanations of:
-
-    * High-level architecture.
-    * Mock CDW schema relationships.
-    * Medallion data flows.
-    * Serving layer design.
-
-* `docs/ai-design.md` (optional, to be created)
-
-  * Notes on models, prompts, RAG design, DDI risk logic, and agent workflows.
-
----
-
-## 12. Next Steps (Actionable)
-
-1. Ensure `docs/med-z1-plan.md` (Document version v1) is saved as the current baseline plan and update it incrementally as the design evolves.
-
-2. Ensure your existing T-SQL DDL for `CDWWork` aligns with the modeling conventions above (SIDs as PKs where appropriate, index strategy).
-
-3. Begin designing `CDWWork1`:
-
-   * Mirror a subset of `CDWWork` tables (Patients, Inpatient, RxOut, BCMA, etc.).
-   * Introduce intentional structural differences to support Silver harmonization.
-
-4. Implement Phase 0 if not already done:
-
-   * Python 3.11 venv.
-   * Basic FastAPI app + Jinja2 + one HTMX interaction.
-   * Docker compose with SQL Server (`CDWWork`/`CDWWork1`), MinIO, and PostgreSQL.
-
-5. Start Phase 1 Bronze extraction:
-
-   * Implement minimal Bronze extractors for Patients and Medications from both `CDWWork` and `CDWWork1`.
+* Exact schema design for CDWWork2 (how much to diverge from CDWWork to best exercise Silver harmonization).
+* When and how to introduce a proper orchestration layer (e.g., Prefect, Airflow, or ADF) for ETL workflows.
+* Vector store implementation timeline and approach (pgvector vs. dedicated vector DB).

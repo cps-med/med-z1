@@ -1533,7 +1533,7 @@ At the end of Phase 2, you will have:
 - ✅ Topbar UI with patient demographics display
 - ✅ Patient search modal with real search results
 - ✅ CCOW integration (query on startup, set on selection, manual refresh)
-- ✅ All 36 patients searchable by name, SSN, ICN
+- ✅ All 36 patients searchable by name, ICN
 - ✅ Fully functional patient-aware application
 
 ### 5.2 Detailed Task Breakdown

@@ -1,8 +1,10 @@
 # med-z1
 
-**med-z1** is a next-generation health data viewer and AI assistant designed to replace and modernize the VA's current Joint Longitudinal Viewer (JLV). Med-z1 offers a data architecture that dramatically improves response time to historical data, while also offering the ability to view real-time updates from VistA. Med-z1 combines data from the legacy VistA-based CDW database, "CDWWork" and the VA new EHR CDW database, "CDWWork2", offering a unified view of the complete VA organization.
+**med-z1** is a next-generation health data viewer and AI assistant designed to replace and modernize the VA's Joint Longitudinal Viewer (JLV). The application offers a data architecture that dramatically improves response time to historical data (T-1 and earlier), while also offering the ability to view real-time updates from VistA (T-0).
 
-Refer to med-z1/docs/med-z1-plan.md for more information on this project.
+Med-z1 combines data from the legacy VistA-based CDW database, **CDWWork**, the VA new EHR CDW database, **CDWWork2**, and mock **VistA** sites with current data, offering a unified view of the complete VA organization.
+
+Refer to `med-z1/docs/spec/med-z1-plan.md` for more information on this project.
 
 ## Local Environment Setup
 Refer to the Developer Setup Guide for information on local development environment setup, and general guidance. This document is located at: `docs/guide/developer-setup-guide.md`.
@@ -88,10 +90,10 @@ Each of the three services must be running for the med-z1 application to functio
 ```bash
 uvicorn vista.app.main:app --reload --port 8003
 uvicorn ccow.main:app --reload --port 8001
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload --port 8000
 ```
 
-Note that the main app uses default port 8000.
+Note that the main app uses default port 8000 (the --port 8000 argument is optional).
 
 ## Mock Users
 
@@ -104,3 +106,7 @@ Note that the main app uses default port 8000.
 | clinician.echo@va.gov     | Pharmacist Emma Evans, PharmD | 531 (Boise)       | Pharmacist |
 | clinician.foxtrot@va.gov  | Dr. Frank Foster, MD          | 516 (Bay Pines)   | Physician  |
 | clinician.golf@va.gov     | Dr. Grace Green, MD           | 552 (Dayton)      | Physician  |
+
+**Password (all users):** `VaDemo2025!`
+
+For complete authentication details, see `docs/guide/mock-users-guide.md`.
