@@ -66,39 +66,40 @@ This document specifies the migration of **med-z1** from custom session-based au
 ### 2.1 Current Authentication Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                     med-z1 Application                   │
-│                                                          │
-│  ┌────────────────────────────────────────────────┐    │
-│  │ app/routes/auth.py                             │    │
-│  │  - POST /login (username/password)             │    │
-│  │  - POST /logout                                │    │
-│  │  - Creates session record in PostgreSQL        │    │
-│  │  - Sets session_id cookie                      │    │
-│  └────────────────────┬───────────────────────────┘    │
-│                       │                                  │
-│  ┌────────────────────▼───────────────────────────┐    │
-│  │ app/middleware/auth.py                         │    │
-│  │  - AuthMiddleware validates session_id cookie  │    │
-│  │  - Queries auth.sessions table                 │    │
-│  │  - Checks is_active, expires_at                │    │
-│  │  - Injects request.state.user                  │    │
-│  └────────────────────┬───────────────────────────┘    │
-│                       │                                  │
-│                       ▼                                  │
-│              ┌─────────────────┐                        │
-│              │  PostgreSQL DB  │                        │
-│              │  auth.sessions  │                        │
-│              │  auth.users     │                        │
-│              └─────────────────┘                        │
-│                                                          │
-│  ┌────────────────────────────────────────────────┐    │
-│  │ ccow/ (embedded CCOW service)                  │    │
-│  │  - Runs on port 8001                           │    │
-│  │  - Validates session_id via PostgreSQL         │    │
-│  │  - auth_helper.py → auth.sessions table        │    │
-│  └────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────┐
+│                   med-z1 Application                   │
+│                                                        │
+│   ┌────────────────────────────────────────────────┐   │
+│   │ app/routes/auth.py                             │   │
+│   │  - POST /login (username/password)             │   │
+│   │  - POST /logout                                │   │
+│   │  - Creates session record in PostgreSQL        │   │
+│   │  - Sets session_id cookie                      │   │
+│   └────────────────────┬───────────────────────────┘   │
+│                        │                               │
+│                        ▼                               │
+│   ┌────────────────────────────────────────────────┐   │
+│   │ app/middleware/auth.py                         │   │
+│   │  - AuthMiddleware validates session_id cookie  │   │
+│   │  - Queries auth.sessions table                 │   │
+│   │  - Checks is_active, expires_at                │   │
+│   │  - Injects request.state.user                  │   │
+│   └────────────────────┬───────────────────────────┘   │
+│                        │                               │
+│                        ▼                               │
+│               ┌─────────────────┐                      │
+│               │  PostgreSQL DB  │                      │
+│               │  auth.sessions  │                      │
+│               │  auth.users     │                      │
+│               └─────────────────┘                      │
+│                                                        │
+│   ┌────────────────────────────────────────────────┐   │
+│   │ ccow/ (embedded CCOW service)                  │   │
+│   │  - Runs on port 8001                           │   │
+│   │  - Validates session_id via PostgreSQL         │   │
+│   │  - auth_helper.py → auth.sessions table        │   │
+│   └────────────────────────────────────────────────┘   │
+└────────────────────────────────────────────────────────┘
 ```
 
 ### 2.2 Current User Flow
