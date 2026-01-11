@@ -186,7 +186,7 @@ Install dependencies
 pip install -r requirements.txt
 ```
 
-To ensure compatibility between macOS and Linux, several packages use the `>=` operator, as opposed to `==` for version numbers. This results in the proper versions being downloaded for the respective runtime environments. Plus, one of the original packages was removed from requirements.txt, but will be installed based on a parent dependency.  
+To ensure compatibility between macOS and Linux, several packages use the `>=` operator, as opposed to `==` for version numbers. This results in the proper versions being downloaded for the respective runtime environments.    
 
 The specific items that use this notation are listed below:  
 
@@ -252,6 +252,8 @@ docker pull mcr.microsoft.com/mssql/server:2019-latest
 For Apple Silicon based machines:
 ```bash
 # Create and run container
+# Replace placeholder password value with correct value (from .env)
+
 docker run --platform linux/amd64 \
   -e 'ACCEPT_EULA=Y' \
   -e 'SA_PASSWORD=YourSecurePassword123!' \
@@ -263,6 +265,8 @@ docker run --platform linux/amd64 \
 For intel based machines (remove the --platform flag):
 ```bash
 # Create and run container
+# Replace placeholder password value with correct value (from .env)
+
 docker run \
   -e 'ACCEPT_EULA=Y' \
   -e 'SA_PASSWORD=YourSecurePassword123!' \
@@ -277,6 +281,8 @@ PostgreSQL is the **serving database** for med-z1, providing low-latency access 
 
 ```bash
 # Create PostgreSQL container with password
+# Replace placeholder password value with correct value (from .env)
+
 docker run -d \
     --name postgres16 \
     -e POSTGRES_PASSWORD=yourpassword \
@@ -292,6 +298,9 @@ docker ps | grep postgres16
 
 MinIO Setup:
 ```bash
+# Create MinIO container with password
+# Replace placeholder password value with correct value (from .env)
+
 docker run -d --name med-insight-minio \
   -p 9000:9000 -p 9001:9001 \
   -e MINIO_ROOT_USER=admin \
@@ -446,10 +455,16 @@ docker exec -it postgres16 psql -U postgres -d medz1 -c "SELECT email, display_n
 
 You can now test the authentication system by logging into the med-z1 application.
 
-- Start the FastAPI application using Uvicorn
-- Navigate to `http://127.0.0.1:8000/`
-- You should be redirected to the login page where you can use these credentials
+Start the FastAPI application using Uvicorn
+```bash
+uvicorn app.main:app --reload
+```
 
+Start a browser and navigate to
+```bash
+http://127.0.0.1:8000/
+```
+You should be redirected to the login page where you can use these credentials
 
 Test Credentials (all users share same password)
 ```text
@@ -717,14 +732,14 @@ Before running ETL pipelines, ensure the following are complete:
 - SQL Server container running with CDWWork database populated
 - Python virtual environment activated (`source .venv/bin/activate`)
 
-**Create PostgreSQL Clinical Domain Schemas**
+**Create PostgreSQL Clinical Domain Tables**  
 Before loading data, create the PostgreSQL table schemas for each clinical domain:
 ```bash
-# Ensure you're in project root with virtual environment activated
+# Ensure you're in the project root with Python virtual environment activated
 cd ~/swdev/med/med-z1
 source .venv/bin/activate
 
-# Create clinical domain table
+# Create clinical tables by running each of the statements below
 docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/patient_demographics.sql
 docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_vitals_table.sql
 docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_allergies_tables.sql
