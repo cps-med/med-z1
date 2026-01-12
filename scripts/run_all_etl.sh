@@ -98,6 +98,15 @@ python -m etl.silver_clinical_notes
 python -m etl.gold_clinical_notes
 python -m etl.load_clinical_notes
 
+# Drug-Drug Interaction Reference Data
+echo "══════════════════════════════════════════════════"
+echo ">>> Running DDI Reference Data pipeline..."
+echo "══════════════════════════════════════════════════"
+sleep 3
+python -m etl.bronze_ddi
+python -m etl.silver_ddi
+python -m etl.gold_ddi
+
 echo "══════════════════════════════════════════"
 echo "All ETL pipelines completed successfully!"
 echo "══════════════════════════════════════════"

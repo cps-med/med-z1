@@ -913,6 +913,34 @@ python -m etl.gold_clinical_notes
 python -m etl.load_clinical_notes
 ```
 
+#### 9. Drug-Drug Interaction (DDI) Reference Data Pipeline
+
+The DDI pipeline provides reference data for the AI Clinical Insights feature. Unlike clinical domains, this pipeline does NOT load into PostgreSQL—the Gold Parquet is consumed directly by the AI service at runtime.
+
+**Prerequisites:**
+- MinIO `med-sandbox` bucket must exist
+- Kaggle CSV file must be uploaded to: `med-sandbox/kaggle-data/ddi/db_drug_interactions.csv`
+
+**Pipeline Steps:**
+```bash
+# Bronze: Extract from Kaggle CSV in MinIO
+python -m etl.bronze_ddi
+
+# Silver: Clean and normalize
+python -m etl.silver_ddi
+
+# Gold: Create AI-optimized reference
+python -m etl.gold_ddi
+```
+
+**Verification:**
+Via MinIO Web Console (http://localhost:9001):
+1. Navigate to `med-z1` bucket
+2. Check folders: `bronze/ddi/`, `silver/ddi/`, `gold/ddi/`
+3. Verify files exist: `ddi_raw.parquet`, `ddi_clean.parquet`, `ddi_reference.parquet`
+
+**Note:** This pipeline is optional—only required if using AI Clinical Insights features (drug-drug interaction analysis). If the Kaggle CSV is missing from MinIO, the pipeline will fail at the Bronze extraction step.
+
 **Verify ETL Pipeline Results**
 After running pipelines, verify data was successfully loaded into PostgreSQL:
 
@@ -928,10 +956,12 @@ You can also verify that Parquet files were created in MinIO:
 
 ### Running All Pipelines with a Shell Script
 
-For convenience, you can run all ETL pipelines sequentially via the script:
+For convenience, you can run all ETL pipelines (clinical domains + DDI reference data) sequentially via the script:
 ```bash
 ./scripts/run_all_etl.sh
 ```
+
+**Note:** The DDI pipeline requires the Kaggle CSV to exist in MinIO's `med-sandbox` bucket at path `kaggle-data/ddi/db_drug_interactions.csv`. If the file is missing, the script will fail at the DDI Bronze extraction step. See section 9 above for DDI prerequisites and how to verify MinIO setup.
 
 ## Next Steps
 
