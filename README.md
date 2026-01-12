@@ -4,7 +4,9 @@
 
 Med-z1 combines data from the legacy VistA-based CDW database, **CDWWork**, the VA new EHR CDW database, **CDWWork2**, and mock **VistA** sites with current data, offering a unified view of the complete VA organization.
 
-Refer to `med-z1/docs/spec/med-z1-plan.md` for more information on this project.
+Refer to `med-z1/docs/spec/med-z1-plan.md` for more information on this project.  
+
+Refer to `med-z1/docs/screenshot/` for a set of web app UI screenshots.
 
 ## Local Environment Setup
 Refer to the Developer Setup Guide for information on local development environment setup, and general guidance. This document is located at: `docs/guide/developer-setup-guide.md`.
