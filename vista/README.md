@@ -1,12 +1,13 @@
 # VistA RPC Broker Simulator
 
-**Version:** 1.4.0
-**Status:** Phase 4 Complete - Demographics, Vitals, Encounters, Allergies
+**Version:** 1.5.0
+**Status:** Phase 4 Complete - Vitals, Encounters, Allergies | Phase 5 Ready - Medications
 **Port:** 8003
 
 > **📝 Note:** When updating implementation or design, keep these docs in sync:
 > - This file (`vista/README.md`) - Practical guide (update: API endpoints, capabilities, examples, test coverage)
 > - `docs/vista-rpc-broker-design.md` - Design decisions (update: architecture, implementation plan)
+> - `docs/spec/medications-design.md` Section 11 - Medications VistA integration spec
 > - `docs/implementation-roadmap.md` Section 11.3 - Progress tracking
 
 ## Table of Contents
@@ -77,23 +78,27 @@ The VistA RPC Broker Simulator is a FastAPI-based HTTP service that simulates th
 └─────────────────────────────────────────────────┘
 ```
 
-### Current Capabilities (Phase 2)
+### Current Capabilities (Phase 4 Complete)
 
 **Sites:**
 - 200 (ALEXANDRIA)
 - 500 (ANCHORAGE)
 - 630 (PALO_ALTO)
 
-**RPCs Implemented:**
+**RPCs Implemented (4 total):**
 - ✅ ORWPT PTINQ - Patient demographics inquiry
 - ✅ GMV LATEST VM - Latest vital signs (T-0, today)
 - ✅ ORWCV ADMISSIONS - Inpatient encounters/admissions (90 days)
 - ✅ ORQQAL LIST - Patient allergy list (all known allergies)
 
-**Test Patients:**
-- ICN100001 (Dooree, Adam) - Sites 200, 500, 630 (Vitals: 30, Encounters: 8, Allergies: 9)
-- ICN100010 (Aminor, Alexander) - Sites 200, 500 (Vitals: 20, Encounters: 5, Allergies: 9)
-- ICN100013 (Thompson, Irving) - Site 630 only (Vitals: 15, Encounters: 5, Allergies: 5)
+**RPCs Specified (Ready for Implementation):**
+- 📝 ORWPS COVER - Active outpatient medications (Phase 5)
+
+**Test Patients (All 4):**
+- ICN100001 (Dooree, Adam) - Sites 200, 500, 630 (Vitals: 30, Encounters: 8, Allergies: 9, Meds: TBD)
+- ICN100010 (Aminor, Alexander) - Sites 200, 500 (Vitals: 20, Encounters: 5, Allergies: 9, Meds: TBD)
+- ICN100013 (Thompson, Irving) - Sites 200, 500, 630 (Vitals: 15, Encounters: 5, Allergies: 5, Meds: TBD)
+- ICN100002 (Miifaa, Barry) - Sites 200, 500, 630 (Vitals: TBD, Encounters: TBD, Allergies: TBD, Meds: TBD)
 
 ---
 

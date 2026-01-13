@@ -1,9 +1,9 @@
 # Medications Design Specification - med-z1
 
-**Document Version:** 1.2
-**Date:** 2026-01-13 (Filter UI Enhancement Specification Added)
-**Status:** Phase 1 Complete (Days 1-8) | Filter UI Enhancement Specified (Day 9 Pending)
-**Implementation Phase:** Days 1-8 Complete (Full Implementation) | Day 9 Pending (Filter UI Refactoring)
+**Document Version:** 1.4
+**Date:** 2026-01-13 (VistA Real-Time Integration Complete)
+**Status:** ✅ Phase 1 Complete (Days 1-8) | ✅ VistA Real-Time Integration Complete (Days 1-3) | Filter UI Enhancement Specified (Day 9 Pending)
+**Implementation Phase:** Days 1-8 Complete + VistA Integration Complete | Day 9 Pending (Filter UI Refactoring)
 
 ---
 
@@ -19,9 +19,10 @@
 8. [UI/UX Design](#8-uiux-design)
 9. [Filter UI Enhancement Specification](#9-filter-ui-enhancement-specification) ⭐ **NEW**
 10. [Implementation Completion Summary](#10-implementation-completion-summary)
-11. [Testing Strategy](#11-testing-strategy)
-12. [Security and Privacy](#12-security-and-privacy)
-13. [Appendices](#13-appendices)
+11. [Real-Time VistA Integration ("Refresh from VistA")](#11-real-time-vista-integration-refresh-from-vista) ⭐ **NEW**
+12. [Testing Strategy](#12-testing-strategy)
+13. [Security and Privacy](#13-security-and-privacy)
+14. [Appendices](#14-appendices)
    - [Appendix A: Original Implementation Roadmap (Days 1-12 Plan)](#appendix-a-original-implementation-roadmap-days-1-12-plan)
    - [Appendix B: VistA File Mappings](#appendix-b-vista-file-mappings)
    - [Appendix C: Mock Data Summary](#appendix-c-mock-data-summary)
@@ -2591,9 +2592,1362 @@ The following features from the original implementation roadmap (see Appendix A)
 
 ---
 
-## 11. Testing Strategy
+## 11. Real-Time VistA Integration ("Refresh VistA")
 
-### 11.1 ETL Testing
+**Added:** 2026-01-13
+**Status:** ✅ **COMPLETE** (Implemented 2026-01-13)
+**Actual Effort:** 3 days (Day 1: Mock data & handlers, Day 2-3: Backend/Frontend integration)
+**Button Label:** "Refresh VistA" (standardized across all domains)
+
+**Implementation Summary:**
+- ✅ Day 1: Vista RPC handler (ORWPS COVER), mock data for 3 sites (69 medications), 30 unit tests passing
+- ✅ Day 2-3: Parser functions, realtime endpoint, template updates, session cache integration
+- ✅ Additional: Facility column added, provider field populated, status filter fixes, cache persistence for filter changes
+
+### 11.1 Overview and Objectives
+
+#### Purpose
+
+Add "Refresh from VistA" functionality to the Medications page, enabling users to fetch real-time (T-0, today) medication data from VistA sites to complement historical PostgreSQL data (T-1 and earlier).
+
+#### Key Objectives
+
+1. **Real-Time Data Access**: Query VistA sites for active outpatient medications issued today (T-0)
+2. **Multi-Site Aggregation**: Fetch from up to 3 VistA sites per patient (domain-specific limit)
+3. **Seamless Merging**: Combine VistA responses with PostgreSQL data without duplicates
+4. **Consistent UX**: Follow established "Refresh from VistA" pattern from Vitals, Encounters, Allergies domains
+5. **Performance**: Complete refresh operation in <5 seconds (3 sites × 1-3 second latency)
+
+#### Scope
+
+**IN SCOPE:**
+- ✅ Outpatient medications only (RxOut / VistA File #52)
+- ✅ Active medications filter (STATUS='ACTIVE')
+- ✅ ORWPS COVER RPC (cover sheet - active meds summary)
+- ✅ Multi-site querying (up to 3 sites per patient)
+- ✅ Canonical key deduplication: `{site}:{prescription_number}`
+- ✅ Session-based caching (30-minute TTL)
+- ✅ HTMX-based refresh button in page header
+- ✅ All 4 test patients (ICN100001, ICN100010, ICN100013, ICN100002)
+
+**OUT OF SCOPE (Future Phases):**
+- ❌ Inpatient medications (BCMA) - defer to Phase 6+
+- ❌ Additional RPCs (ORWPS DETAIL, ORWPS ACTIVE, PSO SUPPLY)
+- ❌ Historical date-range queries (last 90 days, etc.)
+- ❌ Prescription detail drill-down (single RX detail view)
+- ❌ Refill history from VistA
+
+---
+
+### 11.2 VistA RPC Specification
+
+#### RPC: ORWPS COVER
+
+**Purpose:** Retrieve active outpatient medications for a patient (medication "cover sheet")
+
+**Namespace:** ORWPS (Order Entry/Results Reporting - Pharmacy)
+
+**Parameters:**
+- `DFN` (string): Site-specific patient identifier (resolved from ICN automatically)
+
+**Response Format:** Multi-line string, one medication per line, caret-delimited (^)
+
+**Field Structure (7 fields):**
+```
+RX_NUMBER^DRUG_NAME^STATUS^QUANTITY/DAYS_SUPPLY^REFILLS_REMAINING^ISSUE_DATE^EXPIRATION_DATE
+```
+
+**Field Definitions:**
+
+1. **RX_NUMBER** (string): Prescription number (unique identifier at site)
+   - Example: `2860066`
+   - Format: Numeric string, typically 7 digits
+   - **Critical for deduplication**: Used as part of canonical event key
+
+2. **DRUG_NAME** (string): Medication name (local drug name from VistA formulary)
+   - Example: `LISINOPRIL 10MG TAB`
+   - Format: Drug name + strength + dosage form
+   - May differ from national drug name
+
+3. **STATUS** (string): Prescription status
+   - Values: `ACTIVE`, `DISCONTINUED`, `EXPIRED`, `SUSPENDED`
+   - For this implementation: Filter to `ACTIVE` only
+
+4. **QUANTITY/DAYS_SUPPLY** (string): Quantity dispensed / days supply
+   - Example: `60/90` (60 tablets for 90 days)
+   - Format: `{quantity}/{days_supply}`
+   - Both are numeric, separated by forward slash
+
+5. **REFILLS_REMAINING** (string): Number of refills left
+   - Example: `3` (3 refills remaining)
+   - Format: Single digit or number
+   - `0` indicates no refills left
+
+6. **ISSUE_DATE** (string): Date prescription was issued (FileMan format)
+   - Example: `3241115.1035` (Nov 15, 2024 at 10:35)
+   - Format: FileMan date/time (YYYMMDD.HHMM)
+   - Must be parsed to ISO 8601 for PostgreSQL compatibility
+
+7. **EXPIRATION_DATE** (string): Date prescription expires (FileMan format)
+   - Example: `3251115.0000` (Nov 15, 2025)
+   - Format: FileMan date (YYYMMDD)
+   - Empty if not set
+
+**Example Response:**
+
+```
+2860066^LISINOPRIL 10MG TAB^ACTIVE^60/90^3^3241115.1035^3251115
+2860067^METFORMIN HCL 500MG TAB^ACTIVE^120/180^5^3241115.1030^3251115
+2860068^ATORVASTATIN CALCIUM 20MG TAB^ACTIVE^30/30^11^3241110.0900^3251110
+2860070^ASPIRIN 81MG TAB^ACTIVE^90/90^0^3241201.1420^3251201
+```
+
+**Error Handling:**
+
+- **No medications**: Returns empty string (`""`)
+- **Patient not found**: Returns empty string (DFN not valid at this site)
+- **RPC not available**: HTTP 404 or error response from Vista service
+
+---
+
+### 11.3 Mock Data Schema and Examples
+
+#### File Structure
+
+Create 3 new JSON files in Vista data directory:
+- `vista/app/data/sites/200/medications.json`
+- `vista/app/data/sites/500/medications.json`
+- `vista/app/data/sites/630/medications.json`
+
+#### JSON Schema
+
+```json
+{
+  "site_sta3n": "200",
+  "site_name": "Alexandria VA Medical Center",
+  "medications": [
+    {
+      "dfn": "100001",
+      "rx_number": "2860066",
+      "drug_name": "LISINOPRIL 10MG TAB",
+      "status": "ACTIVE",
+      "quantity": "60",
+      "days_supply": "90",
+      "refills_remaining": "3",
+      "issue_date": "T-7.1035",
+      "expiration_date": "T+358.0000",
+      "_note": "ICN100001 (DOOREE, ADAM) - Chronic HTN medication"
+    }
+  ]
+}
+```
+
+#### Field Specifications
+
+| Field | Type | Required | T-Notation | Description |
+|-------|------|----------|------------|-------------|
+| `dfn` | string | Yes | No | Site-specific patient identifier |
+| `rx_number` | string | Yes | No | Prescription number (7 digits typical) |
+| `drug_name` | string | Yes | No | Drug name + strength + form |
+| `status` | string | Yes | No | Always "ACTIVE" for this phase |
+| `quantity` | string | Yes | No | Total quantity dispensed |
+| `days_supply` | string | Yes | No | Number of days supply |
+| `refills_remaining` | string | Yes | No | Refills left (0-11 typical) |
+| `issue_date` | string | Yes | **YES** | FileMan date/time with T-notation |
+| `expiration_date` | string | Yes | **YES** | FileMan date with T-notation |
+| `_note` | string | No | No | Human-readable comment (ignored by parser) |
+
+#### T-Notation Date Examples
+
+**Issue Dates (Recent):**
+- `T-0.0930` = Today at 09:30 (new prescription issued this morning)
+- `T-1.1430` = Yesterday at 14:30 (filled yesterday)
+- `T-7.1035` = 7 days ago at 10:35 (last week)
+- `T-14.0800` = 14 days ago at 08:00 (2 weeks ago)
+- `T-30.1200` = 30 days ago at 12:00 (last month)
+
+**Expiration Dates (Future):**
+- `T+30.0000` = 30 days from now (1 month supply)
+- `T+90.0000` = 90 days from now (3 month supply)
+- `T+365.0000` = 365 days from now (1 year from issue)
+
+**Why T-Notation?**
+- Ensures medications always appear "fresh" without daily manual updates
+- Automatically calculates FileMan dates based on current system date
+- Matches established pattern from Vitals, Encounters, Allergies domains
+
+#### Mock Data Coverage Plan
+
+**Site 200 (Alexandria) - 5 DFNs:**
+- DFN 100001 (ICN100001): 6-8 active meds (chronic conditions)
+- DFN 100010 (ICN100010): 5-7 active meds
+- DFN 100020 (ICN100002): 5-6 active meds
+- DFN 100002 (ICN100010 orphaned): 3-4 active meds (intentional overlap with 100010)
+- DFN 100003 (ICN100013 orphaned): 4-5 active meds
+
+**Site 500 (Anchorage) - 5 DFNs:**
+- DFN 500001 (ICN100001): 5-7 active meds (**overlap with Site 200 DFN 100001**)
+- DFN 500010 (ICN100010): 4-6 active meds (**overlap with Site 200 DFN 100010**)
+- DFN 500020 (ICN100002): 5-6 active meds
+- DFN 200001 (ICN100010 orphaned): 3-4 active meds
+- DFN 200002 (ICN100013 orphaned): 4-5 active meds
+
+**Site 630 (Palo Alto) - 6 DFNs:**
+- DFN 630001 (ICN100001): 5-6 active meds (**overlap with Sites 200, 500**)
+- DFN 630013 (ICN100013): 7-9 active meds (elder patient, polypharmacy)
+- DFN 630020 (ICN100002): 4-5 active meds
+- DFN 300001, 300002, 630002 (ICN100013 orphaned): 3-4 active meds each (**overlap with 630013**)
+
+**Total Volume:** ~85-120 active medication records across 3 sites
+
+**Deduplication Test Data:**
+- Patient ICN100001: 2-3 medications with same RX_NUMBER at Sites 200, 500, 630
+- Patient ICN100010: Orphaned DFNs duplicate some meds from primary DFNs
+- Patient ICN100013: High DFN count (6 DFNs) stress tests deduplication
+
+**Medication Mix:**
+- **Chronic conditions** (60%): HTN (Lisinopril, Amlodipine), DM (Metformin, Glipizide), Hyperlipidemia (Atorvastatin, Simvastatin)
+- **Cardiac** (20%): Beta-blockers (Metoprolol), Anticoagulants (Warfarin), Aspirin
+- **Pain management** (10%): NSAIDs (Ibuprofen), Controlled substances (Hydrocodone C-II, Tramadol C-IV)
+- **Other** (10%): PPIs (Omeprazole), Vitamins (Vitamin D), Inhalers (Albuterol)
+
+**Controlled Substances:** 3-5 per site (Schedule II-IV) for testing `is_controlled_substance` flag
+
+---
+
+### 11.4 Vista RPC Handler Implementation
+
+**File:** `vista/app/handlers/medications.py`
+
+**Handler Class:** `MedicationsCoverHandler`
+
+**RPC Name:** `ORWPS COVER`
+
+#### Implementation Requirements
+
+**1. Extend BaseRPCHandler**
+
+```python
+from vista.app.handlers.base import BaseRPCHandler
+from vista.app.core.data_loader import DataLoader
+
+class MedicationsCoverHandler(BaseRPCHandler):
+    """
+    Handler for ORWPS COVER RPC - Active outpatient medications (cover sheet).
+
+    Returns active medications for a patient in VistA caret-delimited format.
+    """
+
+    def get_rpc_name(self) -> str:
+        return "ORWPS COVER"
+
+    def execute(self, params: list, site_sta3n: str, data_loader: DataLoader) -> str:
+        """
+        Execute ORWPS COVER RPC.
+
+        Args:
+            params: [DFN] - Patient DFN at this site
+            site_sta3n: Site station number (200, 500, 630)
+            data_loader: DataLoader instance for accessing medications.json
+
+        Returns:
+            Multi-line string with active medications (caret-delimited)
+            Empty string if patient not found or no active medications
+        """
+```
+
+**2. Parameter Validation**
+
+- Require exactly 1 parameter (DFN)
+- Validate DFN is non-empty string
+- Return empty string if invalid (don't raise exception)
+
+**3. Data Loading**
+
+- Load `medications.json` for the specified site
+- Filter medications by DFN
+- Filter by status='ACTIVE' (only active meds)
+
+**4. Date Conversion (T-Notation → FileMan)**
+
+- Convert `issue_date` and `expiration_date` from T-notation to FileMan format
+- Use existing T-notation parser from `data_loader.py` (lines 200-250)
+- Example: `T-7.1035` → `3260106.1035` (Jan 6, 2026 at 10:35, assuming today is Jan 13, 2026)
+
+**5. Response Formatting**
+
+- Build multi-line string, one medication per line
+- Format: `RX_NUMBER^DRUG_NAME^STATUS^QUANTITY/DAYS_SUPPLY^REFILLS_REMAINING^ISSUE_DATE^EXPIRATION_DATE`
+- Join lines with newline (`\n`)
+- Example:
+  ```
+  2860066^LISINOPRIL 10MG TAB^ACTIVE^60/90^3^3260106.1035^3270106
+  2860067^METFORMIN HCL 500MG TAB^ACTIVE^120/180^5^3260106.1030^3270106
+  ```
+
+**6. Error Handling**
+
+- Patient not found (DFN not in medications.json): Return empty string `""`
+- No active medications: Return empty string `""`
+- File not found: Raise exception (should not happen in normal operation)
+
+**7. Unit Tests**
+
+Create `vista/app/tests/test_medications_handler.py`:
+- Test valid DFN returns medications
+- Test invalid DFN returns empty string
+- Test T-notation date conversion
+- Test caret-delimited format
+- Test active-only filtering (if we add EXPIRED/DISCONTINUED meds later)
+- Test multi-site consistency (same RPC works at Sites 200, 500, 630)
+
+#### Registration
+
+**File:** `vista/app/main.py`
+
+Add handler registration during site initialization (around line 150):
+
+```python
+from vista.app.handlers.medications import MedicationsCoverHandler
+
+# Register handlers
+site_manager.register_handler("200", MedicationsCoverHandler())
+site_manager.register_handler("500", MedicationsCoverHandler())
+site_manager.register_handler("630", MedicationsCoverHandler())
+```
+
+---
+
+### 11.5 Backend Realtime Endpoint
+
+**File:** `app/routes/medications.py`
+
+**Route:** `GET /patient/{icn}/medications/realtime`
+
+**Purpose:** Fetch real-time medications from VistA sites, merge with PostgreSQL data, return HTMX partial
+
+#### Endpoint Specification
+
+```python
+@page_router.get("/patient/{icn}/medications/realtime", response_class=HTMLResponse)
+async def get_medications_realtime(
+    request: Request,
+    icn: str,
+    medication_type: Optional[str] = Query("all", regex="^(outpatient|inpatient|all)$"),
+    status: Optional[str] = Query("all"),
+    date_range: Optional[str] = Query("all"),
+    sort_by: Optional[str] = Query("date_desc", regex="^(date_desc|date_asc|drug_name|type)$")
+):
+    """
+    Realtime medications endpoint - Fetch T-0 data from VistA and merge with PostgreSQL.
+
+    This endpoint:
+    1. Queries VistA sites for active medications (T-0, today)
+    2. Fetches PostgreSQL medications (T-1 and earlier)
+    3. Merges and deduplicates by canonical key: {site}:{prescription_number}
+    4. Applies filters and sorting
+    5. Returns HTMX partial for swap into #vista-refresh-area
+
+    Args:
+        icn: Patient ICN
+        medication_type: Filter by type ('outpatient', 'inpatient', 'all')
+        status: Filter by status (for outpatient: 'ACTIVE', 'DISCONTINUED', etc.)
+        date_range: Show medications from date range ('30', '90', '180', '365', 'all')
+        sort_by: Combined sort field and order ('date_desc', 'date_asc', 'drug_name', 'type')
+
+    Returns:
+        HTMX partial with merged medications table and freshness indicator (OOB swap)
+    """
+```
+
+#### Implementation Steps
+
+**Step 1: Log and Validate** (Lines 10-20)
+
+```python
+logger.info(f"Medications realtime refresh requested for patient {icn}")
+
+# Get patient demographics
+patient = get_patient_demographics(icn)
+if not patient:
+    logger.warning(f"Patient {icn} not found")
+    return templates.TemplateResponse(
+        "patient_medications.html",
+        get_base_context(request, patient=None, error="Patient not found")
+    )
+```
+
+**Step 2: Query VistA Sites** (Lines 25-50)
+
+```python
+from app.services.vista_client import VistaClient
+
+# Initialize VistA client
+vista_client = VistaClient()
+
+# Get target sites for medications domain (up to 3 sites)
+target_sites = vista_client.get_target_sites(icn, domain='medications')
+logger.info(f"Querying {len(target_sites)} VistA sites for medications: {target_sites}")
+
+# Call ORWPS COVER RPC at all target sites (parallel)
+vista_results = await vista_client.call_rpc_multi_site(
+    sites=target_sites,
+    rpc_name="ORWPS COVER",
+    params=[icn]  # ICN auto-converted to DFN per site
+)
+
+# Extract successful responses
+vista_responses = {
+    site: result["response"]
+    for site, result in vista_results.items()
+    if result["success"]
+}
+
+logger.info(f"VistA responses received from {len(vista_responses)} of {len(target_sites)} sites")
+```
+
+**Step 3: Parse VistA Responses** (Lines 55-85)
+
+```python
+from app.services.realtime_overlay import parse_vista_medications
+
+# Parse VistA medication responses into standardized format
+vista_medications = []
+for site_sta3n, response_text in vista_responses.items():
+    parsed_meds = parse_vista_medications(response_text, site_sta3n, icn)
+    vista_medications.extend(parsed_meds)
+    logger.debug(f"Parsed {len(parsed_meds)} medications from site {site_sta3n}")
+
+logger.info(f"Total VistA medications parsed: {len(vista_medications)}")
+```
+
+**Step 4: Fetch PostgreSQL Medications** (Lines 90-100)
+
+```python
+# Get PostgreSQL medications (T-1 and earlier)
+# Apply NO date filter here - will filter after merge
+pg_medications = get_patient_medications(
+    icn,
+    limit=500,
+    medication_type=None,  # Get all types
+    status=None,           # Get all statuses
+    days=None              # No date filter
+)
+
+logger.info(f"PostgreSQL medications fetched: {len(pg_medications)}")
+```
+
+**Step 5: Merge and Deduplicate** (Lines 105-120)
+
+```python
+from app.services.realtime_overlay import merge_medications_data
+
+# Merge VistA (T-0) with PostgreSQL (T-1+), deduplicate by canonical key
+merged_medications, merge_stats = merge_medications_data(
+    pg_medications=pg_medications,
+    vista_results=vista_responses,
+    icn=icn
+)
+
+logger.info(
+    f"Merged medications: {len(merged_medications)} total "
+    f"({merge_stats['vista_count']} from VistA, "
+    f"{merge_stats['pg_count']} from PG, "
+    f"{merge_stats['duplicates_removed']} duplicates removed)"
+)
+```
+
+**Step 6: Cache VistA Responses** (Lines 125-135)
+
+```python
+from app.services.vista_cache import VistaSessionCache
+
+# Store raw VistA responses in session cache (30-min TTL)
+cache = VistaSessionCache()
+cache.set_cached_data(
+    request=request,
+    patient_icn=icn,
+    domain='medications',
+    vista_responses=vista_responses,
+    sites=list(target_sites),
+    stats=merge_stats
+)
+```
+
+**Step 7: Apply Filters and Sorting** (Lines 140-175)
+
+```python
+# Parse sort_by parameter
+if sort_by == "date_desc":
+    sort_field, sort_order = "date", "desc"
+elif sort_by == "date_asc":
+    sort_field, sort_order = "date", "asc"
+elif sort_by == "drug_name":
+    sort_field, sort_order = "drug_name", "asc"
+elif sort_by == "type":
+    sort_field, sort_order = "type", "asc"
+else:
+    sort_field, sort_order = "date", "desc"
+
+# Convert date_range to days
+days_map = {"30": 30, "90": 90, "180": 180, "365": 365, "all": 3650}
+days_filter = days_map.get(date_range, 3650)
+
+# Apply filters to merged data
+filtered_medications = apply_medication_filters(
+    medications=merged_medications,
+    medication_type=medication_type if medication_type != 'all' else None,
+    status=status if status != 'all' else None,
+    days=days_filter
+)
+
+# Sort medications
+filtered_medications = sort_medications(
+    medications=filtered_medications,
+    sort_field=sort_field,
+    sort_order=sort_order
+)
+
+logger.info(f"Filtered/sorted medications: {len(filtered_medications)}")
+```
+
+**Step 8: Get Counts** (Lines 180-185)
+
+```python
+# Get medication counts (unfiltered, for summary bar)
+counts = get_medication_counts(icn)
+```
+
+**Step 9: Return HTMX Partial** (Lines 190-215)
+
+```python
+# Build freshness message for OOB swap
+from datetime import datetime
+current_time = datetime.now().strftime("%H:%M")
+freshness_message = f"Data current through: {datetime.now().strftime('%Y-%m-%d')} (refreshed at {current_time})"
+
+# Return template response with vista_refreshed=True
+return templates.TemplateResponse(
+    "patient_medications.html",
+    get_base_context(
+        request,
+        patient=patient,
+        medications=filtered_medications,
+        counts=counts,
+        medication_type_filter=medication_type,
+        status_filter=status,
+        days_filter=days_filter,
+        date_range_filter=date_range,
+        sort_by=sort_field,
+        sort_order=sort_order,
+        total_count=len(filtered_medications),
+        active_page="medications",
+        vista_refreshed=True,
+        vista_sites=list(target_sites),
+        vista_stats=merge_stats,
+        freshness_message=freshness_message
+    )
+)
+```
+
+#### Error Handling
+
+```python
+except Exception as e:
+    logger.error(f"Error during medications realtime refresh for {icn}: {e}")
+    return templates.TemplateResponse(
+        "patient_medications.html",
+        get_base_context(
+            request,
+            patient=patient,
+            error=f"Error fetching real-time medications: {str(e)}",
+            active_page="medications"
+        )
+    )
+```
+
+---
+
+### 11.6 Merge and Deduplication Logic
+
+**File:** `app/services/realtime_overlay.py`
+
+**New Functions:** `parse_vista_medications()`, `merge_medications_data()`
+
+#### Function 1: parse_vista_medications()
+
+**Purpose:** Parse ORWPS COVER RPC response into standardized medication dictionaries
+
+```python
+def parse_vista_medications(
+    vista_response: str,
+    site_sta3n: str,
+    icn: str
+) -> List[Dict[str, Any]]:
+    """
+    Parse VistA ORWPS COVER response into standardized medication records.
+
+    Args:
+        vista_response: Raw RPC response (multi-line, caret-delimited)
+        site_sta3n: Site station number (200, 500, 630)
+        icn: Patient ICN (for reference)
+
+    Returns:
+        List of medication dictionaries with standardized fields
+
+    Example Input:
+        "2860066^LISINOPRIL 10MG TAB^ACTIVE^60/90^3^3260106.1035^3270106\n
+         2860067^METFORMIN HCL 500MG TAB^ACTIVE^120/180^5^3260106.1030^3270106"
+
+    Example Output:
+        [
+            {
+                "medication_id": "rxout_vista_200_2860066",
+                "type": "outpatient",
+                "source": "vista",
+                "source_site": "200",
+                "patient_icn": "ICN100001",
+                "prescription_number": "2860066",
+                "drug_name_local": "LISINOPRIL 10MG TAB",
+                "status": "ACTIVE",
+                "quantity": 60.0,
+                "days_supply": 90,
+                "refills_remaining": 3,
+                "issue_date": "2026-01-06 10:35:00",
+                "expiration_date": "2027-01-06",
+                "canonical_key": "200:2860066",
+                "_vista_raw": "2860066^LISINOPRIL 10MG TAB^ACTIVE^60/90^3^3260106.1035^3270106"
+            },
+            ...
+        ]
+    """
+```
+
+**Implementation Details:**
+
+1. **Split Response by Lines**
+   ```python
+   if not vista_response or not vista_response.strip():
+       return []
+
+   lines = vista_response.strip().split('\n')
+   medications = []
+   ```
+
+2. **Parse Each Line**
+   ```python
+   for line_num, line in enumerate(lines, 1):
+       if not line.strip():
+           continue
+
+       try:
+           fields = line.split('^')
+           if len(fields) != 7:
+               logger.warning(f"Unexpected field count in VistA medication: {len(fields)} (expected 7)")
+               continue
+   ```
+
+3. **Extract Fields**
+   ```python
+   rx_number = fields[0].strip()
+   drug_name = fields[1].strip()
+   status = fields[2].strip()
+   qty_days = fields[3].strip()  # Format: "60/90"
+   refills = fields[4].strip()
+   issue_date_fm = fields[5].strip()
+   exp_date_fm = fields[6].strip()
+   ```
+
+4. **Parse Quantity/Days Supply**
+   ```python
+   # Split "60/90" into quantity and days_supply
+   if '/' in qty_days:
+       qty_str, days_str = qty_days.split('/')
+       quantity = float(qty_str.strip())
+       days_supply = int(days_str.strip())
+   else:
+       quantity = None
+       days_supply = None
+   ```
+
+5. **Convert FileMan Dates to ISO 8601**
+   ```python
+   from app.services.realtime_overlay import parse_fileman_datetime
+
+   # Issue date (includes time)
+   issue_date = None
+   if issue_date_fm:
+       issue_dt = parse_fileman_datetime(issue_date_fm)
+       if issue_dt:
+           issue_date = issue_dt.isoformat()
+
+   # Expiration date (date only, set time to midnight)
+   expiration_date = None
+   if exp_date_fm:
+       exp_dt = parse_fileman_datetime(exp_date_fm + ".0000")  # Add midnight time
+       if exp_dt:
+           expiration_date = exp_dt.date().isoformat()
+   ```
+
+6. **Build Standardized Medication Dictionary**
+   ```python
+   medication = {
+       "medication_id": f"rxout_vista_{site_sta3n}_{rx_number}",
+       "type": "outpatient",
+       "source": "vista",
+       "source_site": site_sta3n,
+       "is_realtime": True,
+       "patient_icn": icn,
+       "prescription_number": rx_number,
+       "drug_name_local": drug_name,
+       "drug_name_national": None,  # Not in ORWPS COVER response
+       "status": status,
+       "quantity": quantity,
+       "days_supply": days_supply,
+       "refills_remaining": int(refills) if refills.isdigit() else None,
+       "issue_date": issue_date,
+       "expiration_date": expiration_date,
+       "date": issue_date,  # Use issue_date as primary date for sorting
+
+       # Canonical key for deduplication
+       "canonical_key": f"{site_sta3n}:{rx_number}",
+
+       # Store raw VistA line for debugging
+       "_vista_raw": line.strip()
+   }
+
+   medications.append(medication)
+   ```
+
+7. **Error Handling**
+   ```python
+   except Exception as e:
+       logger.error(f"Error parsing VistA medication line {line_num}: {e}")
+       logger.debug(f"Problematic line: {line}")
+       continue  # Skip this medication, continue with others
+
+   return medications
+   ```
+
+#### Function 2: merge_medications_data()
+
+**Purpose:** Merge PostgreSQL medications with VistA responses, deduplicate by canonical key
+
+```python
+def merge_medications_data(
+    pg_medications: List[Dict[str, Any]],
+    vista_results: Dict[str, str],
+    icn: str
+) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+    """
+    Merge PostgreSQL medications (T-1+) with VistA responses (T-0), deduplicate.
+
+    Deduplication Strategy:
+    - Canonical key: {site}:{prescription_number}
+    - Vista data preferred for T-1+ overlap (most current)
+    - PostgreSQL provides historical baseline
+    - Remove exact duplicates
+
+    Args:
+        pg_medications: Medications from PostgreSQL (list of dicts)
+        vista_results: Raw VistA RPC responses per site {site: response_text}
+        icn: Patient ICN
+
+    Returns:
+        Tuple of (merged_medications, merge_stats)
+        - merged_medications: Deduplicated list sorted by date desc
+        - merge_stats: Statistics about merge operation
+    """
+```
+
+**Implementation Details:**
+
+1. **Parse All VistA Responses**
+   ```python
+   vista_medications = []
+   for site_sta3n, response_text in vista_results.items():
+       parsed = parse_vista_medications(response_text, site_sta3n, icn)
+       vista_medications.extend(parsed)
+
+   logger.info(f"Parsed {len(vista_medications)} medications from VistA")
+   ```
+
+2. **Add Canonical Keys to PostgreSQL Medications**
+   ```python
+   # Add canonical_key to PG medications if not present
+   for med in pg_medications:
+       if 'canonical_key' not in med:
+           # Extract site from medication_id or use default
+           # medication_id format: "rxout_123" (no site in PG)
+           # For PG meds, canonical key is just prescription_number
+           # (site unknown, so deduplication works across all sites)
+           rx_num = med.get('prescription_number') or med.get('source_id', '')
+           med['canonical_key'] = f"pg:{rx_num}"  # PG prefix to avoid false matches
+           med['source'] = 'postgresql'
+   ```
+
+3. **Build Canonical Key Index (Vista Medications)**
+   ```python
+   vista_by_key = {}
+   for med in vista_medications:
+       key = med['canonical_key']
+       if key in vista_by_key:
+           # Duplicate within Vista results (multi-site)
+           logger.warning(f"Duplicate Vista medication: {key}")
+           # Keep most recent by issue_date
+           existing = vista_by_key[key]
+           if med.get('issue_date', '') > existing.get('issue_date', ''):
+               vista_by_key[key] = med
+       else:
+           vista_by_key[key] = med
+   ```
+
+4. **Merge: Vista Preferred**
+   ```python
+   merged = []
+   pg_keys_seen = set()
+
+   # Add all Vista medications first (T-0, most current)
+   merged.extend(vista_by_key.values())
+   vista_keys = set(vista_by_key.keys())
+
+   # Add PG medications that don't overlap with Vista
+   for med in pg_medications:
+       pg_key = med['canonical_key']
+
+       # Check if this PG med overlaps with any Vista med
+       # Since PG meds don't have site, check prescription_number only
+       rx_num = med.get('prescription_number')
+       overlaps = any(key.endswith(f":{rx_num}") for key in vista_keys)
+
+       if not overlaps:
+           merged.append(med)
+           pg_keys_seen.add(pg_key)
+   ```
+
+5. **Sort by Date Descending (Most Recent First)**
+   ```python
+   merged.sort(key=lambda m: m.get('date') or '', reverse=True)
+   ```
+
+6. **Calculate Merge Statistics**
+   ```python
+   merge_stats = {
+       'vista_count': len(vista_medications),
+       'pg_count': len(pg_medications),
+       'merged_count': len(merged),
+       'duplicates_removed': len(pg_medications) - len(pg_keys_seen),
+       'vista_keys': list(vista_by_key.keys()),
+       'pg_keys_included': list(pg_keys_seen)
+   }
+
+   return merged, merge_stats
+   ```
+
+**Canonical Key Examples:**
+
+| Scenario | PG Key | Vista Key | Result |
+|----------|--------|-----------|--------|
+| Same RX at same site | `pg:2860066` | `200:2860066` | Vista wins (more current) |
+| Different RX numbers | `pg:2860066` | `200:2860070` | Both included |
+| Same RX at different sites | `pg:2860066` | `200:2860066`, `500:2860066` | All Vista versions + no PG (overlaps) |
+| PG only (no Vista match) | `pg:2860066` | (none) | PG included |
+| Vista only (new today) | (none) | `200:2860099` | Vista included |
+
+---
+
+### 11.7 Template Integration
+
+**File:** `app/templates/patient_medications.html`
+
+**Changes Required:**
+
+#### 1. Add Vista Refresh Controls Section (After Page Header, Before Summary Bar)
+
+**Insert at line ~48 (after page header, before summary stats):**
+
+```html
+        <!-- VistA Refresh Controls -->
+        <div class="vista-refresh-controls">
+            <!-- Freshness Message (updated via OOB swap) -->
+            <div class="freshness-message" id="freshness-message">
+                {% if vista_refreshed %}
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span>{{ freshness_message }}</span>
+                    <span class="vista-cached-badge" title="Vista data cached for {{ vista_sites|length }} sites">
+                        <i class="fa-solid fa-database"></i>
+                        Vista Cached ({{ vista_sites|length }} sites)
+                    </span>
+                {% else %}
+                    <i class="fa-solid fa-clock"></i>
+                    <span>Data current through yesterday (PostgreSQL)</span>
+                {% endif %}
+            </div>
+
+            <!-- Refresh Button -->
+            <div class="vista-refresh-button-container">
+                <button
+                    type="button"
+                    hx-get="/patient/{{ patient.icn }}/medications/realtime?medication_type={{ medication_type_filter }}&status={{ status_filter or 'all' }}&date_range={{ date_range_filter }}&sort_by={{ sort_by }}_{{ sort_order }}"
+                    hx-target="#vista-refresh-area"
+                    hx-swap="outerHTML"
+                    hx-indicator="#vista-loading"
+                    aria-label="Refresh data from VistA sites"
+                    class="btn btn--secondary vista-refresh-btn">
+                    <i class="fa-solid fa-rotate"></i>
+                    Refresh from VistA
+                </button>
+
+                <!-- Loading Indicator -->
+                <div id="vista-loading" class="htmx-indicator">
+                    <i class="fa-solid fa-spinner fa-spin"></i>
+                    <span>Querying VistA sites...</span>
+                </div>
+            </div>
+        </div>
+```
+
+**CSS Classes (already exist in styles.css from Vitals domain):**
+- `.vista-refresh-controls`
+- `.freshness-message`
+- `.vista-cached-badge`
+- `.vista-refresh-button-container`
+- `.vista-refresh-btn`
+- `.htmx-indicator`
+
+#### 2. Wrap Main Content in #vista-refresh-area
+
+**Wrap the summary bar, filters, and table (lines ~52 onwards) in a refresh target div:**
+
+```html
+        <!-- VistA Refresh Area (HTMX Target) -->
+        <div id="vista-refresh-area">
+
+            <!-- Summary Stats Bar -->
+            <div class="medications-summary-bar">
+                <!-- Existing summary stats code -->
+            </div>
+
+            <!-- Filters and Controls -->
+            <div class="medications-controls">
+                <!-- Existing filter form -->
+            </div>
+
+            <!-- Medications Table Container -->
+            <div id="medications-table-container">
+                <!-- Existing table or empty state -->
+            </div>
+
+        </div> <!-- End #vista-refresh-area -->
+```
+
+**Note:** The `#vista-refresh-area` div must wrap:
+- Summary stats bar
+- Filter controls
+- Medications table container
+
+This ensures the entire data area is replaced on refresh, but the Vista refresh button remains fixed at the top.
+
+#### 3. Add Vista Source Badges to Medication Rows
+
+**In the medication table loop (around line 220), add source indicator:**
+
+```html
+                            <!-- Medication Name -->
+                            <td class="medication-cell medication-cell--medication">
+                                <div class="medication-name">
+                                    {{ med.drug_name_local or med.drug_name or '—' }}
+
+                                    <!-- Vista Source Badge (if from VistA) -->
+                                    {% if med.source == 'vista' %}
+                                        <span class="badge badge--success badge--sm" title="Real-time data from VistA Site {{ med.source_site }}">
+                                            <i class="fa-solid fa-bolt"></i>
+                                            Site {{ med.source_site }}
+                                        </span>
+                                    {% endif %}
+
+                                    <!-- Controlled Substance Badge -->
+                                    {% if med.is_controlled %}
+                                        <span class="badge badge--warning badge--sm" title="Controlled Substance">
+                                            <i class="fa-solid fa-triangle-exclamation"></i>
+                                            {{ med.dea_schedule }}
+                                        </span>
+                                    {% endif %}
+                                </div>
+                                <!-- Existing medication details code -->
+                            </td>
+```
+
+#### 4. Add Out-of-Band (OOB) Freshness Message Swap
+
+**At the END of the template (after table, before closing divs), add OOB swap:**
+
+```html
+        {% if vista_refreshed %}
+            <!-- Out-of-Band Swap: Update Freshness Message -->
+            <div class="freshness-message" id="freshness-message" hx-swap-oob="true">
+                <i class="fa-solid fa-circle-check"></i>
+                <span>{{ freshness_message }}</span>
+                <span class="vista-cached-badge" title="Vista data cached for {{ vista_sites|length }} sites">
+                    <i class="fa-solid fa-database"></i>
+                    Vista Cached ({{ vista_sites|length }} sites)
+                </span>
+            </div>
+        {% endif %}
+```
+
+**What is OOB Swap?**
+- HTMX `hx-swap-oob="true"` allows updating elements OUTSIDE the main target
+- The `#freshness-message` div at the top of the page gets updated even though the main swap target is `#vista-refresh-area`
+- Enables simultaneous update of:
+  1. Main content area (medications table)
+  2. Freshness indicator (at top of page)
+
+---
+
+### 11.8 Testing Strategy
+
+#### Unit Tests
+
+**1. Vista RPC Handler Tests** (`vista/app/tests/test_medications_handler.py`)
+
+```python
+def test_medications_cover_valid_dfn():
+    """Test ORWPS COVER returns medications for valid DFN"""
+
+def test_medications_cover_invalid_dfn():
+    """Test ORWPS COVER returns empty string for invalid DFN"""
+
+def test_medications_cover_date_conversion():
+    """Test T-notation dates convert to FileMan format correctly"""
+
+def test_medications_cover_format():
+    """Test response is caret-delimited with 7 fields per line"""
+
+def test_medications_cover_multi_site():
+    """Test same RPC works consistently across Sites 200, 500, 630"""
+```
+
+**2. Parser Tests** (`app/tests/test_realtime_overlay.py`)
+
+```python
+def test_parse_vista_medications_valid_response():
+    """Test parse_vista_medications handles valid multi-line response"""
+
+def test_parse_vista_medications_empty_response():
+    """Test parse_vista_medications handles empty string"""
+
+def test_parse_vista_medications_invalid_field_count():
+    """Test parse_vista_medications skips lines with wrong field count"""
+
+def test_parse_fileman_datetime():
+    """Test FileMan date conversion (already exists, verify works for meds)"""
+```
+
+**3. Merge/Dedupe Tests** (`app/tests/test_medications_merge.py`)
+
+```python
+def test_merge_medications_no_overlap():
+    """Test merge when PG and Vista have different prescriptions"""
+
+def test_merge_medications_same_rx():
+    """Test merge prefers Vista when same prescription_number"""
+
+def test_merge_medications_multi_site_dedup():
+    """Test deduplication when same RX appears at multiple sites"""
+
+def test_merge_medications_canonical_key():
+    """Test canonical key format: {site}:{prescription_number}"""
+
+def test_merge_statistics():
+    """Test merge_stats returns correct counts"""
+```
+
+#### Integration Tests
+
+**4. End-to-End Vista Refresh** (Manual Browser Testing)
+
+**Test Case 1: ICN100001 (Dooree, Adam) - Multi-Site with Overlaps**
+
+1. Navigate to `/patient/ICN100001/medications`
+2. Initial load shows PostgreSQL medications only (4 outpatient)
+3. Click "Refresh from VistA" button
+4. Verify:
+   - Loading spinner appears
+   - Query completes in <5 seconds
+   - Medications refresh with Vista data (badges visible)
+   - Freshness message updates: "Data current through: [today] (refreshed at [HH:MM])"
+   - Vista Cached badge shows "Vista Cached (3 sites)"
+   - Green badges on Vista medications: "⚡ Site 200", "⚡ Site 500", "⚡ Site 630"
+   - No duplicate medications (same RX_NUMBER from different sites deduplicated)
+   - Total count increased (T-0 meds added)
+5. Check browser console for merge stats log
+6. Verify session cache: navigate away and back, Vista data persists (30 min)
+
+**Test Case 2: Filter Preservation After Refresh**
+
+1. Navigate to `/patient/ICN100001/medications`
+2. Change filters: Type=Outpatient, Status=Active, Time Period=Last 30 Days
+3. Click "Refresh from VistA"
+4. Verify:
+   - Filters remain selected after refresh
+   - URL query params preserved: `?medication_type=outpatient&status=ACTIVE&date_range=30`
+   - Filtered results shown (not all medications)
+
+**Test Case 3: Partial Failure Handling**
+
+1. Stop Vista service: `kill $(lsof -ti:8003)`
+2. Navigate to `/patient/ICN100001/medications`
+3. Click "Refresh from VistA"
+4. Verify:
+   - Page doesn't crash (graceful fallback)
+   - PostgreSQL data still displays
+   - Error message or partial success indicator shown
+5. Restart Vista service and retry
+
+**Test Case 4: Deduplication Verification**
+
+1. Navigate to `/patient/ICN100013/medications` (highest DFN count: 6 DFNs)
+2. Note PostgreSQL count: 9 outpatient medications
+3. Click "Refresh from VistA"
+4. Verify:
+   - Merged count > PG count (new T-0 meds added)
+   - No duplicates visible (same drug/RX from multiple sites appears once)
+   - Merge stats in console show duplicates_removed > 0
+5. Check that medications with Vista badges have `source="vista"` in DOM
+
+**Test Case 5: Controlled Substances**
+
+1. Navigate to patient with controlled substances
+2. Refresh from VistA
+3. Verify:
+   - Controlled substance badges visible (⚠ C-II, C-IV, etc.)
+   - Summary bar "Controlled Substances" count includes Vista meds
+   - Vista-sourced controlled substances flagged correctly
+
+#### Performance Tests
+
+**6. Response Time Validation**
+
+- Measure realtime endpoint response time: Target <5 seconds (3 sites × 1-3 sec latency)
+- Concurrent user testing: 5 users refresh simultaneously (verify no bottleneck)
+- Large dataset: Patient with 50+ PostgreSQL meds + 30 Vista meds (verify merge scales)
+
+---
+
+### 11.9 Implementation Tasks
+
+**Phase 5: Medications Real-Time VistA Integration (2-3 Days)**
+
+#### Day 1: Vista Infrastructure (4-6 hours)
+
+**Task 1.1: Create Vista RPC Handler** (2 hours)
+- [ ] Create `vista/app/handlers/medications.py`
+- [ ] Implement `MedicationsCoverHandler` class
+- [ ] Add parameter validation (DFN required)
+- [ ] Implement response formatting (caret-delimited, 7 fields)
+- [ ] Add T-notation date conversion (reuse existing parser)
+- [ ] Register handler in `vista/app/main.py` for all 3 sites
+- [ ] Write unit tests (5 test cases)
+- [ ] Verify tests pass: `pytest vista/app/tests/test_medications_handler.py -v`
+
+**Task 1.2: Create Mock Data Files** (2-3 hours)
+- [ ] Create `vista/app/data/sites/200/medications.json` (30-40 meds, 5 DFNs)
+- [ ] Create `vista/app/data/sites/500/medications.json` (25-35 meds, 5 DFNs)
+- [ ] Create `vista/app/data/sites/630/medications.json` (30-45 meds, 6 DFNs)
+- [ ] Include all 4 test patients (ICN100001, ICN100010, ICN100013, ICN100002)
+- [ ] Add intentional overlaps for deduplication testing
+- [ ] Include 3-5 controlled substances per site
+- [ ] Use T-notation for all dates (T-0 to T-30, expiration T+30 to T+365)
+- [ ] Verify JSON syntax valid: `jq . vista/app/data/sites/*/medications.json`
+
+**Task 1.3: Test Vista Service** (1 hour)
+- [ ] Start Vista service: `uvicorn vista.app.main:app --reload --port 8003`
+- [ ] Test ORWPS COVER RPC via curl:
+  ```bash
+  curl -X POST "http://localhost:8003/rpc/execute?site=200&icn=ICN100001" \
+       -H "Content-Type: application/json" \
+       -d '{"rpc_name": "ORWPS COVER", "params": ["ICN100001"]}'
+  ```
+- [ ] Verify response: Multi-line, caret-delimited, 7 fields
+- [ ] Test all 3 sites (200, 500, 630)
+- [ ] Test all 4 patients
+
+#### Day 2: Backend Integration (4-6 hours)
+
+**Task 2.1: Implement Parser** (1.5 hours)
+- [ ] Add `parse_vista_medications()` to `app/services/realtime_overlay.py`
+- [ ] Parse caret-delimited format (7 fields)
+- [ ] Convert FileMan dates to ISO 8601
+- [ ] Parse quantity/days_supply (split "60/90")
+- [ ] Build standardized medication dictionaries
+- [ ] Add canonical key: `{site}:{prescription_number}`
+- [ ] Write unit tests for parser
+- [ ] Verify tests pass: `pytest app/tests/test_realtime_overlay.py::test_parse_vista_medications -v`
+
+**Task 2.2: Implement Merge Logic** (2 hours)
+- [ ] Add `merge_medications_data()` to `app/services/realtime_overlay.py`
+- [ ] Parse all Vista responses (call parse_vista_medications per site)
+- [ ] Build canonical key index for Vista medications
+- [ ] Deduplicate within Vista results (multi-site)
+- [ ] Merge with PostgreSQL medications (Vista preferred)
+- [ ] Calculate merge statistics
+- [ ] Write unit tests for merge logic (4 test cases)
+- [ ] Verify tests pass: `pytest app/tests/test_medications_merge.py -v`
+
+**Task 2.3: Implement Realtime Endpoint** (2-3 hours)
+- [ ] Add `get_medications_realtime()` to `app/routes/medications.py`
+- [ ] Import VistaClient, call `call_rpc_multi_site()` (3 sites)
+- [ ] Parse Vista responses (call `parse_vista_medications()`)
+- [ ] Fetch PostgreSQL medications
+- [ ] Merge data (call `merge_medications_data()`)
+- [ ] Cache Vista responses (30-min TTL)
+- [ ] Apply filters and sorting to merged data
+- [ ] Return HTMX partial with `vista_refreshed=True`
+- [ ] Add error handling (try/except)
+- [ ] Test endpoint via curl:
+  ```bash
+  curl "http://localhost:8000/patient/ICN100001/medications/realtime"
+  ```
+
+#### Day 3: Frontend Integration & Testing (4-6 hours)
+
+**Task 3.1: Update Template** (2 hours)
+- [ ] Open `app/templates/patient_medications.html`
+- [ ] Insert vista-refresh-controls section (after page header, line ~48)
+- [ ] Add freshness message with OOB swap placeholder
+- [ ] Add "Refresh from VistA" button with HTMX attributes
+- [ ] Add loading spinner (#vista-loading)
+- [ ] Wrap summary bar + filters + table in `#vista-refresh-area` div
+- [ ] Add Vista source badges to medication rows (`{% if med.source == 'vista' %}`)
+- [ ] Add OOB swap for freshness message at end of template
+- [ ] Verify HTML syntax valid
+
+**Task 3.2: Browser Testing** (2-3 hours)
+- [ ] Start all services (PostgreSQL, Vista, med-z1 app)
+- [ ] Test ICN100001: Multi-site refresh, verify overlaps deduplicated
+- [ ] Test ICN100010: Verify orphaned DFNs don't create duplicates
+- [ ] Test ICN100013: Stress test with 6 DFNs (high deduplication load)
+- [ ] Test ICN100002: Baseline patient (minimal overlaps)
+- [ ] Test filter preservation after refresh (type, status, date range, sort)
+- [ ] Test Vista badges visible on refreshed medications
+- [ ] Test freshness message updates correctly
+- [ ] Test Vista Cached badge shows site count
+- [ ] Test controlled substance badges (⚠ C-II, C-IV)
+- [ ] Test performance: refresh completes in <5 seconds
+- [ ] Test partial failure: stop Vista service, verify graceful fallback
+- [ ] Test cache persistence: navigate away and back, Vista data persists
+
+**Task 3.3: Documentation Updates** (1 hour)
+- [ ] Update `docs/spec/vista-rpc-broker-design.md`:
+  - Change header status to "Phase 5 COMPLETE"
+  - Add Changelog v1.9 (2026-01-13)
+  - Expand Section 6.4 (Medications RPC Specification)
+  - Mark Phase 5 as complete in Phase tracking
+- [ ] Update `vista/README.md`:
+  - Change status to "Phase 5 Complete - Demographics, Vitals, Encounters, Allergies, Medications"
+  - Add ORWPS COVER to RPC list
+  - Update test patient notes (medications added)
+- [ ] Update `CLAUDE.md`:
+  - Change status to "OPERATIONAL - Phases 1-5 Complete"
+  - Add ORWPS COVER to implemented RPCs list
+  - Update Phase tracking
+- [ ] Update this document (`medications-design.md`):
+  - Change status to "Implementation Complete"
+  - Update version to 1.3
+  - Add implementation completion date
+
+---
+
+### 11.10 Success Criteria
+
+**Functional Requirements:**
+- ✅ "Refresh from VistA" button appears in medications page header
+- ✅ Button queries up to 3 VistA sites per patient
+- ✅ ORWPS COVER RPC returns active medications in correct format
+- ✅ Vista responses parse correctly (7 fields, caret-delimited)
+- ✅ FileMan dates convert to ISO 8601
+- ✅ Merge logic combines PostgreSQL + Vista without duplicates
+- ✅ Canonical key deduplication works: `{site}:{prescription_number}`
+- ✅ Vista-sourced medications show green badges ("⚡ Site 200")
+- ✅ Freshness message updates via OOB swap
+- ✅ Filters and sorting preserved after refresh
+- ✅ Session cache stores Vista responses (30-min TTL)
+
+**Performance Requirements:**
+- ✅ Refresh completes in <5 seconds (3 sites × 1-3 sec latency)
+- ✅ Page remains responsive during refresh (HTMX loading spinner)
+- ✅ No UI freeze or timeout errors
+
+**Data Quality Requirements:**
+- ✅ No duplicate medications in merged view (same RX from multiple sites)
+- ✅ Vista data preferred over PostgreSQL for T-1+ overlap
+- ✅ Controlled substances flagged correctly (Vista and PG)
+- ✅ Merge statistics logged (vista_count, pg_count, duplicates_removed)
+
+**Testing Requirements:**
+- ✅ Unit tests pass for RPC handler (5 tests)
+- ✅ Unit tests pass for parser (4 tests)
+- ✅ Unit tests pass for merge logic (4 tests)
+- ✅ End-to-end browser tests pass (5 test cases)
+- ✅ Performance test validates <5 second response time
+
+**Documentation Requirements:**
+- ✅ vista-rpc-broker-design.md updated (Phase 5 complete)
+- ✅ vista/README.md updated (RPCs list, capabilities)
+- ✅ CLAUDE.md updated (implementation status)
+- ✅ medications-design.md updated (this section complete)
+
+---
+
+### 11.11 Future Enhancements (Phase 6+)
+
+**Potential Future Features (NOT in Phase 5 scope):**
+
+1. **Inpatient Medications (BCMA)**
+   - Add BCMA RPC handler for inpatient medication administrations
+   - Merge both outpatient (ORWPS) and inpatient (BCMA) in realtime endpoint
+   - Support dual-source refresh (RxOut + BCMA)
+
+2. **Additional Outpatient RPCs**
+   - ORWPS DETAIL: Single prescription detail view (drill-down)
+   - ORWPS ACTIVE: Alternative to ORWPS COVER
+   - PSO SUPPLY: Refill history and supply details
+
+3. **Historical Date-Range Queries**
+   - Add `DAYS_BACK` parameter to ORWPS COVER RPC
+   - Support last 90 days, last year queries from VistA
+   - Merge T-90 to T-1 from VistA with PostgreSQL (broader overlap)
+
+4. **Prescription Detail Modal**
+   - Click medication row to open detail modal
+   - Call ORWPS DETAIL RPC for full prescription information
+   - Show SIG (full dosing instructions), refill history, provider notes
+
+5. **Partial Failure UI Indicators**
+   - Show "2 of 3 sites responded" badge
+   - Color-code badges by site response status (green=success, red=failed)
+   - Allow user to retry failed sites
+
+6. **Manual Site Selection**
+   - Add site picker UI (checkboxes for Sites 200, 500, 630)
+   - Override default site selection (3 sites)
+   - Allow user to query specific sites only
+
+7. **AI Clinical Insights Integration**
+   - Extend AI insights to use cached Vista medication data
+   - Drug-drug interaction (DDI) checking with real-time meds
+   - Medication reconciliation assistant (compare PG vs Vista)
+
+---
+
+**End of Section 11: Real-Time VistA Integration**
+
+---
+
+## 12. Testing Strategy
+
+### 12.1 ETL Testing
 
 **Bronze Layer:**
 - [ ] Verify all 5 tables extract successfully
@@ -2621,7 +3975,7 @@ The following features from the original implementation roadmap (see Appendix A)
 - [ ] Verify data types correct
 - [ ] Test query performance (< 1000ms for typical patient)
 
-### 11.2 API Testing
+### 12.2 API Testing
 
 **GET /api/patient/{icn}/medications:**
 - [ ] Test with valid ICN → returns unified medications list
@@ -2658,7 +4012,7 @@ The following features from the original implementation roadmap (see Appendix A)
 - [ ] Test expandable rows work
 - [ ] Test with 0 medications → shows empty state
 
-### 11.3 UI Testing
+### 12.3 UI Testing
 
 **Dashboard Widget:**
 - [ ] Verify widget loads on patient selection
@@ -2686,7 +4040,7 @@ The following features from the original implementation roadmap (see Appendix A)
 - [ ] Test empty state
 - [ ] Test on mobile/tablet (responsive)
 
-### 11.4 Integration Testing
+### 12.4 Integration Testing
 
 **End-to-End:**
 - [ ] Run full ETL pipeline → verify data in PostgreSQL
@@ -2706,9 +4060,9 @@ The following features from the original implementation roadmap (see Appendix A)
 
 ---
 
-## 12. Security and Privacy
+## 13. Security and Privacy
 
-### 12.1 Data Sensitivity
+### 13.1 Data Sensitivity
 
 Medications data is **highly sensitive PHI/PII**:
 - Drug names can reveal medical conditions (e.g., HIV meds, psych meds)
@@ -2716,7 +4070,7 @@ Medications data is **highly sensitive PHI/PII**:
 - Inpatient medications reveal hospitalizations
 - Medication adherence can impact care decisions
 
-### 12.2 Access Control
+### 13.2 Access Control
 
 **Initial Implementation (Development):**
 - All mock data is **synthetic and non-PHI**
@@ -2733,7 +4087,7 @@ Medications data is **highly sensitive PHI/PII**:
 - Audit all medication views (log patient_icn, user_id, timestamp)
 - Implement "break-the-glass" for emergency access
 
-### 12.3 Data Handling
+### 13.3 Data Handling
 
 **In Transit:**
 - Use HTTPS for all API calls (TLS 1.2+)
@@ -2749,7 +4103,7 @@ Medications data is **highly sensitive PHI/PII**:
 - Redact patient identifiers in debug logs
 - Implement secure audit logging with tamper-proof storage
 
-### 12.4 Controlled Substances
+### 13.4 Controlled Substances
 
 Controlled substance data (DEA Schedule II-V) requires special handling:
 - Flag controlled substances in UI (⚠️ indicator)
@@ -2759,7 +4113,7 @@ Controlled substance data (DEA Schedule II-V) requires special handling:
 
 ---
 
-## 13. Appendices
+## 14. Appendices
 
 **Note:** See Appendix A for the Original Implementation Roadmap (Days 1-12 Plan).
 

@@ -21,6 +21,7 @@ from vista.app.services import DataLoader, RPCRegistry, RPCExecutionError
 from vista.app.handlers import PatientInquiryHandler, LatestVitalsHandler
 from vista.app.handlers.encounters import AdmissionsHandler
 from vista.app.handlers.allergies import AllergiesListHandler
+from vista.app.handlers.medications import MedicationsCoverHandler
 
 # Add project root to Python path for config import
 project_root = Path(__file__).resolve().parent.parent.parent
@@ -148,6 +149,7 @@ def initialize_site(sta3n: str) -> Dict[str, Any]:
     registry.register(LatestVitalsHandler())
     registry.register(AdmissionsHandler())  # ✅ Added 2025-12-19
     registry.register(AllergiesListHandler())  # ✅ Added 2025-12-19
+    registry.register(MedicationsCoverHandler())  # ✅ Added 2026-01-13
 
     logger.info(
         f"Site {sta3n} initialized: "

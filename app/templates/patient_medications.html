@@ -31,21 +31,56 @@
             </a>
         </div>
     {% else %}
-        <!-- Page Header -->
-        <div class="page-header">
-            <div class="page-header__breadcrumb">
-                <a href="/" class="breadcrumb-link">
+        <!-- Page Header with VistA Refresh Controls -->
+        <div class="page-header-breadcrumb">
+            <!-- Breadcrumbs (left-aligned) -->
+            <nav aria-label="breadcrumb" class="breadcrumb-nav">
+                <a href="/?icn={{ patient.icn }}" class="breadcrumb-link">
                     <i class="fa-solid fa-house"></i>
                     Dashboard
                 </a>
-                <i class="fa-solid fa-chevron-right"></i>
+                <i class="fa-solid fa-chevron-right breadcrumb-separator"></i>
                 <span class="breadcrumb-current">Medications</span>
+            </nav>
+
+            <!-- VistA Refresh Controls (right-aligned) -->
+            <div id="vista-refresh-controls" class="vista-controls">
+                <span class="data-freshness" id="freshness-message">
+                    {% if vista_refreshed %}
+                        Data current through: {{ data_current_through }} (today)
+                        <span class="last-updated">Last updated: {{ last_updated }}</span>
+                    {% else %}
+                        Data current through: {{ data_current_through }}{% if data_freshness_label %} ({{ data_freshness_label }}){% endif %}
+                    {% endif %}
+                </span>
+
+                {% if not vista_refreshed or True %}
+                <button
+                    type="button"
+                    hx-get="/patient/{{ patient.icn }}/medications/realtime?medication_type={{ medication_type_filter or 'all' }}&status={{ status_filter or 'all' }}&date_range={{ date_range_filter or 'all' }}&sort_by={{ sort_by }}_{{ sort_order }}"
+                    hx-target="#vista-refresh-area"
+                    hx-swap="outerHTML"
+                    hx-indicator="#vista-loading"
+                    aria-label="Refresh data from VistA sites"
+                    class="btn btn--secondary vista-refresh-btn">
+                    <i class="fa-solid fa-rotate"></i> Refresh VistA
+                </button>
+                {% endif %}
+
+                <div id="vista-loading" class="htmx-indicator">
+                    <i class="fa-solid fa-spinner fa-spin"></i> Fetching data...
+                </div>
             </div>
-            <div class="page-header__title-group">
-                <h1 class="page-header__title">
-                    Medications
-                </h1>
-            </div>
+        </div>
+
+        <!-- Vista Refresh Area - includes controls and content for HTMX swap -->
+        <div id="vista-refresh-area">
+
+        <!-- Page Title Section -->
+        <div class="page-header__title-group">
+            <h1 class="page-header__title">
+                Medications
+            </h1>
         </div>
 
         <!-- Summary Stats Bar -->
@@ -196,6 +231,7 @@
                             <th>Date</th>
                             <th>Medication</th>
                             <th>Type</th>
+                            <th>Facility</th>
                             <th>Status/Details</th>
                             <th>Provider</th>
                         </tr>
@@ -257,6 +293,11 @@
                                         Inpatient
                                     </span>
                                 {% endif %}
+                            </td>
+
+                            <!-- Facility -->
+                            <td class="medication-cell medication-cell--facility">
+                                {{ med.facility_name or 'Unknown' }}
                             </td>
 
                             <!-- Status/Details -->
@@ -323,6 +364,8 @@
                 </div>
             {% endif %}
         </div>
+
+        </div><!-- /vista-refresh-area -->
     {% endif %}
 </div>
 

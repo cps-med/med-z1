@@ -1,13 +1,37 @@
 # VistA RPC Broker Simulator - Design Document
 
-**Document Version:** v1.8
-**Date:** 2025-12-19
-**Status:** Phase 1 & 2 COMPLETE | Phase 3 IN PROGRESS (Encounters Domain)
+**Document Version:** v2.0
+**Date:** 2026-01-13
+**Status:** ✅ Phase 1-5 COMPLETE (4 Clinical Domains Operational)
 
 **📝 Documentation Update Policy:**
 When updating this design document with implementation progress or design changes, also update:
 - `vista/README.md` - Practical guide (API examples, endpoints, test coverage, capabilities)
 - `docs/implementation-roadmap.md` Section 11.3 - Phase 8 progress tracking
+
+**Changelog v2.0** (2026-01-13):
+- ✅ **Phase 5 COMPLETE** - Medications domain fully implemented
+- ✅ **Four clinical domains** with full "Refresh VistA" functionality operational
+- ✅ **Medications Domain:** ORWPS COVER RPC, 69 mock medications across 3 sites, 30 unit tests passing
+  - Session cache integration for filter persistence
+  - Facility column added to medications table
+  - Provider field populated for Vista records
+  - Status filter logic refined (inpatient always included)
+  - Merge/dedupe with canonical key: `{site}:{prescription_number}`
+- ✅ **Button Label Standardization:** All domains now use "Refresh VistA" (shortened from "Refresh from VistA")
+- ✅ **Domains Complete:** Vitals (GMV), Encounters (ORWCV), Allergies (ORQQAL), Medications (ORWPS)
+- 🎯 **Total domains with VistA integration:** 4 of ~15 planned (27% complete)
+- 🎯 **Next target:** Laboratory Results (ORQORB namespace, Phase 6)
+
+**Changelog v1.9** (2026-01-13):
+- ✅ **Phase 3-4 COMPLETE** - Vitals, Encounters, Allergies fully implemented
+- ✅ Three clinical domains with full "Refresh from VistA" functionality operational
+- ✅ **Vitals Domain:** GMV LATEST VM RPC, merge/dedupe, 2-site queries, T-notation dates
+- ✅ **Encounters Domain:** ORWCV ADMISSIONS RPC, 90-day lookback, 3-site queries, pagination preserved
+- ✅ **Allergies Domain:** ORQQAL LIST RPC, 3-5 site queries, safety-critical coverage
+- ✅ Session-based caching (30-min TTL) operational across all domains
+- ✅ HTMX + OOB swaps pattern established and working
+- 🎯 **Total domains with VistA integration:** 3 of ~15 planned (20% complete)
 
 **Changelog v1.8** (2025-12-19):
 - ✅ **Encounters Domain (ORWCV Namespace)** - Added Section 6.5
@@ -2025,20 +2049,62 @@ LATEX^MODERATE^3230405.1020^CONTACT DERMATITIS^ENVIRONMENTAL^630^NURSE,MICHAEL
 | `ORQQAL DETAIL` | Get allergy detail | `[DFN, ALLERGY_ID]` | Detailed allergy info |
 | `ORQQAL ALLERGY MATCH` | Match allergy by name | `[SEARCH_STRING]` | List of matching allergens |
 
-### 6.4 Medications (ORWPS, PSO Namespaces)
+### 6.4 Medications (ORWPS, PSO Namespaces) ✅ Specified 2026-01-13
 
 | RPC Name | Purpose | Parameters | Response Format |
 |----------|---------|------------|-----------------|
-| `ORWPS COVER` | Active outpatient meds (cover sheet) | `[DFN]` | Multi-line: `RX^DRUG^STATUS^QTY^REFILLS` |
-| `ORWPS DETAIL` | Medication detail | `[DFN, RX_NUMBER]` | Detailed med info with SIG |
-| `ORWPS ACTIVE` | Active medications list | `[DFN]` | Active meds with dates |
-| `PSO SUPPLY` | Pharmacy supply data | `[DFN, RX_NUMBER]` | Supply/refill details |
+| `ORWPS COVER` | Active outpatient meds (cover sheet) | `[DFN]` | Multi-line: `RX^DRUG^STATUS^QTY/DAYS^REFILLS^ISSUE_DATE^EXP_DATE` |
+| `ORWPS DETAIL` | Medication detail (future) | `[DFN, RX_NUMBER]` | Detailed med info with SIG |
+| `ORWPS ACTIVE` | Active medications list (future) | `[DFN]` | Active meds with dates |
+| `PSO SUPPLY` | Pharmacy supply data (future) | `[DFN, RX_NUMBER]` | Supply/refill details |
+
+**RPC:** `ORWPS COVER` ✅ **Primary Implementation (Phase 5)**
+
+**Purpose:** Retrieve active outpatient medications for a patient (medication "cover sheet" summary)
+
+**Parameters:**
+- `DFN` (string): Site-specific patient identifier (auto-resolved from ICN)
+
+**Response Format (VistA caret-delimited, multi-line):**
+```
+RX_NUMBER^DRUG_NAME^STATUS^QUANTITY/DAYS_SUPPLY^REFILLS_REMAINING^ISSUE_DATE^EXPIRATION_DATE
+```
+
+**Field Definitions (7 fields):**
+1. **RX_NUMBER**: Prescription number (unique identifier, typically 7 digits) - e.g., "2860066"
+2. **DRUG_NAME**: Medication name with strength and form - e.g., "LISINOPRIL 10MG TAB"
+3. **STATUS**: Prescription status - "ACTIVE", "DISCONTINUED", "EXPIRED", "SUSPENDED"
+4. **QUANTITY/DAYS_SUPPLY**: Quantity dispensed / days supply - e.g., "60/90" (60 tabs for 90 days)
+5. **REFILLS_REMAINING**: Number of refills left - e.g., "3"
+6. **ISSUE_DATE**: Date prescription was issued (FileMan YYYMMDD.HHMM) - e.g., "3260106.1035"
+7. **EXPIRATION_DATE**: Date prescription expires (FileMan YYYMMDD) - e.g., "3270106"
 
 **Example Response (ORWPS COVER)**:
 ```
-2860066^LISINOPRIL 10MG TAB^ACTIVE^60/90^3^2024-11-15^2025-11-15
-2860067^METFORMIN 500MG TAB^ACTIVE^120/180^5^2024-11-15^2025-11-15
+2860066^LISINOPRIL 10MG TAB^ACTIVE^60/90^3^3260106.1035^3270106
+2860067^METFORMIN HCL 500MG TAB^ACTIVE^120/180^5^3260106.1030^3270106
+2860070^ASPIRIN 81MG TAB^ACTIVE^90/90^0^3260101.1420^3270101
 ```
+
+**Merge/Dedupe Strategy:**
+- **Canonical Key:** `{site_sta3n}:{prescription_number}` (e.g., "200:2860066")
+- **Vista Preferred:** For T-1+ overlap, Vista data takes precedence (most current)
+- **Multi-Site Deduplication:** Same prescription at multiple sites → Keep most recent by issue_date
+- **PostgreSQL Baseline:** Provides historical medications (T-1 and earlier)
+
+**Implementation Scope:**
+- Active medications only (STATUS='ACTIVE' filter)
+- Outpatient prescriptions (RxOut / VistA File #52)
+- Up to 3 sites queried per patient (domain-specific limit)
+- T-notation dates in mock data (T-0 to T-30 for issue dates, T+30 to T+365 for expiration)
+
+**Test Patients (All 4):**
+- ICN100001: Multi-site with intentional overlaps (2-3 shared prescriptions)
+- ICN100010: Orphaned DFNs test deduplication (100010, 100002, 200001)
+- ICN100013: High DFN count stress test (6 DFNs across 3 sites)
+- ICN100002: Baseline patient (minimal overlaps)
+
+**Mock Data Volume:** ~85-120 active medication records across 3 sites (30-40 per site)
 
 ### 6.5 Encounters (ORWCV Namespace) ✅ Added 2025-12-19
 

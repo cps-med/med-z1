@@ -222,39 +222,62 @@ med-z1 follows **strong, opinionated patterns** to ensure maintainability as the
 
 ### VistA RPC Broker Simulator (Real-Time Data Layer)
 
+**Status:** ✅ OPERATIONAL (Phases 1-5 Complete) - Port 8003
+
 **Purpose:**
 - Simulate VA VistA Remote Procedure Call (RPC) interface for real-time data (T-0, today)
 - Complement historical PostgreSQL data (T-1 and earlier) with current-day clinical data
-- Enable testing of "Refresh from VistA" UI pattern without accessing real VistA systems
+- Enable testing of "Refresh VistA" UI pattern without accessing real VistA systems
 
 **Critical Architecture:**
 - **Dual-Source Data**: PostgreSQL (T-1+, fast) + Vista (T-0, 1-3s latency)
 - **ICN → DFN Resolution**: Automatic identity translation per VistA site
-- **Site Selection Policy**: Default 3 sites max, per-domain limits, hard cap of 10
+- **Site Selection Policy**: Domain-specific limits (vitals=2, encounters=3, allergies=3-5, medications=3), hard cap=10
 - **Merge/Dedupe**: Canonical event keys, Vista preferred for T-1+, no duplicates
 
 **Implementation:**
-- Separate FastAPI service on port 8003 (future)
-- Multi-site simulation (3 sites: Alexandria 200, Anchorage 500, Palo Alto 630)
-- JSON-based data files with T-0/T-1 relative notation (always "fresh")
-- Configurable simulated network latency (1-3 seconds)
+- ✅ FastAPI service running on port 8003
+- ✅ Multi-site simulation (3 sites: Alexandria 200, Anchorage 500, Palo Alto 630)
+- ✅ JSON-based data files with T-notation (T-0, T-1, T-7, etc.) for automatic date freshness
+- ✅ Simulated network latency (1-3 seconds per site)
+- ✅ Session-based caching (30-minute TTL)
 - Development/testing scope (Level 1 fidelity: data format only)
 
-**Key Endpoints** (future):
-- `POST /rpc/execute?site={sta3n}&icn={icn}` - Execute RPC with ICN
-- `GET /sites` - List available VistA sites
-- `GET /health` - Service health check
+**Implemented Endpoints:**
+- ✅ `POST /rpc/execute?site={sta3n}&icn={icn}` - Execute RPC with ICN
+- ✅ `GET /sites` - List available VistA sites
+- ✅ `GET /health` - Service health check
+- ✅ `GET /docs` - OpenAPI/Swagger documentation
+
+**Implemented RPCs (5 total):**
+- ✅ `ORWPT PTINQ` - Patient demographics inquiry
+- ✅ `GMV LATEST VM` - Latest vital signs (T-0 data) - **Vitals Domain**
+- ✅ `ORWCV ADMISSIONS` - Inpatient encounters (90-day lookback) - **Encounters Domain**
+- ✅ `ORQQAL LIST` - Patient allergies - **Allergies Domain**
+- ✅ `ORWPS COVER` - Active outpatient medications - **Medications Domain** ⭐ **NEW (2026-01-13)**
 
 **Integration:**
-- `app/services/vista_client.py` - HTTP client for med-z1 app
-- `app/services/realtime_overlay.py` (future) - Merge/dedupe orchestration
-- Configuration: `VISTA_SERVICE_URL = "http://localhost:8003"`
-- UI Pattern: User-controlled "Refresh from VistA" button (no auto-fetch)
+- ✅ `app/services/vista_client.py` - HTTP client with intelligent site selection
+- ✅ `app/services/realtime_overlay.py` - Merge/dedupe orchestration (4 clinical domains)
+- ✅ `app/services/vista_cache.py` - Session-based caching (30-min TTL)
+- ✅ Configuration: `VISTA_SERVICE_URL = "http://localhost:8003"` in root `config.py`
+- ✅ UI Pattern: User-controlled "Refresh VistA" button (HTMX + OOB swaps) - **Label standardized 2026-01-13**
 
-**Phase 1 Domains:** Demographics, Vitals, Allergies, Medications (~15 RPCs)
+**Test Patients (All 4):**
+- ICN100001 (Dooree, Adam) - 3 sites with multi-site data
+- ICN100010 (Aminor, Alexander) - 2-4 sites (includes orphaned DFNs)
+- ICN100013 (Thompson, Irving) - 3 sites, 6 DFNs total (deduplication stress test)
+- ICN100002 (Miifaa, Barry) - 3 sites
 
-**Design Document:** `docs/vista-rpc-broker-design.md` (v1.2)
-**Implementation Timeline:** Phase 8 (5-6 weeks, after Encounters + Labs)
+**Domains with "Refresh VistA" Operational (4/15):**
+1. ✅ Vitals - GMV LATEST VM, 2-site queries, merge/dedupe, T-notation dates
+2. ✅ Encounters - ORWCV ADMISSIONS, 3-site queries, pagination preserved
+3. ✅ Allergies - ORQQAL LIST, 3-5 site queries, safety-critical coverage
+4. ✅ Medications - ORWPS COVER, 3-site queries, 69 mock meds, session cache integration ⭐ **NEW (2026-01-13)**
+
+**Design Documents:**
+- `docs/spec/vista-rpc-broker-design.md` (v2.0, 2026-01-13) - Updated with Phase 5 complete
+- `docs/spec/medications-design.md` (v1.4, 2026-01-13) - Section 11 implementation complete
 
 ### AI/ML Components
 

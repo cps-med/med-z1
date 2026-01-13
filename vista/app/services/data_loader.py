@@ -194,43 +194,58 @@ class DataLoader:
         """
         Parse T-notation date/time to FileMan format.
 
-        T-notation format: "T-N.HHMM" where N is days offset from today
+        T-notation format: "T±N.HHMM" or "T±N" where N is days offset from today
         Examples:
             "T-0.0845" = Today at 08:45
             "T-1.1030" = Yesterday at 10:30
             "T-7.1400" = 7 days ago at 14:00
+            "T+358" = 358 days in the future (date only)
+            "T+30.1200" = 30 days in the future at 12:00
 
-        FileMan format: YYYMMDD.HHMM where YYY = year - 1700
+        FileMan format: YYYMMDD.HHMM or YYYMMDD where YYY = year - 1700
         Examples:
             "3251217.0845" = December 17, 2025 at 08:45
+            "3270106" = January 6, 2027 (date only)
 
         Args:
-            t_notation: T-notation string (e.g., "T-0.0845")
+            t_notation: T-notation string (e.g., "T-0.0845" or "T+358")
 
         Returns:
-            FileMan format string (e.g., "3251217.0845")
+            FileMan format string (e.g., "3251217.0845" or "3270106")
         """
         try:
-            # Split on '.' to get date offset and time
-            parts = t_notation.split('.')
-            if len(parts) != 2:
-                logger.warning(f"Invalid T-notation format: {t_notation}")
-                return t_notation  # Return as-is if not T-notation
-
-            date_part = parts[0]  # e.g., "T-0"
-            time_part = parts[1]  # e.g., "0845"
-
-            # Check if date part starts with "T-"
-            if not date_part.startswith("T-"):
+            # Check if this is T-notation
+            if not (t_notation.startswith("T-") or t_notation.startswith("T+")):
                 # Not T-notation, return as-is (already in FileMan format)
                 return t_notation
 
-            # Extract offset (days ago)
-            offset_str = date_part[2:]  # Remove "T-" prefix
+            # Determine if past (T-) or future (T+)
+            is_future = t_notation.startswith("T+")
+
+            # Split on '.' to get date offset and optional time
+            parts = t_notation.split('.')
+
+            if len(parts) == 1:
+                # No time component (e.g., "T+358")
+                date_part = parts[0]
+                time_part = None
+            elif len(parts) == 2:
+                # Has time component (e.g., "T-7.1400")
+                date_part = parts[0]
+                time_part = parts[1]
+            else:
+                logger.warning(f"Invalid T-notation format: {t_notation}")
+                return t_notation  # Return as-is if not T-notation
+
+            # Extract offset (days)
+            offset_str = date_part[2:]  # Remove "T-" or "T+" prefix
             days_offset = int(offset_str)
 
-            # Calculate target date (today - offset)
-            target_date = datetime.now() - timedelta(days=days_offset)
+            # Calculate target date (today ± offset)
+            if is_future:
+                target_date = datetime.now() + timedelta(days=days_offset)
+            else:
+                target_date = datetime.now() - timedelta(days=days_offset)
 
             # Convert to FileMan date format: YYYMMDD
             # YYY = year - 1700
@@ -238,8 +253,11 @@ class DataLoader:
             mm = target_date.month
             dd = target_date.day
 
-            # Format as YYYMMDD.HHMM
-            fileman_date = f"{yyy:03d}{mm:02d}{dd:02d}.{time_part}"
+            # Format as YYYMMDD.HHMM or YYYMMDD (depending on time_part)
+            if time_part:
+                fileman_date = f"{yyy:03d}{mm:02d}{dd:02d}.{time_part}"
+            else:
+                fileman_date = f"{yyy:03d}{mm:02d}{dd:02d}"
 
             logger.debug(f"Converted T-notation {t_notation} → FileMan {fileman_date}")
             return fileman_date
@@ -383,4 +401,54 @@ class DataLoader:
             return None
         except Exception as e:
             logger.error(f"Error loading allergies data: {e}")
+            return None
+
+    def load_medications(self) -> Optional[Dict[str, Any]]:
+        """
+        Load medications data for this site from JSON file.
+
+        Supports both FileMan format and T-notation for date fields.
+        T-notation dates are automatically converted to today's equivalent FileMan format.
+
+        Returns:
+            Dictionary with medications data, or None if file not found
+
+        File location: vista/app/data/sites/{sta3n}/medications.json
+        """
+        try:
+            # Construct path to medications data file
+            # Assume structure: vista/app/data/sites/{sta3n}/medications.json
+            vista_root = Path(__file__).parent.parent
+            medications_path = vista_root / "data" / "sites" / self.site_sta3n / "medications.json"
+
+            if not medications_path.exists():
+                logger.warning(f"Medications data file not found: {medications_path}")
+                return None
+
+            with open(medications_path, 'r') as f:
+                medications_data = json.load(f)
+
+            # Convert T-notation dates to FileMan format
+            medications_list = medications_data.get("medications", [])
+            for medication in medications_list:
+                # Convert issue_date
+                if "issue_date" in medication:
+                    original = medication["issue_date"]
+                    converted = self.parse_t_notation_to_fileman(original)
+                    medication["issue_date"] = converted
+
+                # Convert expiration_date
+                if "expiration_date" in medication:
+                    original = medication["expiration_date"]
+                    converted = self.parse_t_notation_to_fileman(original)
+                    medication["expiration_date"] = converted
+
+            logger.debug(f"Loaded medications data from {medications_path}")
+            return medications_data
+
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON in medications data file: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Error loading medications data: {e}")
             return None

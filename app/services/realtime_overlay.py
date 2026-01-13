@@ -414,3 +414,279 @@ def merge_vitals_data(
     )
 
     return merged, stats
+
+
+def parse_fileman_date_only(fileman_str: str) -> Optional[datetime]:
+    """
+    Parse VistA FileMan date format (without time) to Python datetime.
+
+    FileMan format: YYYMMDD where YYY = year - 1700
+    Example: 3270106 = January 6, 2027
+
+    Args:
+        fileman_str: FileMan formatted date string
+
+    Returns:
+        Python datetime object or None if parsing fails
+    """
+    try:
+        if not fileman_str:
+            return None
+
+        # Handle both YYYMMDD and YYYMMDD.HHMM formats
+        if "." in fileman_str:
+            return parse_fileman_datetime(fileman_str)
+
+        # Parse date only: YYYMMDD
+        yyy = int(fileman_str[:3])  # Years since 1700
+        mm = int(fileman_str[3:5])  # Month
+        dd = int(fileman_str[5:7])  # Day
+
+        year = 1700 + yyy
+
+        return datetime(year, mm, dd)
+
+    except (ValueError, IndexError) as e:
+        logger.warning(f"Failed to parse FileMan date '{fileman_str}': {e}")
+        return None
+
+
+def parse_vista_medications(vista_response: str, site_sta3n: str) -> List[Dict[str, Any]]:
+    """
+    Parse VistA ORWPS COVER response into standardized medication records.
+
+    VistA format: Multi-line response, one medication per line
+    Each line: RX_NUMBER^DRUG_NAME^STATUS^QUANTITY/DAYS_SUPPLY^REFILLS_REMAINING^ISSUE_DATE^EXPIRATION_DATE
+
+    Args:
+        vista_response: Raw VistA RPC response string
+        site_sta3n: Site station number (e.g., "200", "500", "630")
+
+    Returns:
+        List of parsed medication dictionaries matching PostgreSQL schema
+    """
+    medications = []
+
+    if not vista_response or vista_response.startswith("-1^"):
+        # Error response or no medications
+        return medications
+
+    lines = vista_response.strip().split("\n")
+
+    for line in lines:
+        if not line or "^" not in line:
+            continue
+
+        parts = line.split("^")
+        if len(parts) != 7:
+            logger.warning(f"Invalid Vista medication format: {line}")
+            continue
+
+        rx_number, drug_name, status, qty_days, refills_remaining, issue_date_fm, expiration_date_fm = parts
+
+        # Parse FileMan dates
+        issue_dt = parse_fileman_datetime(issue_date_fm)
+        expiration_dt = parse_fileman_date_only(expiration_date_fm)
+
+        if not issue_dt:
+            logger.warning(f"Skipping medication with invalid issue date: {line}")
+            continue
+
+        # Parse quantity/days_supply
+        try:
+            quantity, days_supply = qty_days.split("/")
+            quantity = int(quantity)
+            days_supply = int(days_supply)
+        except (ValueError, AttributeError):
+            logger.warning(f"Invalid quantity/days_supply format: {qty_days}")
+            quantity = None
+            days_supply = None
+
+        # Parse refills
+        try:
+            refills = int(refills_remaining)
+        except ValueError:
+            refills = 0
+
+        # Create standardized medication record (matching PostgreSQL schema)
+        issue_date_str = issue_dt.strftime("%Y-%m-%d %H:%M:%S") if issue_dt else None
+        expiration_date_str = expiration_dt.strftime("%Y-%m-%d") if expiration_dt else None
+
+        # Map Vista site numbers to facility names (matching format: "(sta3n) City, State")
+        facility_names = {
+            "200": "(200) Alexandria, VA",
+            "500": "(500) Anchorage, AK",
+            "630": "(630) Palo Alto, CA"
+        }
+        facility_name = facility_names.get(site_sta3n, f"VistA Site {site_sta3n}")
+
+        medication = {
+            "medication_id": f"vista_{site_sta3n}_{rx_number}",  # Unique ID for Vista data
+            "patient_key": None,  # Will be set by caller
+            "prescription_number": rx_number,
+            "drug_name": drug_name,
+            "drug_name_local": drug_name,  # Template uses this field
+            "drug_name": drug_name,  # Also set base field
+            "status": status,
+            "type": "outpatient",  # Vista ORWPS COVER returns outpatient only
+            "quantity": quantity,
+            "days_supply": days_supply,
+            "refills_remaining": refills,
+            "issue_date": issue_date_str,
+            "date": issue_date_str,  # Template uses this for display
+            "expiration_date": expiration_date_str,
+            "location_id": None,
+            "location_name": f"VistA Site {site_sta3n}",
+            "location_type": "VistA",
+            "facility_name": facility_name,  # Facility for display column
+            "provider_name": "VistA Realtime",  # Provider not available from ORWPS COVER RPC
+            "pharmacy_name": facility_name,  # Show facility as pharmacy (second line)
+            "is_controlled": False,  # Template uses this field name
+            "is_controlled_substance": False,  # Database field name (for compatibility)
+            "dea_schedule": None,
+            "generic_name": None,  # Not provided by ORWPS COVER RPC
+            "sig": None,  # Sig not provided by ORWPS COVER (would need ORWPS DETAIL)
+            "drug_strength": None,  # Would need drug database lookup
+            "drug_unit": None,  # Would need drug database lookup
+            "dosage": None,  # For inpatient meds (N/A for outpatient)
+            "route": None,  # Would need ORWPS DETAIL RPC
+            # Data source for badge display
+            "data_source": "CDWWork",  # VistA meds show as CDWWork (blue badge)
+            # Vista-specific metadata for tracking
+            "source": "vista",
+            "source_site": site_sta3n,
+            "is_realtime": True,
+        }
+
+        medications.append(medication)
+
+    return medications
+
+
+def create_canonical_medication_key(medication: Dict[str, Any]) -> str:
+    """
+    Create canonical deduplication key for a medication.
+
+    Key components:
+    - source_site (or location_name if from PostgreSQL)
+    - prescription_number
+
+    Format: {site}:{prescription_number}
+    Example: "200:2860066"
+
+    This allows detection of:
+    - Exact duplicates (same RX at same site in both PG and Vista)
+    - Multi-site prescriptions (same RX number at different sites - NOT duplicates)
+
+    Args:
+        medication: Medication dictionary
+
+    Returns:
+        Canonical key string
+    """
+    # Get site identifier
+    site = medication.get("source_site")
+    if not site:
+        # For PostgreSQL data, try to extract from location_name
+        location = medication.get("location_name", "")
+        if "Site" in location:
+            try:
+                site = location.split("Site")[1].strip().split()[0]
+            except IndexError:
+                site = "UNKNOWN"
+        else:
+            site = "PG"
+
+    # Get prescription number
+    rx_number = medication.get("prescription_number", "UNKNOWN")
+
+    return f"{site}:{rx_number}"
+
+
+def merge_medications_data(
+    pg_medications: List[Dict[str, Any]],
+    vista_medications_by_site: Dict[str, str],
+    patient_icn: str
+) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+    """
+    Merge PostgreSQL medications (T-1 and earlier) with Vista medications (T-0, today).
+
+    Merge strategy:
+    1. Parse Vista responses from all sites
+    2. Deduplicate using canonical event keys: {site}:{prescription_number}
+    3. Vista preferred for T-1+ conflicts (fresher data)
+    4. Add source metadata for site badges
+    5. Sort by issue_date descending
+
+    Args:
+        pg_medications: List of medications from PostgreSQL (historical data)
+        vista_medications_by_site: Dict mapping site sta3n to Vista RPC response
+            Example: {"200": "2860066^LISINOPRIL 10MG TAB^ACTIVE^60/90^3^...\n...", ...}
+        patient_icn: Patient ICN for metadata
+
+    Returns:
+        Tuple of (merged_medications, stats)
+        - merged_medications: Unified list of medication dictionaries, sorted by date descending
+        - stats: Dictionary with merge statistics
+    """
+    logger.info(f"Merging medications for {patient_icn}: {len(pg_medications)} PG + {len(vista_medications_by_site)} Vista sites")
+
+    merged = []
+    seen_keys = set()
+    stats = {
+        "pg_count": len(pg_medications),
+        "vista_count": 0,
+        "vista_sites": list(vista_medications_by_site.keys()),
+        "duplicates_removed": 0,
+        "total_merged": 0,
+    }
+
+    # Parse all Vista responses
+    all_vista_medications = []
+    for site_sta3n, response in vista_medications_by_site.items():
+        site_medications = parse_vista_medications(response, site_sta3n)
+        for medication in site_medications:
+            medication["patient_key"] = patient_icn
+        all_vista_medications.extend(site_medications)
+        logger.debug(f"Parsed {len(site_medications)} medications from Vista site {site_sta3n}")
+
+    stats["vista_count"] = len(all_vista_medications)
+
+    # Add Vista medications first (preferred for T-1+ duplicates)
+    for medication in all_vista_medications:
+        key = create_canonical_medication_key(medication)
+        if key not in seen_keys:
+            merged.append(medication)
+            seen_keys.add(key)
+        else:
+            stats["duplicates_removed"] += 1
+            logger.debug(f"Skipped duplicate Vista medication: {key}")
+
+    # Add PostgreSQL medications (only if not already present)
+    for medication in pg_medications:
+        # PostgreSQL medications already have 'data_source' field from database
+        # Don't overwrite it - preserve CDWWork/CDWWork2 values
+        # Add tracking metadata for debugging (doesn't affect template rendering)
+        medication["source"] = "postgresql"
+        medication["source_site"] = None
+        medication["is_realtime"] = False
+
+        key = create_canonical_medication_key(medication)
+        if key not in seen_keys:
+            merged.append(medication)
+            seen_keys.add(key)
+        else:
+            stats["duplicates_removed"] += 1
+            logger.debug(f"Skipped duplicate PG medication (Vista preferred): {key}")
+
+    # Sort by issue_date descending (most recent first)
+    merged.sort(key=lambda m: m.get("issue_date") or "", reverse=True)
+
+    stats["total_merged"] = len(merged)
+
+    logger.info(
+        f"Merge complete: {stats['total_merged']} medications "
+        f"({stats['pg_count']} PG + {stats['vista_count']} Vista - {stats['duplicates_removed']} duplicates)"
+    )
+
+    return merged, stats
