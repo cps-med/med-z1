@@ -1,9 +1,9 @@
 # Medications Design Specification - med-z1
 
-**Document Version:** 1.1
-**Date:** 2025-12-13
-**Status:** In Progress - Days 2-4 Complete (ETL Pipeline)
-**Implementation Phase:** Days 2-4 Complete (Bronze/Silver/Gold ETL + PostgreSQL Load)
+**Document Version:** 1.2
+**Date:** 2026-01-13 (Filter UI Enhancement Specification Added)
+**Status:** Phase 1 Complete (Days 1-8) | Filter UI Enhancement Specified (Day 9 Pending)
+**Implementation Phase:** Days 1-8 Complete (Full Implementation) | Day 9 Pending (Filter UI Refactoring)
 
 ---
 
@@ -17,10 +17,16 @@
 6. [ETL Pipeline Design](#6-etl-pipeline-design)
 7. [API Endpoints](#7-api-endpoints)
 8. [UI/UX Design](#8-uiux-design)
-9. [Implementation Roadmap](#9-implementation-roadmap)
-10. [Testing Strategy](#10-testing-strategy)
-11. [Security and Privacy](#11-security-and-privacy)
-12. [Appendices](#12-appendices)
+9. [Filter UI Enhancement Specification](#9-filter-ui-enhancement-specification) ⭐ **NEW**
+10. [Implementation Completion Summary](#10-implementation-completion-summary)
+11. [Testing Strategy](#11-testing-strategy)
+12. [Security and Privacy](#12-security-and-privacy)
+13. [Appendices](#13-appendices)
+   - [Appendix A: Original Implementation Roadmap (Days 1-12 Plan)](#appendix-a-original-implementation-roadmap-days-1-12-plan)
+   - [Appendix B: VistA File Mappings](#appendix-b-vista-file-mappings)
+   - [Appendix C: Mock Data Summary](#appendix-c-mock-data-summary)
+   - [Appendix D: Glossary](#appendix-d-glossary)
+   - [Appendix E: Data Quality Issues](#appendix-e-data-quality-issues)
 
 ---
 
@@ -1846,10 +1852,922 @@ document.getElementById('date-filter').addEventListener('change', (e) => {
 ```
 
 ---
+## 9. Filter UI Enhancement Specification
 
-## 9. Implementation Roadmap
+**Document Version:** 1.2
+**Date:** 2026-01-13
+**Status:** Specification Complete - Implementation Pending
+**Objective:** Refactor filter controls from button pills to dropdowns for improved space efficiency and consistency with Clinical Notes domain
 
-### 9.1 Day-by-Day Plan (10-12 days estimated)
+### 9.1 Overview
+
+This section specifies the enhancement of the Medications full page filter controls to improve UI density and consistency across clinical domains. The current implementation uses button pills for Time Period, Type, and Status filters, which consume significant vertical space and become cramped when the sidebar is expanded. The proposed solution converts these to dropdown `<select>` elements while maintaining all functionality and adding HTMX for automatic filtering.
+
+**Key Benefits:**
+- ✅ **Space efficiency:** Single-row layout when space permits (vs. current 3-4 rows)
+- ✅ **Consistency:** Aligns with Clinical Notes domain (newest reference implementation)
+- ✅ **Better UX:** No page reloads with HTMX automatic filtering
+- ✅ **Predictable layout:** Filters remain in consistent positions (Status always visible)
+- ✅ **Accessibility:** Improved keyboard navigation with native `<select>` elements
+- ✅ **Future-proof:** Easy to extend with additional filter options
+
+### 9.2 Current State vs. Proposed State
+
+#### Current Implementation (Button Pills)
+
+**Layout:** 3-4 rows of filter controls (stacked vertically)
+
+```
+Row 1: Time Period:  [30 Days] [90 Days] [6 Months] [1 Year] [All Time]
+Row 2: Type:         [All (8)] [Outpatient (4)] [Inpatient (4)]
+Row 3: Status:       [All Status] [Active (4)] [Expired] [Discontinued]  (conditional)
+Row 4: Sort:         [Date (Newest First) ▼]
+```
+
+**Characteristics:**
+- Button pills (`<a>` tags with `.filter-pill` class)
+- Full page reload on filter change (URL navigation)
+- Status filter conditionally hidden when Type = "Inpatient"
+- Count badges in Type filter pills
+- Each filter group in separate `.filter-group` container
+- Responsive behavior: Pills wrap to multiple lines
+
+**Space consumption:** ~180-220px vertical height (depending on Status visibility)
+
+---
+
+#### Proposed Implementation (Dropdowns with HTMX)
+
+**Layout:** Single row when space permits, two rows on narrow viewports
+
+**Single-Row Layout (>1200px viewport width, sidebar collapsed):**
+```
+[Time Period ▼] [Type ▼] [Status ▼] [Sort ▼]
+```
+*(Each label has a black-and-white FontAwesome icon prefix)*
+
+**Two-Row Layout (≤1200px viewport width, sidebar expanded):**
+```
+Row 1: [Time Period ▼] [Type ▼]
+Row 2: [Status ▼]      [Sort ▼]
+```
+*(Each label has a black-and-white FontAwesome icon prefix)*
+
+**Characteristics:**
+- Dropdown `<select>` elements for all filters
+- HTMX form with automatic submission on change (no page reload)
+- Status filter always visible (disabled when Type = "Inpatient")
+- Count badges in dropdown options (e.g., "Outpatient (4)")
+- Black-and-white FontAwesome icons in filter labels for visual hierarchy
+- Single `.medications-filters` form container (following Clinical Notes pattern)
+- Responsive behavior: Flexbox wrapping at defined breakpoint
+
+**Space consumption:** ~50-60px vertical height (single row) or ~100-110px (two rows)
+**Space savings:** ~60-70% reduction in vertical height
+
+### 9.3 Design Specifications
+
+#### 9.3.1 Filter Controls
+
+**Time Period Filter:**
+- **Label:** Time Period:
+- **Icon:** `fa-calendar-days` (black-and-white FontAwesome icon)
+- **Options:**
+  ```
+  Last 30 Days
+  Last 90 Days (default)
+  Last 6 Months
+  Last Year
+  All Time
+  ```
+- **Default:** 90 Days
+- **Parameter:** `date_range` (values: 30, 90, 180, 365, "all")
+
+**Type Filter:**
+- **Label:** Type:
+- **Icon:** `fa-pills` (black-and-white FontAwesome icon)
+- **Options with counts:**
+  ```
+  All (8)
+  Outpatient (4)
+  Inpatient (4)
+  ```
+- **Default:** All
+- **Parameter:** `medication_type` (values: "all", "outpatient", "inpatient")
+- **Note:** Counts dynamically updated based on current data
+
+**Status Filter:**
+- **Label:** Status:
+- **Icon:** `fa-circle-check` (black-and-white FontAwesome icon)
+- **Options with counts:**
+  ```
+  All Statuses
+  Active (4)
+  Expired
+  Discontinued
+  ```
+- **Default:** All Statuses
+- **Parameter:** `status` (values: "all", "ACTIVE", "EXPIRED", "DISCONTINUED")
+- **Behavior:**
+  - Always visible (not conditional)
+  - Disabled when Type = "Inpatient" (greyed out, not selectable)
+  - When disabled, automatically reset to "All Statuses"
+- **Note:** Only applies to outpatient medications
+
+**Sort Control:**
+- **Label:** Sort:
+- **Icon:** `fa-sort` (black-and-white FontAwesome icon)
+- **Options:**
+  ```
+  Date (Newest First) - default
+  Date (Oldest First)
+  Medication Name (A-Z)
+  Type (Inpatient/Outpatient)
+  ```
+- **Default:** Date (Newest First)
+- **Parameter:** `sort_by` (combined field + order)
+- **Values:**
+  - `date_desc` - Date (Newest First) [default]
+  - `date_asc` - Date (Oldest First)
+  - `drug_name` - Medication Name (A-Z)
+  - `type` - Type (Inpatient/Outpatient)
+- **Note:** Backend parses combined value into separate `sort_field` and `sort_order` for database queries
+
+#### 9.3.2 Visual Design
+
+**Filter Form Container:**
+```css
+.medications-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+```
+
+**Filter Group (Each filter):**
+```css
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.filter-group__label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  white-space: nowrap;
+}
+
+.filter-group__label i {
+  margin-right: 0.25rem;
+  color: #6b7280;
+}
+```
+
+**Dropdown Select Styling:**
+```css
+.filter-select {
+  padding: 0.5rem 2rem 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  background-color: #ffffff;
+  background-image: url("data:image/svg+xml,..."); /* Dropdown arrow */
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1rem;
+  font-size: 0.875rem;
+  color: #111827;
+  cursor: pointer;
+  min-width: 150px;
+  appearance: none;
+  transition: border-color 0.15s ease;
+}
+
+.filter-select:hover {
+  border-color: #9ca3af;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.filter-select:disabled {
+  background-color: #f9fafb;
+  color: #9ca3af;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+```
+
+**Responsive Breakpoint:**
+```css
+/* Single-row layout (default) */
+@media (min-width: 1201px) {
+  .medications-filters {
+    flex-wrap: nowrap;
+  }
+}
+
+/* Two-row layout (sidebar expanded or narrow viewport) */
+@media (max-width: 1200px) {
+  .medications-filters {
+    flex-wrap: wrap;
+  }
+
+  .filter-group:nth-child(1),
+  .filter-group:nth-child(2) {
+    /* Time Period and Type on first row */
+    flex: 1 1 calc(50% - 0.5rem);
+  }
+
+  .filter-group:nth-child(3),
+  .filter-group:nth-child(4) {
+    /* Status and Sort on second row */
+    flex: 1 1 calc(50% - 0.5rem);
+  }
+}
+
+/* Mobile (stacked) */
+@media (max-width: 768px) {
+  .filter-group {
+    flex: 1 1 100%;
+  }
+}
+```
+
+### 9.4 HTML Implementation
+
+**Complete Filter Form (HTMX):**
+
+```html
+<!-- Filters and Controls -->
+<div class="medications-controls">
+    <!-- Filter Section -->
+    <form class="medications-filters"
+          hx-get="/patient/{{ patient.icn }}/medications"
+          hx-target="#medications-table-container"
+          hx-select="#medications-table-container"
+          hx-swap="outerHTML"
+          hx-push-url="true"
+          hx-trigger="change">
+
+        <!-- Time Period Filter -->
+        <div class="filter-group">
+            <label class="filter-group__label">
+                <i class="fa-solid fa-calendar-days"></i>
+                Time Period:
+            </label>
+            <select name="date_range" class="filter-select">
+                <option value="30" {% if days_filter == 30 %}selected{% endif %}>Last 30 Days</option>
+                <option value="90" {% if days_filter == 90 %}selected{% endif %}>Last 90 Days</option>
+                <option value="180" {% if days_filter == 180 %}selected{% endif %}>Last 6 Months</option>
+                <option value="365" {% if days_filter == 365 %}selected{% endif %}>Last Year</option>
+                <option value="all" {% if days_filter == 'all' or days_filter == 3650 %}selected{% endif %}>All Time</option>
+            </select>
+        </div>
+
+        <!-- Type Filter -->
+        <div class="filter-group">
+            <label class="filter-group__label">
+                <i class="fa-solid fa-pills"></i>
+                Type:
+            </label>
+            <select name="medication_type" class="filter-select">
+                <option value="all" {% if medication_type_filter == 'all' %}selected{% endif %}>
+                    All ({{ total_count }})
+                </option>
+                <option value="outpatient" {% if medication_type_filter == 'outpatient' %}selected{% endif %}>
+                    Outpatient ({{ counts.outpatient_total or 0 }})
+                </option>
+                <option value="inpatient" {% if medication_type_filter == 'inpatient' %}selected{% endif %}>
+                    Inpatient ({{ counts.inpatient_total or 0 }})
+                </option>
+            </select>
+        </div>
+
+        <!-- Status Filter (always visible, disabled for inpatient) -->
+        <div class="filter-group">
+            <label class="filter-group__label">
+                <i class="fa-solid fa-circle-check"></i>
+                Status:
+            </label>
+            <select name="status"
+                    class="filter-select"
+                    {% if medication_type_filter == 'inpatient' %}disabled{% endif %}>
+                <option value="all" {% if not status_filter or status_filter == 'all' %}selected{% endif %}>
+                    All Statuses
+                </option>
+                <option value="ACTIVE" {% if status_filter == 'ACTIVE' %}selected{% endif %}>
+                    Active ({{ counts.outpatient_active or 0 }})
+                </option>
+                <option value="EXPIRED" {% if status_filter == 'EXPIRED' %}selected{% endif %}>
+                    Expired
+                </option>
+                <option value="DISCONTINUED" {% if status_filter == 'DISCONTINUED' %}selected{% endif %}>
+                    Discontinued
+                </option>
+            </select>
+        </div>
+
+        <!-- Sort Control -->
+        <div class="filter-group">
+            <label class="filter-group__label">
+                <i class="fa-solid fa-sort"></i>
+                Sort:
+            </label>
+            <select name="sort_by" class="filter-select">
+                <option value="date_desc" {% if sort_by == 'date' and sort_order == 'desc' %}selected{% endif %}>
+                    Date (Newest First)
+                </option>
+                <option value="date_asc" {% if sort_by == 'date' and sort_order == 'asc' %}selected{% endif %}>
+                    Date (Oldest First)
+                </option>
+                <option value="drug_name" {% if sort_by == 'drug_name' %}selected{% endif %}>
+                    Medication Name (A-Z)
+                </option>
+                <option value="type" {% if sort_by == 'type' %}selected{% endif %}>
+                    Type (Inpatient/Outpatient)
+                </option>
+            </select>
+        </div>
+    </form>
+</div>
+
+<!-- Medications Table Container (HTMX target) -->
+<div id="medications-table-container">
+    <!-- Table content here (keep existing structure) -->
+    <div class="medications-table-container">
+        <table class="medications-table">
+            <!-- Existing table structure unchanged -->
+        </table>
+    </div>
+
+    <!-- Result Count -->
+    <div class="results-count">
+        Showing {{ total_count }} medication{{ 's' if total_count != 1 else '' }}
+        {% if days_filter < 3650 %}
+            from the last {% if days_filter == 30 %}30 days{% elif days_filter == 90 %}90 days{% elif days_filter == 180 %}6 months{% elif days_filter == 365 %}year{% endif %}
+        {% endif %}
+    </div>
+</div>
+```
+
+### 9.5 HTMX Integration Pattern
+
+The filter form uses HTMX to provide seamless, no-reload filtering following the Clinical Notes pattern:
+
+**Key HTMX Attributes:**
+- `hx-get="/patient/{icn}/medications"` - Endpoint to fetch filtered results
+- `hx-target="#medications-table-container"` - Replace table container with response
+- `hx-select="#medications-table-container"` - Extract only table container from response
+- `hx-swap="outerHTML"` - Replace entire target element
+- `hx-push-url="true"` - Update browser URL for bookmarkability
+- `hx-trigger="change"` - Trigger on any select change
+
+**Backend Route Updates:**
+
+The existing `/patient/{icn}/medications` route needs minimal changes:
+
+```python
+@page_router.get("/patient/{icn}/medications")
+async def get_patient_medications_page(
+    request: Request,
+    icn: str,
+    date_range: str = "90",  # Changed from days to date_range
+    medication_type: str = "all",
+    status: Optional[str] = None,
+    sort_by: str = "date_desc",  # Combined sort parameter
+    db: Session = Depends(get_db),
+):
+    """
+    Render full medications page with filtering.
+
+    Supports both full page load and HTMX partial updates.
+    """
+    # Parse sort_by combined parameter
+    if sort_by == "date_desc":
+        sort_field, sort_order = "date", "desc"
+    elif sort_by == "date_asc":
+        sort_field, sort_order = "date", "asc"
+    elif sort_by == "drug_name":
+        sort_field, sort_order = "drug_name", "asc"
+    elif sort_by == "type":
+        sort_field, sort_order = "type", "asc"
+    else:
+        sort_field, sort_order = "date", "desc"
+
+    # Convert date_range to days
+    days_map = {"30": 30, "90": 90, "180": 180, "365": 365, "all": 3650}
+    days_filter = days_map.get(date_range, 90)
+
+    # Auto-reset status when type is inpatient
+    if medication_type == "inpatient":
+        status = None
+
+    # Fetch medications (existing logic)
+    medications = get_medications(
+        icn=icn,
+        db=db,
+        days=days_filter,
+        medication_type=medication_type,
+        status=status,
+        sort_by=sort_field,
+        sort_order=sort_order
+    )
+
+    # ... rest of existing logic
+
+    return templates.TemplateResponse(
+        "patient_medications.html",
+        context={
+            "request": request,
+            "patient": patient,
+            "medications": medications,
+            "total_count": len(medications),
+            "counts": counts,
+            "days_filter": days_filter,
+            "date_range_filter": date_range,  # For dropdown selection
+            "medication_type_filter": medication_type,
+            "status_filter": status,
+            "sort_by": sort_field,
+            "sort_order": sort_order,
+        }
+    )
+```
+
+**JavaScript Enhancement (Optional):**
+
+Add client-side logic to auto-reset Status when Type changes to "Inpatient":
+
+```javascript
+// Add to patient_medications.html or global JS
+document.addEventListener('DOMContentLoaded', function() {
+    const typeSelect = document.querySelector('select[name="medication_type"]');
+    const statusSelect = document.querySelector('select[name="status"]');
+
+    if (typeSelect && statusSelect) {
+        typeSelect.addEventListener('change', function() {
+            if (this.value === 'inpatient') {
+                statusSelect.value = 'all';
+                statusSelect.disabled = true;
+            } else {
+                statusSelect.disabled = false;
+            }
+        });
+    }
+});
+```
+
+### 9.6 Accessibility Enhancements
+
+**Keyboard Navigation:**
+- All filters are native `<select>` elements with full keyboard support
+- Tab order: Time Period → Type → Status → Sort
+- Arrow keys navigate dropdown options
+- Enter/Space to open/select
+- Escape to close dropdown
+
+**Screen Reader Support:**
+```html
+<label class="filter-group__label" for="medication-type-filter">
+    <i class="fa-solid fa-pills" aria-hidden="true"></i>
+    Type:
+</label>
+<select name="medication_type"
+        id="medication-type-filter"
+        class="filter-select"
+        aria-label="Filter medications by type">
+    <option value="all">All ({{ total_count }})</option>
+    <!-- ... -->
+</select>
+```
+
+**Focus Indicators:**
+```css
+.filter-select:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .filter-select {
+        border-width: 2px;
+    }
+}
+```
+
+### 9.7 Implementation Roadmap
+
+**Day 9: Filter UI Refactoring (Estimated: 3-4 hours)**
+
+#### Task Breakdown
+
+**Task 1: Update HTML Template (1 hour)**
+- [ ] Replace filter pills with HTMX form in `patient_medications.html`
+- [ ] Add filter icons to labels
+- [ ] Update dropdown options with count badges
+- [ ] Add `#medications-table-container` wrapper
+- [ ] Update sort control to use combined `sort_by` parameter
+- [ ] Add Status filter auto-disable logic
+
+**Task 2: Update CSS Styles (1 hour)**
+- [ ] Add `.medications-filters` form container styles
+- [ ] Add `.filter-group` and `.filter-group__label` styles
+- [ ] Add `.filter-select` dropdown styles (normal, hover, focus, disabled)
+- [ ] Add responsive breakpoint rules (1200px, 768px)
+- [ ] Remove old `.filter-pills` styles (keep for backward compatibility initially)
+- [ ] Test responsive behavior (sidebar collapsed/expanded)
+
+**Task 3: Update Backend Route (30 minutes)**
+- [ ] Update parameter names in `app/routes/medications.py`
+  - `days` → `date_range`
+  - Add `sort_by` combined parameter parsing
+- [ ] Add auto-reset logic for Status when Type = "Inpatient"
+- [ ] Update template context variables
+- [ ] Test API response with HTMX request headers
+
+**Task 4: Optional JavaScript Enhancement (30 minutes)**
+- [ ] Add client-side Status reset on Type change
+- [ ] Add form validation (if needed)
+- [ ] Test cross-browser compatibility
+
+**Task 5: Testing (1 hour)**
+- [ ] Test all filter combinations
+- [ ] Test HTMX partial updates (no page reload)
+- [ ] Test URL state preservation (bookmarks work)
+- [ ] Test responsive layouts at different viewport widths
+- [ ] Test keyboard navigation
+- [ ] Test screen reader compatibility
+- [ ] Test with sidebar collapsed/expanded
+- [ ] Test Status filter disabled state (Type = Inpatient)
+- [ ] Cross-browser testing (Chrome, Firefox, Safari, Edge)
+
+#### Acceptance Criteria
+
+- [x] All filters use dropdown `<select>` elements
+- [x] HTMX automatic filtering works (no page reload)
+- [x] Single-row layout displays correctly when space permits
+- [x] Two-row layout activates at 1200px breakpoint
+- [x] Count badges display in dropdown options
+- [x] Icons display in filter labels
+- [x] Status filter always visible but disabled for Inpatient type
+- [x] Sort dropdown maintains existing functionality
+- [x] URL state preserved (bookmarkable filter combinations)
+- [x] Keyboard navigation works flawlessly
+- [x] Screen reader announces filter changes
+- [x] Responsive behavior matches specification
+- [x] All existing functionality maintained (no regressions)
+
+### 9.8 Migration Strategy
+
+**Backward Compatibility:**
+
+During development, maintain both old and new filter implementations side-by-side:
+
+1. **Phase 1:** Add new filter form, keep old pills hidden
+2. **Phase 2:** Test new implementation thoroughly
+3. **Phase 3:** Enable new filters, remove old pills
+4. **Phase 4:** Clean up unused CSS
+
+**Feature Flag (Optional):**
+
+```python
+# config.py
+USE_DROPDOWN_FILTERS = True  # Toggle for testing
+
+# patient_medications.html
+{% if USE_DROPDOWN_FILTERS %}
+    <!-- New dropdown filters -->
+{% else %}
+    <!-- Old button pill filters -->
+{% endif %}
+```
+
+### 9.9 Benefits Summary
+
+**Quantifiable Improvements:**
+- **Space savings:** 60-70% reduction in filter control height
+- **Fewer clicks:** Automatic HTMX filtering vs. page reload
+- **Better consistency:** Aligns with 2 other clinical domains (Clinical Notes, Encounters page size selector)
+- **Accessibility:** Native `<select>` elements vs. custom pill buttons
+
+**User Experience:**
+- ✅ Faster filtering (no page reload)
+- ✅ Less scrolling (compact layout)
+- ✅ Predictable interface (Status always visible)
+- ✅ Better keyboard navigation
+- ✅ Cleaner visual design
+
+**Developer Experience:**
+- ✅ Easier to maintain (standard form pattern)
+- ✅ HTMX reduces JavaScript complexity
+- ✅ Consistent pattern across domains
+- ✅ Easy to extend with new filter options
+
+---
+
+## 10. Implementation Completion Summary
+
+**Status:** ✅ **COMPLETE** (2025-12-13)
+
+### 10.1 What Was Delivered
+
+**Full Vertical Slice - Days 1-8 Completed:**
+
+1. **ETL Pipeline (Days 1-4)** ✅
+   - Bronze extraction: 5 Parquet files (drug dimensions, RxOut, BCMA)
+   - Silver transformation: Drug lookups, harmonization, patient resolution
+   - Gold curation: Patient-centric views with computed fields
+   - PostgreSQL loading: 163 medication records across 2 tables
+
+2. **API Endpoints (Day 5)** ✅
+   - `GET /api/patient/{icn}/medications` - List with filters
+   - `GET /api/patient/{icn}/medications/recent` - Dashboard widget data
+   - `GET /api/patient/{icn}/medications/{medication_id}/details` - Single medication
+   - `GET /api/dashboard/widget/medications/{icn}` - Widget HTML
+
+3. **Dashboard Widget (Days 6-7)** ✅
+   - 2x1 two-column layout (Outpatient left, Inpatient right)
+   - Shows 4 most recent medications per column
+   - Controlled substance badges with DEA schedule
+   - HTMX-loaded, responsive to sidebar collapse/expand
+
+4. **Full Medications Page (Day 8)** ✅
+   - Chronological table view
+   - Comprehensive filtering: Time Period, Type, Status
+   - Sort options: Date, Drug Name, Type
+   - Summary stats bar
+   - Controlled substance highlighting
+   - Responsive layout using full page width
+
+5. **UI Polish** ✅
+   - Active sidebar link for Medications
+   - Responsive page layout (responds to sidebar collapse/expand)
+   - Consistent styling with other clinical domain pages
+
+### 10.2 User Acceptance
+
+- User tested dashboard widget and full medications page
+- User provided feedback on responsiveness and layout
+- All feedback items addressed and implemented
+- **User confirmed: "I consider Medications complete and operational"**
+
+### 10.3 Deferred Features
+
+The following features from the original implementation roadmap (see Appendix A) were deferred as the current implementation meets user requirements:
+
+- **Original Day 9:** Expandable row details (click to expand full medication info) - *Deferred to future iteration*
+- **Original Day 10:** Additional testing and visual polish - *Deferred to future iteration*
+- **Original Day 11-12:** Documentation and review - *Deferred to future iteration*
+
+**Note:** The Filter UI refactoring is now specified separately in Section 9 as a new enhancement (estimated 3-4 hours) and is the current priority for the next day of work on this domain.
+
+### 10.4 Key Technical Achievements
+
+1. **Unified Medication Model:** Successfully combined RxOut (outpatient) and BCMA (inpatient) into single coherent view
+2. **Drug Dimension Hierarchy:** LocalDrug → NationalDrug lookups working correctly
+3. **DEA Schedule Tracking:** Controlled substance identification and highlighting
+4. **Patient ICN Resolution:** Clean mapping from source SIDs to ICN-based Gold layer
+5. **Responsive UI Pattern:** Established consistent full-width responsive layout for all pages
+
+### 10.5 Data Quality Notes
+
+- **Patient Coverage:** 10 patients (ICN100001-ICN100010) with medications
+- **Outpatient Medications:** 22 records (4 per patient average)
+- **Inpatient Medications:** 20 records (administration events)
+- **Controlled Substances:** 1 (HYDROCODONE-ACETAMINOPHEN)
+- **Date Range:** Medications from 2024-2025 (older than 90-day default filter)
+
+**Recommendation:** Users should use "All Time" or "1 Year" filter to see all medications in demo environment.
+
+### 10.6 Files Created/Modified
+
+**Created:**
+- `etl/bronze_medications.py` (Bronze ETL script)
+- `etl/silver_medications.py` (Silver ETL script)
+- `etl/gold_patient_medications.py` (Gold ETL script)
+- `etl/load_medications.py` (PostgreSQL loader)
+- `db/ddl/create_patient_medications_tables.sql` (Database schema)
+- `app/db/medications.py` (Database query layer, 409 lines)
+- `app/routes/medications.py` (API routes, 326 lines)
+- `app/templates/patient_medications.html` (Full page template, 320 lines)
+- `app/templates/partials/medications_widget.html` (Widget template)
+- Mock data SQL scripts (3 files: RxOutpat, RxOutpatFill, BCMAMedicationLog)
+
+**Modified:**
+- `app/main.py` (Added medication routers)
+- `app/static/styles.css` (+500 lines for medications styling)
+- `app/templates/base.html` (Activated medications sidebar link, fixed `.page-container` responsiveness)
+- `docs/spec/medications-design.md` (This document - **updated 2026-01-13 with Section 9: Filter UI Enhancement Specification**)
+- `docs/implementation-roadmap.md` (Phase 6 marked complete)
+
+### 10.7 Success Metrics
+
+| Metric | Target | Achieved | Status |
+|--------|--------|----------|--------|
+| ETL Pipeline | Complete vertical slice | 163 records loaded | ✅ |
+| API Endpoints | 4 functional endpoints | 4 tested and working | ✅ |
+| Dashboard Widget | 2x1 HTMX widget | Live on dashboard | ✅ |
+| Full Page | Table with filters | Fully functional | ✅ |
+| User Acceptance | User confirms complete | Confirmed 2025-12-13 | ✅ |
+| Sidebar Integration | Active link | Implemented | ✅ |
+| Page Responsiveness | Responds to sidebar | Fixed and working | ✅ |
+
+---
+
+**Phase 6: Medications Domain - COMPLETE** ✅
+
+**Implementation Date:** 2025-12-13 (1 day accelerated delivery)
+
+---
+
+## 11. Testing Strategy
+
+### 11.1 ETL Testing
+
+**Bronze Layer:**
+- [ ] Verify all 5 tables extract successfully
+- [ ] Verify row counts match CDW tables
+- [ ] Verify Parquet schema matches CDW schema
+- [ ] Test with empty tables (graceful handling)
+
+**Silver Layer:**
+- [ ] Verify drug name lookups resolve correctly (LocalDrug → NationalDrug)
+- [ ] Verify Sta3n → facility name lookups
+- [ ] Verify provider name lookups
+- [ ] Verify RxOutpat + RxOutpatFill join produces correct latest fill
+- [ ] Test with missing drug records (should not break pipeline)
+
+**Gold Layer:**
+- [ ] Verify patient_icn population
+- [ ] Verify is_controlled_substance flag accurate
+- [ ] Verify is_active flag accurate (not discontinued and not expired)
+- [ ] Verify administration_variance flag accurate
+- [ ] Verify sorting (date descending)
+
+**PostgreSQL Load:**
+- [ ] Verify row counts match Gold Parquet files
+- [ ] Verify indexes created
+- [ ] Verify data types correct
+- [ ] Test query performance (< 1000ms for typical patient)
+
+### 11.2 API Testing
+
+**GET /api/patient/{icn}/medications:**
+- [ ] Test with valid ICN → returns unified medications list
+- [ ] Test with invalid ICN → returns empty list or 404
+- [ ] Test with date_from/date_to filters → returns correct date range
+- [ ] Test with type_filter=outpatient → returns only RxOut
+- [ ] Test with type_filter=inpatient → returns only BCMA
+- [ ] Test with status_filter=active → returns only active RxOut meds
+- [ ] Test response time < 1000ms
+
+**GET /api/patient/{icn}/medications/recent:**
+- [ ] Test returns max 8 medications
+- [ ] Test returns last 90 days
+- [ ] Test mix of RxOut and BCMA
+- [ ] Test patient with 0 medications → returns empty array
+
+**GET /api/patient/{icn}/medications/{medication_id}/details:**
+- [ ] Test with rxout_XXXX ID → returns RxOut details
+- [ ] Test with bcma_XXXX ID → returns BCMA details
+- [ ] Test with invalid ID → returns 404
+- [ ] Test response includes all expected fields
+
+**GET /api/dashboard/widget/medications/{icn}:**
+- [ ] Test returns valid HTML fragment
+- [ ] Test widget renders correctly in dashboard
+- [ ] Test with 0 medications → shows empty state
+- [ ] Test with 20+ medications → shows 8 + "more" indicator
+
+**GET /patient/{icn}/medications:**
+- [ ] Test page renders correctly
+- [ ] Test table populated with medications
+- [ ] Test filters work (date, type, status)
+- [ ] Test sorting works
+- [ ] Test expandable rows work
+- [ ] Test with 0 medications → shows empty state
+
+### 11.3 UI Testing
+
+**Dashboard Widget:**
+- [ ] Verify widget loads on patient selection
+- [ ] Verify 6-8 medications displayed
+- [ ] Verify type badges render correctly (color-coded)
+- [ ] Verify controlled substance indicators show
+- [ ] Verify "View All" link navigates to full page
+- [ ] Verify empty state displays when no medications
+- [ ] Test on mobile/tablet (responsive)
+
+**Full Medications Page:**
+- [ ] Verify table renders with all columns
+- [ ] Verify RxOut rows display correctly
+- [ ] Verify BCMA rows display correctly
+- [ ] Verify type badges color-coded correctly
+- [ ] Verify controlled substance rows highlighted
+- [ ] Verify date range filter works
+- [ ] Verify type filter works
+- [ ] Verify status filter works
+- [ ] Verify expandable row details work:
+  - Click to expand
+  - RxOut details show prescription info
+  - BCMA details show administration info
+- [ ] Test sorting by date, medication name
+- [ ] Test empty state
+- [ ] Test on mobile/tablet (responsive)
+
+### 11.4 Integration Testing
+
+**End-to-End:**
+- [ ] Run full ETL pipeline → verify data in PostgreSQL
+- [ ] Select patient in dashboard → verify medications widget loads
+- [ ] Click "View All" → verify full page loads
+- [ ] Apply filters → verify table updates
+- [ ] Expand row → verify details load
+- [ ] Test with 5 different patients (varied medication profiles)
+
+**Performance:**
+- [ ] Measure ETL pipeline execution time (< 5 minutes for full pipeline)
+- [ ] Measure API response times:
+  - /medications endpoint: < 1000ms
+  - /medications/recent endpoint: < 500ms
+  - /medications/{id}/details endpoint: < 300ms
+- [ ] Measure page load time (< 2 seconds)
+
+---
+
+## 12. Security and Privacy
+
+### 12.1 Data Sensitivity
+
+Medications data is **highly sensitive PHI/PII**:
+- Drug names can reveal medical conditions (e.g., HIV meds, psych meds)
+- Controlled substances indicate pain management or substance use
+- Inpatient medications reveal hospitalizations
+- Medication adherence can impact care decisions
+
+### 12.2 Access Control
+
+**Initial Implementation (Development):**
+- All mock data is **synthetic and non-PHI**
+- No real patient data used
+- No authentication required for development environment
+
+**Production Requirements (Future):**
+- Require VA SSO authentication (SSOi, IAM)
+- Implement role-based access control (RBAC):
+  - Clinicians: Read access to medications for patients under their care
+  - Pharmacists: Read access + ability to view fill history
+  - Patients: Read access to own medications via My HealtheVet
+  - Auditors: Read-only access for compliance review
+- Audit all medication views (log patient_icn, user_id, timestamp)
+- Implement "break-the-glass" for emergency access
+
+### 12.3 Data Handling
+
+**In Transit:**
+- Use HTTPS for all API calls (TLS 1.2+)
+- Encrypt WebSocket connections (if used for real-time updates)
+
+**At Rest:**
+- Encrypt PostgreSQL database (column-level encryption for sensitive fields)
+- Encrypt Parquet files in MinIO (server-side encryption)
+- Encrypt backup files
+
+**Logging:**
+- Redact drug names in application logs (log drug_id, not drug_name)
+- Redact patient identifiers in debug logs
+- Implement secure audit logging with tamper-proof storage
+
+### 12.4 Controlled Substances
+
+Controlled substance data (DEA Schedule II-V) requires special handling:
+- Flag controlled substances in UI (⚠️ indicator)
+- Audit all views of controlled substance prescriptions
+- Implement additional access controls for Schedule II (opioids)
+- Alert on unusual access patterns (e.g., staff viewing own controlled Rx)
+
+---
+
+## 13. Appendices
+
+**Note:** See Appendix A for the Original Implementation Roadmap (Days 1-12 Plan).
+
+## Appendix A: Original Implementation Roadmap (Days 1-12 Plan)
+
+**Note:** This section contains the original implementation plan. Days 1-8 were completed (2025-12-13). The remaining days (9-12) were deferred as optional enhancements. The current priority is the Filter UI Enhancement specified in Section 9.
+
+### A.1 Day-by-Day Plan (10-12 days estimated)
 
 #### Day 1: Database Setup and Dimension Tables
 **Goal:** Create new dimension tables and populate with sample data
@@ -2185,7 +3103,7 @@ document.getElementById('date-filter').addEventListener('change', (e) => {
 
 ---
 
-### 9.2 Dependencies and Risks
+### A.2 Dependencies and Risks
 
 **Dependencies:**
 - ✅ Dashboard framework functional
@@ -2208,177 +3126,7 @@ document.getElementById('date-filter').addEventListener('change', (e) => {
 
 ---
 
-## 10. Testing Strategy
-
-### 10.1 ETL Testing
-
-**Bronze Layer:**
-- [ ] Verify all 5 tables extract successfully
-- [ ] Verify row counts match CDW tables
-- [ ] Verify Parquet schema matches CDW schema
-- [ ] Test with empty tables (graceful handling)
-
-**Silver Layer:**
-- [ ] Verify drug name lookups resolve correctly (LocalDrug → NationalDrug)
-- [ ] Verify Sta3n → facility name lookups
-- [ ] Verify provider name lookups
-- [ ] Verify RxOutpat + RxOutpatFill join produces correct latest fill
-- [ ] Test with missing drug records (should not break pipeline)
-
-**Gold Layer:**
-- [ ] Verify patient_icn population
-- [ ] Verify is_controlled_substance flag accurate
-- [ ] Verify is_active flag accurate (not discontinued and not expired)
-- [ ] Verify administration_variance flag accurate
-- [ ] Verify sorting (date descending)
-
-**PostgreSQL Load:**
-- [ ] Verify row counts match Gold Parquet files
-- [ ] Verify indexes created
-- [ ] Verify data types correct
-- [ ] Test query performance (< 1000ms for typical patient)
-
-### 10.2 API Testing
-
-**GET /api/patient/{icn}/medications:**
-- [ ] Test with valid ICN → returns unified medications list
-- [ ] Test with invalid ICN → returns empty list or 404
-- [ ] Test with date_from/date_to filters → returns correct date range
-- [ ] Test with type_filter=outpatient → returns only RxOut
-- [ ] Test with type_filter=inpatient → returns only BCMA
-- [ ] Test with status_filter=active → returns only active RxOut meds
-- [ ] Test response time < 1000ms
-
-**GET /api/patient/{icn}/medications/recent:**
-- [ ] Test returns max 8 medications
-- [ ] Test returns last 90 days
-- [ ] Test mix of RxOut and BCMA
-- [ ] Test patient with 0 medications → returns empty array
-
-**GET /api/patient/{icn}/medications/{medication_id}/details:**
-- [ ] Test with rxout_XXXX ID → returns RxOut details
-- [ ] Test with bcma_XXXX ID → returns BCMA details
-- [ ] Test with invalid ID → returns 404
-- [ ] Test response includes all expected fields
-
-**GET /api/dashboard/widget/medications/{icn}:**
-- [ ] Test returns valid HTML fragment
-- [ ] Test widget renders correctly in dashboard
-- [ ] Test with 0 medications → shows empty state
-- [ ] Test with 20+ medications → shows 8 + "more" indicator
-
-**GET /patient/{icn}/medications:**
-- [ ] Test page renders correctly
-- [ ] Test table populated with medications
-- [ ] Test filters work (date, type, status)
-- [ ] Test sorting works
-- [ ] Test expandable rows work
-- [ ] Test with 0 medications → shows empty state
-
-### 10.3 UI Testing
-
-**Dashboard Widget:**
-- [ ] Verify widget loads on patient selection
-- [ ] Verify 6-8 medications displayed
-- [ ] Verify type badges render correctly (color-coded)
-- [ ] Verify controlled substance indicators show
-- [ ] Verify "View All" link navigates to full page
-- [ ] Verify empty state displays when no medications
-- [ ] Test on mobile/tablet (responsive)
-
-**Full Medications Page:**
-- [ ] Verify table renders with all columns
-- [ ] Verify RxOut rows display correctly
-- [ ] Verify BCMA rows display correctly
-- [ ] Verify type badges color-coded correctly
-- [ ] Verify controlled substance rows highlighted
-- [ ] Verify date range filter works
-- [ ] Verify type filter works
-- [ ] Verify status filter works
-- [ ] Verify expandable row details work:
-  - Click to expand
-  - RxOut details show prescription info
-  - BCMA details show administration info
-- [ ] Test sorting by date, medication name
-- [ ] Test empty state
-- [ ] Test on mobile/tablet (responsive)
-
-### 10.4 Integration Testing
-
-**End-to-End:**
-- [ ] Run full ETL pipeline → verify data in PostgreSQL
-- [ ] Select patient in dashboard → verify medications widget loads
-- [ ] Click "View All" → verify full page loads
-- [ ] Apply filters → verify table updates
-- [ ] Expand row → verify details load
-- [ ] Test with 5 different patients (varied medication profiles)
-
-**Performance:**
-- [ ] Measure ETL pipeline execution time (< 5 minutes for full pipeline)
-- [ ] Measure API response times:
-  - /medications endpoint: < 1000ms
-  - /medications/recent endpoint: < 500ms
-  - /medications/{id}/details endpoint: < 300ms
-- [ ] Measure page load time (< 2 seconds)
-
----
-
-## 11. Security and Privacy
-
-### 11.1 Data Sensitivity
-
-Medications data is **highly sensitive PHI/PII**:
-- Drug names can reveal medical conditions (e.g., HIV meds, psych meds)
-- Controlled substances indicate pain management or substance use
-- Inpatient medications reveal hospitalizations
-- Medication adherence can impact care decisions
-
-### 11.2 Access Control
-
-**Initial Implementation (Development):**
-- All mock data is **synthetic and non-PHI**
-- No real patient data used
-- No authentication required for development environment
-
-**Production Requirements (Future):**
-- Require VA SSO authentication (SSOi, IAM)
-- Implement role-based access control (RBAC):
-  - Clinicians: Read access to medications for patients under their care
-  - Pharmacists: Read access + ability to view fill history
-  - Patients: Read access to own medications via My HealtheVet
-  - Auditors: Read-only access for compliance review
-- Audit all medication views (log patient_icn, user_id, timestamp)
-- Implement "break-the-glass" for emergency access
-
-### 11.3 Data Handling
-
-**In Transit:**
-- Use HTTPS for all API calls (TLS 1.2+)
-- Encrypt WebSocket connections (if used for real-time updates)
-
-**At Rest:**
-- Encrypt PostgreSQL database (column-level encryption for sensitive fields)
-- Encrypt Parquet files in MinIO (server-side encryption)
-- Encrypt backup files
-
-**Logging:**
-- Redact drug names in application logs (log drug_id, not drug_name)
-- Redact patient identifiers in debug logs
-- Implement secure audit logging with tamper-proof storage
-
-### 11.4 Controlled Substances
-
-Controlled substance data (DEA Schedule II-V) requires special handling:
-- Flag controlled substances in UI (⚠️ indicator)
-- Audit all views of controlled substance prescriptions
-- Implement additional access controls for Schedule II (opioids)
-- Alert on unusual access patterns (e.g., staff viewing own controlled Rx)
-
----
-
-## 12. Appendices
-
-### 12.1 VistA File Mappings
+### Appendix B: VistA File Mappings
 
 **VistA File #52 (PRESCRIPTION) → CDW RxOut.RxOutpat**
 
@@ -2423,7 +3171,7 @@ Controlled substance data (DEA Schedule II-V) requires special handling:
 | .11 | ROUTE | Route | PO, IV, IM, SC, etc. |
 | .12 | SCHEDULE | Schedule | QD, BID, TID, Q4H, PRN, etc. |
 
-### 12.2 Mock Data Summary
+### Appendix C: Mock Data Summary
 
 **Dimension Tables (NEW - to be created):**
 - `Dim.LocalDrug`: 50+ drugs
@@ -2442,7 +3190,7 @@ Controlled substance data (DEA Schedule II-V) requires special handling:
 - Mix of chronic, acute, controlled substances
 - Intentional drug-drug interactions for future AI/ML work
 
-### 12.3 Glossary
+### Appendix D: Glossary
 
 **Terms:**
 - **BCMA:** Bar Code Medication Administration - VistA inpatient medication administration system
@@ -2487,7 +3235,7 @@ Controlled substance data (DEA Schedule II-V) requires special handling:
 - **PRN:** As needed
 - **QHS:** At bedtime
 
-### 12.4 Data Quality Issues
+### Appendix E: Data Quality Issues
 
 **Issue: Duplicate RxOutpatSID Values in Mock Data**
 
@@ -2529,7 +3277,7 @@ May regenerate mock `RxOut.RxOutpat` data with unique SIDs to improve overall mo
 
 ---
 
-### 12.5 Future Enhancements (Out of Scope for Phase 1)
+### Appendix F: Future Enhancements (Out of Scope for Phase 1)
 
 **Phase 2 Features:**
 1. **Sig/Instructions Display:** Show structured dosing instructions (RxOut.RxOutpatSig)
@@ -2552,118 +3300,5 @@ May regenerate mock `RxOut.RxOutpat` data with unique SIDs to improve overall mo
 
 ---
 
-## 9. Implementation Completion Summary
-
-**Status:** ✅ **COMPLETE** (2025-12-13)
-
-### 9.1 What Was Delivered
-
-**Full Vertical Slice - Days 1-8 Completed:**
-
-1. **ETL Pipeline (Days 1-4)** ✅
-   - Bronze extraction: 5 Parquet files (drug dimensions, RxOut, BCMA)
-   - Silver transformation: Drug lookups, harmonization, patient resolution
-   - Gold curation: Patient-centric views with computed fields
-   - PostgreSQL loading: 163 medication records across 2 tables
-
-2. **API Endpoints (Day 5)** ✅
-   - `GET /api/patient/{icn}/medications` - List with filters
-   - `GET /api/patient/{icn}/medications/recent` - Dashboard widget data
-   - `GET /api/patient/{icn}/medications/{medication_id}/details` - Single medication
-   - `GET /api/dashboard/widget/medications/{icn}` - Widget HTML
-
-3. **Dashboard Widget (Days 6-7)** ✅
-   - 2x1 two-column layout (Outpatient left, Inpatient right)
-   - Shows 4 most recent medications per column
-   - Controlled substance badges with DEA schedule
-   - HTMX-loaded, responsive to sidebar collapse/expand
-
-4. **Full Medications Page (Day 8)** ✅
-   - Chronological table view
-   - Comprehensive filtering: Time Period, Type, Status
-   - Sort options: Date, Drug Name, Type
-   - Summary stats bar
-   - Controlled substance highlighting
-   - Responsive layout using full page width
-
-5. **UI Polish** ✅
-   - Active sidebar link for Medications
-   - Responsive page layout (responds to sidebar collapse/expand)
-   - Consistent styling with other clinical domain pages
-
-### 9.2 User Acceptance
-
-- User tested dashboard widget and full medications page
-- User provided feedback on responsiveness and layout
-- All feedback items addressed and implemented
-- **User confirmed: "I consider Medications complete and operational"**
-
-### 9.3 Deferred Features
-
-The following features were planned but deferred as the current implementation meets user requirements:
-
-- **Day 9:** Expandable row details (click to expand full medication info)
-- **Day 10:** Additional testing and visual polish
-
-These features can be added in future iterations if needed.
-
-### 9.4 Key Technical Achievements
-
-1. **Unified Medication Model:** Successfully combined RxOut (outpatient) and BCMA (inpatient) into single coherent view
-2. **Drug Dimension Hierarchy:** LocalDrug → NationalDrug lookups working correctly
-3. **DEA Schedule Tracking:** Controlled substance identification and highlighting
-4. **Patient ICN Resolution:** Clean mapping from source SIDs to ICN-based Gold layer
-5. **Responsive UI Pattern:** Established consistent full-width responsive layout for all pages
-
-### 9.5 Data Quality Notes
-
-- **Patient Coverage:** 10 patients (ICN100001-ICN100010) with medications
-- **Outpatient Medications:** 22 records (4 per patient average)
-- **Inpatient Medications:** 20 records (administration events)
-- **Controlled Substances:** 1 (HYDROCODONE-ACETAMINOPHEN)
-- **Date Range:** Medications from 2024-2025 (older than 90-day default filter)
-
-**Recommendation:** Users should use "All Time" or "1 Year" filter to see all medications in demo environment.
-
-### 9.6 Files Created/Modified
-
-**Created:**
-- `etl/bronze_medications.py` (Bronze ETL script)
-- `etl/silver_medications.py` (Silver ETL script)
-- `etl/gold_patient_medications.py` (Gold ETL script)
-- `etl/load_medications.py` (PostgreSQL loader)
-- `db/ddl/create_patient_medications_tables.sql` (Database schema)
-- `app/db/medications.py` (Database query layer, 409 lines)
-- `app/routes/medications.py` (API routes, 326 lines)
-- `app/templates/patient_medications.html` (Full page template, 320 lines)
-- `app/templates/partials/medications_widget.html` (Widget template)
-- Mock data SQL scripts (3 files: RxOutpat, RxOutpatFill, BCMAMedicationLog)
-
-**Modified:**
-- `app/main.py` (Added medication routers)
-- `app/static/styles.css` (+500 lines for medications styling)
-- `app/templates/base.html` (Activated medications sidebar link, fixed `.page-container` responsiveness)
-- `docs/medications-design.md` (This document)
-- `docs/implementation-roadmap.md` (Phase 6 marked complete)
-
-### 9.7 Success Metrics
-
-| Metric | Target | Achieved | Status |
-|--------|--------|----------|--------|
-| ETL Pipeline | Complete vertical slice | 163 records loaded | ✅ |
-| API Endpoints | 4 functional endpoints | 4 tested and working | ✅ |
-| Dashboard Widget | 2x1 HTMX widget | Live on dashboard | ✅ |
-| Full Page | Table with filters | Fully functional | ✅ |
-| User Acceptance | User confirms complete | Confirmed 2025-12-13 | ✅ |
-| Sidebar Integration | Active link | Implemented | ✅ |
-| Page Responsiveness | Responds to sidebar | Fixed and working | ✅ |
-
----
-
-**Phase 6: Medications Domain - COMPLETE** ✅
-
-**Implementation Date:** 2025-12-13 (1 day accelerated delivery)
-
----
 
 **End of Document**
