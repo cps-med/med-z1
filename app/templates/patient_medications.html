@@ -51,7 +51,7 @@
         <!-- Summary Stats Bar -->
         <div class="medications-summary-bar">
             <div class="medication-stat-card">
-                <div class="medication-stat-card__value">{{ total_count }}</div>
+                <div class="medication-stat-card__value">{{ (counts.outpatient_total or 0) + (counts.inpatient_total or 0) }}</div>
                 <div class="medication-stat-card__label">Total Medications</div>
             </div>
             <div class="medication-stat-card">
@@ -78,120 +78,119 @@
 
         <!-- Filters and Controls -->
         <div class="medications-controls">
-            <!-- Date Range Filter -->
-            <div class="filter-group">
-                <span class="filter-group__label">Time Period:</span>
-                <div class="filter-pills">
-                    <a href="/patient/{{ patient.icn }}/medications?medication_type={{ medication_type_filter }}&status={{ status_filter or '' }}&days=30&sort_by={{ sort_by }}&sort_order={{ sort_order }}"
-                       class="filter-pill {% if days_filter == 30 %}filter-pill--active{% endif %}">
-                        30 Days
-                    </a>
-                    <a href="/patient/{{ patient.icn }}/medications?medication_type={{ medication_type_filter }}&status={{ status_filter or '' }}&days=90&sort_by={{ sort_by }}&sort_order={{ sort_order }}"
-                       class="filter-pill {% if days_filter == 90 %}filter-pill--active{% endif %}">
-                        90 Days
-                    </a>
-                    <a href="/patient/{{ patient.icn }}/medications?medication_type={{ medication_type_filter }}&status={{ status_filter or '' }}&days=180&sort_by={{ sort_by }}&sort_order={{ sort_order }}"
-                       class="filter-pill {% if days_filter == 180 %}filter-pill--active{% endif %}">
-                        6 Months
-                    </a>
-                    <a href="/patient/{{ patient.icn }}/medications?medication_type={{ medication_type_filter }}&status={{ status_filter or '' }}&days=365&sort_by={{ sort_by }}&sort_order={{ sort_order }}"
-                       class="filter-pill {% if days_filter == 365 %}filter-pill--active{% endif %}">
-                        1 Year
-                    </a>
-                    <a href="/patient/{{ patient.icn }}/medications?medication_type={{ medication_type_filter }}&status={{ status_filter or '' }}&days=3650&sort_by={{ sort_by }}&sort_order={{ sort_order }}"
-                       class="filter-pill {% if days_filter == 3650 %}filter-pill--active{% endif %}">
-                        All Time
-                    </a>
-                </div>
-            </div>
+            <!-- Filter Section (HTMX Form) -->
+            <form class="medications-filters"
+                  hx-get="/patient/{{ patient.icn }}/medications"
+                  hx-target="#medications-table-container"
+                  hx-select="#medications-table-container"
+                  hx-swap="outerHTML"
+                  hx-push-url="true"
+                  hx-trigger="change">
 
-            <!-- Medication Type Filter -->
-            <div class="filter-group">
-                <span class="filter-group__label">Type:</span>
-                <div class="filter-pills">
-                    <a href="/patient/{{ patient.icn }}/medications?medication_type=all&status={{ status_filter or '' }}&days={{ days_filter }}&sort_by={{ sort_by }}&sort_order={{ sort_order }}"
-                       class="filter-pill {% if medication_type_filter == 'all' %}filter-pill--active{% endif %}">
-                        All ({{ total_count }})
-                    </a>
-                    <a href="/patient/{{ patient.icn }}/medications?medication_type=outpatient&status={{ status_filter or '' }}&days={{ days_filter }}&sort_by={{ sort_by }}&sort_order={{ sort_order }}"
-                       class="filter-pill {% if medication_type_filter == 'outpatient' %}filter-pill--active{% endif %}">
-                        Outpatient ({{ counts.outpatient_total or 0 }})
-                    </a>
-                    <a href="/patient/{{ patient.icn }}/medications?medication_type=inpatient&status={{ status_filter or '' }}&days={{ days_filter }}&sort_by={{ sort_by }}&sort_order={{ sort_order }}"
-                       class="filter-pill {% if medication_type_filter == 'inpatient' %}filter-pill--active{% endif %}">
-                        Inpatient ({{ counts.inpatient_total or 0 }})
-                    </a>
+                <!-- Time Period Filter -->
+                <div class="filter-group">
+                    <label class="filter-group__label">
+                        <i class="fa-solid fa-calendar-days"></i>
+                        Time Period:
+                    </label>
+                    <select name="date_range" class="filter-select">
+                        <option value="30" {% if days_filter == 30 %}selected{% endif %}>Last 30 Days</option>
+                        <option value="90" {% if days_filter == 90 %}selected{% endif %}>Last 90 Days</option>
+                        <option value="180" {% if days_filter == 180 %}selected{% endif %}>Last 6 Months</option>
+                        <option value="365" {% if days_filter == 365 %}selected{% endif %}>Last Year</option>
+                        <option value="all" {% if days_filter == 3650 or days_filter == 'all' %}selected{% endif %}>All Time</option>
+                    </select>
                 </div>
-            </div>
 
-            <!-- Status Filter (for Outpatient medications) -->
-            {% if medication_type_filter in ['all', 'outpatient'] %}
-            <div class="filter-group">
-                <span class="filter-group__label">Status:</span>
-                <div class="filter-pills">
-                    <a href="/patient/{{ patient.icn }}/medications?medication_type={{ medication_type_filter }}&days={{ days_filter }}&sort_by={{ sort_by }}&sort_order={{ sort_order }}"
-                       class="filter-pill {% if not status_filter %}filter-pill--active{% endif %}">
-                        All Status
-                    </a>
-                    <a href="/patient/{{ patient.icn }}/medications?medication_type={{ medication_type_filter }}&status=ACTIVE&days={{ days_filter }}&sort_by={{ sort_by }}&sort_order={{ sort_order }}"
-                       class="filter-pill {% if status_filter == 'ACTIVE' %}filter-pill--active{% endif %}">
-                        Active ({{ counts.outpatient_active or 0 }})
-                    </a>
-                    <a href="/patient/{{ patient.icn }}/medications?medication_type={{ medication_type_filter }}&status=EXPIRED&days={{ days_filter }}&sort_by={{ sort_by }}&sort_order={{ sort_order }}"
-                       class="filter-pill {% if status_filter == 'EXPIRED' %}filter-pill--active{% endif %}">
-                        Expired
-                    </a>
-                    <a href="/patient/{{ patient.icn }}/medications?medication_type={{ medication_type_filter }}&status=DISCONTINUED&days={{ days_filter }}&sort_by={{ sort_by }}&sort_order={{ sort_order }}"
-                       class="filter-pill {% if status_filter == 'DISCONTINUED' %}filter-pill--active{% endif %}">
-                        Discontinued
-                    </a>
+                <!-- Type Filter -->
+                <div class="filter-group">
+                    <label class="filter-group__label">
+                        <i class="fa-solid fa-pills"></i>
+                        Type:
+                    </label>
+                    <select name="medication_type" class="filter-select" id="medication-type-select">
+                        <option value="all" {% if medication_type_filter == 'all' %}selected{% endif %}>
+                            All ({{ total_count }})
+                        </option>
+                        <option value="outpatient" {% if medication_type_filter == 'outpatient' %}selected{% endif %}>
+                            Outpatient ({{ counts.outpatient_total or 0 }})
+                        </option>
+                        <option value="inpatient" {% if medication_type_filter == 'inpatient' %}selected{% endif %}>
+                            Inpatient ({{ counts.inpatient_total or 0 }})
+                        </option>
+                    </select>
                 </div>
-            </div>
-            {% endif %}
 
-            <!-- Sort Controls -->
-            <div class="filter-group">
-                <span class="filter-group__label">Sort:</span>
-                <select class="sort-select" onchange="window.location.href=this.value">
-                    <option value="/patient/{{ patient.icn }}/medications?medication_type={{ medication_type_filter }}&status={{ status_filter or '' }}&days={{ days_filter }}&sort_by=date&sort_order=desc"
-                            {% if sort_by == 'date' and sort_order == 'desc' %}selected{% endif %}>
-                        Date (Newest First)
-                    </option>
-                    <option value="/patient/{{ patient.icn }}/medications?medication_type={{ medication_type_filter }}&status={{ status_filter or '' }}&days={{ days_filter }}&sort_by=date&sort_order=asc"
-                            {% if sort_by == 'date' and sort_order == 'asc' %}selected{% endif %}>
-                        Date (Oldest First)
-                    </option>
-                    <option value="/patient/{{ patient.icn }}/medications?medication_type={{ medication_type_filter }}&status={{ status_filter or '' }}&days={{ days_filter }}&sort_by=drug_name&sort_order=asc"
-                            {% if sort_by == 'drug_name' %}selected{% endif %}>
-                        Medication Name (A-Z)
-                    </option>
-                    <option value="/patient/{{ patient.icn }}/medications?medication_type={{ medication_type_filter }}&status={{ status_filter or '' }}&days={{ days_filter }}&sort_by=type&sort_order=asc"
-                            {% if sort_by == 'type' %}selected{% endif %}>
-                        Type (Inpatient/Outpatient)
-                    </option>
-                </select>
-            </div>
+                <!-- Status Filter (always visible, disabled for inpatient) -->
+                <div class="filter-group">
+                    <label class="filter-group__label">
+                        <i class="fa-solid fa-circle-check"></i>
+                        Status:
+                    </label>
+                    <select name="status"
+                            class="filter-select"
+                            id="medication-status-select"
+                            {% if medication_type_filter == 'inpatient' %}disabled{% endif %}>
+                        <option value="all" {% if not status_filter or status_filter == 'all' %}selected{% endif %}>
+                            All Statuses
+                        </option>
+                        <option value="ACTIVE" {% if status_filter == 'ACTIVE' %}selected{% endif %}>
+                            Active ({{ counts.outpatient_active or 0 }})
+                        </option>
+                        <option value="EXPIRED" {% if status_filter == 'EXPIRED' %}selected{% endif %}>
+                            Expired
+                        </option>
+                        <option value="DISCONTINUED" {% if status_filter == 'DISCONTINUED' %}selected{% endif %}>
+                            Discontinued
+                        </option>
+                    </select>
+                </div>
+
+                <!-- Sort Control -->
+                <div class="filter-group">
+                    <label class="filter-group__label">
+                        <i class="fa-solid fa-sort"></i>
+                        Sort:
+                    </label>
+                    <select name="sort_by" class="filter-select">
+                        <option value="date_desc" {% if sort_by == 'date' and sort_order == 'desc' %}selected{% endif %}>
+                            Date (Newest First)
+                        </option>
+                        <option value="date_asc" {% if sort_by == 'date' and sort_order == 'asc' %}selected{% endif %}>
+                            Date (Oldest First)
+                        </option>
+                        <option value="drug_name" {% if sort_by == 'drug_name' %}selected{% endif %}>
+                            Medication Name (A-Z)
+                        </option>
+                        <option value="type" {% if sort_by == 'type' %}selected{% endif %}>
+                            Type (Inpatient/Outpatient)
+                        </option>
+                    </select>
+                </div>
+            </form>
         </div>
 
-        {% if total_count == 0 %}
-            <!-- No Medications State -->
-            <div class="empty-state">
-                <div class="empty-state__icon">
-                    <i class="fa-solid fa-prescription-bottle-medical fa-3x"></i>
+        <!-- Medications Table Container (HTMX target) - ALWAYS present -->
+        <div id="medications-table-container">
+            {% if total_count == 0 %}
+                <!-- No Medications State -->
+                <div class="empty-state">
+                    <div class="empty-state__icon">
+                        <i class="fa-solid fa-prescription-bottle-medical fa-3x"></i>
+                    </div>
+                    <h3 class="empty-state__title">No Medications Found</h3>
+                    <p class="empty-state__message">
+                        {% if status_filter or medication_type_filter != 'all' or days_filter != 3650 %}
+                            Try adjusting your filters to see more medications
+                        {% else %}
+                            This patient has no documented medications
+                        {% endif %}
+                    </p>
                 </div>
-                <h3 class="empty-state__title">No Medications Found</h3>
-                <p class="empty-state__message">
-                    {% if status_filter or medication_type_filter != 'all' or days_filter != 3650 %}
-                        Try adjusting your filters to see more medications
-                    {% else %}
-                        This patient has no documented medications
-                    {% endif %}
-                </p>
-            </div>
-        {% else %}
-            <!-- Medications Table -->
-            <div class="medications-table-container">
-                <table class="medications-table">
+            {% else %}
+                <!-- Medications Table -->
+                <div class="medications-table-container">
+                    <table class="medications-table">
                     <thead>
                         <tr>
                             <th>Date</th>
@@ -312,17 +311,39 @@
                         </tr>
                         {% endfor %}
                     </tbody>
-                </table>
-            </div>
+                    </table>
+                </div>
 
-            <!-- Result Count -->
-            <div class="results-count">
-                Showing {{ total_count }} medication{{ 's' if total_count != 1 else '' }}
-                {% if days_filter < 3650 %}
-                    from the last {% if days_filter == 30 %}30 days{% elif days_filter == 90 %}90 days{% elif days_filter == 180 %}6 months{% elif days_filter == 365 %}year{% endif %}
-                {% endif %}
-            </div>
-        {% endif %}
+                <!-- Result Count -->
+                <div class="results-count">
+                    Showing {{ total_count }} medication{{ 's' if total_count != 1 else '' }}
+                    {% if days_filter < 3650 %}
+                        from the last {% if days_filter == 30 %}30 days{% elif days_filter == 90 %}90 days{% elif days_filter == 180 %}6 months{% elif days_filter == 365 %}year{% endif %}
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
     {% endif %}
 </div>
+
+<script>
+// Client-side Status filter management
+document.addEventListener('DOMContentLoaded', function() {
+    const typeSelect = document.getElementById('medication-type-select');
+    const statusSelect = document.getElementById('medication-status-select');
+
+    if (typeSelect && statusSelect) {
+        typeSelect.addEventListener('change', function() {
+            if (this.value === 'inpatient') {
+                // Disable and reset status filter for inpatient
+                statusSelect.value = 'all';
+                statusSelect.disabled = true;
+            } else {
+                // Enable status filter for outpatient or all
+                statusSelect.disabled = false;
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

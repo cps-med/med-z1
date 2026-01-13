@@ -231,30 +231,50 @@ async def medications_redirect(request: Request):
 async def get_medications_page(
     request: Request,
     icn: str,
-    medication_type: Optional[str] = Query(None, regex="^(outpatient|inpatient|all)$"),
-    status: Optional[str] = None,
-    days: Optional[int] = Query(90, ge=1, le=3650),
-    sort_by: Optional[str] = Query("date", regex="^(date|drug_name|type|status)$"),
-    sort_order: Optional[str] = Query("desc", regex="^(asc|desc)$")
+    medication_type: Optional[str] = Query("all", regex="^(outpatient|inpatient|all)$"),
+    status: Optional[str] = Query("all"),
+    date_range: Optional[str] = Query("all"),
+    sort_by: Optional[str] = Query("date_desc", regex="^(date_desc|date_asc|drug_name|type)$")
 ):
     """
     Full medications page for a patient.
 
     Shows comprehensive table/timeline of all medications (outpatient + inpatient)
-    with filtering and sorting.
+    with filtering and sorting. Supports HTMX partial updates.
 
     Args:
         icn: Patient ICN
         medication_type: Filter by type ('outpatient', 'inpatient', 'all', default: 'all')
-        status: Filter by status (for outpatient medications)
-        days: Show last N days (default: 90)
-        sort_by: Column to sort by (date, drug_name, type, status)
-        sort_order: Sort order (asc or desc, default: desc)
+        status: Filter by status (for outpatient medications, default: 'all')
+        date_range: Show medications from date range ('30', '90', '180', '365', 'all', default: '90')
+        sort_by: Combined sort field and order ('date_desc', 'date_asc', 'drug_name', 'type', default: 'date_desc')
 
     Returns:
-        Full HTML page with medications timeline table
+        Full HTML page with medications timeline table (or partial for HTMX)
     """
     try:
+        # Parse combined sort_by parameter
+        if sort_by == "date_desc":
+            sort_field, sort_order = "date", "desc"
+        elif sort_by == "date_asc":
+            sort_field, sort_order = "date", "asc"
+        elif sort_by == "drug_name":
+            sort_field, sort_order = "drug_name", "asc"
+        elif sort_by == "type":
+            sort_field, sort_order = "type", "asc"
+        else:
+            sort_field, sort_order = "date", "desc"
+
+        # Convert date_range to days
+        days_map = {"30": 30, "90": 90, "180": 180, "365": 365, "all": 3650}
+        days_filter = days_map.get(date_range, 90)
+
+        # Auto-reset status when medication_type is inpatient
+        if medication_type == "inpatient":
+            status = None
+        elif status == "all":
+            status = None
+
         # Get patient demographics for header
         patient = get_patient_demographics(icn)
 
@@ -270,40 +290,31 @@ async def get_medications_page(
             )
 
         # Normalize medication_type filter
-        if medication_type == "all":
-            medication_type = None
+        med_type_for_query = None if medication_type == "all" else medication_type
 
         # Get all medications for patient (limit 500 for page view)
         medications = get_patient_medications(
             icn,
             limit=500,
-            medication_type=medication_type,
+            medication_type=med_type_for_query,
             status=status,
-            days=days
+            days=days_filter
         )
 
-        # Get medication counts for filter pills
+        # Get medication counts for filter dropdowns
         counts = get_medication_counts(icn)
 
         # Sort medications
         reverse = (sort_order == "desc")
 
-        if sort_by == "date":
+        if sort_field == "date":
             medications = sorted(medications, key=lambda m: m.get("date") or "", reverse=reverse)
-        elif sort_by == "drug_name":
+        elif sort_field == "drug_name":
             medications = sorted(medications, key=lambda m: m.get("drug_name_local") or "", reverse=reverse)
-        elif sort_by == "type":
+        elif sort_field == "type":
             medications = sorted(medications, key=lambda m: m.get("type") or "", reverse=reverse)
-        elif sort_by == "status":
-            # For outpatient: status, for inpatient: action_type
-            def get_status(m):
-                if m.get("type") == "outpatient":
-                    return m.get("status") or ""
-                else:
-                    return m.get("action_type") or ""
-            medications = sorted(medications, key=get_status, reverse=reverse)
 
-        logger.info(f"Loaded medications page for {icn}: {len(medications)} medications, type={medication_type}, days={days}, sort={sort_by} {sort_order}")
+        logger.info(f"Loaded medications page for {icn}: {len(medications)} medications, type={medication_type}, days={days_filter}, sort={sort_field} {sort_order}")
 
         return templates.TemplateResponse(
             "patient_medications.html",
@@ -312,10 +323,11 @@ async def get_medications_page(
                 patient=patient,
                 medications=medications,
                 counts=counts,
-                medication_type_filter=medication_type or "all",
+                medication_type_filter=medication_type,
                 status_filter=status,
-                days_filter=days,
-                sort_by=sort_by,
+                days_filter=days_filter,
+                date_range_filter=date_range,
+                sort_by=sort_field,
                 sort_order=sort_order,
                 total_count=len(medications),
                 active_page="medications"
