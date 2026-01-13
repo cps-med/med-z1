@@ -594,6 +594,7 @@ sqlcmd -?
 Test Connection to SQL Server
 ```bash
 # Test connection to your Docker SQL Server instance
+# (update -P password with correct value from .env)
 sqlcmd -S 127.0.0.1,1433 -U sa -P 'MyS3cur3P@ssw0rd' -C -Q "SELECT @@VERSION"
 ```
 
@@ -939,29 +940,30 @@ Via MinIO Web Console (http://localhost:9001):
 2. Check folders: `bronze/ddi/`, `silver/ddi/`, `gold/ddi/`
 3. Verify files exist: `ddi_raw.parquet`, `ddi_clean.parquet`, `ddi_reference.parquet`
 
-**Note:** This pipeline is optional—only required if using AI Clinical Insights features (drug-drug interaction analysis). If the Kaggle CSV is missing from MinIO, the pipeline will fail at the Bronze extraction step.
+### Verify ETL Pipeline Results
+After running pipelines, verify clinical domain data was successfully loaded into PostgreSQL.  
 
-**Verify ETL Pipeline Results**
-After running pipelines, verify data was successfully loaded into PostgreSQL:
-
-**Verify MinIO Parquet Files**
-You can also verify that Parquet files were created in MinIO:
-
-**Via MinIO Web Console:**
+You can also verify that Parquet files were created in MinIO via the Web Console:
+```bash
 1. Navigate to http://localhost:9001
 2. Login (admin / admin#123#2025)
 3. Click "Buckets" → "med-z1"
 4. Browse folders: `bronze/`, `silver/`, `gold/`
 5. You should see Parquet files organized by domain
+```
 
 ### Running All Pipelines with a Shell Script
 
-For convenience, you can run all ETL pipelines (clinical domains + DDI reference data) sequentially via the script:
+For convenience, you can run all ETL pipelines (clinical domains + DDI reference data) sequentially via a single shell script.  
+
+Note that the DDI pipeline requires the Kaggle CSV to exist in MinIO's `med-sandbox` bucket at path `kaggle-data/ddi/db_drug_interactions.csv`. If the file is missing, the script will fail at the DDI Bronze extraction step. See section 9 **_Drug-Drug Interaction (DDI) Reference Data Pipeline_** above for DDI prerequisites and how to verify MinIO setup.  
+
+Run the full ETL Pipeline:
 ```bash
 ./scripts/run_all_etl.sh
 ```
 
-**Note:** The DDI pipeline requires the Kaggle CSV to exist in MinIO's `med-sandbox` bucket at path `kaggle-data/ddi/db_drug_interactions.csv`. If the file is missing, the script will fail at the DDI Bronze extraction step. See section 9 above for DDI prerequisites and how to verify MinIO setup.
+
 
 ## Next Steps
 
