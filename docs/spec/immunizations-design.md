@@ -3341,6 +3341,757 @@ Example response format:
 
 ---
 
+### 10.4 Phase 3 Enhancement: CDC CVX Reference Data Pipeline
+
+**Status:** 📋 Fully Documented, Implementation Deferred to Phase 3
+
+#### 10.4.1 Overview
+
+**Current State (Days 1-12):**
+- `reference.vaccine` table created with **30 hardcoded common vaccines**
+- Populated via DDL script: `db/ddl/create_reference_vaccine_table.sql`
+- Covers ~90% of common adult/pediatric immunizations (flu, COVID, Shingrix, Tdap, MMR, Hepatitis, etc.)
+- Sufficient for MVP and initial clinical use
+
+**Phase 3 Enhancement:**
+- Replace hardcoded vaccines with **official CDC CVX dataset** (334+ vaccines)
+- Automated ETL pipeline to load and refresh CDC data
+- Store CDC reference files in MinIO for version control and auditability
+- Enable quarterly updates as CDC publishes new vaccine codes
+
+**Benefits of Enhancement:**
+1. ✅ **Comprehensive coverage** - All 334+ CDC-approved vaccine codes (Active + Inactive for historical data)
+2. ✅ **Official source** - Direct from CDC National Center of Immunization and Respiratory Diseases (NCIRD)
+3. ✅ **Automated updates** - Quarterly refresh pipeline keeps data current
+4. ✅ **Audit trail** - Versioned files in MinIO track CDC updates over time
+5. ✅ **Production-ready** - Meets VA data governance standards for official reference data
+6. ✅ **Historical tracking** - Inactive vaccines preserved for legacy immunization records
+
+**Rationale for Deferral:**
+- 30 hardcoded vaccines provide sufficient coverage for MVP validation
+- No external dependencies or download complexity during initial development (Days 1-12)
+- Faster testing and iteration with known dataset
+- Can enhance after core functionality is proven
+
+#### 10.4.2 Official CDC Data Sources
+
+**Primary Dataset: CVX Codes (Vaccine Administered)**
+- **Source:** CDC National Center of Immunization and Respiratory Diseases
+- **URL:** https://www2a.cdc.gov/vaccines/iis/iisstandards/downloads/cvx.txt
+- **Format:** Pipe-delimited text file (|)
+- **Record Count:** 334+ vaccine codes
+- **Update Frequency:** Quarterly (approximately)
+
+**Column Structure:**  
+
+| Column | Description | Example |
+|--------|-------------|---------|
+| CVX Code | Numeric vaccine identifier | 208 |
+| Short Description | Abbreviated name | COVID-PFIZER |
+| Full Vaccine Name | Complete vaccine name | COVID-19, mRNA, LNP-S, PF, 30 mcg/0.3 mL dose (Pfizer-BioNTech) |
+| Notes | Additional information | (none) |
+| Status | Active, Inactive, Never Active, Non-US | Active |
+| Non-US Vaccine | Boolean flag | N |
+| Last Updated | Date of last CDC update | 12/17/2024 |
+
+**Companion Dataset: CVX to Vaccine Groups Mapping**
+- **URL:** https://www2a.cdc.gov/vaccines/iis/iisstandards/vaccines.asp?rpt=vg
+- **Purpose:** Maps CVX codes to disease categories (e.g., "Influenza", "COVID-19", "Hepatitis")
+- **Critical for:** Populating `vaccine_group` field in `reference.vaccine` table
+- **Format:** Excel, Text, XML available
+
+**Column Structure:**
+
+| Column | Description | Example |
+|--------|-------------|---------|
+| CVX Code | Matches CVX codes dataset | 208 |
+| Vaccine Group Name | Disease category | COVID-19 |
+| VG CVX Code | Group identifier for HL7 | 213 |
+| Status | Active, Inactive | Active |
+
+**Alternative Download Options:**
+- **Excel (.xlsx):** Available from web interface for manual download
+- **XML:** Available for programmatic parsing
+- **PDF:** Documentation format (not recommended for ETL)
+
+**CDC Web Interface:**
+- Interactive table: https://www2a.cdc.gov/vaccines/iis/iisstandards/vaccines.asp?rpt=cvx
+- HL7 code sets documentation: https://www.cdc.gov/iis/code-sets/index.html
+- Release notes: https://www.cdc.gov/iis/code-sets/downloads/vaccine-code-sets-release-notes-*.pdf
+
+#### 10.4.3 MinIO Storage Structure
+
+**Bucket:** `med-sandbox`
+
+**Path Structure:**
+```
+med-sandbox/
+  └── cdc-reference-data/
+      └── cvx/
+          ├── 2026-01-14/                    # Versioned by download date
+          │   ├── cvx_codes.txt              # CVX codes dataset
+          │   ├── vaccine_groups.txt         # CVX to Vaccine Groups mapping
+          │   └── metadata.json              # Download metadata
+          ├── 2026-04-15/                    # Next quarterly refresh
+          │   ├── cvx_codes.txt
+          │   ├── vaccine_groups.txt
+          │   └── metadata.json
+          └── LATEST/                        # Symlink or copy of current version
+              ├── cvx_codes.txt
+              ├── vaccine_groups.txt
+              └── metadata.json
+```
+
+**Metadata File Example (`metadata.json`):**
+```json
+{
+  "download_date": "2026-01-14T10:30:00Z",
+  "source_url_cvx": "https://www2a.cdc.gov/vaccines/iis/iisstandards/downloads/cvx.txt",
+  "source_url_vg": "https://www2a.cdc.gov/vaccines/iis/iisstandards/downloads/vax2vg_list.pdf",
+  "record_count_cvx": 334,
+  "record_count_vg": 298,
+  "active_vaccines": 187,
+  "inactive_vaccines": 147,
+  "downloaded_by": "etl_script",
+  "notes": "Q1 2026 quarterly refresh"
+}
+```
+
+**Version Control Strategy:**
+- **Keep all historical versions** in dated folders for audit trail
+- **LATEST symlink** always points to current production version
+- **Rollback capability** by changing LATEST symlink to previous version
+- **Git-like versioning** without actual Git (stored in MinIO)
+
+#### 10.4.4 ETL Pipeline Implementation
+
+**New File:** `etl/load_cdc_cvx_reference.py`
+
+**Pipeline Architecture:**
+```
+CDC Website → MinIO (med-sandbox) → Polars DataFrame → PostgreSQL (reference.vaccine)
+     ↓                ↓                    ↓                         ↓
+  Download      Version control        Transform              Production table
+```
+
+**Implementation Code:**
+
+```python
+# etl/load_cdc_cvx_reference.py
+"""
+Load official CDC CVX codes to reference.vaccine table.
+
+This pipeline replaces the 30 hardcoded vaccines from the DDL script with
+the complete CDC CVX dataset (334+ vaccines). Run this after Day 12 to
+enhance the reference data with full CDC coverage.
+
+Usage:
+    python -m etl.load_cdc_cvx_reference
+"""
+
+import polars as pl
+import pandas as pd
+from sqlalchemy import create_engine, text
+from datetime import datetime
+import json
+from config import POSTGRES_CONNECTION_STRING
+from etl.s3_client import read_file_from_minio, upload_file_to_minio
+
+
+def download_cdc_data_to_minio(version_date: str = None):
+    """
+    Download CDC CVX data and store in MinIO with versioning.
+
+    Args:
+        version_date: Optional date string (YYYY-MM-DD). Defaults to today.
+
+    Returns:
+        str: Path to versioned data in MinIO
+    """
+    import urllib.request
+
+    if not version_date:
+        version_date = datetime.now().strftime("%Y-%m-%d")
+
+    print(f"=== Downloading CDC CVX Data (version {version_date}) ===")
+
+    # Download CVX codes
+    cvx_url = "https://www2a.cdc.gov/vaccines/iis/iisstandards/downloads/cvx.txt"
+    print(f"Downloading CVX codes from {cvx_url}...")
+    cvx_data = urllib.request.urlopen(cvx_url).read().decode('utf-8')
+
+    # Download vaccine groups (note: may need to parse from different format)
+    # For now, using placeholder - would need to scrape or download Excel
+    vg_url = "https://www2a.cdc.gov/vaccines/iis/iisstandards/downloads/vax2vg_list.pdf"
+    # TODO: Implement vaccine groups download/parsing
+
+    # Create metadata
+    metadata = {
+        "download_date": datetime.utcnow().isoformat() + "Z",
+        "source_url_cvx": cvx_url,
+        "source_url_vg": vg_url,
+        "version_date": version_date,
+        "downloaded_by": "etl_script"
+    }
+
+    # Upload to MinIO
+    base_path = f"cdc-reference-data/cvx/{version_date}"
+
+    upload_file_to_minio(
+        bucket="med-sandbox",
+        object_name=f"{base_path}/cvx_codes.txt",
+        data=cvx_data
+    )
+
+    upload_file_to_minio(
+        bucket="med-sandbox",
+        object_name=f"{base_path}/metadata.json",
+        data=json.dumps(metadata, indent=2)
+    )
+
+    # Also upload to LATEST
+    upload_file_to_minio(
+        bucket="med-sandbox",
+        object_name="cdc-reference-data/cvx/LATEST/cvx_codes.txt",
+        data=cvx_data
+    )
+
+    upload_file_to_minio(
+        bucket="med-sandbox",
+        object_name="cdc-reference-data/cvx/LATEST/metadata.json",
+        data=json.dumps(metadata, indent=2)
+    )
+
+    print(f"CDC data uploaded to MinIO: {base_path}")
+    return base_path
+
+
+def parse_cvx_file(cvx_text: str) -> pl.DataFrame:
+    """
+    Parse CDC CVX pipe-delimited text file into Polars DataFrame.
+
+    Args:
+        cvx_text: Raw text content of CVX file
+
+    Returns:
+        Polars DataFrame with parsed CVX codes
+    """
+    print("Parsing CVX codes...")
+
+    # Parse pipe-delimited file
+    # Note: CDC file may not have header row, may need to skip first line or infer
+    df = pl.read_csv(
+        cvx_text.encode(),
+        separator="|",
+        has_header=True,
+        null_values=["", "NULL"],
+        infer_schema_length=1000
+    )
+
+    # Rename columns to expected format (CDC column names may vary)
+    # This mapping assumes CDC structure - may need adjustment
+    df = df.rename({
+        "CVX": "cvx_code",
+        "SHORT DESCRIPTION": "short_name",
+        "FULL VACCINE NAME": "full_name",
+        "VACCINE STATUS": "status",
+        "LAST UPDATED": "last_updated_cdc"
+    })
+
+    print(f"Parsed {df.shape[0]} CVX codes")
+    return df
+
+
+def map_vaccine_groups(df_cvx: pl.DataFrame) -> pl.DataFrame:
+    """
+    Map CVX codes to vaccine groups (disease categories).
+
+    For Phase 3 MVP, uses hardcoded mappings for common groups.
+    Future enhancement: Parse from CDC vaccine groups file.
+
+    Args:
+        df_cvx: DataFrame with CVX codes
+
+    Returns:
+        DataFrame with vaccine_group column added
+    """
+    print("Mapping vaccine groups...")
+
+    # Hardcoded vaccine group mappings for common vaccines
+    # Future: Replace with CDC vaccine groups file parsing
+    vaccine_group_map = {
+        "COVID": "COVID-19",
+        "FLU": "Influenza",
+        "INFLUENZA": "Influenza",
+        "HEPATITIS A": "Hepatitis",
+        "HEPATITIS B": "Hepatitis",
+        "HEP": "Hepatitis",
+        "SHINGRIX": "Zoster",
+        "ZOSTER": "Zoster",
+        "TDAP": "DTaP/Tdap",
+        "DTAP": "DTaP/Tdap",
+        "DIPHTHERIA": "DTaP/Tdap",
+        "TETANUS": "DTaP/Tdap",
+        "PNEUMO": "Pneumococcal",
+        "HPV": "HPV",
+        "MMR": "MMR",
+        "MEASLES": "MMR",
+        "MUMPS": "MMR",
+        "RUBELLA": "MMR",
+        "VARICELLA": "Varicella",
+        "POLIO": "Polio",
+        "IPV": "Polio",
+        "HIB": "Hib",
+        "MENINGOCOCCAL": "Meningococcal",
+        "MENING": "Meningococcal"
+    }
+
+    # Determine vaccine group from vaccine name (keyword matching)
+    def assign_vaccine_group(vaccine_name: str) -> str:
+        if not vaccine_name:
+            return "Other"
+
+        vaccine_upper = vaccine_name.upper()
+        for keyword, group in vaccine_group_map.items():
+            if keyword in vaccine_upper:
+                return group
+        return "Other"
+
+    df_with_group = df_cvx.with_columns([
+        pl.col("full_name").map_elements(
+            assign_vaccine_group,
+            return_dtype=pl.Utf8
+        ).alias("vaccine_group")
+    ])
+
+    group_counts = df_with_group.group_by("vaccine_group").count()
+    print(f"Vaccine groups assigned: {group_counts.shape[0]} distinct groups")
+
+    return df_with_group
+
+
+def determine_series_pattern(vaccine_name: str, cvx_code: str) -> str:
+    """
+    Determine typical series pattern for vaccine.
+
+    Uses hardcoded rules based on common vaccine schedules.
+    Future enhancement: Load from separate reference table or CDC schedules.
+
+    Args:
+        vaccine_name: Full vaccine name
+        cvx_code: CVX code
+
+    Returns:
+        Series pattern string (e.g., "2-dose", "Annual", "Booster")
+    """
+    # Hardcoded series patterns for common vaccines
+    series_map = {
+        # COVID-19: 2-dose primary + boosters
+        "208": "2-dose primary + boosters",
+        "213": "2-dose primary + boosters",
+        # Shingrix: 2-dose
+        "187": "2-dose",
+        # Influenza: Annual
+        "088": "Annual", "135": "Annual", "140": "Annual", "141": "Annual",
+        "144": "Annual", "158": "Annual", "161": "Annual",
+        # Hepatitis B: 3-dose
+        "008": "3-dose", "043": "3-dose", "045": "3-dose",
+        # Hepatitis A: 2-dose
+        "083": "2-dose", "052": "2-dose",
+        # Tdap/Td: Booster
+        "115": "Booster", "113": "Booster",
+        # DTaP: 5-dose
+        "020": "5-dose", "106": "5-dose", "107": "5-dose",
+        # Polio: 4-dose
+        "010": "4-dose",
+        # HPV: 2-3 dose
+        "062": "2-3 dose",
+        # Varicella: 2-dose
+        "021": "2-dose",
+        # MMR: 2-dose
+        "003": "2-dose",
+        # Hib: 3-4 dose
+        "048": "3-4 dose", "049": "2-3 dose",
+        # Pneumococcal
+        "033": "Single or 2-dose",
+        "152": "4-dose"
+    }
+
+    return series_map.get(cvx_code, "Single dose")
+
+
+def transform_to_reference_vaccine_schema(df_cvx: pl.DataFrame) -> pl.DataFrame:
+    """
+    Transform CDC CVX data to reference.vaccine schema.
+
+    Args:
+        df_cvx: DataFrame with parsed and enriched CVX data
+
+    Returns:
+        DataFrame matching reference.vaccine table schema
+    """
+    print("Transforming to reference.vaccine schema...")
+
+    # Filter to Active vaccines only (include Inactive for historical data if desired)
+    # For Phase 3 MVP: Include both Active and Inactive for historical immunization lookup
+    df_filtered = df_cvx.filter(
+        pl.col("status").str.to_lowercase().is_in(["active", "inactive"])
+    )
+
+    # Map to reference.vaccine columns
+    df_final = df_filtered.with_columns([
+        pl.col("cvx_code").cast(pl.Utf8).str.zfill(3),  # Zero-pad to 3 digits
+        pl.col("full_name").alias("vaccine_name"),
+        pl.col("short_name").alias("vaccine_short_name"),
+        pl.col("vaccine_group"),
+        # Apply series pattern determination
+        pl.struct(["full_name", "cvx_code"]).map_elements(
+            lambda x: determine_series_pattern(x["full_name"], x["cvx_code"]),
+            return_dtype=pl.Utf8
+        ).alias("typical_series_pattern"),
+        (pl.col("status").str.to_lowercase() == "active").alias("is_active"),
+        pl.lit(None).cast(pl.Utf8).alias("notes"),
+        pl.current_timestamp().alias("last_updated")
+    ]).select([
+        "cvx_code",
+        "vaccine_name",
+        "vaccine_short_name",
+        "vaccine_group",
+        "typical_series_pattern",
+        "is_active",
+        "notes",
+        "last_updated"
+    ])
+
+    print(f"Transformed {df_final.shape[0]} vaccines for PostgreSQL load")
+    print(f"  Active: {df_final.filter(pl.col('is_active')).shape[0]}")
+    print(f"  Inactive: {df_final.filter(~pl.col('is_active')).shape[0]}")
+
+    return df_final
+
+
+def load_to_postgres(df: pl.DataFrame, truncate: bool = True):
+    """
+    Load transformed data to PostgreSQL reference.vaccine table.
+
+    Args:
+        df: DataFrame with reference.vaccine schema
+        truncate: If True, truncate table before load (default). If False, upsert.
+    """
+    print("=== Loading to PostgreSQL ===")
+
+    # Convert Polars to Pandas for to_sql compatibility
+    df_pandas = df.to_pandas()
+
+    # Connect to PostgreSQL
+    engine = create_engine(POSTGRES_CONNECTION_STRING)
+
+    if truncate:
+        # Truncate and reload (simple approach for Phase 3)
+        with engine.connect() as conn:
+            conn.execute(text("TRUNCATE TABLE reference.vaccine CASCADE"))
+            conn.commit()
+            print("Truncated reference.vaccine table")
+
+    # Load data
+    df_pandas.to_sql(
+        name="vaccine",
+        con=engine,
+        schema="reference",
+        if_exists="append",
+        index=False,
+        method="multi",
+        chunksize=100
+    )
+
+    print(f"Loaded {len(df_pandas)} vaccines to reference.vaccine")
+
+    # Verification queries
+    with engine.connect() as conn:
+        # Total count
+        result = conn.execute(text("SELECT COUNT(*) FROM reference.vaccine"))
+        total_count = result.scalar()
+        print(f"Verification: {total_count} total vaccines in reference.vaccine")
+
+        # Active count
+        result = conn.execute(text("""
+            SELECT COUNT(*) FROM reference.vaccine WHERE is_active = TRUE
+        """))
+        active_count = result.scalar()
+        print(f"Verification: {active_count} active vaccines")
+
+        # Inactive count
+        result = conn.execute(text("""
+            SELECT COUNT(*) FROM reference.vaccine WHERE is_active = FALSE
+        """))
+        inactive_count = result.scalar()
+        print(f"Verification: {inactive_count} inactive vaccines (historical)")
+
+        # Vaccine groups
+        result = conn.execute(text("""
+            SELECT vaccine_group, COUNT(*) as count
+            FROM reference.vaccine
+            WHERE is_active = TRUE
+            GROUP BY vaccine_group
+            ORDER BY count DESC
+            LIMIT 10
+        """))
+        print("\nTop 10 vaccine groups (active):")
+        for row in result:
+            print(f"  {row[0]}: {row[1]} vaccines")
+
+
+def main(download: bool = True, version_date: str = None):
+    """
+    Execute CDC CVX reference data pipeline.
+
+    Args:
+        download: If True, download from CDC and upload to MinIO. If False, use existing MinIO data.
+        version_date: Optional version date (YYYY-MM-DD). Defaults to today.
+
+    Usage:
+        # Download and load (first-time or quarterly refresh)
+        python -m etl.load_cdc_cvx_reference
+
+        # Load from existing MinIO data (testing)
+        python -m etl.load_cdc_cvx_reference --no-download
+    """
+    print("=== CDC CVX Reference Data Pipeline ===")
+
+    # Step 1: Download CDC data to MinIO (if requested)
+    if download:
+        version_path = download_cdc_data_to_minio(version_date)
+    else:
+        version_path = "cdc-reference-data/cvx/LATEST"
+        print(f"Using existing MinIO data: {version_path}")
+
+    # Step 2: Read CVX data from MinIO
+    cvx_text = read_file_from_minio("med-sandbox", f"{version_path}/cvx_codes.txt")
+
+    # Step 3: Parse CVX file
+    df_cvx = parse_cvx_file(cvx_text)
+
+    # Step 4: Map vaccine groups
+    df_with_groups = map_vaccine_groups(df_cvx)
+
+    # Step 5: Transform to reference.vaccine schema
+    df_final = transform_to_reference_vaccine_schema(df_with_groups)
+
+    # Step 6: Load to PostgreSQL
+    load_to_postgres(df_final, truncate=True)
+
+    print("\n=== CDC CVX Reference Pipeline Complete ===")
+    print(f"Successfully replaced 30 hardcoded vaccines with {df_final.shape[0]} CDC vaccines")
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Load CDC CVX reference data")
+    parser.add_argument("--no-download", action="store_true", help="Skip CDC download, use existing MinIO data")
+    parser.add_argument("--version", type=str, help="Version date (YYYY-MM-DD)")
+
+    args = parser.parse_args()
+
+    main(download=not args.no_download, version_date=args.version)
+```
+
+**Helper Functions (Add to `etl/s3_client.py`):**
+
+```python
+def read_file_from_minio(bucket: str, object_name: str) -> str:
+    """Read text file from MinIO and return as string"""
+    from minio import Minio
+    from config import MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY
+
+    client = Minio(
+        MINIO_ENDPOINT,
+        access_key=MINIO_ACCESS_KEY,
+        secret_key=MINIO_SECRET_KEY,
+        secure=False
+    )
+
+    response = client.get_object(bucket, object_name)
+    return response.read().decode('utf-8')
+
+
+def upload_file_to_minio(bucket: str, object_name: str, data: str):
+    """Upload text data to MinIO"""
+    from minio import Minio
+    from io import BytesIO
+    from config import MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY
+
+    client = Minio(
+        MINIO_ENDPOINT,
+        access_key=MINIO_ACCESS_KEY,
+        secret_key=MINIO_SECRET_KEY,
+        secure=False
+    )
+
+    # Ensure bucket exists
+    if not client.bucket_exists(bucket):
+        client.make_bucket(bucket)
+
+    # Upload data
+    data_bytes = data.encode('utf-8')
+    client.put_object(
+        bucket,
+        object_name,
+        BytesIO(data_bytes),
+        length=len(data_bytes)
+    )
+```
+
+#### 10.4.5 Implementation Timeline
+
+**Estimated Effort:** 2-3 days (Post Day 12)
+
+**Day 1: Setup and Download (4-6 hours)**
+- [ ] Download CDC CVX codes file from official source
+- [ ] Download CDC vaccine groups mapping file
+- [ ] Create MinIO bucket structure: `med-sandbox/cdc-reference-data/cvx/`
+- [ ] Upload initial version with timestamp (e.g., `2026-01-14/`)
+- [ ] Create LATEST symlink/copy
+- [ ] Verify files are accessible from Python
+
+**Day 2: ETL Pipeline Implementation (6-8 hours)**
+- [ ] Create `etl/load_cdc_cvx_reference.py`
+- [ ] Implement CDC file parsing (pipe-delimited format)
+- [ ] Implement vaccine group mapping logic
+- [ ] Implement series pattern determination
+- [ ] Transform to `reference.vaccine` schema
+- [ ] Add MinIO helper functions to `etl/s3_client.py`
+- [ ] Unit test parsing and transformation logic
+
+**Day 3: PostgreSQL Migration and Verification (4-6 hours)**
+- [ ] Backup existing `reference.vaccine` table (30 records)
+- [ ] Run full CDC ETL pipeline
+- [ ] Verify PostgreSQL load: ~334+ records
+- [ ] Verify CVX code distribution (active vs inactive)
+- [ ] Verify vaccine group assignments
+- [ ] Test UI: Ensure immunizations page still works with new data
+- [ ] Test API: Query vaccines by group, check series patterns
+- [ ] Test AI tools: Verify CVX code lookups work correctly
+- [ ] Document migration process in `docs/spec/immunizations-design.md`
+
+**Post-Implementation:**
+- [ ] Schedule quarterly refresh job (cron or manual)
+- [ ] Document CDC update monitoring process
+- [ ] Create rollback procedure (revert to previous MinIO version)
+
+#### 10.4.6 Migration Plan: 30 Vaccines → 334+ CDC Vaccines
+
+**Pre-Migration Checklist:**
+- [ ] Verify Days 1-12 implementation is complete and stable
+- [ ] Backup PostgreSQL `reference.vaccine` table
+- [ ] Test CDC data download and parsing in dev environment
+- [ ] Verify MinIO bucket exists and is accessible
+
+**Migration Steps:**
+
+1. **Backup Current Data:**
+   ```sql
+   -- Create backup table
+   CREATE TABLE reference.vaccine_backup_20260114 AS
+   SELECT * FROM reference.vaccine;
+
+   -- Verify backup
+   SELECT COUNT(*) FROM reference.vaccine_backup_20260114;
+   -- Expected: 30 rows
+   ```
+
+2. **Run CDC Pipeline:**
+   ```bash
+   python -m etl.load_cdc_cvx_reference
+   ```
+
+3. **Verify Migration:**
+   ```sql
+   -- Check new record count
+   SELECT COUNT(*) FROM reference.vaccine;
+   -- Expected: ~334+ rows
+
+   -- Verify original 30 vaccines still exist
+   SELECT cvx_code, vaccine_name, is_active
+   FROM reference.vaccine
+   WHERE cvx_code IN ('008', '010', '020', '021', '033', '043', '048', '052', '062', '083',
+                      '088', '103', '106', '107', '110', '113', '115', '121', '135', '140',
+                      '141', '144', '152', '158', '161', '187', '208', '213')
+   ORDER BY cvx_code;
+   -- Expected: 28-30 rows (all original vaccines should be present)
+
+   -- Check vaccine group distribution
+   SELECT vaccine_group, COUNT(*) as count
+   FROM reference.vaccine
+   WHERE is_active = TRUE
+   GROUP BY vaccine_group
+   ORDER BY count DESC;
+   ```
+
+4. **Test Application:**
+   - Load immunizations page: `/patient/ICN100001/immunizations`
+   - Verify vaccine family filter dropdown shows more options
+   - Test CVX code lookups in AI tools
+   - Verify widget still displays correctly
+
+5. **Rollback Procedure (if needed):**
+   ```sql
+   -- Restore from backup
+   TRUNCATE TABLE reference.vaccine;
+   INSERT INTO reference.vaccine
+   SELECT * FROM reference.vaccine_backup_20260114;
+
+   -- Verify rollback
+   SELECT COUNT(*) FROM reference.vaccine;
+   -- Expected: 30 rows
+   ```
+
+#### 10.4.7 Quarterly Refresh Process
+
+**Frequency:** Every 3 months (or as CDC publishes updates)
+
+**CDC Update Monitoring:**
+- Subscribe to CDC IIS listserv for vaccine code set release notes
+- Check release notes: https://www.cdc.gov/iis/code-sets/downloads/vaccine-code-sets-release-notes-*.pdf
+- Monitor CDC website for new vaccine approvals (COVID variants, new vaccines)
+
+**Refresh Procedure:**
+
+1. **Download New CDC Data:**
+   ```bash
+   # Use new version date
+   python -m etl.load_cdc_cvx_reference --version 2026-04-15
+   ```
+
+2. **Review Changes:**
+   ```sql
+   -- Compare new vs old record counts
+   SELECT
+       (SELECT COUNT(*) FROM reference.vaccine) as new_count,
+       (SELECT COUNT(*) FROM reference.vaccine_backup_previous) as old_count,
+       (SELECT COUNT(*) FROM reference.vaccine) -
+       (SELECT COUNT(*) FROM reference.vaccine_backup_previous) as delta;
+
+   -- Identify new CVX codes
+   SELECT cvx_code, vaccine_name, vaccine_group
+   FROM reference.vaccine
+   WHERE cvx_code NOT IN (SELECT cvx_code FROM reference.vaccine_backup_previous)
+   ORDER BY cvx_code;
+   ```
+
+3. **Update Documentation:**
+   - Document new vaccines added
+   - Update `docs/spec/immunizations-design.md` with new CVX count
+   - Notify clinical users of new vaccine codes
+
+**Automated Refresh (Future Enhancement):**
+- Create cron job or scheduled task to run quarterly
+- Implement CDC change detection (compare file hashes)
+- Send email notification when new vaccines are available
+- Automated testing after refresh
+
+---
+
 ## 11. Testing Strategy
 
 ### 11.1 Unit Tests
