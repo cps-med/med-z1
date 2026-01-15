@@ -848,6 +848,15 @@ async def check_ddi_risks(patient_icn: str, db_session) -> str:
 
 **Purpose:** Comprehensive patient overview combining all clinical domains
 
+**Current Domains (Phase 1-5):**
+- Demographics (age, DOB, veteran status, primary care station)
+- Medications (active prescriptions with sig)
+- Vitals (most recent BP, HR, temp, weight)
+- Allergies (known allergens with reactions)
+- Encounters (recent 90 days)
+- Clinical Notes (recent notes with previews) - Phase 4
+- **Immunizations (recent vaccination history)** - Phase 6 ⭐ **PLANNED**
+
 **Implementation:**
 ```python
 # ai/tools/patient_tools.py
@@ -859,7 +868,7 @@ from ai.services.patient_context import PatientContextBuilder
 async def get_patient_summary(patient_icn: str, db_session) -> str:
     """
     Retrieves comprehensive patient summary including demographics, medications,
-    vitals, allergies, and recent encounters.
+    vitals, allergies, encounters, clinical notes, and immunizations.
 
     Returns formatted text suitable for LLM synthesis.
     """
@@ -871,6 +880,8 @@ async def get_patient_summary(patient_icn: str, db_session) -> str:
     vitals = await builder.get_vitals_summary()
     allergies = await builder.get_allergies_summary()
     encounters = await builder.get_encounters_summary()
+    notes = await builder.get_notes_summary()  # Phase 4
+    immunizations = await builder.get_immunizations_summary()  # Phase 6
 
     summary = f"""
 PATIENT DEMOGRAPHICS:
@@ -885,14 +896,27 @@ RECENT VITALS (last 7 days):
 ALLERGIES:
 {allergies}
 
+RECENT IMMUNIZATIONS:
+{immunizations}
+
 RECENT ENCOUNTERS (last 90 days):
 {encounters}
 
-Data sources: PostgreSQL (demographics, medications, vitals, allergies, encounters)
+RECENT CLINICAL NOTES (last 90 days):
+{notes}
+
+Data sources: PostgreSQL (demographics, medications, vitals, allergies, immunizations, encounters, clinical_notes)
 """
 
     return summary.strip()
 ```
+
+**Phase 6 Enhancement Note:**
+Immunizations will be added to comprehensive patient summaries. Shows last 10 vaccines with:
+- Vaccine name and administered date
+- Series completion status (e.g., "2 of 2 complete" or "1 of 2 INCOMPLETE")
+- Adverse reaction flags
+- Critical for identifying care gaps (e.g., elderly patients missing pneumococcal vaccine)
 
 ### 6.3 Tool: analyze_vitals_trends
 
@@ -1056,6 +1080,90 @@ get_clinical_notes_summary("ICN100001", note_type="Imaging", days=180, limit=3)
 - Max limit of 10 notes (~20,000 tokens) to stay within GPT-4 context window
 - Text preview (200 chars) used for summaries; full text available via separate query if needed
 - Query time: <100ms for filtered note retrieval
+
+---
+
+### 6.6 Immunization Tools (Phase 6 💉) ⭐ **PLANNED**
+
+**Purpose:** Enable AI to query vaccination history, check CDC guideline compliance, and identify care gaps
+
+**Detailed Design Reference:** See `immunizations-design.md` Section 9 for complete specifications
+
+**Tools Overview (3 Total):**
+
+#### 1. `get_immunization_history`
+- **Purpose:** Retrieve patient's complete vaccination history with CVX codes
+- **Returns:** List of vaccines with dates, series status, adverse reactions
+- **Use Cases:** "What vaccines has this patient received?", "Show flu shot history"
+
+#### 2. `check_vaccine_compliance`
+- **Purpose:** Check CDC ACIP guideline compliance for patient's age
+- **Logic:** Age-based recommendations (influenza, pneumococcal, Shingrix, COVID-19)
+- **Returns:** Missing vaccines, incomplete series, next due dates
+- **Use Cases:** "Is patient up-to-date on vaccinations?", "What vaccines are due?"
+
+#### 3. `forecast_next_dose`
+- **Purpose:** Calculate next dose due date for multi-dose series (e.g., Shingrix, COVID-19)
+- **Logic:** Last dose date + standard interval (2-6 months depending on vaccine)
+- **Returns:** Due date, series progress (e.g., "1 of 2 doses received")
+- **Use Cases:** "When is next Shingrix dose due?", "Is COVID series complete?"
+
+**Implementation:**
+```python
+# ai/tools/immunization_tools.py (Phase 6)
+# Full implementation details in immunizations-design.md Section 9.2
+
+from langchain_core.tools import tool
+from app.db.patient_immunizations import get_patient_immunizations
+
+@tool
+def get_immunization_history(patient_icn: str) -> str:
+    """
+    Retrieve patient's immunization history.
+
+    Returns formatted list of vaccines with CVX codes, dates, series status.
+    """
+    # Implementation details in immunizations-design.md
+    pass
+
+@tool
+def check_vaccine_compliance(patient_icn: str, age: int) -> str:
+    """
+    Check CDC ACIP compliance for patient's age.
+
+    Returns missing vaccines, incomplete series, care gaps.
+    """
+    # Implementation details in immunizations-design.md
+    pass
+
+@tool
+def forecast_next_dose(patient_icn: str, cvx_code: str) -> str:
+    """
+    Calculate next dose due date for multi-dose series.
+
+    Returns due date and series progress.
+    """
+    # Implementation details in immunizations-design.md
+    pass
+```
+
+**Clinical Use Cases Enabled:**
+- "What vaccines has this patient received?"
+- "Is the patient up to date on COVID-19 vaccinations?"
+- "What immunizations are due based on CDC guidelines?"
+- "Has the patient completed the Shingrix series?"
+- "When is the next flu shot due?"
+- "Does this 68-year-old patient need pneumococcal vaccine?"
+
+**Integration with Existing Tools:**
+- `get_patient_summary()` will automatically include recent immunizations (Phase 6, Task 2)
+- Immunization-specific tools available for targeted queries
+- Agent autonomously chooses appropriate tool based on query
+
+**RAG Enhancement (Future - Phase 7+):**
+- Vector embeddings of CDC "Pink Book" ACIP schedules
+- Semantic search for vaccine contraindications
+- Deferred to Phase 7+ (MVP uses deterministic age-based rules)
 
 ---
 
@@ -3697,6 +3805,236 @@ These enhancements ensure the AI Clinical Insights system provides accurate, com
 
 ---
 
+### Phase 6: Immunizations Integration (Week 6) ⭐ **PLANNED**
+
+**Prerequisites:**
+- ✅ Immunizations ETL pipeline complete (PostgreSQL data available)
+- ✅ Immunizations UI complete (dashboard widget + full page)
+- ✅ Query functions available in `app/db/patient_immunizations.py`
+- ✅ LangGraph agent infrastructure operational (Phases 1-5 complete)
+
+**Estimated Time:** 5-7 days
+
+**Objective:** Add immunization history and CDC compliance checking to AI Clinical Insights
+
+---
+
+#### **Days 1-3: Implement Immunization-Specific Tools (3-4 hours/day)**
+
+**Tasks:**
+
+1. **Create `ai/tools/immunization_tools.py`** (Day 1: 3-4 hours)
+   - Implement `get_immunization_history()` tool
+     - Wraps `app/db/patient_immunizations.get_patient_immunizations()`
+     - Returns formatted text with vaccine names, dates, CVX codes, series status
+     - Flags adverse reactions for safety awareness
+   - Add tool to `ai/tools/__init__.py` (export in `ALL_TOOLS`)
+
+2. **Implement `check_vaccine_compliance()` tool** (Day 2: 3-4 hours)
+   - Age-based CDC ACIP guideline logic:
+     - Adults 65+: Pneumococcal PPSV23, Shingrix (2-dose series)
+     - All adults: Annual influenza, COVID-19 boosters
+   - Return missing vaccines and incomplete series
+   - Query patient age from demographics
+   - Phase 6 MVP: Deterministic rules (no RAG)
+
+3. **Implement `forecast_next_dose()` tool** (Day 3: 2-3 hours)
+   - Calculate due dates for multi-dose series
+   - Standard intervals: Shingrix (2 months), COVID-19 (1 month), Hepatitis B (1-2 months)
+   - Query `get_vaccine_series_status()` from database layer
+   - Return formatted due date and series progress
+
+4. **Unit Testing** (Day 3: 1 hour)
+   - Test each tool independently with mock data
+   - Test with patients of different ages (18, 50, 68, 75)
+   - Verify incomplete series detection
+   - Test adverse reaction flagging
+
+**Deliverables:**
+- [ ] `ai/tools/immunization_tools.py` with 3 new tools
+- [ ] Updated `ai/tools/__init__.py` (ALL_TOOLS now has 7 tools)
+- [ ] Unit tests for immunization tools
+- [ ] Manual testing with 5+ patients
+
+**Estimated Time:** Days 1-3 (9-11 hours total)
+
+**Design Reference:** `immunizations-design.md` Section 9.2 (detailed tool specifications)
+
+---
+
+#### **Day 4: Enhance PatientContextBuilder Service (2-3 hours)**
+
+**Tasks:**
+
+1. **Add `get_immunizations_summary()` method** (1.5 hours)
+   - Location: `ai/services/patient_context.py`
+   - Query `get_patient_immunizations(icn, limit=10)`
+   - Format as natural language:
+     ```
+     Recent Immunizations (Last 10):
+     - INFLUENZA, HIGH DOSE SEASONAL (2024-10-05), series complete
+     - COVID-19, MRNA (2021-04-12), 2 of 2 doses complete
+     - SHINGRIX (2021-02-10), 1 of 2 doses (INCOMPLETE) ⚠️
+     ```
+   - Flag incomplete series and adverse reactions
+   - Graceful handling when no immunizations on record
+
+2. **Update `build_comprehensive_summary()`** (30 min)
+   - Add immunizations query: `immunizations = self.get_immunizations_summary()`
+   - Insert into summary output (after ALLERGIES, before ENCOUNTERS)
+   - Update data sources footer to include immunizations
+
+3. **Update Documentation** (30 min)
+   - Update method docstrings
+   - Update class-level examples
+   - Document in `app/README.md`
+
+**Deliverables:**
+- [ ] Enhanced `PatientContextBuilder` with immunizations integration
+- [ ] `get_patient_summary()` now includes immunization history automatically
+- [ ] Updated documentation
+
+**Estimated Time:** Day 4 (2-3 hours)
+
+**Impact:** When users ask "Summarize this patient's chart", immunization status is automatically included. Critical for elderly patients where vaccines are preventive care priorities.
+
+---
+
+#### **Day 5: System Prompts and Testing (2-3 hours)**
+
+**Tasks:**
+
+1. **Update System Prompts** (1 hour)
+   - Location: `ai/prompts/system_prompts.py`
+   - Add immunization context to agent prompts:
+     ```python
+     IMMUNIZATION_CONTEXT = """
+     You have access to the patient's complete immunization history through these tools:
+
+     1. **get_immunization_history**: Retrieve all vaccines with CVX codes
+     2. **check_vaccine_compliance**: Check CDC ACIP guideline compliance
+     3. **forecast_next_dose**: Calculate next dose due dates
+
+     When discussing immunizations:
+     - Always reference CVX codes for precision
+     - Highlight incomplete vaccine series (require follow-up)
+     - Note adverse reactions for safety awareness
+     - Use CDC ACIP guidelines for age-appropriate recommendations
+     - Calculate and display due dates for multi-dose series
+     """
+     ```
+
+2. **Integration Testing** (1.5 hours)
+   - Test immunization-specific tools via `/insight` interface
+   - Test queries:
+     - "What vaccines has this patient received?"
+     - "Is patient up-to-date on vaccinations?"
+     - "What immunizations are due?"
+     - "When is next Shingrix dose due?"
+   - Verify immunizations appear in comprehensive patient summaries
+   - Test with patients of different ages (18, 50, 68, 75)
+
+3. **Update Suggested Questions** (30 min)
+   - Location: `ai/prompts/suggested_questions.py`
+   - Add immunization-related question:
+     - "What immunizations are due for this patient?"
+     - OR "Is the patient up to date on vaccinations?"
+
+**Deliverables:**
+- [ ] Updated system prompts with immunization guidance
+- [ ] Updated suggested questions
+- [ ] Comprehensive integration testing completed
+- [ ] End-to-end testing with 10+ patients
+
+**Estimated Time:** Day 5 (2-3 hours)
+
+---
+
+#### **Days 6-7: Documentation and Final Testing (2-3 hours)**
+
+**Tasks:**
+
+1. **Documentation Updates** (1 hour)
+   - Mark Phase 6 complete in this document
+   - Update tool registry (Section 6.6) with final implementation notes
+   - Document usage examples and performance metrics
+   - Update `CLAUDE.md` with new AI capabilities
+
+2. **Final QA Testing** (1 hour)
+   - Test all immunization queries end-to-end
+   - Verify CDC compliance checking accuracy
+   - Check token usage and LLM costs
+   - Performance testing (< 5 sec p90 response time)
+   - Edge cases: no immunizations, incomplete series, adverse reactions
+
+3. **Production Cleanup** (30 min)
+   - Remove any debug logging
+   - Verify error handling
+   - Confirm graceful handling of missing data
+
+**Deliverables:**
+- [ ] Phase 6 marked complete
+- [ ] All documentation updated
+- [ ] Final QA checklist completed
+- [ ] Ready for production use
+
+**Estimated Time:** Days 6-7 (2-3 hours)
+
+---
+
+#### **Phase 6 Success Criteria:**
+- [ ] `get_patient_summary()` automatically includes recent immunizations (last 10)
+- [ ] 3 new immunization-specific tools available and functional:
+  - `get_immunization_history`
+  - `check_vaccine_compliance`
+  - `forecast_next_dose`
+- [ ] LangGraph agent autonomously invokes immunization tools for relevant queries
+- [ ] CDC ACIP compliance checking works for common age-based vaccines
+- [ ] Multi-dose series due dates calculated correctly
+- [ ] Response time < 5 seconds for immunization queries (p90)
+- [ ] Token usage remains reasonable (< 2K tokens for summaries)
+- [ ] Manual testing with 10+ patients confirms accurate immunization retrieval
+- [ ] Incomplete series and adverse reactions properly flagged
+- [ ] UI suggested questions include immunization query
+
+---
+
+#### **Phase 6 Dependencies:**
+- **Immunizations ETL Pipeline:** Must be complete with data in PostgreSQL
+- **Immunizations UI:** Full page and widget operational for cross-referencing
+- **Database Functions:** `app/db/patient_immunizations.py` with query functions
+- **LangGraph Agent:** Phases 1-5 complete and operational
+
+---
+
+#### **Phase 6 Clinical Impact:**
+
+**Care Gap Identification:**
+- 68-year-old patient without pneumococcal vaccine → AI flags as care gap
+- Incomplete Shingrix series → AI calculates next due date
+- Overdue flu shot → AI recommends based on last vaccination date
+
+**Preventive Care:**
+- Immunizations are critical preventive care, especially for elderly patients
+- AI can proactively identify missed vaccines during chart review
+- Reduces cognitive load on clinicians for vaccine schedule tracking
+
+**Safety:**
+- Adverse reaction history surfaced automatically
+- Helps clinicians make informed decisions about future vaccinations
+- CVX code precision prevents confusion between similar vaccines
+
+---
+
+#### **Phase 6 Future Enhancements (Phase 7+):**
+- **RAG Integration:** Vector embeddings of CDC "Pink Book" ACIP schedules
+- **Contraindication Checking:** Semantic search for vaccine contraindications
+- **Travel Medicine:** Destination-specific vaccine recommendations
+- **Occupational Health:** Job-based vaccine requirements (healthcare workers, etc.)
+- **Pediatric Schedules:** CDC childhood immunization schedule integration
+
+---
+
 ## 11. Testing Strategy
 
 ### 11.1 Unit Tests
@@ -4633,14 +4971,13 @@ Follow the same export style and documentation conventions used elsewhere in the
 | v1.9 | 2026-01-03 | **Phase 5 Day 1 Complete**. Updated Phase 5 specification with actual implementation details: (1) Single "Download Transcript" button (UX improvement from initial two-button spec), (2) Button aligned with textarea using calc() padding, (3) PHI warning modal with black bullet points and reduced spacing, (4) Shortened disclaimer text to eliminate vertical scrolling. Marked Day 1 deliverables complete, Day 2 ready for implementation. Updated document status to reflect progress. | Claude + User |
 | v2.0 | 2026-01-04 | **Phase 5 Complete - Conversation Transcript Download MVP**. Marked all Phase 5 deliverables complete. Day 2 implementation: (1) Complete transcript.js module (~350 lines) with client-side plaintext and markdown generation, (2) Browser download with formatted filenames, (3) Script integration and modal button wiring. Additional enhancements: (1) Real timestamp implementation replacing hardcoded "Just now" with actual datetime (format: "2:45:32 PM"), (2) Markdown formatting improvements removing green checkmarks from Security Requirements. Total implementation time: 3.5 hours. All success criteria met. **Major milestone: Phase 1-5 complete.** | Claude + User |
 | v2.1 | 2026-01-04 | **Post-Phase 5 Data Quality & UX Enhancements Complete**. Fixed 4 bugs identified during user testing: (1) Real timestamps - replaced hardcoded "Just now" with actual datetime in chat messages (backend datetime generation), (2) Clinician email - fixed transcript metadata to show full authenticated user email instead of placeholder, (3) Patient name fixes - three separate bugs: added name to demographics tool output, updated system prompt to authorize sharing patient identifiers with clinicians, fixed dictionary field name from "name" to "name_display" in route handler. All enhancements verified working. AI now correctly answers "What is the patient's name?" System ready for production clinical use. | Claude + User |
+| v2.2 | 2026-01-14 | **Phase 6 Specification Added - Immunizations Integration (PLANNED)**. Added Section 6.6: Immunization Tools overview (3 new tools). Updated Section 6.2: Enhanced get_patient_summary to include immunizations domain (Phase 6 planned). Added Phase 6 to Section 10: Complete 5-7 day implementation roadmap with task breakdown (Days 1-3: immunization-specific tools, Day 4: PatientContextBuilder enhancement, Day 5: system prompts/testing, Days 6-7: documentation/QA). Detailed success criteria, dependencies, clinical impact, and future enhancements. Cross-referenced immunizations-design.md Section 9 for detailed tool specifications. **Total estimated time: 16-20 hours over 5-7 days.** Ready for Phase 6 implementation planning. | Claude + User |
 
 ---
 
 **Next Steps:**
-1. ✅ Review and approve this design specification
-2. ⏳ Begin Phase 1 Week 1 implementation (infrastructure setup)
-3. ⏳ Refactor DDI analyzer from notebooks
-4. ⏳ Build LangGraph agent with DDI tool
-5. ⏳ Create FastAPI routes and HTMX UI
+1. ✅ Phases 1-5 Complete - AI Clinical Insights operational
+2. ⏳ Phase 6: Immunizations Integration (5-7 days, 16-20 hours)
+3. ⏳ Phase 7+: Advanced features (RAG, semantic search, care gap analysis)
 
-**Questions or Feedback:** Review with stakeholders before implementation begins.
+**Questions or Feedback:** Review Phase 6 specification before implementation begins.
