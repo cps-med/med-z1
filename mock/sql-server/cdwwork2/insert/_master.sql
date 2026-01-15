@@ -54,6 +54,15 @@ PRINT '';
 
 PRINT '';
 PRINT '=======================================================================';
+PRINT 'STEP 5: Populating immunizations';
+PRINT '=======================================================================';
+PRINT '';
+
+:r ImmunizationMill.VaccineCode.sql
+:r ImmunizationMill.VaccineAdmin.sql
+
+PRINT '';
+PRINT '=======================================================================';
 PRINT 'CDWWork2 Data Population Complete!';
 PRINT '=======================================================================';
 PRINT '';
@@ -62,5 +71,7 @@ PRINT '  - Code Sets: VITAL_TYPE, UNIT, ALLERGEN, REACTION, SEVERITY (48 codes)'
 PRINT '  - Patients: 2 (Adam Dooree at Portland, Alexander Aminor at Seattle)';
 PRINT '  - Encounters: 16 total (8 per patient)';
 PRINT '  - Vitals: 22 total (12 for Adam, 10 for Alexander)';
+PRINT '  - Vaccine Codes: 15 total (COVID, Flu, Tdap, Shingrix, Hep A/B, HPV, pediatric)';
+PRINT '  - Immunizations: 40 total (17 for Adam, 23 for Alexander)';
 PRINT '';
 GO

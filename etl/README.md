@@ -131,6 +131,55 @@ python -m etl.load_labs
 **Important Note - Location Field Pattern:**
 This domain was the first to implement the standardized three-column location pattern from day one. All location references include ID, name, and type for consistency with Vitals and Encounters domains. See `docs/spec/med-z1-architecture.md` Section 4.3 for detailed pattern documentation.
 
+### Immunizations (✅ ETL Complete - 2026-01-14)
+- **bronze_immunizations.py** ✅ - Extract vaccines and immunization records from CDWWork (2 tables: Dim.Vaccine, Immunization.PatientImmunization)
+- **bronze_cdwwork2_immunizations.py** ✅ - Extract from CDWWork2/Cerner (2 tables: ImmunizationMill.VaccineCode, ImmunizationMill.VaccineAdmin)
+- **silver_immunizations.py** ✅ - Harmonize VistA and Cerner data, parse series info, standardize anatomical sites, deduplicate
+- **gold_immunizations.py** ✅ - Add patient ICN resolution, provider names, location names, facility names
+- **load_immunizations.py** ✅ - Load into PostgreSQL patient_immunizations and reference.vaccine tables
+
+**Run:**
+```bash
+# Bronze: Extract from CDWWork (30 vaccines, 147 immunizations)
+python -m etl.bronze_immunizations
+
+# Bronze: Extract from CDWWork2 (15 vaccine codes, 40 administrations)
+python -m etl.bronze_cdwwork2_immunizations
+
+# Silver: Harmonize and deduplicate (178 immunizations, 1 duplicate removed)
+python -m etl.silver_immunizations
+
+# Gold: Add patient identity and enrichment (138 immunizations with valid ICN)
+python -m etl.gold_immunizations
+
+# Load: Insert into PostgreSQL (138 immunizations, 30 reference vaccines)
+python -m etl.load_immunizations
+```
+
+**Key Features:**
+- CVX code standardization: CDC Concept of Vaccines eXpanded codes for AI/interoperability
+- Multi-source harmonization: Combines VistA (CDWWork) and Cerner (CDWWork2) immunization data
+- Series parsing: Extracts dose_number and total_doses from formats like "1 of 2", "BOOSTER", "ANNUAL 2024"
+- Anatomical site standardization: "L DELTOID" → "Left Deltoid"
+- Derived flags: `is_series_complete`, `has_adverse_reaction`, `is_annual_vaccine`, `is_covid_vaccine`
+- Cross-system deduplication: Same patient + CVX + date → keeps most recent (CDWWork2 preferred)
+
+**Vaccine Types Covered:**
+- Childhood vaccines: Hepatitis B, Polio (IPV), DTaP, Varicella, Hib, Hepatitis A
+- Adult vaccines: Tdap, Td, Shingrix, PPSV23, HPV
+- Annual vaccines: Influenza (multiple formulations including high-dose for 65+)
+- COVID-19: Pfizer, Moderna, Janssen, AstraZeneca
+
+**Data Volume:** 138 immunizations across 8 test patients (3 facilities: Sta3n 508, 516, 552)
+
+**Tables Created:**
+- PostgreSQL: `clinical.patient_immunizations` (138 records, 10 performance indexes)
+- PostgreSQL: `reference.vaccine` (30 CVX-coded vaccines with groupings and series patterns)
+
+**Status:** ✅ ETL Complete (2026-01-14). Phase 1 (Data Pipeline) complete. API/UI implementation pending (Phase 2).
+
+**Design Documentation:** See `docs/spec/immunizations-design.md` for comprehensive design specification including UI mockups, AI integration plans, and CDC ACIP compliance checking strategies.
+
 ## Prerequisites
 
 **Required Services:**

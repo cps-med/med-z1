@@ -602,7 +602,7 @@ sqlcmd -S 127.0.0.1,1433 -U sa -P 'MyS3cur3P@ssw0rd' -C -Q "SELECT @@VERSION"
 
 ## Create and Populate SQL Server Mock Data
 
-The **med-z1** application uses Microsoft SQL Server 2019 to simulate the VA Corporate Data Warehouse (CDW) for local development. The mock CDW contains synthetic patient data for a number of VistA sites (aka "stations") and spans multiple clinical domains, such as Allergies, Vitals, Labs, and Encounters.
+The **med-z1** application uses Microsoft SQL Server 2019 to simulate the VA Corporate Data Warehouse (CDW) for local development. The mock CDW contains synthetic patient data for a number of VistA sites (aka "stations") and spans multiple clinical domains, such as Allergies, Vitals, Labs, Encounters, Clinical Notes, and Immunizations.
 
 ### CDWWork Database (VistA)
 
@@ -914,7 +914,30 @@ python -m etl.gold_clinical_notes
 python -m etl.load_clinical_notes
 ```
 
-#### 9. Drug-Drug Interaction (DDI) Reference Data Pipeline
+#### 9. Immunizations Pipeline
+```bash
+# Bronze: Extract Immunizations from CDWWork (VistA)
+python -m etl.bronze_immunizations
+
+# Bronze: Extract Immunizations from CDWWork2 (Cerner)
+python -m etl.bronze_cdwwork2_immunizations
+
+# Silver: Harmonize and deduplicate
+python -m etl.silver_immunizations
+
+# Gold: Create patient-centric immunization view
+python -m etl.gold_immunizations
+
+# Load: Insert into PostgreSQL
+python -m etl.load_immunizations
+```
+
+**Expected Results:**
+- PostgreSQL table: `clinical.patient_immunizations` (~138 records)
+- PostgreSQL reference table: `reference.vaccine` (30 CVX-coded vaccines)
+- Parquet files: `bronze/cdwwork/vaccine_dim/`, `bronze/cdwwork/immunization/`, `bronze/cdwwork2/immunization_mill/vaccine_code_raw/`, `bronze/cdwwork2/immunization_mill/vaccine_admin_raw/`, `silver/immunizations/immunization_harmonized.parquet`, `gold/immunizations/patient_immunizations_final.parquet`
+
+#### 10. Drug-Drug Interaction (DDI) Reference Data Pipeline
 
 The DDI pipeline provides reference data for the AI Clinical Insights feature. Unlike clinical domains, this pipeline does NOT load into PostgreSQL—the Gold Parquet is consumed directly by the AI service at runtime.
 

@@ -45,6 +45,9 @@
 -- Clinical notes dimensions
 :r Dim.TIUDocumentDefinition.sql
 
+-- Immunization dimensions
+:r Dim.Vaccine.sql
+
 -- =======================================================================
 -- PATIENT TABLES
 -- =======================================================================
@@ -98,4 +101,7 @@
 -- Clinical Notes (TIU - Text Integration Utilities)
 :r TIU.TIUDocument_8925.sql
 :r TIU.TIUDocumentText.sql
+
+-- Immunizations
+:r Immunization.PatientImmunization.sql
 

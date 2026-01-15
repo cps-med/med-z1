@@ -98,6 +98,17 @@ python -m etl.silver_clinical_notes
 python -m etl.gold_clinical_notes
 python -m etl.load_clinical_notes
 
+# Immunizations
+echo "══════════════════════════════════════════════════"
+echo ">>> Running Immunizations pipeline..."
+echo "══════════════════════════════════════════════════"
+sleep 3
+python -m etl.bronze_immunizations
+python -m etl.bronze_cdwwork2_immunizations
+python -m etl.silver_immunizations
+python -m etl.gold_immunizations
+python -m etl.load_immunizations
+
 # Drug-Drug Interaction Reference Data
 echo "══════════════════════════════════════════════════"
 echo ">>> Running DDI Reference Data pipeline..."

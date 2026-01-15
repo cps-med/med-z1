@@ -277,10 +277,19 @@ Keep both patterns as valid architectural choices based on domain requirements.
 ### 4.1 Medallion Architecture (Bronze → Silver → Gold)
 
 **Bronze Layer:**
-- Raw data extracted from source systems (CDWWork, CDWWork1)
+- Raw data extracted from source systems (CDWWork, CDWWork2)
 - Minimal transformations (column name cleanup only)
 - Stored as Parquet in MinIO: `med-z1/bronze/<source>/<domain>/`
 - One-to-one with source tables
+
+**Bronze Layer Naming Convention:**
+- **Dimension tables:** `{domain}_dim` (suffix pattern)
+  - Examples: `vaccine_dim`, `vital_type_dim`, `lab_test_dim`, `local_drug_dim`
+- **Fact tables:** `{domain_name}` (no suffix)
+  - Examples: `immunization`, `vital_sign`, `lab_chem`, `tiu_clinical_notes`
+- **Parquet files:** `{table_name}_raw.parquet`
+  - Examples: `vaccine_dim_raw.parquet`, `patient_immunization_raw.parquet`
+- **Rationale:** Suffix pattern clearly distinguishes dimension vs fact tables; `_raw` suffix indicates unprocessed Bronze layer data
 
 **Silver Layer:**
 - Cleaned, validated, standardized data
@@ -289,10 +298,26 @@ Keep both patterns as valid architectural choices based on domain requirements.
 - Stored as Parquet in MinIO: `med-z1/silver/<domain>/`
 - Derived fields (e.g., `is_drug_allergy`, flags)
 
+**Silver Layer Naming Convention:**
+- **Dimension tables:** `{domain}_dim` (same suffix pattern as Bronze)
+  - Examples: `lab_test_dim`, `tiu_document_definition_dim`, `vaccine_dim`
+- **Fact tables:** `{domain_name}` with descriptive suffix indicating processing
+  - Examples: `vitals_merged`, `patient_allergies_cleaned`, `lab_chem`, `immunization_harmonized`
+- **Parquet files:** `{table_name}.parquet` (no `_raw` suffix since data is cleaned)
+  - Examples: `lab_test_dim.parquet`, `vitals_merged.parquet`, `immunization_harmonized.parquet`
+- **Rationale:** Maintains `_dim` suffix for easy identification of reference data; descriptive suffixes on fact tables indicate processing stage; removal of `_raw` signals cleaned state
+
 **Gold Layer:**
 - Business-ready, curated views
 - Joined with patient demographics for ICN/patient_key
 - Sorted and optimized for UI consumption
+
+**Gold Layer Naming Convention:**
+- **View-based naming:** `{business_view_name}` (no technical suffixes)
+  - Examples: `patient_demographics`, `clinical_notes`, `labs`, `patient_vitals`, `patient_immunizations`
+- **Parquet files:** `{view_name}_final.parquet` (indicates ready for serving database)
+  - Examples: `patient_demographics_final.parquet`, `clinical_notes_final.parquet`, `labs_final.parquet`
+- **Rationale:** Business-friendly names reflect UI/query perspective; `_final` suffix indicates production-ready data optimized for PostgreSQL load
 - Stored as Parquet in MinIO: `med-z1/gold/<domain>/`
 - Ready for PostgreSQL loading
 
