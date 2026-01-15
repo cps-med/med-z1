@@ -196,7 +196,7 @@ The specific items that use this notation are listed below:
 - pydantic==2.12.5 (keep)
 - pydantic_core==2.41.5 (remove)
 
-To deactivate a Pythone virtual environment:
+To deactivate a Python virtual environment:
 ```bash
 deactivate
 ```
@@ -474,7 +474,7 @@ Password: VaDemo2025!
 
 ## MinIO Setup and Bucket Creation
 
-The med-z1 application uses MinIO as an S3-compatible object storage system for the data lake. The primary file types that will be managed within MinIO are csv and Parquet. MinIO must be properly configured before running ETL pipelines, as the pipelines reads and writes parquet files to and from MinIO.  
+The med-z1 application uses MinIO as an S3-compatible object storage system for the data lake. The primary file types that will be managed within MinIO are csv and Parquet. MinIO must be properly configured before running ETL pipelines, as the pipelines read and write parquet files to and from MinIO.  
 
 The MinIO service should already be running from the `docker compose up -d` command executed earlier.  
 
@@ -730,7 +730,7 @@ Before running ETL pipelines, ensure the following are complete:
 - PostgreSQL auth schema and tables created (from previous section)
 - MinIO container running with `med-z1` bucket created
 - MinIO connectivity tested successfully (`python -m scripts.minio_test`)
-- SQL Server container running with CDWWork database populated
+- SQL Server container running with CDWWork and CDWWork2 databases populated
 - Python virtual environment activated (`source .venv/bin/activate`)
 
 **Create PostgreSQL Clinical Domain Tables**  
@@ -1008,14 +1008,17 @@ With the ETL pipelines complete, you now have:
 
 You can now start the FastAPI application and view patient data in the UI. Below are instructions for starting the three core FastAPI servers. You can start the services in any order, but it's best to start them in the order presented below.
 
-From the project root directory:
+From the project root directory, within separate terminal windows or tabs:
 ```bash
+# Activate Python virtual environment
 # Start the Vista RPC Broker Simulator (port 8003, separate terminal or tab)
 uvicorn vista.app.main:app --reload --port 8003
 
+# Activate Python virtual environment
 # Start the CCOW Context Vault service (port 8001, separate terminal or tab)
 uvicorn ccow.main:app --reload --port 8001
 
+# Activate Python virtual environment
 # Start the main med-z1 web application (port 8000, separate terminal or tab)
 # Note that the port argument is optional, since it will default to 8000
 uvicorn app.main:app --reload --port 8000
