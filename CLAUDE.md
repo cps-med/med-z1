@@ -345,15 +345,19 @@ The med-z1 AI subsystem provides LangGraph-powered clinical decision support via
 7. ✅ Encounters - Full implementation (1x1 widget + dedicated page with pagination) - **Completed 2025-12-15**
 8. ✅ **Clinical Notes** - Full implementation (widget + dedicated page with filtering, 106 notes in PostgreSQL) - **Completed 2026-01-02**
    - **AI Integration:** Phase 4 complete (2026-01-03) - Notes included in AI insights with dedicated query tool
+9. ✅ **Immunizations** - **Full implementation** (1x1 widget + dedicated page with filtering, 138 immunizations + 30 CVX vaccines in PostgreSQL) - **Completed 2026-01-14**
+   - **Key Features:** Multi-source harmonization (VistA + Cerner), CVX code standardization, series parsing ("1 of 2", "BOOSTER"), adverse reaction tracking, incomplete series indicators
+   - **Database:** `app/db/patient_immunizations.py` with comprehensive filtering (vaccine_group, cvx_code, days, incomplete_only, adverse_reactions_only)
+   - **API:** 6 endpoints (JSON APIs, HTML widget, full page, filtered results, CCOW redirect)
+   - **UI:** Dashboard widget shows 5 most recent (2-year lookback), full page with summary stats (6 cards) and HTMX filtering
 
 **ETL Complete, UI Pending (1):**
-9. 🔧 Labs - **ETL pipeline complete** (Bronze/Silver/Gold/Load), 58 results in PostgreSQL. UI implementation pending (3x1 widget recommended) - **ETL Completed 2025-12-16**
+10. 🔧 Labs - **ETL pipeline complete** (Bronze/Silver/Gold/Load), 58 results in PostgreSQL. UI implementation pending (3x1 widget recommended) - **ETL Completed 2025-12-16**
 
-**Placeholder Domains (5):**
-10. 🚧 Problems - Diagnoses and problem list
-11. 🚧 Orders - Clinical orders and requests
-12. 🚧 Imaging - Radiology and imaging studies
-13. 🚧 Immunizations - Vaccination history (Later Phase)
+**Placeholder Domains (4):**
+11. 🚧 Problems - Diagnoses and problem list
+12. 🚧 Orders - Clinical orders and requests
+13. 🚧 Imaging - Radiology and imaging studies
 14. 🚧 Procedures - Surgical and procedural history (Later Phase)
 
 **UI Implementation Notes:**

@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+
+{% block title %}Immunizations - {{ patient.name_display if patient else 'Med-Z1' }}{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    {% if error %}
+        <!-- Error State -->
+        <div class="page-error">
+            <div class="page-error__icon">
+                <i class="fa-solid fa-triangle-exclamation fa-3x"></i>
+            </div>
+            <h2 class="page-error__title">Error Loading Immunizations</h2>
+            <p class="page-error__message">{{ error }}</p>
+            <a href="/" class="btn btn--primary">
+                <i class="fa-solid fa-house"></i>
+                Return to Dashboard
+            </a>
+        </div>
+    {% elif not patient %}
+        <!-- No Patient State -->
+        <div class="page-error">
+            <div class="page-error__icon">
+                <i class="fa-regular fa-user fa-3x"></i>
+            </div>
+            <h2 class="page-error__title">No Patient Selected</h2>
+            <p class="page-error__message">Please select a patient to view their immunizations</p>
+            <a href="/" class="btn btn--primary">
+                <i class="fa-solid fa-house"></i>
+                Return to Dashboard
+            </a>
+        </div>
+    {% else %}
+        <!-- Page Header with Breadcrumbs -->
+        <div class="page-header-breadcrumb">
+            <!-- Breadcrumbs -->
+            <nav aria-label="breadcrumb" class="breadcrumb-nav">
+                <a href="/?icn={{ patient.icn }}" class="breadcrumb-link">
+                    <i class="fa-solid fa-house"></i>
+                    Dashboard
+                </a>
+                <i class="fa-solid fa-chevron-right breadcrumb-separator"></i>
+                <span class="breadcrumb-current">Immunizations</span>
+            </nav>
+        </div>
+
+        <!-- Page Title Section -->
+        <div class="page-header__title-group">
+            <h1 class="page-header__title">
+                Immunizations
+            </h1>
+        </div>
+
+        <!-- Summary Stats Bar -->
+        <div class="immunizations-summary-bar">
+            <div class="immunization-stat-card">
+                <div class="immunization-stat-card__value">{{ counts.total or 0 }}</div>
+                <div class="immunization-stat-card__label">Total Immunizations</div>
+            </div>
+            <div class="immunization-stat-card">
+                <div class="immunization-stat-card__value">{{ counts.recent_2y or 0 }}</div>
+                <div class="immunization-stat-card__label">Recent (2 years)</div>
+            </div>
+            <div class="immunization-stat-card">
+                <div class="immunization-stat-card__value">{{ counts.annual or 0 }}</div>
+                <div class="immunization-stat-card__label">Influenza</div>
+            </div>
+            <div class="immunization-stat-card">
+                <div class="immunization-stat-card__value">{{ counts.covid or 0 }}</div>
+                <div class="immunization-stat-card__label">COVID-19</div>
+            </div>
+            {% if counts.incomplete and counts.incomplete > 0 %}
+            <div class="immunization-stat-card immunization-stat-card--warning">
+                <div class="immunization-stat-card__value">{{ counts.incomplete }}</div>
+                <div class="immunization-stat-card__label">Incomplete Series</div>
+            </div>
+            {% endif %}
+            {% if counts.with_reactions and counts.with_reactions > 0 %}
+            <div class="immunization-stat-card immunization-stat-card--danger">
+                <div class="immunization-stat-card__value">{{ counts.with_reactions }}</div>
+                <div class="immunization-stat-card__label">Adverse Reactions</div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Filters and Controls -->
+        <div class="immunizations-controls">
+            <!-- Filter Section (HTMX Form) -->
+            <form class="immunizations-filters"
+                  hx-get="/patient/{{ patient.icn }}/immunizations/filtered"
+                  hx-target="#immunizations-table-body"
+                  hx-swap="innerHTML"
+                  hx-trigger="change"
+                  hx-indicator=".htmx-indicator">
+
+                <!-- Vaccine Group Filter -->
+                <div class="filter-group">
+                    <label class="filter-group__label">
+                        <i class="fa-solid fa-syringe"></i>
+                        Vaccine Group:
+                    </label>
+                    <select name="vaccine_group" class="filter-select" id="vaccine-group-select">
+                        <option value="">All Vaccines ({{ counts.total }})</option>
+                        <option value="influenza">Influenza ({{ counts.annual }})</option>
+                        <option value="covid-19">COVID-19 ({{ counts.covid }})</option>
+                        {% for group in vaccine_groups %}
+                        <option value="{{ group }}">{{ group }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Time Period Filter -->
+                <div class="filter-group">
+                    <label class="filter-group__label">
+                        <i class="fa-solid fa-calendar-days"></i>
+                        Time Period:
+                    </label>
+                    <select name="days" class="filter-select" id="days-select">
+                        <option value="">All Time</option>
+                        <option value="90">Last 90 Days</option>
+                        <option value="180">Last 6 Months</option>
+                        <option value="365">Last Year</option>
+                        <option value="730">Last 2 Years</option>
+                    </select>
+                </div>
+
+                <!-- Status Filter -->
+                <div class="filter-group">
+                    <label class="filter-group__label">
+                        <i class="fa-solid fa-filter"></i>
+                        Status:
+                    </label>
+                    <select name="status_filter" class="filter-select" id="status-filter-select">
+                        <option value="all">All</option>
+                        <option value="incomplete">Incomplete Series ({{ counts.incomplete }})</option>
+                        <option value="reactions">Adverse Reactions ({{ counts.with_reactions }})</option>
+                    </select>
+                </div>
+
+                <!-- Hidden fields for incomplete_only and adverse_reactions_only flags -->
+                <input type="hidden" name="incomplete_only" value="false" id="incomplete-only-field">
+                <input type="hidden" name="adverse_reactions_only" value="false" id="adverse-reactions-only-field">
+
+                <!-- Loading indicator -->
+                <div class="htmx-indicator" style="display: none; margin-left: 1rem;">
+                    <i class="fa-solid fa-spinner fa-spin"></i> Loading...
+                </div>
+            </form>
+
+            <!-- Results Count -->
+            <div class="results-summary">
+                Showing <strong>{{ immunizations|length }}</strong> immunization{% if immunizations|length != 1 %}s{% endif %}
+            </div>
+        </div>
+
+        <!-- Immunizations Table -->
+        <div id="immunizations-table-container" class="table-container">
+            <table class="immunizations-table">
+                <thead class="immunizations-table__header">
+                    <tr>
+                        <th>Vaccine</th>
+                        <th>Date Administered</th>
+                        <th>Series</th>
+                        <th>Route / Site</th>
+                        <th>Provider</th>
+                        <th>Location</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="immunizations-table-body" class="immunizations-table__body">
+                    {% include 'partials/immunizations_table_rows.html' %}
+                </tbody>
+            </table>
+
+            {% if immunizations|length == 0 %}
+            <div class="empty-state">
+                <div class="empty-state__icon">
+                    <i class="fa-solid fa-syringe fa-3x"></i>
+                </div>
+                <p class="empty-state__message">No immunizations found matching the selected filters</p>
+            </div>
+            {% endif %}
+        </div>
+
+    {% endif %}
+</div>
+
+<script>
+// Update hidden fields based on status filter selection and trigger HTMX
+document.addEventListener('DOMContentLoaded', function() {
+    const statusSelect = document.getElementById('status-filter-select');
+    const incompleteField = document.getElementById('incomplete-only-field');
+    const reactionsField = document.getElementById('adverse-reactions-only-field');
+    const form = document.querySelector('.immunizations-filters');
+
+    if (statusSelect && incompleteField && reactionsField && form) {
+        statusSelect.addEventListener('change', function() {
+            const value = this.value;
+            incompleteField.value = (value === 'incomplete') ? 'true' : 'false';
+            reactionsField.value = (value === 'reactions') ? 'true' : 'false';
+
+            // Manually trigger HTMX request since hidden field changes don't fire change events
+            htmx.trigger(form, 'change');
+        });
+    }
+
+    // Clean up form parameters before HTMX sends request
+    if (form) {
+        form.addEventListener('htmx:configRequest', function(evt) {
+            const params = evt.detail.parameters;
+
+            // Remove empty string values (FastAPI can't convert "" to Optional[int])
+            if (params.days === '') {
+                delete params.days;
+            }
+
+            // Remove status_filter (UI-only, not expected by backend)
+            delete params.status_filter;
+
+            // Convert string booleans to actual booleans
+            if (params.incomplete_only === 'false') {
+                delete params.incomplete_only;  // Backend defaults to False
+            }
+            if (params.adverse_reactions_only === 'false') {
+                delete params.adverse_reactions_only;  // Backend defaults to False
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -68,6 +68,10 @@ PRINT '';
 :r AllergyMill.PersonAllergy.sql
 :r AllergyMill.AdverseReaction.sql
 
+-- Immunizations
+:r ImmunizationMill.VaccineCode.sql
+:r ImmunizationMill.VaccineAdmin.sql
+
 PRINT '';
 PRINT '=======================================================================';
 PRINT 'CDWWork2 Database Creation Complete!';

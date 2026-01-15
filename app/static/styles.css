@@ -1809,6 +1809,121 @@ input:focus-visible,
     border: 1px dashed #d1d5db;
 }
 
+/* Immunizations Widget */
+.widget-immunizations {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.immunizations-summary-widget {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0.5rem;
+    background: #f9fafb;
+    border-radius: 0.375rem;
+}
+
+.immunizations-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.immunizations-stat__value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #111827;
+    line-height: 1;
+}
+
+.immunizations-stat__label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.immunizations-stat-divider {
+    width: 1px;
+    height: 40px;
+    background: #d1d5db;
+}
+
+.immunizations-list-widget {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.immunization-item-widget {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.5rem;
+    background: #f9fafb;
+    border-radius: 0.375rem;
+    border-left: 3px solid #0066cc;
+}
+
+.immunization-item-widget__icon {
+    font-size: 1rem;
+    padding-top: 0.125rem;
+}
+
+.immunization-item-widget__icon .text-primary {
+    color: #0066cc;
+}
+
+.immunization-item-widget__icon .text-info {
+    color: #0ea5e9;
+}
+
+.immunization-item-widget__icon .text-success {
+    color: #10b981;
+}
+
+.immunization-item-widget__icon .text-warning {
+    color: #d97706;
+}
+
+.immunization-item-widget__icon .text-danger {
+    color: #dc2626;
+}
+
+.immunization-item-widget__info {
+    flex: 1;
+    min-width: 0;
+}
+
+.immunization-item-widget__name {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: #111827;
+    margin-bottom: 0.125rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.immunization-item-widget__meta {
+    font-size: 0.75rem;
+    color: #6b7280;
+    line-height: 1.4;
+}
+
+.immunization-item-widget--more {
+    justify-content: center;
+    color: #6b7280;
+    font-size: 0.875rem;
+    border-left: none;
+    background: transparent;
+    border: 1px dashed #d1d5db;
+}
+
 /* Medications Widget */
 .widget-medications {
     display: flex;
@@ -3529,6 +3644,203 @@ input:focus-visible,
     .medication-cell--status {
         width: auto;
     }
+}
+
+/* ============================================================================
+   IMMUNIZATIONS PAGE STYLES
+   ============================================================================ */
+
+/* Immunizations Summary Bar */
+.immunizations-summary-bar {
+    display: flex;
+    gap: 1rem;
+    margin: 1.5rem 0;
+    flex-wrap: wrap;
+}
+
+.immunization-stat-card {
+    flex: 1;
+    min-width: 150px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    text-align: center;
+}
+
+.immunization-stat-card__value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 0.25rem;
+}
+
+.immunization-stat-card__label {
+    font-size: 0.875rem;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.immunization-stat-card--warning {
+    background: #fef3c7;
+    border-color: #f59e0b;
+}
+
+.immunization-stat-card--warning .immunization-stat-card__value {
+    color: #d97706;
+}
+
+.immunization-stat-card--danger {
+    background: #fee2e2;
+    border-color: #f87171;
+}
+
+.immunization-stat-card--danger .immunization-stat-card__value {
+    color: #dc2626;
+}
+
+/* Immunizations Controls (Filters) */
+.immunizations-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.immunizations-filters {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    align-items: flex-end;
+}
+
+/* Immunizations Table */
+.immunizations-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.immunizations-table__header {
+    background: #f9fafb;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.immunizations-table__header th {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.immunizations-table__body tr {
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.immunizations-table__body tr:hover {
+    background: #f9fafb;
+}
+
+.immunization-row td {
+    padding: 1rem;
+    vertical-align: top;
+}
+
+/* Vaccine Cell */
+.immunization-vaccine-cell {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+}
+
+.immunization-vaccine-cell__icon {
+    font-size: 1.25rem;
+    padding-top: 0.125rem;
+}
+
+.immunization-vaccine-cell__icon .text-primary {
+    color: #0066cc;
+}
+
+.immunization-vaccine-cell__icon .text-info {
+    color: #0ea5e9;
+}
+
+.immunization-vaccine-cell__icon .text-success {
+    color: #10b981;
+}
+
+.immunization-vaccine-cell__icon .text-warning {
+    color: #d97706;
+}
+
+.immunization-vaccine-cell__icon .text-danger {
+    color: #dc2626;
+}
+
+.immunization-vaccine-cell__info {
+    flex: 1;
+}
+
+.immunization-vaccine-cell__name {
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 0.25rem;
+}
+
+.immunization-vaccine-cell__meta {
+    font-size: 0.75rem;
+    color: #6b7280;
+}
+
+/* Location Cell */
+.location-cell__name {
+    font-weight: 500;
+    color: #111827;
+}
+
+.location-cell__facility {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-top: 0.125rem;
+}
+
+/* Source Badge */
+.source-badge {
+    display: inline-block;
+    margin-top: 0.25rem;
+    padding: 0.125rem 0.5rem;
+    background: #f3f4f6;
+    border-radius: 0.25rem;
+    font-size: 0.625rem;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Immunization Detail Row */
+.immunization-row-detail {
+    display: none;  /* Hidden by default, can be expanded with JavaScript */
+}
+
+.immunization-detail {
+    padding: 1rem;
+    background: #fef9e7;
+    border-left: 3px solid #f59e0b;
+}
+
+.immunization-detail__section {
+    margin-bottom: 0.5rem;
+}
+
+.immunization-detail__section:last-child {
+    margin-bottom: 0;
 }
 
 /* ============================================================================

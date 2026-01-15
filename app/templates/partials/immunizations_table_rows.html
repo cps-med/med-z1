@@ -1,0 +1,105 @@
+<!-- Immunizations Table Rows Partial -->
+{% for imm in immunizations %}
+<tr class="immunization-row">
+    <td class="immunization-row__vaccine">
+        <div class="immunization-vaccine-cell">
+            <div class="immunization-vaccine-cell__icon">
+                {% if imm.is_covid_vaccine %}
+                    <i class="fa-solid fa-virus-covid text-primary"></i>
+                {% elif imm.is_annual_vaccine %}
+                    <i class="fa-solid fa-calendar-check text-info"></i>
+                {% elif imm.has_adverse_reaction %}
+                    <i class="fa-solid fa-triangle-exclamation text-danger"></i>
+                {% elif not imm.is_series_complete %}
+                    <i class="fa-solid fa-clock text-warning"></i>
+                {% else %}
+                    <i class="fa-solid fa-syringe text-success"></i>
+                {% endif %}
+            </div>
+            <div class="immunization-vaccine-cell__info">
+                <div class="immunization-vaccine-cell__name">{{ imm.vaccine_name }}</div>
+                {% if imm.cvx_code %}
+                <div class="immunization-vaccine-cell__meta">CVX: {{ imm.cvx_code }}</div>
+                {% endif %}
+            </div>
+        </div>
+    </td>
+    <td class="immunization-row__date">
+        {{ imm.administered_date }}
+    </td>
+    <td class="immunization-row__series">
+        {% if imm.series %}
+            {{ imm.series }}
+            {% if not imm.is_series_complete %}
+                <span class="badge badge--warning badge--sm">Incomplete</span>
+            {% endif %}
+        {% else %}
+            <span class="text-muted">—</span>
+        {% endif %}
+    </td>
+    <td class="immunization-row__route">
+        {% if imm.route %}{{ imm.route }}{% else %}—{% endif %}
+        {% if imm.site_of_administration %}<br><span class="text-muted">{{ imm.site_of_administration }}</span>{% endif %}
+    </td>
+    <td class="immunization-row__provider">
+        {% if imm.provider_name %}
+            {{ imm.provider_name }}
+        {% else %}
+            <span class="text-muted">—</span>
+        {% endif %}
+    </td>
+    <td class="immunization-row__location">
+        {% if imm.location_name %}
+            <div class="location-cell">
+                <div class="location-cell__name">{{ imm.location_name }}</div>
+                {% if imm.station_name %}
+                <div class="location-cell__facility">{{ imm.station_name }}</div>
+                {% endif %}
+            </div>
+        {% else %}
+            <span class="text-muted">—</span>
+        {% endif %}
+    </td>
+    <td class="immunization-row__status">
+        {% if imm.has_adverse_reaction %}
+            <span class="badge badge--danger">Adverse Reaction</span>
+        {% elif not imm.is_series_complete %}
+            <span class="badge badge--warning">Incomplete</span>
+        {% else %}
+            <span class="badge badge--success">Complete</span>
+        {% endif %}
+
+        {% if imm.source_system %}
+        <div class="source-badge">{{ imm.source_system }}</div>
+        {% endif %}
+    </td>
+</tr>
+
+<!-- Expandable row for additional details (optional) -->
+{% if imm.adverse_reaction or imm.comments %}
+<tr class="immunization-row-detail">
+    <td colspan="7">
+        <div class="immunization-detail">
+            {% if imm.adverse_reaction %}
+            <div class="immunization-detail__section">
+                <strong class="text-danger">Adverse Reaction:</strong> {{ imm.adverse_reaction }}
+            </div>
+            {% endif %}
+            {% if imm.comments %}
+            <div class="immunization-detail__section">
+                <strong>Comments:</strong> {{ imm.comments }}
+            </div>
+            {% endif %}
+        </div>
+    </td>
+</tr>
+{% endif %}
+{% endfor %}
+
+{% if immunizations|length == 0 %}
+<tr>
+    <td colspan="7" class="text-center text-muted" style="padding: 2rem;">
+        No immunizations found
+    </td>
+</tr>
+{% endif %}

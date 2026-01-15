@@ -1,0 +1,101 @@
+<!-- Immunizations Widget Content -->
+<!-- Widget Header -->
+<div class="widget__header">
+    <div class="widget__title-group">
+        <i class="fa-solid fa-syringe widget__icon"></i>
+        <h3 class="widget__title">Immunizations</h3>
+    </div>
+    {% if counts.incomplete > 0 %}
+        <span class="badge badge--warning">{{ counts.incomplete }} Incomplete</span>
+    {% elif counts.with_reactions > 0 %}
+        <span class="badge badge--danger">{{ counts.with_reactions }} Reactions</span>
+    {% endif %}
+</div>
+
+<!-- Widget Body -->
+<div class="widget__body">
+    <div class="widget-immunizations">
+        {% if error %}
+            <p class="text-muted" style="padding: 1rem; text-align: center;">
+                <i class="fa-solid fa-circle-exclamation"></i> Error loading immunizations
+            </p>
+        {% elif counts.total == 0 %}
+            <p class="text-muted" style="padding: 1rem; text-align: center;">No immunization records</p>
+        {% else %}
+            <!-- Summary Stats -->
+            <div class="immunizations-summary-widget">
+                <div class="immunizations-stat">
+                    <div class="immunizations-stat__value">{{ counts.total }}</div>
+                    <div class="immunizations-stat__label">Total</div>
+                </div>
+                <div class="immunizations-stat-divider"></div>
+                <div class="immunizations-stat">
+                    <div class="immunizations-stat__value">{{ counts.recent_2y }}</div>
+                    <div class="immunizations-stat__label">Recent (2y)</div>
+                </div>
+                {% if counts.incomplete > 0 %}
+                <div class="immunizations-stat-divider"></div>
+                <div class="immunizations-stat">
+                    <div class="immunizations-stat__value text-warning">{{ counts.incomplete }}</div>
+                    <div class="immunizations-stat__label">Incomplete</div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Immunization List (Top 5 Recent) -->
+            <div class="immunizations-list-widget">
+                {% for imm in immunizations %}
+                <div class="immunization-item-widget">
+                    <div class="immunization-item-widget__icon">
+                        {% if imm.is_covid_vaccine %}
+                            <i class="fa-solid fa-virus-covid text-primary"></i>
+                        {% elif imm.is_annual_vaccine %}
+                            <i class="fa-solid fa-calendar-check text-info"></i>
+                        {% elif imm.has_adverse_reaction %}
+                            <i class="fa-solid fa-triangle-exclamation text-danger"></i>
+                        {% elif imm.is_series_complete is not none and not imm.is_series_complete %}
+                            <i class="fa-solid fa-clock text-warning"></i>
+                        {% else %}
+                            <i class="fa-solid fa-syringe text-success"></i>
+                        {% endif %}
+                    </div>
+                    <div class="immunization-item-widget__info">
+                        <div class="immunization-item-widget__name">
+                            {{ imm.vaccine_name[:40] if imm.vaccine_name else 'Unknown Vaccine' }}{% if imm.vaccine_name and imm.vaccine_name|length > 40 %}...{% endif %}
+                            {% if imm.is_series_complete is not none and not imm.is_series_complete %}
+                                <span class="badge badge--warning badge--sm">Incomplete</span>
+                            {% elif imm.has_adverse_reaction %}
+                                <span class="badge badge--danger badge--sm">Reaction</span>
+                            {% endif %}
+                        </div>
+                        <div class="immunization-item-widget__meta">
+                            {{ imm.administered_date }}
+                            {% if imm.series %}
+                                • {{ imm.series }}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+
+                {% if counts.total > immunizations|length %}
+                <div class="immunization-item-widget immunization-item-widget--more">
+                    <i class="fa-solid fa-ellipsis"></i>
+                    {{ counts.total - immunizations|length }} more immunization{{ 's' if counts.total - immunizations|length > 1 else '' }}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- View All Link -->
+            <div class="widget-action">
+                <a href="/patient/{{ icn }}/immunizations" class="btn btn--link btn--sm">
+                    <i class="fa-regular fa-arrow-up-right-from-square"></i>
+                    View All Immunizations
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Widget Footer (minimal spacing) -->
+<div class="widget__footer"></div>

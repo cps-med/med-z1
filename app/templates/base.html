@@ -89,9 +89,9 @@
                     <i class="fa-solid fa-file-medical fa-lg"></i>
                     <span class="sidebar__text">Notes</span>
                 </a>
-                <a href="#"
-                   class="sidebar__link sidebar__link--disabled"
-                   data-tooltip="Immunizations (Coming Soon)">
+                <a href="/immunizations"
+                   class="sidebar__link {{ 'sidebar__link--active' if active_page == 'immunizations' else '' }}"
+                   data-tooltip="Immunizations">
                     <i class="fa-solid fa-syringe fa-lg"></i>
                     <span class="sidebar__text">Immunizations</span>
                 </a>
