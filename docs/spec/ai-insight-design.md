@@ -1,8 +1,8 @@
 # AI Clinical Insights Design Specification
 
-**Document Version:** v2.1
+**Document Version:** v2.2
 **Created:** 2025-12-28
-**Updated:** 2026-01-04 (Post-Phase 5 Enhancements Complete ✅)
+**Updated:** 2026-01-15 (Immunizations Integration - Phase 6 Detailed Specifications)
 **Status:** Phase 1-5 Complete ✅ | Post-Phase 4 Enhancements Complete ✅ | Post-Phase 5 Enhancements Complete ✅
 **Phase 1-3 Completion Date:** 2025-12-30
 **Phase 4 Completion Date:** 2026-01-03
@@ -613,6 +613,74 @@ Data source: Clinical Notes - Cardiology Consult (12/15/2025) by Dr. Emily Johns
 - "What medications were mentioned in the discharge summary?"
 - "Has the patient seen a specialist recently?"
 
+### 4.6 Use Case 6: Vaccination Compliance and Gap Analysis (Phase 6 💉) ⭐ **PENDING**
+
+**User Prompts:**
+- _"What vaccines has this patient received?"_
+- _"Is the patient up to date on COVID-19 vaccinations?"_
+- _"What immunizations are due based on CDC guidelines?"_
+- _"Has the patient completed the Shingrix series?"_
+
+**Agent Flow:**
+1. Parse intent: User wants immunization history or compliance check
+2. Invoke appropriate tool:
+   - `get_immunization_history(patient_icn)` for history queries
+   - `check_vaccine_compliance(patient_icn, age)` for compliance/gap analysis
+   - `forecast_next_dose(patient_icn, cvx_code)` for series status
+3. Tool logic:
+   - Query PostgreSQL immunizations (138 records, 8 patients)
+   - Check against CDC ACIP age-based guidelines
+   - Calculate next due dates for incomplete series
+   - Flag high-priority missing vaccines (elderly: pneumococcal, Shingrix)
+4. LLM synthesizes findings with clinical context
+5. Return: Vaccination summary with recommendations
+
+**Example Response (Compliance Check for 68-year-old patient):**
+```
+**Immunization Status for Patient (Age 68)**
+
+**Completed Vaccinations:**
+- COVID-19: Primary series complete (2 doses Pfizer, CVX 208)
+  - Dose 1: 2021-01-15
+  - Dose 2: 2021-02-05
+  - Booster: 2022-09-10
+- Influenza: Last received 2024-09-15 (current season)
+- Tetanus/Diphtheria: 2018-03-20 (booster due ~2028)
+
+**Incomplete Series (⚠️ Requires Follow-up):**
+- **Shingrix (CVX 187):** 1 of 2 doses received
+  - Dose 1: 2024-06-10
+  - **Next due:** 2024-08-10 to 2024-12-10 (2-6 months after first dose)
+  - **Priority:** HIGH - Strong CDC recommendation for adults 50+
+
+**Missing Vaccines (⚠️ Recommended for Age Group):**
+- **Pneumococcal PPSV23 (CVX 033):** Not on record
+  - **Reason:** Recommended for all adults 65+
+  - **Priority:** HIGH - Protects against pneumococcal pneumonia
+
+**Adverse Reactions:**
+- None documented in patient history
+
+**Recommendations:**
+1. **Schedule Shingrix dose 2** - Patient is overdue (within 2-6 month window)
+2. **Administer Pneumococcal PPSV23** - Age-appropriate vaccine missing
+3. **Continue annual influenza vaccine** - Currently up-to-date
+
+**Compliance Summary:**
+Patient (age 68) has 2 vaccine gaps requiring attention: 1 incomplete series (Shingrix) and 1 missing age-appropriate vaccine (Pneumococcal). Recommend scheduling both at next visit.
+
+Data source: PostgreSQL immunizations (24 vaccines on record), CDC ACIP guidelines (age 65+ recommendations)
+```
+
+**Additional Example Queries Enabled:**
+- "Does this 68-year-old patient need pneumococcal vaccine?" → `check_vaccine_compliance()`
+- "When is the next Shingrix dose due?" → `forecast_next_dose(patient_icn, "187")`
+- "Has the patient had any adverse reactions to vaccines?" → `get_immunization_history()`
+- "Show me all flu shots in the last 5 years" → `get_immunization_history()` with filtering
+
+**Integration with Patient Summary:**
+The `get_patient_summary()` tool will automatically include recent immunizations (last 10 vaccines, 2-year lookback) with series completion status and adverse reaction flags. This ensures immunization status is visible in comprehensive patient overviews without requiring specific queries.
+
 ---
 
 ## 5. LangGraph Agent Design
@@ -1083,87 +1151,377 @@ get_clinical_notes_summary("ICN100001", note_type="Imaging", days=180, limit=3)
 
 ---
 
-### 6.6 Immunization Tools (Phase 6 💉) ⭐ **PLANNED**
+### 6.6 Immunization Tools (Phase 6 💉) ⭐ **PENDING**
+
+**Status:** Pending implementation (Immunizations domain UI complete as of 2026-01-14)
 
 **Purpose:** Enable AI to query vaccination history, check CDC guideline compliance, and identify care gaps
 
-**Detailed Design Reference:** See `immunizations-design.md` Section 9 for complete specifications
+**Key AI Capabilities:**
+1. Query patient vaccination history with CVX codes
+2. Check compliance against CDC ACIP guidelines (RAG-based future enhancement)
+3. Forecast next dose due dates for multi-dose series
+4. Identify vaccine gaps based on age and medical history
 
-**Tools Overview (3 Total):**
+**Location:** `ai/tools/immunization_tools.py`
 
-#### 1. `get_immunization_history`
-- **Purpose:** Retrieve patient's complete vaccination history with CVX codes
-- **Returns:** List of vaccines with dates, series status, adverse reactions
-- **Use Cases:** "What vaccines has this patient received?", "Show flu shot history"
+**Database Layer:** `app/db/patient_immunizations.py` (already implemented - 138 immunizations in PostgreSQL)
 
-#### 2. `check_vaccine_compliance`
-- **Purpose:** Check CDC ACIP guideline compliance for patient's age
-- **Logic:** Age-based recommendations (influenza, pneumococcal, Shingrix, COVID-19)
-- **Returns:** Missing vaccines, incomplete series, next due dates
-- **Use Cases:** "Is patient up-to-date on vaccinations?", "What vaccines are due?"
+---
 
-#### 3. `forecast_next_dose`
-- **Purpose:** Calculate next dose due date for multi-dose series (e.g., Shingrix, COVID-19)
-- **Logic:** Last dose date + standard interval (2-6 months depending on vaccine)
-- **Returns:** Due date, series progress (e.g., "1 of 2 doses received")
-- **Use Cases:** "When is next Shingrix dose due?", "Is COVID series complete?"
+#### 6.6.1 Tool: get_immunization_history
+
+**Purpose:** Retrieve patient's complete immunization history with CVX codes
 
 **Implementation:**
 ```python
-# ai/tools/immunization_tools.py (Phase 6)
-# Full implementation details in immunizations-design.md Section 9.2
-
+# ai/tools/immunization_tools.py
 from langchain_core.tools import tool
-from app.db.patient_immunizations import get_patient_immunizations
+from app.db import immunizations as db_immunizations
 
 @tool
-def get_immunization_history(patient_icn: str) -> str:
+def get_immunization_history(patient_key: str) -> dict:
     """
-    Retrieve patient's immunization history.
+    Retrieve patient's immunization history with CVX codes.
 
-    Returns formatted list of vaccines with CVX codes, dates, series status.
-    """
-    # Implementation details in immunizations-design.md
-    pass
+    Args:
+        patient_key (str): Patient ICN
 
-@tool
-def check_vaccine_compliance(patient_icn: str, age: int) -> str:
+    Returns:
+        dict: {
+            "patient_key": str,
+            "total_count": int,
+            "immunizations": [
+                {
+                    "cvx_code": str,
+                    "vaccine_name": str,
+                    "administered_datetime": str,
+                    "series": str,
+                    "is_series_complete": bool,
+                    "adverse_reaction": str (if any)
+                }
+            ]
+        }
     """
-    Check CDC ACIP compliance for patient's age.
+    immunizations = db_immunizations.get_all_immunizations(patient_key, limit=100)
 
-    Returns missing vaccines, incomplete series, care gaps.
-    """
-    # Implementation details in immunizations-design.md
-    pass
-
-@tool
-def forecast_next_dose(patient_icn: str, cvx_code: str) -> str:
-    """
-    Calculate next dose due date for multi-dose series.
-
-    Returns due date and series progress.
-    """
-    # Implementation details in immunizations-design.md
-    pass
+    return {
+        "patient_key": patient_key,
+        "total_count": len(immunizations),
+        "immunizations": [
+            {
+                "cvx_code": i["cvx_code"],
+                "vaccine_name": i["vaccine_name"],
+                "administered_datetime": i["administered_datetime"],
+                "series": i["series"],
+                "is_series_complete": i["is_series_complete"],
+                "adverse_reaction": i["adverse_reaction"],
+                "vaccine_group": i.get("vaccine_group")
+            }
+            for i in immunizations
+        ]
+    }
 ```
 
-**Clinical Use Cases Enabled:**
+**Use Cases:**
 - "What vaccines has this patient received?"
+- "Show me the patient's flu shot history"
+- "List all immunizations with CVX codes"
+
+---
+
+#### 6.6.2 Tool: check_vaccine_compliance
+
+**Purpose:** Check CDC ACIP guideline compliance for patient's age
+
+**Note:** MVP implementation uses deterministic age-based rules. Future enhancement will use RAG with CDC ACIP guidelines.
+
+**Implementation** (abbreviated - see full helper functions below):
+```python
+@tool
+def check_vaccine_compliance(patient_key: str, age: int) -> dict:
+    """
+    Check CDC ACIP compliance for patient's age and vaccination history.
+
+    Args:
+        patient_key (str): Patient ICN
+        age (int): Patient age in years
+
+    Returns:
+        dict: {
+            "patient_key": str,
+            "age": int,
+            "compliance_summary": str,
+            "missing_vaccines": [{"cvx_code", "vaccine_name", "reason", "priority"}],
+            "incomplete_series": [{"cvx_code", "vaccine_name", "doses_received", "doses_required", "next_due_date"}]
+        }
+    """
+    # Get patient's immunization history
+    history = get_immunization_history(patient_key)
+    cvx_received = {i["cvx_code"] for i in history["immunizations"]}
+
+    missing_vaccines = []
+    incomplete_series = []
+
+    # Age-based recommendations (age >= 65)
+    if age >= 65:
+        # Pneumococcal PPSV23 (CVX 033)
+        if "033" not in cvx_received:
+            missing_vaccines.append({
+                "cvx_code": "033",
+                "vaccine_name": "Pneumococcal PPSV23",
+                "reason": "Recommended for adults 65+",
+                "priority": "HIGH"
+            })
+
+        # Shingrix (CVX 187) - 2-dose series
+        shingrix_series = db_immunizations.get_vaccine_series_status(patient_key, "187")
+        if shingrix_series["doses_received_count"] < 2:
+            if shingrix_series["doses_received_count"] == 0:
+                missing_vaccines.append({
+                    "cvx_code": "187",
+                    "vaccine_name": "Shingrix",
+                    "reason": "Recommended for adults 50+ (2-dose series)",
+                    "priority": "HIGH"
+                })
+            else:
+                incomplete_series.append({
+                    "cvx_code": "187",
+                    "vaccine_name": "Shingrix",
+                    "doses_received": shingrix_series["doses_received_count"],
+                    "doses_required": 2,
+                    "next_due_date": _calculate_next_due_date(shingrix_series, interval_months=2)
+                })
+
+    # Annual flu vaccine check
+    flu_cvx_codes = ["088", "135", "140", "141", "144", "158", "161"]
+    flu_vaccines = [i for i in history["immunizations"] if i["cvx_code"] in flu_cvx_codes]
+    if flu_vaccines:
+        most_recent_flu = max(flu_vaccines, key=lambda x: x["administered_datetime"])
+        months_since = _months_since(most_recent_flu["administered_datetime"])
+        if months_since >= 12:
+            missing_vaccines.append({
+                "cvx_code": "141",
+                "vaccine_name": "Influenza, seasonal",
+                "reason": f"Last flu vaccine was {months_since} months ago",
+                "priority": "MEDIUM"
+            })
+    else:
+        missing_vaccines.append({
+            "cvx_code": "141",
+            "vaccine_name": "Influenza, seasonal",
+            "reason": "No flu vaccine on record (recommended annually)",
+            "priority": "MEDIUM"
+        })
+
+    compliance_summary = _generate_compliance_summary(missing_vaccines, incomplete_series, age)
+
+    return {
+        "patient_key": patient_key,
+        "age": age,
+        "compliance_summary": compliance_summary,
+        "missing_vaccines": missing_vaccines,
+        "incomplete_series": incomplete_series
+    }
+```
+
+**Helper Functions:**
+```python
+def _determine_age_group(age: int) -> str:
+    if age < 2: return "infant"
+    elif age < 18: return "child"
+    elif age < 65: return "adult"
+    else: return "older_adult"
+
+def _calculate_next_due_date(series_status: dict, interval_months: int) -> str:
+    if not series_status["doses_received"]:
+        return "Now"
+    last_dose = series_status["doses_received"][-1]
+    last_date = datetime.fromisoformat(last_dose["administered_datetime"])
+    next_due = last_date + timedelta(days=interval_months * 30)
+    return next_due.strftime("%Y-%m-%d")
+
+def _months_since(datetime_str: str) -> int:
+    date = datetime.fromisoformat(datetime_str)
+    now = datetime.now()
+    return (now.year - date.year) * 12 + (now.month - date.month)
+
+def _generate_compliance_summary(missing, incomplete, age) -> str:
+    total_gaps = len(missing) + len(incomplete)
+    if total_gaps == 0:
+        return f"Patient (age {age}) appears up-to-date on age-appropriate vaccinations."
+    summary_parts = []
+    if missing: summary_parts.append(f"{len(missing)} missing vaccines")
+    if incomplete: summary_parts.append(f"{len(incomplete)} incomplete series")
+    return f"Patient (age {age}) has {' and '.join(summary_parts)}. Review recommended."
+```
+
+**Use Cases:**
 - "Is the patient up to date on COVID-19 vaccinations?"
 - "What immunizations are due based on CDC guidelines?"
-- "Has the patient completed the Shingrix series?"
-- "When is the next flu shot due?"
 - "Does this 68-year-old patient need pneumococcal vaccine?"
 
-**Integration with Existing Tools:**
-- `get_patient_summary()` will automatically include recent immunizations (Phase 6, Task 2)
-- Immunization-specific tools available for targeted queries
-- Agent autonomously chooses appropriate tool based on query
+---
 
-**RAG Enhancement (Future - Phase 7+):**
+#### 6.6.3 Tool: forecast_next_dose
+
+**Purpose:** Calculate next dose due date for multi-dose vaccine series
+
+**Implementation:**
+```python
+@tool
+def forecast_next_dose(patient_key: str, cvx_code: str) -> dict:
+    """
+    Calculate when next dose is due for a multi-dose vaccine series.
+
+    Args:
+        patient_key (str): Patient ICN
+        cvx_code (str): CVX code for vaccine
+
+    Returns:
+        dict: {
+            "cvx_code": str,
+            "vaccine_name": str,
+            "doses_received": int,
+            "doses_required": int,
+            "series_complete": bool,
+            "next_due_date": str,
+            "interval_description": str
+        }
+    """
+    series_status = db_immunizations.get_vaccine_series_status(patient_key, cvx_code)
+    ref_vaccine = _get_ref_vaccine(cvx_code)
+
+    if not ref_vaccine:
+        return {"error": f"Vaccine CVX {cvx_code} not found in reference table"}
+
+    doses_required = _parse_doses_required(ref_vaccine.get("typical_series_pattern", ""))
+    doses_received = series_status["doses_received_count"]
+    series_complete = series_status["series_complete"]
+
+    if series_complete or doses_received >= doses_required:
+        next_due_date = "Series complete"
+        interval_description = "No additional doses needed"
+    else:
+        # Standard intervals (MVP)
+        interval_map = {
+            "187": {"months": 2, "description": "2-6 months after first dose"},  # Shingrix
+            "208": {"months": 1, "description": "3-8 weeks after first dose"},  # COVID-19 Pfizer
+            "213": {"months": 1, "description": "4 weeks after first dose"},    # COVID-19 Moderna
+            "043": {"months": 1, "description": "1-2 months after previous dose"}, # Hep B
+        }
+        interval = interval_map.get(cvx_code, {"months": 6, "description": "Standard interval"})
+
+        if series_status["doses_received"]:
+            last_dose = series_status["doses_received"][-1]
+            last_date = datetime.fromisoformat(last_dose["administered_datetime"])
+            next_due = last_date + timedelta(days=interval["months"] * 30)
+            next_due_date = next_due.strftime("%Y-%m-%d")
+        else:
+            next_due_date = "Now"
+
+        interval_description = interval["description"]
+
+    return {
+        "cvx_code": cvx_code,
+        "vaccine_name": ref_vaccine["vaccine_name"],
+        "doses_received": doses_received,
+        "doses_required": doses_required,
+        "series_complete": series_complete,
+        "next_due_date": next_due_date,
+        "interval_description": interval_description
+    }
+```
+
+**Helper Functions:**
+```python
+def _get_ref_vaccine(cvx_code: str) -> dict:
+    from app.db.connection import get_db_connection
+    from sqlalchemy import text
+    conn = get_db_connection()
+    query = text("SELECT * FROM reference.vaccine WHERE cvx_code = :cvx_code")
+    result = conn.execute(query, {"cvx_code": cvx_code})
+    row = result.fetchone()
+    if row:
+        return {
+            "cvx_code": row[0],
+            "vaccine_name": row[1],
+            "vaccine_short_name": row[2],
+            "vaccine_group": row[3],
+            "typical_series_pattern": row[4]
+        }
+    return None
+
+def _parse_doses_required(pattern: str) -> int:
+    if "2-dose" in pattern: return 2
+    elif "3-dose" in pattern: return 3
+    elif "4-dose" in pattern: return 4
+    elif "5-dose" in pattern: return 5
+    elif "Annual" in pattern or "Booster" in pattern or "Single" in pattern: return 1
+    return 1
+```
+
+**Use Cases:**
+- "When is the next Shingrix dose due?"
+- "Has the patient completed the Shingrix series?"
+- "Is the COVID-19 primary series complete?"
+
+---
+
+#### 6.6.4 System Prompts Integration
+
+**File:** `ai/prompts/system_prompts.py`
+
+Add immunization-specific context to the system prompt:
+
+```python
+IMMUNIZATION_CONTEXT = """
+You have access to the patient's complete immunization history through the following tools:
+
+1. **get_immunization_history**: Retrieve all vaccines the patient has received with CVX codes
+2. **check_vaccine_compliance**: Check if patient is up-to-date based on CDC ACIP guidelines
+3. **forecast_next_dose**: Calculate when the next dose of a multi-dose series is due
+
+When discussing immunizations:
+- Always reference CVX codes for precision
+- Highlight incomplete vaccine series as they may require follow-up
+- Note any adverse reactions for safety awareness
+- Use CDC ACIP guidelines for age-appropriate recommendations
+- Distinguish between routine vaccines (childhood, adult) and situational vaccines (travel, occupational)
+- For multi-dose series (e.g., Shingrix, COVID-19, Hepatitis B), calculate and display due dates
+
+Example response format:
+"Based on the patient's immunization history, they have received [X] vaccines. The patient completed the COVID-19 primary series (CVX 208) with 2 doses, most recently on [date]. However, the Shingrix series (CVX 187) is incomplete with only 1 of 2 doses received. The second dose is due approximately [X months] after the first dose on [calculated date]."
+"""
+```
+
+---
+
+#### 6.6.5 RAG Enhancement (Future - Phase 7+)
+
+**Deferred to Phase 7+:**
 - Vector embeddings of CDC "Pink Book" ACIP schedules
 - Semantic search for vaccine contraindications
-- Deferred to Phase 7+ (MVP uses deterministic age-based rules)
+- Entity extraction from clinical notes related to vaccinations
+- Vaccine hesitancy pattern detection
+
+**Why deferred:**
+- MVP can use deterministic rules for common age-based vaccines
+- RAG requires significant data preparation (CDC documents → chunks → embeddings)
+- Clinical accuracy is critical; deterministic rules are more testable
+
+---
+
+**Integration with Existing Tools:**
+- `get_patient_summary()` will automatically include recent immunizations (Phase 6 enhancement)
+- Immunization-specific tools available for targeted queries
+- Agent autonomously chooses appropriate tool based on query intent
+
+**LangGraph Agent Integration:**
+- User submits query via `/insight`
+- Agent analyzes query and selects appropriate immunization tool(s)
+- Tools execute and return structured data
+- Agent synthesizes response with clinical context
 
 ---
 
@@ -4971,7 +5329,7 @@ Follow the same export style and documentation conventions used elsewhere in the
 | v1.9 | 2026-01-03 | **Phase 5 Day 1 Complete**. Updated Phase 5 specification with actual implementation details: (1) Single "Download Transcript" button (UX improvement from initial two-button spec), (2) Button aligned with textarea using calc() padding, (3) PHI warning modal with black bullet points and reduced spacing, (4) Shortened disclaimer text to eliminate vertical scrolling. Marked Day 1 deliverables complete, Day 2 ready for implementation. Updated document status to reflect progress. | Claude + User |
 | v2.0 | 2026-01-04 | **Phase 5 Complete - Conversation Transcript Download MVP**. Marked all Phase 5 deliverables complete. Day 2 implementation: (1) Complete transcript.js module (~350 lines) with client-side plaintext and markdown generation, (2) Browser download with formatted filenames, (3) Script integration and modal button wiring. Additional enhancements: (1) Real timestamp implementation replacing hardcoded "Just now" with actual datetime (format: "2:45:32 PM"), (2) Markdown formatting improvements removing green checkmarks from Security Requirements. Total implementation time: 3.5 hours. All success criteria met. **Major milestone: Phase 1-5 complete.** | Claude + User |
 | v2.1 | 2026-01-04 | **Post-Phase 5 Data Quality & UX Enhancements Complete**. Fixed 4 bugs identified during user testing: (1) Real timestamps - replaced hardcoded "Just now" with actual datetime in chat messages (backend datetime generation), (2) Clinician email - fixed transcript metadata to show full authenticated user email instead of placeholder, (3) Patient name fixes - three separate bugs: added name to demographics tool output, updated system prompt to authorize sharing patient identifiers with clinicians, fixed dictionary field name from "name" to "name_display" in route handler. All enhancements verified working. AI now correctly answers "What is the patient's name?" System ready for production clinical use. | Claude + User |
-| v2.2 | 2026-01-14 | **Phase 6 Specification Added - Immunizations Integration (PLANNED)**. Added Section 6.6: Immunization Tools overview (3 new tools). Updated Section 6.2: Enhanced get_patient_summary to include immunizations domain (Phase 6 planned). Added Phase 6 to Section 10: Complete 5-7 day implementation roadmap with task breakdown (Days 1-3: immunization-specific tools, Day 4: PatientContextBuilder enhancement, Day 5: system prompts/testing, Days 6-7: documentation/QA). Detailed success criteria, dependencies, clinical impact, and future enhancements. Cross-referenced immunizations-design.md Section 9 for detailed tool specifications. **Total estimated time: 16-20 hours over 5-7 days.** Ready for Phase 6 implementation planning. | Claude + User |
+| v2.2 | 2026-01-15 | **Phase 6 Detailed Specifications - Immunizations Integration (Consolidated)**. Expanded Section 6.6 with full implementation details for 3 immunization tools (get_immunization_history, check_vaccine_compliance, forecast_next_dose) including complete Python code, helper functions, and use cases (~250 lines). Added Section 4.6: Use Case 6 "Vaccination Compliance and Gap Analysis" with detailed agent flow and example response for 68-year-old patient compliance check (~70 lines). Section 6.6 now contains 5 subsections (6.6.1-6.6.5) with comprehensive tool specifications, system prompts integration, and RAG enhancement roadmap. **Architectural decision:** Consolidated all AI integration design from `immunizations-design.md` Section 9 into this document per "single source of truth" principle. `immunizations-design.md` Section 9 now contains concise pointer to this document (Sections 4.6, 6.6, and 10 Phase 6). Phase 6 already detailed in Section 10 (no changes needed - already comprehensive 5-7 day plan). Ready for Phase 6 implementation. | Claude + User |
 
 ---
 
