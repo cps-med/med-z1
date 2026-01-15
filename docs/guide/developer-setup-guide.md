@@ -749,6 +749,8 @@ docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_flag
 docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_encounters_table.sql
 docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_labs_table.sql
 docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_clinical_notes_table.sql
+docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_immunizations_table.sql
+docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_reference_vaccine_table.sql
 ```
 
 Verify tables were created:
@@ -756,13 +758,21 @@ Verify tables were created:
 docker exec -it postgres16 psql -U postgres -d medz1 -c "\dt clinical.*"
 ```
 
-Expected output should list **11 tables** in the `clinical` schema:
+Expected output should list **12 tables** in the `clinical` schema:
 
 - patient_demographics, patient_vitals
 - patient_allergies, patient_allergy_reactions
 - patient_medications_outpatient, patient_medications_inpatient
-- patient_flags, patient_flag_history,
-- patient_encounters, patient_labs, patient_clinical_notes
+- patient_flags, patient_flag_history
+- patient_encounters, patient_labs, patient_clinical_notes, patient_immunizations
+
+Additionally, verify the reference table was created:
+```bash
+docker exec -it postgres16 psql -U postgres -d medz1 -c "\dt reference.*"
+```
+
+Expected output should show **1 table** in the `reference` schema:
+- vaccine (30 CVX-coded vaccines)
 
 ### Running ETL Pipelines by Domain
 
