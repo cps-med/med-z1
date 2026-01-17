@@ -373,7 +373,6 @@ Following the successful completion of the Immunizations domain (2026-01-14), th
 **Implementation Notes:**
 - Leverage existing `app/db/patient_immunizations.py` database layer
 - Use CVX codes for precise vaccine identification
-- Reference `docs/spec/immunizations-design.md` Section 9 for detailed design
 - Estimated effort: 3-4 days (follows pattern from Medications, Vitals, Notes tools)
 
 ## Documentation

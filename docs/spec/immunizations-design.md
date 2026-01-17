@@ -1,8 +1,8 @@
 # Immunizations Design Specification - med-z1
 
-**Document Version:** 1.3
+**Document Version:** 1.4
 **Date:** 2026-01-15
-**Status:** ✅ Phase 1 Complete (Data Pipeline) - ✅ Phase 2 Complete (API/UI) - Phase 3 Pending (AI - See ai-insight-design.md)
+**Status:** ✅ Phase 1 Complete (Data Pipeline) - ✅ Phase 2 Complete (API/UI) - Phase 3 Pending (AI Integration)
 **Implementation Progress:**
 - ✅ **Phase 1 (Days 1-6): Data Pipeline COMPLETE** (2026-01-14)
   - Days 1-2: SQL Server mock data (CDWWork + CDWWork2) ✅
@@ -16,7 +16,7 @@
   - Full page: Patient immunizations page with filtering and table view ✅
   - Navigation: Added to sidebar, active link, breadcrumbs ✅
   - Styling: Complete CSS for widget and full page ✅
-- ⏳ **Phase 3 (Days 9-12): AI Integration** (Pending)
+- ⏳ **Phase 3: AI Integration** (Pending - See `docs/spec/ai-insight-design.md` Phase 6)
 
 ---
 
@@ -2761,16 +2761,16 @@ function toggleDetails(immunizationId) {
 ```
 
 ---
-## 9. AI Integration
+## 9. AI Integration Design
 
-**Status:** Pending (Phase 6)
+**Status:** Pending (Phase 3 of Immunizations domain, Phase 6 of AI Clinical Insights)
 
 The Immunizations domain will be integrated into the AI Clinical Insights subsystem with three new tools for vaccine history querying, CDC ACIP compliance checking, and multi-dose series forecasting.
 
 **Complete AI integration specifications are documented in:**
 - **`docs/spec/ai-insight-design.md`** Section 4.6 (Use Case 6: Vaccination Compliance and Gap Analysis)
-- **`docs/spec/ai-insight-design.md`** Section 6.6 (Immunization Tools - 3 detailed tool specifications)
-- **`docs/spec/ai-insight-design.md`** Section 10 Phase 6 (Implementation Roadmap - Days 1-7)
+- **`docs/spec/ai-insight-design.md`** Section 6.6 (Immunization Tools - 3 detailed tool specifications with code examples)
+- **`docs/spec/ai-insight-design.md`** Section 10 Phase 6 (Implementation Roadmap - Days 1-7, estimated 5-7 days)
 
 **Tools Planned (3):**
 1. **`get_immunization_history()`** - Query patient vaccine history with CVX codes
@@ -2803,7 +2803,7 @@ The Immunizations domain will be integrated into the AI Clinical Insights subsys
 - ✅ Immunizations ETL pipeline complete (PostgreSQL data available)
 - ✅ Immunizations UI complete (dashboard widget + full page)
 - ✅ Query functions available in `app/db/patient_immunizations.py`
-- ⏳ LangGraph agent infrastructure (Phases 1-5 complete, Phase 6 pending)
+- ✅ LangGraph agent infrastructure operational (AI Clinical Insights Phases 1-5 complete)
 
 ---
 
@@ -2920,37 +2920,22 @@ The Immunizations domain will be integrated into the AI Clinical Insights subsys
 
 ---
 
-**Phase 5: AI Integration (Days 9-12)**
+**Phase 3: AI Integration**
 
-**Day 9: AI Tools Implementation**
-- [ ] Create `ai/tools/immunization_tools.py`
-- [ ] Implement `get_immunization_history()` tool
-- [ ] Implement `check_vaccine_compliance()` tool
-- [ ] Implement `forecast_next_dose()` tool
-- [ ] Add helper functions for date calculations and series parsing
-- [ ] Unit test each tool with test patient data
+**Status:** Pending - See `docs/spec/ai-insight-design.md` Phase 6 for complete implementation roadmap
 
-**Day 10: LangGraph Integration**
-- [ ] Update `ai/agents/immunization_agent.py` (or integrate into main agent)
-- [ ] Update `ai/prompts/system_prompts.py` with immunization context
-- [ ] Register tools with LangGraph agent
-- [ ] Test agent routing for immunization queries
-
-**Day 11: AI Query Testing**
-- [ ] Test query: "What vaccines has this patient received?"
-- [ ] Test query: "Is the patient up to date on COVID-19 vaccinations?"
-- [ ] Test query: "What immunizations are due based on CDC guidelines?"
-- [ ] Test query: "Has the patient completed the Shingrix series?"
-- [ ] Test query: "When is the next flu shot due?"
-- [ ] Verify responses include CVX codes and clinical context
-
-**Day 12: Polish & Documentation**
-- [ ] Add error handling for edge cases (no immunizations, missing CVX codes)
-- [ ] Add loading states and empty states
-- [ ] Write integration tests
-- [ ] Update `app/README.md` with immunizations routing pattern
-- [ ] Update `docs/spec/med-z1-architecture.md` if new patterns established
-- [ ] Final end-to-end testing (ETL → UI → AI)
+**Implementation Reference:**
+- **Tool Specifications:** `docs/spec/ai-insight-design.md` Section 6.6 (Immunization Tools)
+  - `get_immunization_history()` - Query patient vaccine history with CVX codes
+  - `check_vaccine_compliance()` - CDC ACIP guideline compliance checking
+  - `forecast_next_dose()` - Calculate due dates for multi-dose series
+- **Implementation Roadmap:** `docs/spec/ai-insight-design.md` Section 10 Phase 6 (Days 1-7)
+  - Days 1-3: Implement immunization-specific tools
+  - Day 4: Enhance PatientContextBuilder service
+  - Day 5: System prompts and integration testing
+  - Days 6-7: Documentation and final QA
+- **Estimated Effort:** 5-7 days
+- **Prerequisites:** ✅ All Phase 1-2 tasks complete (ETL pipeline + UI operational)
 
 ---
 
@@ -2968,13 +2953,14 @@ The Immunizations domain will be integrated into the AI Clinical Insights subsys
 - **Success Criteria:** Widget and full page render correctly, filters work, expandable rows function
 - **Blocker:** If UI is broken, fix before starting AI integration (AI depends on stable data layer)
 
-**Gate 4 (End of Day 12):** AI tools operational
+**Gate 4 (Phase 3 - AI Integration):** AI tools operational
 - **Success Criteria:** All 5 test queries return accurate, contextually relevant responses
+- **Implementation:** See `docs/spec/ai-insight-design.md` Phase 6 success criteria
 - **Blocker:** If AI responses are inaccurate, revisit tool logic and system prompts
 
 ---
 
-### 10.3 Deferred to Phase 3 (Future Enhancements)
+### 10.3 Deferred to Future Phases (Post-Phase 3 Enhancements)
 
 **VistA RPC Broker Integration (T-0 Real-Time Data):**
 - [ ] Implement VistA RPC for immunizations (VistA File #9000010.11)
@@ -3169,7 +3155,7 @@ CDC Website → MinIO (med-sandbox) → Polars DataFrame → PostgreSQL (referen
 Load official CDC CVX codes to reference.vaccine table.
 
 This pipeline replaces the 30 hardcoded vaccines from the DDL script with
-the complete CDC CVX dataset (334+ vaccines). Run this after Day 12 to
+the complete CDC CVX dataset (334+ vaccines). Run this after Phase 2 (Day 8) to
 enhance the reference data with full CDC coverage.
 
 Usage:
@@ -3631,7 +3617,7 @@ def upload_file_to_minio(bucket: str, object_name: str, data: str):
 
 #### 10.4.5 Implementation Timeline
 
-**Estimated Effort:** 2-3 days (Post Day 12)
+**Estimated Effort:** 2-3 days (Post-Phase 2, can be done independently)
 
 **Day 1: Setup and Download (4-6 hours)**
 - [ ] Download CDC CVX codes file from official source
