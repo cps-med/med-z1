@@ -242,7 +242,8 @@ POSTGRES_CONFIG = {
 SESSION_SECRET_KEY = os.getenv("SESSION_SECRET_KEY", "dev-secret-key-change-in-production-32bytes")
 
 # Session timeout (in minutes) - configurable, not hardcoded
-SESSION_TIMEOUT_MINUTES = int(os.getenv("SESSION_TIMEOUT_MINUTES", "15"))
+# Default: 25 minutes (updated 2026-01-19 to align with clinical workflow)
+SESSION_TIMEOUT_MINUTES = int(os.getenv("SESSION_TIMEOUT_MINUTES", "25"))
 
 # Session cookie settings
 SESSION_COOKIE_NAME = os.getenv("SESSION_COOKIE_NAME", "session_id")
