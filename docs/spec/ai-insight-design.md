@@ -1,14 +1,14 @@
 # AI Clinical Insights Design Specification
 
-**Document Version:** v2.2
-**Created:** 2025-12-28
-**Updated:** 2026-01-15 (Immunizations Integration - Phase 6 Detailed Specifications)
-**Status:** Phase 1-5 Complete ✅ | Post-Phase 4 Enhancements Complete ✅ | Post-Phase 5 Enhancements Complete ✅
-**Phase 1-3 Completion Date:** 2025-12-30
-**Phase 4 Completion Date:** 2026-01-03
-**Post-Phase 4 Enhancements Completion Date:** 2026-01-03
-**Phase 5 Completion Date:** 2026-01-04
-**Post-Phase 5 Enhancements Completion Date:** 2026-01-04  
+**Document Version:** v2.3  
+**Created:** 2025-12-28  
+**Updated:** 2026-01-19 (Conversation Memory - Phase 6 PostgreSQL Checkpointer Specification)  
+**Status:** Phase 1-5 Complete | Post-Phase 4 Enhancements Complete | Post-Phase 5 Enhancements Complete | Phase 6 Ready for Implementation  
+**Phase 1-3 Completion Date:** 2025-12-30  
+**Phase 4 Completion Date:** 2026-01-03  
+**Post-Phase 4 Enhancements Completion Date:** 2026-01-03  
+**Phase 5 Completion Date:** 2026-01-04  
+**Post-Phase 5 Enhancements Completion Date:** 2026-01-04    
 
 ---
 
@@ -182,10 +182,10 @@ class PatientContextBuilder:
 ```
 
 **Implementation Note (Synchronous Pattern):**
-- ✅ Phase 1 uses synchronous functions (matching existing `app/db/` pattern)
-- ✅ `app/db/` functions create their own database connections (no session parameter needed)
-- ⏳ Future consideration: Refactor to async/await pattern for better performance with concurrent requests
-- ⏳ Future consideration: Session-based database access for connection pooling
+- Phase 1 uses synchronous functions (matching existing `app/db/` pattern)
+- `app/db/` functions create their own database connections (no session parameter needed)
+- Future consideration: Refactor to async/await pattern for better performance with concurrent requests
+- Future consideration: Session-based database access for connection pooling
 
 ### 2.3 LLM Provider
 
@@ -327,7 +327,7 @@ app.add_middleware(
 
 ### 3.1 Primary Data Sources
 
-**Phase 1-3 (Complete ✅):**
+**Phase 1-3 (Complete):**
 
 | Data Source | Type | Content | Access Method |
 |-------------|------|---------|---------------|
@@ -335,7 +335,7 @@ app.add_middleware(
 | **Vista RPC (T-0)** | Real-time API | Current-day vitals, medications | `app/services/vista_client.py` |
 | **DDI Reference** | Parquet/MinIO | ~191K drug-drug interactions from DrugBank (via Kaggle) | Refactored from `notebook/src/ddi_transforms.py` |
 
-**Phase 4 (Clinical Notes Integration 📝):**
+**Phase 4 (Clinical Notes Integration):**
 
 | Data Source | Type | Content | Access Method |
 |-------------|------|---------|---------------|
@@ -512,7 +512,7 @@ _"Are there any concerning trends in vital signs?"_
 Data sources: PostgreSQL vitals (47 readings over 90 days)
 ```
 
-### 4.4 Use Case 4: Clinical Notes Summary (Phase 4 📝)
+### 4.4 Use Case 4: Clinical Notes Summary (Phase 4)
 
 **User Prompt:**
 _"Summarize the recent clinical notes for this patient"_
@@ -560,7 +560,7 @@ Recent Clinical Notes (Last 3):
 Data sources: PostgreSQL (demographics, medications, vitals, allergies, encounters, clinical notes - 106 total notes)
 ```
 
-### 4.5 Use Case 5: Note-Specific Queries (Phase 4 📝)
+### 4.5 Use Case 5: Note-Specific Queries (Phase 4)
 
 **User Prompt:**
 _"What did the cardiology consult recommend?"_
@@ -613,7 +613,7 @@ Data source: Clinical Notes - Cardiology Consult (12/15/2025) by Dr. Emily Johns
 - "What medications were mentioned in the discharge summary?"
 - "Has the patient seen a specialist recently?"
 
-### 4.6 Use Case 6: Vaccination Compliance and Gap Analysis (Phase 6 💉) ⭐ **PENDING**
+### 4.6 Use Case 6: Vaccination Compliance and Gap Analysis (Phase 7) **_PENDING_**
 
 **User Prompts:**
 - _"What vaccines has this patient received?"_
@@ -923,7 +923,7 @@ async def check_ddi_risks(patient_icn: str, db_session) -> str:
 - Allergies (known allergens with reactions)
 - Encounters (recent 90 days)
 - Clinical Notes (recent notes with previews) - Phase 4
-- **Immunizations (recent vaccination history)** - Phase 6 ⭐ **PLANNED**
+- **Immunizations (recent vaccination history)** - Phase 7 **_PLANNED_**
 
 **Implementation:**
 ```python
@@ -949,7 +949,7 @@ async def get_patient_summary(patient_icn: str, db_session) -> str:
     allergies = await builder.get_allergies_summary()
     encounters = await builder.get_encounters_summary()
     notes = await builder.get_notes_summary()  # Phase 4
-    immunizations = await builder.get_immunizations_summary()  # Phase 6
+    immunizations = await builder.get_immunizations_summary()  # Phase 7
 
     summary = f"""
 PATIENT DEMOGRAPHICS:
@@ -979,7 +979,7 @@ Data sources: PostgreSQL (demographics, medications, vitals, allergies, immuniza
     return summary.strip()
 ```
 
-**Phase 6 Enhancement Note:**
+**Phase 7 Enhancement Note:**
 Immunizations will be added to comprehensive patient summaries. Shows last 10 vaccines with:
 - Vaccine name and administered date
 - Series completion status (e.g., "2 of 2 complete" or "1 of 2 INCOMPLETE")
@@ -1061,7 +1061,7 @@ async def get_patient_allergies(patient_icn: str, db_session) -> str:
     ...
 ```
 
-### 6.5 Tool: get_clinical_notes_summary (Phase 4 📝)
+### 6.5 Tool: get_clinical_notes_summary (Phase 4)
 
 **Purpose:** Retrieve and summarize clinical notes for a patient with optional filtering
 
@@ -1151,7 +1151,7 @@ get_clinical_notes_summary("ICN100001", note_type="Imaging", days=180, limit=3)
 
 ---
 
-### 6.6 Immunization Tools (Phase 6 💉) ⭐ **PENDING**
+### 6.6 Immunization Tools (Phase 7) **_PENDING_**
 
 **Status:** Pending implementation (Immunizations domain UI complete as of 2026-01-14)
 
@@ -1513,7 +1513,7 @@ Example response format:
 ---
 
 **Integration with Existing Tools:**
-- `get_patient_summary()` will automatically include recent immunizations (Phase 6 enhancement)
+- `get_patient_summary()` will automatically include recent immunizations (Phase 7 enhancement)
 - Immunization-specific tools available for targeted queries
 - Agent autonomously chooses appropriate tool based on query intent
 
@@ -4163,13 +4163,198 @@ These enhancements ensure the AI Clinical Insights system provides accurate, com
 
 ---
 
-### Phase 6: Immunizations Integration (Week 6) ⭐ **PLANNED**
+### Phase 6: Conversation Memory (PostgreSQL Checkpointer) (Week 6) **_PLANNED_**
+
+**Status:** Ready for Implementation  
+**Priority:** High (Critical UX Enhancement)  
+**Estimated Time:** 4-6 hours  
+**Target Completion:** 2026-01-20  
+
+**Prerequisites:**
+- LangGraph agent infrastructure operational (Phases 1-5 complete)
+- PostgreSQL serving database running (port 5432)
+- FastAPI application with SessionMiddleware configured
+- CCOW patient context management operational
+
+**Objective:** Implement persistent conversation memory using LangGraph's PostgreSQL checkpointer to enable follow-up questions, maintain chat history across page refreshes, and provide session-based persistence with automatic clearing on patient changes.
+
+---
+
+#### **Problem Statement**
+
+**Current Limitation:**
+The AI chatbot currently has **zero conversation memory** between user prompts. Each chat message creates a completely fresh agent state with no history of previous questions, answers, or tool calls.
+
+**Impact on User Experience:**
+- User asks: "What is the patient's birth date?" → Agent responds: "Born on May 15, 1965"
+- User asks follow-up: "How old is the patient?" → Agent has **NO MEMORY** (re-calls tool or says "no information")
+
+**Root Cause:**
+- Each chat invocation passes only current message (`app/routes/insight.py:190-197`)
+- Agent compiled without checkpointer (`ai/agents/insight_agent.py:168`)
+- No state persistence between invocations
+
+---
+
+#### **Solution: PostgreSQL Checkpointer**
+
+**Technology:** LangGraph's `langgraph-checkpoint-postgres` package
+
+**Key Benefits:**
+- **Follow-up questions work** - "What was that birth date?" resolves correctly
+- **Persists across page refreshes** - Conversation survives navigation
+- **Session-scoped memory** - History maintained for 25-minute login session
+- **Patient-specific isolation** - Each ICN gets its own thread per user
+- **Automatic clearing on patient change** - Different ICN = new conversation
+- **Production-ready** - Uses existing PostgreSQL infrastructure
+
+---
+
+#### **Technical Requirements**
+
+1. ✅ Chat history persists across page refreshes and navigation
+2. ✅ Chat history persists for duration of user login session (25 minutes)
+3. ✅ Chat history specific to selected patient (ICN)
+4. ✅ Chat history clears automatically when patient changes (CCOW context change)
+5. ✅ Chat history maintained if same patient used for entire session
+6. ✅ Chat history deleted immediately when session expires
+7. ✅ Optional "Clear Chat History" button for manual reset
+
+---
+
+#### **thread_id Strategy**
+
+**Format:** `thread_id = f"{user_session_id}_{patient_icn}"`
+
+**Behavior:**
+- Same session + same patient = Same thread_id → History restored
+- Same session + different patient = Different thread_id → Fresh conversation
+- Different session (after timeout) = Different thread_id → No history
+
+**Example:** `7f3d8e2a4b9c1f5e_ICN100010`
+
+---
+
+#### **Implementation Plan** (4-6 hours total)
+
+**Task 1: Install Package** (5 min)
+```bash
+pip install langgraph-checkpoint-postgres
+```
+
+**Task 2: Update config.py** (2 min)
+```python
+LANGGRAPH_CHECKPOINT_URL = DATABASE_URL  # Reuse PostgreSQL
+```
+
+**Task 3: Add FastAPI Lifespan Handler** (30 min)
+- Initialize AsyncPostgresSaver at startup
+- Create database schema (checkpoints tables)
+- Store checkpointer in app.state
+- Recreate agent with checkpointer enabled
+
+**Task 4: Update Agent Creation** (15 min)
+- Add `checkpointer` parameter to `create_insight_agent()`
+- Pass to `workflow.compile(checkpointer=checkpointer)`
+
+**Task 5: Update Chat Route** (2-3 hours)
+- Generate thread_id: `f"{session}_{icn}"`
+- Switch to async (`await agent.ainvoke()`)
+- Pass `config={"configurable": {"thread_id": thread_id}}`
+- Get patient from CCOW (not form parameter)
+
+**Task 6: Update UI Template** (30 min)
+- Add hidden thread_id field
+- Add JavaScript to persist thread_id across messages
+- Add "Clear Chat History" button
+
+**Task 7: Implement History Loading** (1 hour)
+- Load checkpoint on GET `/insight/{icn}`
+- Extract messages from checkpoint state
+- Format for UI (skip system messages)
+- Pre-populate chat history div
+
+**Task 8: Implement Clear History** (30 min)
+- POST endpoint to generate new thread_id with UUID suffix
+- Clear chat history div via HTMX
+
+---
+
+#### **Database Schema** (Auto-Created)
+
+```sql
+CREATE TABLE checkpoints (
+    thread_id TEXT NOT NULL,
+    checkpoint_id TEXT NOT NULL,
+    checkpoint JSONB NOT NULL,
+    PRIMARY KEY (thread_id, checkpoint_id)
+);
+
+CREATE TABLE checkpoint_writes (...);
+```
+
+**Storage:** ~50KB per conversation thread
+
+---
+
+#### **Success Criteria**
+
+- [ ] Follow-up questions work without re-calling tools
+- [ ] History persists across page refresh
+- [ ] History clears when patient changes
+- [ ] History resumes when returning to same patient
+- [ ] "Clear Chat History" button works
+- [ ] Session expiration clears threads
+- [ ] All automated tests pass
+
+---
+
+#### **Testing**
+
+**Test 1: Conversation Memory**
+- Ask: "What is the patient's birth date?"
+- Follow-up: "How old is the patient?"
+- **Verify:** Agent uses memory (no re-call of get_patient_summary)
+
+**Test 2: Thread Isolation**
+- Create conversation with Patient A
+- Switch to Patient B
+- **Verify:** Fresh conversation (no contamination)
+
+**Test 3: History Loading**
+- Create conversation (3 messages)
+- Refresh browser (F5)
+- **Verify:** All 3 messages restored
+
+---
+
+#### **Deliverables**
+
+**Code:**
+1. `requirements.txt` - Add `langgraph-checkpoint-postgres`
+2. `config.py` - Add `LANGGRAPH_CHECKPOINT_URL`
+3. `app/main.py` - Lifespan handler
+4. `ai/agents/insight_agent.py` - Checkpointer parameter
+5. `app/routes/insight.py` - Async chat route + history loading
+6. `app/templates/insight.html` - thread_id field + Clear button
+7. `app/templates/partials/chat_message.html` - data-thread-id attribute
+
+**Documentation:**
+- Phase 6 spec added to this document
+- `config.py` updated (SESSION_TIMEOUT_MINUTES default = 25)
+- Testing scripts created
+
+**Full Specification:** See `docs/spec/phase6-conversation-memory-spec.md` for complete implementation details (~1700 lines including code examples, testing plan, and architecture decisions).
+
+---
+
+### Phase 7: Immunizations Integration (Week 7) **_PLANNED_**
 
 **Prerequisites:**
 - ✅ Immunizations ETL pipeline complete (PostgreSQL data available)
 - ✅ Immunizations UI complete (dashboard widget + full page)
 - ✅ Query functions available in `app/db/patient_immunizations.py`
-- ✅ LangGraph agent infrastructure operational (Phases 1-5 complete)
+- ✅ LangGraph agent infrastructure operational (Phases 1-6 complete)
 
 **Estimated Time:** 5-7 days
 
@@ -4194,7 +4379,7 @@ These enhancements ensure the AI Clinical Insights system provides accurate, com
      - All adults: Annual influenza, COVID-19 boosters
    - Return missing vaccines and incomplete series
    - Query patient age from demographics
-   - Phase 6 MVP: Deterministic rules (no RAG)
+   - Phase 7 MVP: Deterministic rules (no RAG)
 
 3. **Implement `forecast_next_dose()` tool** (Day 3: 2-3 hours)
    - Calculate due dates for multi-dose series
@@ -4313,7 +4498,7 @@ These enhancements ensure the AI Clinical Insights system provides accurate, com
 **Tasks:**
 
 1. **Documentation Updates** (1 hour)
-   - Mark Phase 6 complete in this document
+   - Mark Phase 7 complete in this document
    - Update tool registry (Section 6.6) with final implementation notes
    - Document usage examples and performance metrics
    - Update `CLAUDE.md` with new AI capabilities
@@ -4331,7 +4516,7 @@ These enhancements ensure the AI Clinical Insights system provides accurate, com
    - Confirm graceful handling of missing data
 
 **Deliverables:**
-- [ ] Phase 6 marked complete
+- [ ] Phase 7 marked complete
 - [ ] All documentation updated
 - [ ] Final QA checklist completed
 - [ ] Ready for production use
@@ -4340,7 +4525,7 @@ These enhancements ensure the AI Clinical Insights system provides accurate, com
 
 ---
 
-#### **Phase 6 Success Criteria:**
+#### **Phase 7 Success Criteria:**
 - [ ] `get_patient_summary()` automatically includes recent immunizations (last 10)
 - [ ] 3 new immunization-specific tools available and functional:
   - `get_immunization_history`
@@ -4357,7 +4542,7 @@ These enhancements ensure the AI Clinical Insights system provides accurate, com
 
 ---
 
-#### **Phase 6 Dependencies:**
+#### **Phase 7 Dependencies:**
 - **Immunizations ETL Pipeline:** Must be complete with data in PostgreSQL
 - **Immunizations UI:** Full page and widget operational for cross-referencing
 - **Database Functions:** `app/db/patient_immunizations.py` with query functions
@@ -4365,7 +4550,7 @@ These enhancements ensure the AI Clinical Insights system provides accurate, com
 
 ---
 
-#### **Phase 6 Clinical Impact:**
+#### **Phase 7 Clinical Impact:**
 
 **Care Gap Identification:**
 - 68-year-old patient without pneumococcal vaccine → AI flags as care gap
@@ -4384,7 +4569,7 @@ These enhancements ensure the AI Clinical Insights system provides accurate, com
 
 ---
 
-#### **Phase 6 Future Enhancements (Phase 7+):**
+#### **Phase 7 Future Enhancements (Phase 8+):**
 - **RAG Integration:** Vector embeddings of CDC "Pink Book" ACIP schedules
 - **Contraindication Checking:** Semantic search for vaccine contraindications
 - **Travel Medicine:** Destination-specific vaccine recommendations
@@ -5330,12 +5515,14 @@ Follow the same export style and documentation conventions used elsewhere in the
 | v2.0 | 2026-01-04 | **Phase 5 Complete - Conversation Transcript Download MVP**. Marked all Phase 5 deliverables complete. Day 2 implementation: (1) Complete transcript.js module (~350 lines) with client-side plaintext and markdown generation, (2) Browser download with formatted filenames, (3) Script integration and modal button wiring. Additional enhancements: (1) Real timestamp implementation replacing hardcoded "Just now" with actual datetime (format: "2:45:32 PM"), (2) Markdown formatting improvements removing green checkmarks from Security Requirements. Total implementation time: 3.5 hours. All success criteria met. **Major milestone: Phase 1-5 complete.** | Claude + User |
 | v2.1 | 2026-01-04 | **Post-Phase 5 Data Quality & UX Enhancements Complete**. Fixed 4 bugs identified during user testing: (1) Real timestamps - replaced hardcoded "Just now" with actual datetime in chat messages (backend datetime generation), (2) Clinician email - fixed transcript metadata to show full authenticated user email instead of placeholder, (3) Patient name fixes - three separate bugs: added name to demographics tool output, updated system prompt to authorize sharing patient identifiers with clinicians, fixed dictionary field name from "name" to "name_display" in route handler. All enhancements verified working. AI now correctly answers "What is the patient's name?" System ready for production clinical use. | Claude + User |
 | v2.2 | 2026-01-15 | **Phase 6 Detailed Specifications - Immunizations Integration (Consolidated)**. Expanded Section 6.6 with full implementation details for 3 immunization tools (get_immunization_history, check_vaccine_compliance, forecast_next_dose) including complete Python code, helper functions, and use cases (~250 lines). Added Section 4.6: Use Case 6 "Vaccination Compliance and Gap Analysis" with detailed agent flow and example response for 68-year-old patient compliance check (~70 lines). Section 6.6 now contains 5 subsections (6.6.1-6.6.5) with comprehensive tool specifications, system prompts integration, and RAG enhancement roadmap. **Architectural decision:** Consolidated all AI integration design from `immunizations-design.md` Section 9 into this document per "single source of truth" principle. `immunizations-design.md` Section 9 now contains concise pointer to this document (Sections 4.6, 6.6, and 10 Phase 6). Phase 6 already detailed in Section 10 (no changes needed - already comprehensive 5-7 day plan). Ready for Phase 6 implementation. | Claude + User |
+| v2.3 | 2026-01-19 | **Phase 6 Conversation Memory Specification (PostgreSQL Checkpointer)**. Inserted new Phase 6 before Immunizations (renumbered to Phase 7). Added comprehensive specification for persistent conversation memory using LangGraph PostgreSQL checkpointer (~200 lines in main doc, full 1700-line spec in `phase6-conversation-memory-spec.md`). **Key features:** Follow-up questions work (no re-calling tools), history persists across page refreshes, session-scoped persistence (25 minutes), automatic clearing on patient change, patient-specific thread isolation, "Clear Chat History" button. **Implementation:** 8 tasks, 4-6 hours total. **thread_id strategy:** `f"{user_session_id}_{patient_icn}"` enables automatic patient-based clearing. **Technical updates:** Updated `config.py` SESSION_TIMEOUT_MINUTES default from 15 to 25 minutes (aligns with clinical workflow). Database schema: Auto-created `checkpoints` and `checkpoint_writes` tables (~50KB per thread). Ready for immediate implementation. | Claude + User |
 
 ---
 
 **Next Steps:**
 1. ✅ Phases 1-5 Complete - AI Clinical Insights operational
-2. ⏳ Phase 6: Immunizations Integration (5-7 days, 16-20 hours)
-3. ⏳ Phase 7+: Advanced features (RAG, semantic search, care gap analysis)
+2. ⏳ **Phase 6: Conversation Memory (PostgreSQL Checkpointer)** - 4-6 hours, High Priority ⭐
+3. ⏳ Phase 7: Immunizations Integration (5-7 days, 16-20 hours)
+4. ⏳ Phase 8+: Advanced features (RAG, semantic search, care gap analysis)
 
-**Questions or Feedback:** Review Phase 6 specification before implementation begins.
+**Questions or Feedback:** Review Phase 6 specification in Section 10 or full spec in `docs/spec/phase6-conversation-memory-spec.md` before implementation begins.
