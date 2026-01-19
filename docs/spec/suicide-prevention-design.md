@@ -6,6 +6,15 @@
 **Implementation Phase:** Phase 7 (Clinical Intelligence)
 **Based on:** VA REACH VET 2.0 Architecture + VA/DoD CPG Suicide Risk Assessment (2024)
 
+**⚠️ TODO - Post-Implementation:**
+- Update `docs/guide/developer-setup-guide.md` to reflect AI Suicide Prevention enhancement
+- Add documentation for:
+  - New Python dependencies (nltk, textblob)
+  - New PostgreSQL tables (`clinical.clinical_risk_scores`, `clinical.clinical_risk_factors`)
+  - New AI tool (`check_suicide_risk_factors`)
+  - Suicide risk test patient data (ICN200000-200099)
+  - ETL pipeline for suicide risk scoring
+
 ---
 
 ## Table of Contents
@@ -33,12 +42,6 @@
 The **Suicide Prevention AI** capability proactively identifies veterans at elevated risk for suicide by analyzing clinical and administrative data patterns. Modeled after the VA's **REACH VET 2.0** system (Recovery Engagement and Coordination for Health - Veterans Enhanced Treatment), this module leverages predictive analytics to flag high-risk individuals for early intervention by clinical teams.
 
 Unlike standard clinical domains (e.g., Medications, Vitals), this is a **derived intelligence domain**. It does not merely display raw data; it synthesizes data from multiple sources (medications, encounters, demographics, flags, clinical notes) to calculate a probabilistic risk score and surface actionable insights via the `med-z1` AI Chatbot.
-
-**Key Distinction from Draft Design:**
-- **AI Chatbot Only:** No dashboard widgets or dedicated UI pages (reduces stigma, restricts access to appropriate clinical conversations)
-- **Calibrated Statistical Model:** Uses logistic regression with coefficients matched to published REACH VET 2.0 literature
-- **NLP-Enhanced Risk Detection:** Analyzes clinical notes narrative text for psychosocial risk factors not captured in structured data
-- **Aggressive Timeline:** 12-15 day implementation targeting core capabilities with deferred enhancements
 
 ### 1.2 Scope
 
@@ -209,6 +212,33 @@ scipy>=1.11.0  # For statistical functions (already likely present)
 ### 4.1 REACH VET 2.0 Risk Variables
 
 The system aggregates data into a **Feature Vector** for each patient based on published REACH VET 2.0 methodology.
+
+**What is a Feature Vector?**
+
+A **Feature Vector** is a structured collection of measurable characteristics (features) about a patient that a statistical model uses to calculate risk. Think of it as a standardized patient profile with yes/no answers and counts for specific risk factors.
+
+**Example Feature Vector for a patient:**
+```
+Patient ICN100001:
+- has_prior_suicide_attempt: Yes (1)
+- has_mst: Yes (1)
+- no_show_count_12m: 4
+- has_opioid_rx: Yes (1)
+- has_concurrent_opioid_benzo: Yes (1)
+- has_depression: Yes (1)
+- has_hopelessness_notes: Yes (1)
+- age_group_high_risk: No (0)
+- is_male: Yes (1)
+... (25-30 total features)
+```
+
+The statistical model multiplies each feature by its weight (e.g., prior attempt × 2.5, MST × 1.8) and sums the results to calculate an overall risk probability. This approach is called **logistic regression** and is widely used in medical risk prediction because it's transparent, reproducible, and clinically interpretable.
+
+**Why Feature Vectors Matter:**
+- **Standardization:** Every patient is evaluated using the same set of criteria
+- **Explainability:** We can see exactly which factors contributed to the risk score
+- **Reproducibility:** The same input data always produces the same risk score
+- **Auditability:** Clinicians can review and validate the factors used in risk calculation
 
 **Variable Categories (61 variables total in REACH VET 2.0, ~25-30 implemented in MVP):**
 
@@ -604,6 +634,22 @@ def generate_high_risk_notes(icn, num_notes=8):
 **Location:** `etl/silver/transform_suicide_risk_features.py`
 
 **Purpose:** Harmonize data across VistA/Cerner sources, calculate derived features, perform clinical notes NLP.
+
+**This is the Feature Engineering Layer:**
+
+Feature engineering transforms raw clinical data into the calculated features (feature vector components) used by the risk scoring model. This is a critical AI/ML step that converts disparate data formats into standardized, quantifiable risk indicators.
+
+**What Happens in Feature Engineering:**
+- **Raw data** (individual appointment records, medication names, note text) → **Calculated features** (no-show counts, medication class flags, sentiment scores)
+- Each subsection below shows a specific transformation: raw clinical data → engineered feature
+- The output is a single row per patient with 25-30 numeric/boolean features ready for the logistic regression model
+
+**Example Transformation:**
+```
+Raw data:       4 appointment records with "NO SHOW" status
+                ↓ Feature Engineering ↓
+Engineered feature:  no_show_count_12m = 4 (used by model with weight 1.1)
+```
 
 **Key Transformations:**
 
@@ -1314,6 +1360,25 @@ AVAILABLE_TOOLS = [
 - "Are there any suicide risk factors I should know about?"
 - "Show me the suicide risk assessment"
 - "Is there anything concerning about this patient's mental health?"
+
+**Suggested Questions Integration:**
+
+To help clinicians discover the suicide risk assessment capability, update `ai/prompts/suggested_questions.py` to include one or more suicide prevention questions in the AI Insights page modal popup.
+
+**Recommended additions:**
+```python
+# In ai/prompts/suggested_questions.py
+SUGGESTED_QUESTIONS = [
+    # ... existing questions ...
+
+    # Suicide Prevention (new)
+    "Is this patient at risk for suicide?",
+    "What does the REACH VET assessment show?",
+    # ... or choose the phrasing that best fits your clinical workflow
+]
+```
+
+This makes the suicide risk assessment feature discoverable without requiring clinicians to know the exact phrasing.
 
 **AI Agent Workflow:**
 1. User submits query mentioning suicide/risk/safety
