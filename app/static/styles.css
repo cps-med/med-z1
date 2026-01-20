@@ -5517,16 +5517,19 @@ input:focus-visible,
     margin-bottom: 1rem;
     padding-left: calc(36px + 0.75rem);  /* Sparkle button width + gap */
     padding-right: calc(36px + 0.75rem); /* Submit button width + gap */
+    display: flex;
+    gap: 1rem;  /* Breathing room between buttons */
 }
 
 .transcript-download-actions .btn {
-    width: 100%;
+    flex: 1;  /* Equal width for all buttons */
 }
 
 @media (max-width: 768px) {
     .transcript-download-actions {
         padding-left: 0;
         padding-right: 0;
+        flex-direction: column;  /* Stack buttons vertically on mobile */
     }
 
     .transcript-download-actions .btn {

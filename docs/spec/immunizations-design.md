@@ -16,7 +16,7 @@
   - Full page: Patient immunizations page with filtering and table view ✅
   - Navigation: Added to sidebar, active link, breadcrumbs ✅
   - Styling: Complete CSS for widget and full page ✅
-- ⏳ **Phase 3: AI Integration** (Pending - See `docs/spec/ai-insight-design.md` Phase 6)
+- ⏳ **Phase 3: AI Integration** (Pending - See `docs/spec/ai-insight-design.md` Phase 7)
 
 ---
 
@@ -2763,14 +2763,14 @@ function toggleDetails(immunizationId) {
 ---
 ## 9. AI Integration Design
 
-**Status:** Pending (Phase 3 of Immunizations domain, Phase 6 of AI Clinical Insights)
+**Status:** Pending (Phase 3 of Immunizations domain, Phase 7 of AI Clinical Insights)
 
 The Immunizations domain will be integrated into the AI Clinical Insights subsystem with three new tools for vaccine history querying, CDC ACIP compliance checking, and multi-dose series forecasting.
 
 **Complete AI integration specifications are documented in:**
 - **`docs/spec/ai-insight-design.md`** Section 4.6 (Use Case 6: Vaccination Compliance and Gap Analysis)
 - **`docs/spec/ai-insight-design.md`** Section 6.6 (Immunization Tools - 3 detailed tool specifications with code examples)
-- **`docs/spec/ai-insight-design.md`** Section 10 Phase 6 (Implementation Roadmap - Days 1-7, estimated 5-7 days)
+- **`docs/spec/ai-insight-design.md`** Section 10 Phase 7 (Implementation Roadmap - Days 1-7, estimated 5-7 days)
 
 **Tools Planned (3):**
 1. **`get_immunization_history()`** - Query patient vaccine history with CVX codes

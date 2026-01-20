@@ -52,7 +52,7 @@ class InsightState(TypedDict):
     error: str | None
 
 
-def create_insight_agent(tools: list):
+def create_insight_agent(tools: list, checkpointer=None):
     """
     Creates a LangGraph agent for clinical insights.
 
@@ -72,11 +72,15 @@ def create_insight_agent(tools: list):
     Args:
         tools: List of LangChain tools (decorated with @tool)
                Example: [check_ddi_risks, get_patient_summary, analyze_vitals_trends]
+        checkpointer: Optional LangGraph checkpointer for conversation memory
+                      (Phase 6: AsyncPostgresSaver for persistent chat history)
+                      If provided, enables follow-up questions and history restoration.
+                      If None, agent has no memory between invocations.
 
     Returns:
         Compiled LangGraph agent ready for invocation
 
-    Example:
+    Example (without checkpointer):
         >>> from ai.tools import ALL_TOOLS
         >>> agent = create_insight_agent(ALL_TOOLS)
         >>> result = agent.invoke({
@@ -89,7 +93,18 @@ def create_insight_agent(tools: list):
         ... })
         >>> print(result["messages"][-1].content)
 
-    Design Reference: docs/spec/ai-insight-design.md Section 5.2
+    Example (with checkpointer - Phase 6):
+        >>> from ai.tools import ALL_TOOLS
+        >>> from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+        >>> checkpointer = AsyncPostgresSaver.from_conn_string(DB_URL)
+        >>> await checkpointer.setup()
+        >>> agent = create_insight_agent(ALL_TOOLS, checkpointer=checkpointer)
+        >>> result = await agent.ainvoke(
+        ...     {"messages": [HumanMessage(content="Check DDI risks")], ...},
+        ...     config={"configurable": {"thread_id": "session123_ICN100001"}}
+        ... )
+
+    Design Reference: docs/spec/ai-insight-design.md Section 5.2, Phase 6
     """
     # Initialize OpenAI LLM with configuration from config.py
     llm = ChatOpenAI(
@@ -165,4 +180,8 @@ def create_insight_agent(tools: list):
     workflow.add_edge("tools", "agent")  # After tools execute, loop back to agent
 
     # Compile and return
-    return workflow.compile()
+    # Phase 6: Pass checkpointer if provided for conversation memory
+    if checkpointer is not None:
+        return workflow.compile(checkpointer=checkpointer)
+    else:
+        return workflow.compile()

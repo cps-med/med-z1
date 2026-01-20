@@ -472,6 +472,171 @@ Email: clinician.alpha@va.gov
 Password: VaDemo2025!
 ```
 
+## PostgreSQL AI Infrastructure Setup
+
+This section explains the AI infrastructure tables within the PostgreSQL `medz1` database. These tables support the AI Clinical Insights feature, specifically enabling **conversation memory** (Phase 6) using LangGraph's PostgreSQL checkpointer.
+
+**Purpose:**
+- Enable persistent chat history across page refreshes and login sessions
+- Maintain user-scoped conversation memory (persists across logins)
+- Isolate conversations by user ID + patient ICN
+- Auto-clear history on patient changes (different ICN = new conversation)
+- Manual clear via "Clear Chat History" button
+
+### **Important: Auto-Created Tables (No Manual Setup Required)**
+
+**As of Phase 6 implementation (2026-01-20):**
+
+The LangGraph checkpoint tables are **automatically created** when the FastAPI application starts. The `AsyncPostgresSaver.setup()` method in the lifespan handler creates these tables in the `public` schema if they don't exist.
+
+**No manual DDL execution is required.** Simply start the application:
+
+```bash
+# Tables are auto-created during application startup
+uvicorn app.main:app --reload
+```
+
+**What happens at startup:**
+1. Application initializes LangGraph `AsyncPostgresSaver`
+2. Calls `checkpointer.setup()` (idempotent - safe to run multiple times)
+3. Creates 4 checkpoint tables in `public` schema if missing
+4. Application logs confirm successful initialization
+
+**Expected startup logs:**
+```
+============================================================
+med-z1 application startup: Initializing components
+============================================================
+Initializing LangGraph AsyncPostgresSaver for conversation memory...
+Checkpoint URL: postgresql://***@localhost:5432/medz1
+✅ LangGraph checkpointer initialized successfully
+   - Schema: public (LangGraph default)
+   - Tables: checkpoints, checkpoint_writes, checkpoint_blobs, checkpoint_migrations
+   - Conversation memory enabled
+✅ AI Clinical Insights Agent initialized successfully
+   - Tools: 4 tools available
+   - Conversation memory: ENABLED
+============================================================
+```
+
+### **Verify Tables Were Created**
+
+After starting the application, verify the checkpoint tables:
+
+```bash
+# List checkpoint tables in public schema
+docker exec -it postgres16 psql -U postgres -d medz1 -c "\dt public.*point*"
+```
+
+**Expected output:**
+```
+                List of relations
+ Schema |         Name          | Type  |  Owner
+--------+-----------------------+-------+----------
+ public | checkpoint_blobs      | table | postgres
+ public | checkpoint_migrations | table | postgres
+ public | checkpoint_writes     | table | postgres
+ public | checkpoints           | table | postgres
+(4 rows)
+```
+
+### **Table Descriptions**
+
+**LangGraph v3.x creates 4 tables:**
+
+1. **`checkpoints`** - Main conversation state metadata (thread_id, checkpoint_id, parent_id)
+2. **`checkpoint_writes`** - Transactional writes during checkpoint creation (internal LangGraph use)
+3. **`checkpoint_blobs`** - Binary blob storage for large checkpoint data (performance optimization)
+4. **`checkpoint_migrations`** - Schema version tracking for LangGraph upgrades
+
+**View table structures:**
+```bash
+# View checkpoints table structure
+docker exec -it postgres16 psql -U postgres -d medz1 -c "\d public.checkpoints"
+
+# View checkpoint_blobs table structure
+docker exec -it postgres16 psql -U postgres -d medz1 -c "\d public.checkpoint_blobs"
+
+# View migration version
+docker exec -it postgres16 psql -U postgres -d medz1 -c "SELECT * FROM public.checkpoint_migrations;"
+```
+
+**Expected migration version:**
+```
+ v
+---
+  1
+(1 row)
+```
+
+### **Verify Checkpoint Data (After Using AI Insights)**
+
+After using the AI Insights chat feature, you can verify conversation data is being saved:
+
+```bash
+# View checkpoint threads (shows conversation sessions)
+docker exec -it postgres16 psql -U postgres -d medz1 -c "SELECT DISTINCT thread_id FROM public.checkpoints LIMIT 5;"
+```
+
+**Example output (after conversations):**
+```
+              thread_id
+------------------------------------
+ session123_ICN100001
+ session456_ICN100010
+(2 rows)
+```
+
+**Count checkpoints per thread:**
+```bash
+docker exec -it postgres16 psql -U postgres -d medz1 -c "
+SELECT thread_id, COUNT(*) as checkpoint_count
+FROM public.checkpoints
+GROUP BY thread_id
+ORDER BY checkpoint_count DESC
+LIMIT 5;
+"
+```
+
+### **Technical Notes**
+
+- **Schema:** `public` (LangGraph default, avoids connection string complexity)
+- **Auto-Creation:** Tables created by `AsyncPostgresSaver.setup()` at app startup
+- **Version:** LangGraph checkpoint schema v3.x (4 tables with blob optimization)
+- **Thread ID Format:** `{user_id}_{patient_icn}` for user+patient isolation ⭐ **User-scoped (persists across login sessions)**
+- **Storage:** ~50KB per conversation thread (typical, stored in checkpoint_blobs)
+- **Idempotent:** Safe to restart application - `setup()` only creates missing tables
+- **Manual DDL:** Optional DDL script exists at `db/ddl/create_ai_checkpoints_tables.sql` for reference only
+- **Clear History:** Users can manually clear conversation via "Clear Chat History" button (deletes from all checkpoint tables)
+
+### **Troubleshooting**
+
+**If tables are NOT created:**
+
+Check application startup logs for errors:
+```bash
+# Look for checkpointer initialization errors in uvicorn output
+# Expected: "✅ LangGraph checkpointer initialized successfully"
+# Error: "❌ Failed to initialize LangGraph checkpointer: [error]"
+```
+
+**Common issues:**
+1. **PostgreSQL not running:** `docker start postgres16`
+2. **Connection failed:** Check `POSTGRES_PASSWORD` in `.env` matches container
+3. **Missing dependency:** Install `psycopg[binary,pool]>=3.1.0`
+
+**Reinstall dependencies if needed:**
+```bash
+pip install "psycopg[binary,pool]>=3.1.0"
+```
+
+### **See Also**
+
+- `docs/spec/ai-insight-design.md` - Phase 6: Conversation Memory specification
+- `app/main.py` - Lifespan handler implementation
+- `db/ddl/create_ai_checkpoints_tables.sql` - Reference DDL (optional, for documentation)
+- LangGraph AsyncPostgresSaver documentation
+
 ## MinIO Setup and Bucket Creation
 
 The med-z1 application uses MinIO as an S3-compatible object storage system for the data lake. The primary file types that will be managed within MinIO are csv and Parquet. MinIO must be properly configured before running ETL pipelines, as the pipelines read and write parquet files to and from MinIO.  

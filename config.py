@@ -309,6 +309,19 @@ AI_NOTES_MAX_LIMIT = int(os.getenv("AI_NOTES_MAX_LIMIT", "10"))
 # - Based on 500 char preview ≈ 125 tokens (empirical)
 AI_NOTES_TOKENS_PER_PREVIEW = int(os.getenv("AI_NOTES_TOKENS_PER_PREVIEW", "125"))
 
+
+# -----------------------------------------------------------
+# LangGraph Checkpointer Configuration (Phase 6)
+# Added: 2026-01-19
+# -----------------------------------------------------------
+
+# Use same PostgreSQL database for conversation checkpoints
+# - Reuses existing DATABASE_URL (defined at line 220)
+# - Stores conversation state in separate schema/table
+# - Enables conversation memory persistence across page refreshes
+LANGGRAPH_CHECKPOINT_URL = DATABASE_URL
+
+
 AI_CONFIG = {
     "openai_api_key": OPENAI_API_KEY,
     "openai_model": OPENAI_MODEL,

@@ -79,6 +79,10 @@
             <div id="chat-history" class="chat-history">
                 <!-- Messages will be appended here via HTMX -->
                 {% for msg in chat_messages %}
+                    {% set message_type = msg.message_type %}
+                    {% set message_text = msg.message_text %}
+                    {% set timestamp = msg.timestamp %}
+                    {% set tools_used = msg.get('tools_used', None) %}
                     {% include "partials/chat_message.html" %}
                 {% endfor %}
             </div>
@@ -143,6 +147,21 @@
                 >
                     <i class="fa-solid fa-download"></i>
                     Download Transcript
+                </button>
+
+                <!-- Phase 6: Clear Chat History -->
+                <button
+                    type="button"
+                    class="btn btn--secondary"
+                    hx-post="/insight/clear-history"
+                    hx-vals='{"icn": "{{ patient.icn }}"}'
+                    hx-target="#chat-history"
+                    hx-swap="innerHTML"
+                    hx-confirm="Are you sure you want to clear the chat history? This cannot be undone."
+                    title="Clear conversation history"
+                >
+                    <i class="fa-solid fa-trash"></i>
+                    Clear Chat History
                 </button>
             </div>
 

@@ -18,12 +18,16 @@
 import logging
 from datetime import datetime
 from pathlib import Path
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
+
+# LangGraph PostgreSQL checkpointer (Phase 6: Conversation Memory)
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 
 # Explicit imports from root-level config.py
 from config import (
@@ -33,6 +37,7 @@ from config import (
     USE_MINIO,
     SESSION_SECRET_KEY,
     SESSION_COOKIE_MAX_AGE,
+    LANGGRAPH_CHECKPOINT_URL,
 )
 
 # Import routers
@@ -41,7 +46,134 @@ from app.routes import patient, dashboard, vitals, medications, demographics, en
 # Import middleware
 from app.middleware.auth import AuthMiddleware
 
-app = FastAPI(title="med-z1")
+# -----------------------------------------------------------
+# Lifespan handler for startup/shutdown tasks
+# -----------------------------------------------------------
+# Phase 6: Conversation Memory
+# Initialize LangGraph AsyncPostgresSaver at startup for persistent chat history
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    FastAPI lifespan handler for startup/shutdown tasks.
+
+    Startup:
+    - Initialize LangGraph AsyncPostgresSaver for conversation memory
+    - Create checkpoint tables in PostgreSQL (ai schema)
+    - Store checkpointer in app.state for access by routes
+
+    Shutdown:
+    - Close checkpointer connection pool
+    """
+    logger = logging.getLogger(__name__)
+
+    # -----------------------------------------------------------
+    # Startup
+    # -----------------------------------------------------------
+    logger.info("=" * 60)
+    logger.info("med-z1 application startup: Initializing components")
+    logger.info("=" * 60)
+
+    # Initialize LangGraph PostgreSQL checkpointer
+    # Important: We need to keep the checkpointer connection open for app lifetime
+    # Store the async context manager to properly close it on shutdown
+    checkpointer_context = None
+    checkpointer = None
+
+    try:
+        logger.info("Initializing LangGraph AsyncPostgresSaver for conversation memory...")
+
+        # Use base connection string without query parameters
+        # LangGraph's AsyncPostgresSaver will use the 'public' schema by default
+        checkpoint_url = LANGGRAPH_CHECKPOINT_URL
+
+        logger.info(f"Checkpoint URL: {checkpoint_url.replace(LANGGRAPH_CHECKPOINT_URL.split('@')[0].split('://')[1], '***')}")  # Mask credentials
+
+        # Create async context manager (but don't enter it yet with 'async with')
+        # We'll enter it and keep it open for the application lifetime
+        checkpointer_context = AsyncPostgresSaver.from_conn_string(checkpoint_url)
+
+        # Enter the context manager and keep it open
+        checkpointer = await checkpointer_context.__aenter__()
+
+        # Setup checkpoint tables (idempotent - creates only if missing)
+        await checkpointer.setup()
+
+        # Store checkpointer in app.state for access by routes
+        app.state.checkpointer = checkpointer
+        app.state.checkpointer_context = checkpointer_context
+
+        logger.info("✅ LangGraph checkpointer initialized successfully")
+        logger.info("   - Schema: public (LangGraph default)")
+        logger.info("   - Tables: checkpoints, checkpoint_writes, checkpoint_blobs, checkpoint_migrations")
+        logger.info("   - Conversation memory enabled")
+
+    except Exception as e:
+        logger.error(f"❌ Failed to initialize LangGraph checkpointer: {e}")
+        logger.error("   - Conversation memory will NOT be available")
+        logger.error("   - Check PostgreSQL connection and ai schema tables")
+        # Don't fail startup - app can run without conversation memory
+        app.state.checkpointer = None
+        app.state.checkpointer_context = None
+
+    # Initialize AI Clinical Insights Agent with checkpointer
+    try:
+        logger.info("Initializing AI Clinical Insights Agent...")
+
+        # Import here to avoid circular dependencies
+        from ai.agents.insight_agent import create_insight_agent
+        from ai.tools import ALL_TOOLS
+
+        # Create agent with checkpointer if available
+        agent_checkpointer = getattr(app.state, 'checkpointer', None)
+        app.state.insight_agent = create_insight_agent(ALL_TOOLS, checkpointer=agent_checkpointer)
+
+        logger.info("✅ AI Clinical Insights Agent initialized successfully")
+        logger.info(f"   - Tools: {len(ALL_TOOLS)} tools available")
+        logger.info(f"   - Tools: {[tool.name for tool in ALL_TOOLS]}")
+        logger.info(f"   - Conversation memory: {'ENABLED' if agent_checkpointer else 'DISABLED'}")
+
+    except Exception as e:
+        logger.error(f"❌ Failed to initialize AI Clinical Insights Agent: {e}")
+        logger.error("   - AI insights feature will NOT be available")
+        app.state.insight_agent = None
+
+    logger.info("=" * 60)
+    logger.info("med-z1 application startup complete")
+    logger.info("=" * 60)
+
+    # Application runs here (yield control to FastAPI)
+    yield
+
+    # -----------------------------------------------------------
+    # Shutdown
+    # -----------------------------------------------------------
+    logger.info("=" * 60)
+    logger.info("med-z1 application shutdown: Cleaning up components")
+    logger.info("=" * 60)
+
+    # Close checkpointer connection pool by exiting the context manager
+    if hasattr(app.state, 'checkpointer_context') and app.state.checkpointer_context is not None:
+        try:
+            logger.info("Closing LangGraph checkpointer connection pool...")
+            # Properly exit the context manager to close connections
+            await app.state.checkpointer_context.__aexit__(None, None, None)
+            app.state.checkpointer = None
+            app.state.checkpointer_context = None
+            logger.info("✅ Checkpointer cleanup complete")
+        except Exception as e:
+            logger.error(f"❌ Error during checkpointer cleanup: {e}")
+
+    logger.info("=" * 60)
+    logger.info("med-z1 application shutdown complete")
+    logger.info("=" * 60)
+
+
+# -----------------------------------------------------------
+# FastAPI application instance with lifespan handler
+# -----------------------------------------------------------
+
+app = FastAPI(title="med-z1", lifespan=lifespan)
 
 # Add session middleware for Vista data caching
 # Session middleware must be added BEFORE auth middleware (executed AFTER in request flow)
@@ -94,8 +226,6 @@ logger = logging.getLogger(__name__)
 
 # Base directory for this file
 BASE_DIR = Path(__file__).resolve().parent
-
-logger.info("med-z1 application starting up")
 
 # Templates and static dirs, using BASE_DIR
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
