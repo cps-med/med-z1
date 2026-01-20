@@ -1,16 +1,17 @@
 # med-z1 – Product & Technical Development Plan
 
-January 10, 2026 • Document version v1.7
+January 20, 2026 • Document version v1.8
 
 **Related Documentation:**
 Refer to `docs/guide/` and `docs/spec/` for project background, implementation approach, developer setup guides, and design specifications for each clinical domain.
 
 **Changelog:**
+- **v1.8 (January 20, 2026):** Updated implementation status to reflect 9 clinical domains complete (added Immunizations). Updated Vista RPC Broker to Phase 5 complete (4 domains operational: Vitals, Encounters, Allergies, Medications). Updated AI Clinical Insights to reflect Phase 6 complete (Conversation Memory with PostgreSQL checkpointer). Updated current status dates and counts throughout document.
 - **v1.7 (January 10, 2026):** Updated implementation status to reflect 8 clinical domains complete (added Clinical Notes). Updated AI/ML status to reflect Phase 4 completion (AI Clinical Insights operational with 4 tools). Corrected Python dependencies section (polars, uvicorn, Jinja2). Removed SSN search and facility filter from patient search specification per VA policy decisions.
 - **v1.6 (December 20, 2025):** Updated CCOW Context Management to v2.0 (multi-user enhancement complete). Added session timeout behavior documentation. Fixed timezone bug in session validation. See `docs/ccow-v2-implementation-summary.md`, `docs/session-timeout-behavior.md`, and `docs/environment-variables-guide.md`.
 - **v1.5 (December 18, 2025):** Added User Authentication and Management implementation status. All 8 authentication phases complete (database, routes, middleware, login UI, session management, testing). See `docs/user-auth-design.md` and `docs/auth-implementation-summary.md`.
 - **v1.4 (December 16, 2025):** Updated current status to reflect 7 clinical domains implemented (added Encounters). Noted Laboratory Results ETL completion (UI implementation pending). Updated "Next Priorities" section.
-- **v1.3 (December 15, 2025):** Refactored to focus on strategic vision and product planning. Removed redundant technical implementation details (now in `implementation-roadmap.md`). Updated current status to reflect 6 clinical domains implemented and Vista Phase 1 complete.
+- **v1.3 (December 15, 2025):** Refactored to focus on strategic vision and product planning. Removed redundant technical implementation details (now in `med-z1-implementation-roadmap.md`). Updated current status to reflect 6 clinical domains implemented and Vista Phase 1 complete.
 - **v1.2 (December 8, 2025):** Updated with actual implementation details - medallion architecture working, PostgreSQL setup, MinIO client, ETL pipeline complete for patient demographics, actual dependencies and project structure
 - **v1.1 (December 7, 2025):** Updated with CCOW integration requirements
 - **v1.0 (Initial):** Original strategic plan
@@ -288,7 +289,7 @@ med-z1 implements a **medallion data architecture** (Bronze → Silver → Gold)
 - Direct Python script execution for development (`python -m etl.bronze_patient`)
 - Future: Orchestration with Prefect, Airflow, or Azure Data Factory
 
-> **For detailed medallion implementation, ETL patterns, code examples, and current pipeline status, see `docs/implementation-roadmap.md` Section 11.**
+> **For detailed medallion implementation, ETL patterns, code examples, and current pipeline status, see `docs/spec/med-z1-implementation-roadmap.md` Section 11.**
 
 ### 4.3 Serving Database
 
@@ -304,7 +305,7 @@ med-z1 implements a **medallion data architecture** (Bronze → Silver → Gold)
 
 **Future Extension:** pgvector for AI/ML embeddings
 
-> **For complete PostgreSQL schema details, DDL scripts, and loading patterns, see `docs/implementation-roadmap.md` Section 10.**
+> **For complete PostgreSQL schema details, DDL scripts, and loading patterns, see `docs/spec/med-z1-implementation-roadmap.md` Section 10.**
 
 ### 4.4 Mock CDW Subsystem
 
@@ -375,7 +376,7 @@ med-z1 implements a **medallion data architecture** (Bronze → Silver → Gold)
 
 ### 4.6 AI & Agentic
 
-**✅ IMPLEMENTED (Phase 4 Complete - January 3, 2026)**
+**✅ IMPLEMENTED (Phase 6 Complete - January 20, 2026)**
 
 * **LLM:** OpenAI GPT-4 Turbo (`gpt-4-turbo-preview`)
 
@@ -384,7 +385,9 @@ med-z1 implements a **medallion data architecture** (Bronze → Silver → Gold)
 * **Libraries:**
   * `langchain==1.2.0` - LLM application framework
   * `langchain-openai==1.1.6` - OpenAI integration
-  * `langgraph==1.0.5` - Agent workflow orchestration
+  * `langgraph==1.0.5` - Agent workflow orchestration (Phase 1-5)
+  * `langgraph-checkpoint-postgres==2.0.16` - Persistent conversation memory (Phase 6)
+  * `psycopg[binary,pool]>=3.1.0` - PostgreSQL async driver for checkpointer (Phase 6)
   * `openai==2.14.0` - OpenAI API client
   * `markdown==3.10` - Markdown rendering for AI responses
 
@@ -396,16 +399,26 @@ med-z1 implements a **medallion data architecture** (Bronze → Silver → Gold)
 
 * **User Interface:** `/insight` conversational AI page with LangGraph agent and chat interface
 
+* **Conversation Memory (Phase 6):**
+  * ✅ **PostgreSQL checkpointer** - LangGraph AsyncPostgresSaver for persistent chat history
+  * ✅ **User-scoped threads** - Thread ID format: `{user_id}_{patient_icn}` for multi-user isolation
+  * ✅ **Cross-session persistence** - Conversations survive page refreshes and login sessions
+  * ✅ **Clear chat history** - User-controlled conversation reset button
+  * ✅ **System message optimization** - Injected only on first message (prevents accumulation)
+  * ✅ **Schema:** 4 tables in `public` schema (checkpoints, checkpoint_writes, checkpoint_blobs, checkpoint_migrations)
+  * 📝 **Configuration:** `LANGGRAPH_CHECKPOINT_URL` in `config.py`
+
 * **Implemented Use Cases:**
   * ✅ Chart overview summarization with clinical notes context
   * ✅ Drug-drug interaction (DDI) risk assessment
   * ✅ Patient flag-aware risk narratives
   * ✅ Clinical note analysis and synthesis
   * ✅ Vital sign trend analysis with statistical significance
+  * ✅ Follow-up questions with conversation context (Phase 6)
 
 * **Vector Store:** Not yet implemented (future: pgvector in PostgreSQL for semantic search)
 
-> **For complete AI implementation details, see `docs/spec/ai-insight-design.md`**
+> **For complete AI implementation details, see `docs/spec/ai-insight-design.md` (v2.4)**
 
 ### 4.7 Tooling & Dev Experience
 
@@ -535,30 +548,55 @@ In development, the Vista RPC Broker uses **JSON-based patient data files** that
 
 #### Implementation Status & Roadmap
 
-**✅ Phase 1 Complete (December 15, 2025):**
-- Infrastructure foundation (DataLoader, RPCHandler framework, RPCRegistry)
+**✅ Phases 1-5 Complete (January 13, 2026):**
+
+**Phase 1: Infrastructure Foundation**
+- DataLoader, RPCHandler framework, RPCRegistry
 - Multi-site support (3 sites: 200 ALEXANDRIA, 500 ANCHORAGE, 630 PALO ALTO)
 - First working RPC handler (ORWPT PTINQ - Patient Inquiry)
 - VistA format conversion utilities (M-Serializer)
 - Complete FastAPI HTTP service with 82 passing tests
-- Comprehensive documentation (`vista/README.md`)
 
-**📋 Planned Phases 2-6 (Future):**
-- **Phase 2:** Additional demographics RPCs, site selection policy
-- **Phase 3:** Vitals domain RPCs with date-range queries
-- **Phase 4:** Allergies domain RPCs
-- **Phase 5:** Medications domain RPCs (RxOut + BCMA)
-- **Phase 6:** med-z1 integration (VistaClient, UI "Refresh" buttons, merge/dedupe)
+**Phase 2: Multi-Site Support & Client**
+- `app/services/vista_client.py` - HTTP client with intelligent site selection
+- Domain-specific site limits (vitals=2, allergies=3-5, medications=3, encounters=3)
+- T-notation date parsing (T-0, T-7, T-30, etc.)
+- 42 unit tests for vista_client (100% pass rate)
 
-**Timeline:**
+**Phase 3: Vitals Domain Integration**
+- GMV LATEST VM RPC handler
+- Merge/dedupe with PostgreSQL data
+- "Refresh VistA" button in Vitals page
+- Session-based caching (30-min TTL)
 
-Vista RPC Broker development is planned for **after core clinical domains are implemented** (Encounters, Labs, Problems). This ensures the dual-source pattern is applied to mature, well-understood domains rather than being built alongside domain development.
+**Phase 4: Encounters & Allergies Domains**
+- ORWCV ADMISSIONS RPC (inpatient encounters, 90-day lookback)
+- ORQQAL LIST RPC (patient allergies, safety-critical coverage)
+- HTMX + OOB swaps pattern established
+
+**Phase 5: Medications Domain** (January 13, 2026)
+- ORWPS COVER RPC (active outpatient medications)
+- 69 mock medications across 3 sites
+- Session cache integration for filter persistence
+- Status filter logic refined (inpatient always included)
+- Merge/dedupe with canonical key: `{site}:{prescription_number}`
+
+**📊 Current Status:**
+- ✅ **4 clinical domains** with full "Refresh VistA" functionality operational
+- ✅ **Domains Complete:** Vitals (GMV), Encounters (ORWCV), Allergies (ORQQAL), Medications (ORWPS)
+- ✅ **Total test coverage:** ~168 tests (94 Vista service + 42 VistaClient + 32 domain integration)
+- 🎯 **27% of planned domains complete** (4 of ~15)
+
+**📋 Future Phases (Planned):**
+- **Phase 6:** Laboratory Results domain (ORQORB namespace)
+- **Phase 7:** Clinical Notes domain (TIU namespace)
+- **Phase 8:** Additional domains as prioritized (Problems, Orders, Procedures, Imaging)
 
 **Technical Documentation:**
 
 > **For detailed Vista RPC Broker technical design, RPC specifications, merge/deduplication algorithms, and implementation patterns, see:**
-> - `docs/vista-rpc-broker-design.md` (v1.3) - Complete technical specification
-> - `docs/implementation-roadmap.md` Section 11.3 - Implementation status and phases
+> - `docs/spec/vista-rpc-broker-design.md` (v2.0) - Complete technical specification ✅ **Updated for Phase 5**
+> - `docs/spec/med-z1-implementation-roadmap.md` Section 11.5 - Implementation status and phases
 > - `vista/README.md` - Developer/operator guide
 
 **Configuration:**
@@ -574,21 +612,26 @@ Vista RPC Broker development is planned for **after core clinical domains are im
 
 ```text
 med-z1/
-  app/               # FastAPI + HTMX web application (port 8000)
-  ccow/              # CCOW Context Vault service (port 8001)
-  vista/             # Vista RPC Broker simulator (port 8003)
-  etl/               # ETL scripts (Bronze/Silver/Gold transformations)
-  lake/              # MinIO client utilities
-  db/                # PostgreSQL DDL scripts
-  mock/              # Mock CDW (SQL Server schemas and data)
-  ai/                # AI/ML components (future)
-  docs/              # Design specifications and plans
-  tests/             # Unit/integration tests (future)
+  app/                 # FastAPI + HTMX web application (port 8000)
+  ccow/                # CCOW Context Vault service (port 8001)
+  vista/               # Vista RPC Broker simulator (port 8003)
+  etl/                 # ETL scripts (Bronze/Silver/Gold transformations)
+  ai/                  # AI/ML components (LangGraph agent, tools, prompts)
+  lake/                # MinIO client utilities
+  db/                  # PostgreSQL DDL scripts
+  mock/                # Mock CDW (SQL Server schemas and data)
+  docs/                # Design specifications and plans
+  scripts/             # Testing, debugging, and utility scripts
+  notebook/            # Jupyter notebooks for data exploration
 
-  .venv/             # Shared Python environment
-  .env               # Environment configuration
-  config.py          # Centralized configuration
-  requirements.txt   # Python dependencies
+  .venv/               # Shared Python environment
+  .env                 # Environment configuration
+  config.py            # Centralized configuration
+  requirements.txt     # Python dependencies
+  docker-compose.yaml  # Docker services (SQL Server, MinIO, PostgreSQL)
+  README.md            # Project overview and setup instructions
+  CLAUDE.md            # Claude Code guidance and project conventions
+  pytest.ini           # Test framework configuration
 ```
 
 **Configuration Philosophy:**
@@ -596,13 +639,13 @@ med-z1/
 - Single shared `.env` file at project root
 - Single shared `config.py` module for all subsystems
 
-> **For detailed project structure, file locations, and implementation status, see `docs/implementation-roadmap.md` Section 12 and `CLAUDE.md`.**
+> **For detailed project structure, file locations, and implementation status, see `docs/spec/med-z1-implementation-roadmap.md` Section 12 and `CLAUDE.md`.**
 
 ---
 
 ## 6. Development Phases & Current Status
 
-### 6.1 Current Implementation Status (as of December 20, 2025)
+### 6.1 Current Implementation Status (as of January 20, 2026)
 
 **✅ Infrastructure & Data Pipeline: COMPLETE**
 - Medallion architecture (Bronze/Silver/Gold) operational with MinIO
@@ -637,7 +680,7 @@ med-z1/
 - Comprehensive test suite (21 unit tests, 14 integration tests)
 - **See:** `docs/ccow-multi-user-enhancement.md` (design), `docs/ccow-v2-implementation-summary.md` (summary), `docs/ccow-v2-testing-guide.md` (API testing)
 
-**✅ Clinical Domains Implemented: 8 DOMAINS**
+**✅ Clinical Domains Implemented: 9 DOMAINS**
 1. **Dashboard** - Patient overview with clinical widgets (widget grid system)
 2. **Demographics** - Full implementation (2x1 widget + dedicated page with comprehensive information)
 3. **Patient Flags** - Modal-only implementation (topbar button with badge count, no dashboard widget)
@@ -646,36 +689,49 @@ med-z1/
 6. **Medications** - Full implementation (2x1 widget + dedicated page, RxOut + BCMA integration)
 7. **Encounters** - Full implementation (1x1 widget + dedicated page with pagination, inpatient admissions only)
 8. **Clinical Notes** - Full implementation (1x1 widget + dedicated page with filtering by type and date range, 106 notes in PostgreSQL) - **Completed 2026-01-02**
+9. **Immunizations** - Full implementation (1x1 widget + dedicated page with filtering, 138 immunizations + 30 CVX vaccines in PostgreSQL) - **Completed 2026-01-14**
+   - **Key Features:** Multi-source harmonization (VistA + Cerner), CVX code standardization, series parsing ("1 of 2", "BOOSTER"), adverse reaction tracking, incomplete series indicators
+   - **Database:** `app/db/patient_immunizations.py` with comprehensive filtering (vaccine_group, cvx_code, days, incomplete_only, adverse_reactions_only)
+   - **API:** 6 endpoints (JSON APIs, HTML widget, full page, filtered results, CCOW redirect)
+   - **UI:** Dashboard widget shows 5 most recent (2-year lookback), full page with summary stats (6 cards) and HTMX filtering
+   - **ETL:** Complete Bronze/Silver/Gold pipeline with CVX reference table
+   - **See:** `docs/spec/immunizations-design.md` (v1.4)
 
-**✅ Vista RPC Broker Simulator: PHASE 1 COMPLETE**
+**✅ Vista RPC Broker Simulator: PHASES 1-5 COMPLETE** (January 13, 2026)
 - Foundation for real-time data (T-0) overlay alongside PostgreSQL (T-1 historical)
 - FastAPI HTTP service (port 8003) with ICN→DFN resolution
 - Multi-site support (3 sites: 200, 500, 630)
-- First working RPC handler (ORWPT PTINQ - Patient Inquiry)
-- 82 unit tests, 100% passing
-- Comprehensive documentation (`vista/README.md`)
+- 4 clinical domains operational with "Refresh VistA" functionality
+- **Domains:** Vitals (GMV), Encounters (ORWCV), Allergies (ORQQAL), Medications (ORWPS)
+- Session-based caching (30-min TTL) with filter persistence
+- ~168 unit tests, 100% passing
+- Comprehensive documentation (`vista/README.md`, `docs/spec/vista-rpc-broker-design.md` v2.0)
 
-**✅ AI Clinical Insights: PHASE 4 COMPLETE** (January 3, 2026)
+**✅ AI Clinical Insights: PHASE 6 COMPLETE** (January 20, 2026)
 - LangGraph-powered clinical decision support at `/insight`
 - 4 AI tools operational: DDI analysis, patient summaries, vitals trends, clinical notes analysis
 - Clinical notes automatically included in AI-generated patient summaries
+- **Conversation Memory:** PostgreSQL checkpointer with user-scoped threads, cross-session persistence
 - OpenAI GPT-4 Turbo integration complete
-- **See:** `docs/spec/ai-insight-design.md`
+- **See:** `docs/spec/ai-insight-design.md` (v2.4)
 
 **🔧 ETL Complete, UI Pending:**
-- **Laboratory Results** - Complete Bronze/Silver/Gold/Load pipeline (58 lab results in PostgreSQL), UI implementation pending
+- **Laboratory Results** - Complete Bronze/Silver/Gold/Load pipeline (58 lab results in PostgreSQL), UI implementation pending (recommended: 3x1 widget for multi-panel display with trend sparklines)
 
 **📋 Next Priorities:**
-- Laboratory Results UI (trending and charting widgets/pages)
-- Problems/Diagnoses
-- Orders, Imaging
+- **Laboratory Results UI** - Trending and charting widgets/pages (3x1 widget recommended)
+- **AI Phase 7: Immunizations Integration** - 3 new AI tools (immunization history, CDC ACIP compliance, dose forecasting)
+- **Problems/Diagnoses** - ETL pipeline + UI implementation
+- **Orders** - Clinical orders domain
+- **Imaging** - Radiology and imaging studies
 
 **🔮 Future Work:**
-- Vista Phase 2-6 (additional RPC handlers for real-time data)
-- Production hardening (comprehensive testing, observability)
-- Advanced AI features (care gap analysis, semantic search, vector embeddings)
+- Vista Phase 6+ (Laboratory Results, Clinical Notes, additional domains)
+- AI Phase 8+ (care gap analysis, semantic search with pgvector, vector embeddings)
+- Production hardening (comprehensive testing, observability, performance optimization)
+- Advanced UI features (custom dashboards, saved filters, theme switching)
 
-> **For detailed implementation status, roadmap, and technical patterns, see `docs/implementation-roadmap.md`.**
+> **For detailed implementation status, roadmap, and technical patterns, see `docs/spec/med-z1-implementation-roadmap.md`.**
 
 ### 6.2 Technology Decisions Made
 
@@ -724,7 +780,7 @@ med-z1 implements a **medallion data architecture** with three layers of increas
 Mock CDW (SQL Server) → Bronze → Silver → Gold → PostgreSQL Serving DB → FastAPI UI
 ```
 
-> **For detailed Gold schemas, ETL implementation patterns, and code examples, see `docs/implementation-roadmap.md` Section 9 and Section 11.**
+> **For detailed Gold schemas, ETL implementation patterns, and code examples, see `docs/spec/med-z1-implementation-roadmap.md` Section 9 and Section 11.**
 
 ---
 
@@ -811,15 +867,28 @@ Mock CDW (SQL Server) → Bronze → Silver → Gold → PostgreSQL Serving DB �
     * Test "Set Context" action and header refresh.
     * Test app restart with existing CCOW context (verify patient header populates correctly).
 
-### 9.5 Phase 4 – AI-Assisted Features ✅ **COMPLETE** (January 3, 2026)
+### 9.5 Phase 4-6 – AI-Assisted Features ✅ **COMPLETE** (January 20, 2026)
 
+**Phase 4: Core AI Tools** (January 3, 2026)
 * ✅ Implemented chart overview summarization using Gold data + clinical notes
 * ✅ Implemented DDI risk analysis based on Gold medications with severity assessment
 * ✅ Implemented patient flag–aware risk messaging
 * ✅ Deployed LangGraph conversational AI interface at `/insight`
 * ✅ 4 operational AI tools with OpenAI GPT-4 Turbo integration
 
-**See:** `docs/spec/ai-insight-design.md` for complete implementation details.
+**Phase 5: Clinical Notes Integration** (January 4, 2026)
+* ✅ Integrated clinical notes data with AI patient summaries
+* ✅ Implemented `get_clinical_notes_summary` tool with type/date filtering
+* ✅ 500-char note previews for context optimization
+
+**Phase 6: Conversation Memory** (January 20, 2026)
+* ✅ PostgreSQL checkpointer with LangGraph AsyncPostgresSaver
+* ✅ User-scoped thread IDs (`{user_id}_{patient_icn}`)
+* ✅ Cross-session conversation persistence
+* ✅ Clear chat history functionality
+* ✅ System message optimization (first-message-only injection)
+
+**See:** `docs/spec/ai-insight-design.md` (v2.4) for complete implementation details.
 
 ### 9.6 Phase 5 – Hardening, Observability & UX Iteration (Ongoing)
 
@@ -840,6 +909,8 @@ Mock CDW (SQL Server) → Bronze → Silver → Gold → PostgreSQL Serving DB �
 * ✅ AI model selection: OpenAI GPT-4 Turbo chosen for clinical decision support (chart overview, DDI risk, clinical notes analysis)
 * ✅ Clinical notes integration: Completed with 500-char previews for context optimization
 * ✅ AI framework selection: LangGraph chosen for agent workflow orchestration
+* ✅ Conversation memory strategy: PostgreSQL checkpointer with user-scoped threads (Phase 6 complete)
+* ✅ Vista RPC integration pattern: Established with 4 domains operational (Vitals, Encounters, Allergies, Medications)
 
 **Open Questions (to be refined over time):**
 

@@ -199,11 +199,11 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 # Include routers
 app.include_router(auth.router)               # Authentication routes (login/logout)
 app.include_router(dashboard.router)          # Dashboard handles / and /dashboard
-app.include_router(patient.router)
+app.include_router(patient.router)            # Patient core APIs (context, search, flags, allergies)
 app.include_router(patient.page_router)       # Patient pages (Allergies full page)
-app.include_router(vitals.router)
+app.include_router(vitals.router)             # Vitals API routes (JSON data, dashboard widget)
 app.include_router(vitals.page_router)        # Vitals full page routes
-app.include_router(medications.router)
+app.include_router(medications.router)        # Medications API routes (JSON data, dashboard widget)
 app.include_router(medications.page_router)   # Medications full page routes
 app.include_router(demographics.page_router)  # Demographics full page routes
 app.include_router(encounters.router)         # Encounters API routes

@@ -1,7 +1,7 @@
 # med-z1 Implementation Roadmap – Vertical Slice Strategy
 
-December 7, 2025 • Document version v1.1
-**Last Updated:** December 15, 2025
+December 7, 2025 • Document version v1.2
+**Last Updated:** January 20, 2026
 
 > **Related Documentation:**
 > - **Strategic Vision & Product Planning:** See `med-z1-plan.md` for product vision, user personas, core use cases, and UX strategy
@@ -72,9 +72,15 @@ FastAPI + HTMX UI - Patient-aware topbar with search
 | **Phase 4** | Vitals Domain | 1 week | ✅ Complete (2025-12-12) |
 | **Phase 5** | Allergies Domain | 1 week | ✅ Complete (2025-12-12) |
 | **Phase 6** | Medications Domain (RxOut + BCMA) | 2 weeks | ✅ Complete (2025-12-13) |
+| **Phase 7** | Encounters Domain | 1 week | ✅ Complete (2025-12-15) |
+| **Phase 8** | Clinical Notes Domain | 1 week | ✅ Complete (2026-01-02) |
+| **Phase 9** | Immunizations Domain | 1 week | ✅ Complete (2026-01-14) |
+| **Phase 10** | AI Clinical Insights (Phases 1-6) | 3 weeks | ✅ Complete (2026-01-20) |
 
 **Functional Patient-Aware UI: ✅ Delivered**
-**Clinical Domains Implemented: 6** (Demographics, Demographics Enhanced, Flags, Vitals, Allergies, Medications)
+**Clinical Domains Implemented: 9** (Demographics, Flags, Vitals, Allergies, Medications, Encounters, Clinical Notes, Immunizations, Labs (partial))
+**AI Features: ✅ Operational** (4 tools, conversation memory)
+**Vista RPC Broker: ✅ Operational** (4 domains with real-time data)
 
 ---
 
@@ -2167,12 +2173,17 @@ Test all workflows:
 
 **Phase 7: Core Clinical Domains (Priority Order)**
 1. ✅ **Medications (RxOut + BCMA)** - Complete (2025-12-13)
-2. 🚧 **Encounters (Inpat/Outpat)** - **Next Priority** - Foundation for timeline views
-   - **Scope:** Inpatient admissions, outpatient visits, ED encounters
+2. ✅ **Encounters (Inpat/Outpat)** - **COMPLETE (2025-12-15)**
+   - **Scope:** Inpatient admissions (outpatient visits deferred to Phase 2)
    - **Widget:** 1x1 - Recent encounters (last 3-6 months)
-   - **Full Page:** Chronological encounter history with diagnoses, providers, facilities
-   - **Rationale:** Foundational domain for understanding patient care timeline
-   - **UI Status:** Placeholder added to sidebar (after Vitals) and dashboard (row 1, position 3) - 2025-12-14
+   - **Full Page:** Chronological encounter history with pagination (20/50/100 per page)
+   - **Implementation Status:**
+     - ✅ ETL: Complete Bronze/Silver/Gold pipeline
+     - ✅ PostgreSQL: patient_encounters table with 145 admissions
+     - ✅ API: 6 endpoints (JSON, widget, full page, filtered results)
+     - ✅ UI: Dashboard widget + full page with pagination (ADR-005)
+     - ✅ Sidebar: Active link after Vitals
+   - **See:** `docs/spec/encounters-design.md`
 3. ✅ **Labs (LabChem)** - Table view complete, charting deferred
    - **Widget:** **3x1 (full width)** - Recent lab panels side-by-side with trend placeholders
    - **Full Page:** Complete lab history with filtering, sorting, abnormal value highlighting
@@ -2189,18 +2200,33 @@ Test all workflows:
 5. 🚧 **Orders** - Complex workflow domain
    - **Widget:** 1x1 or 3x1 (TBD) - Recent orders timeline
    - **Full Page:** Order history with status tracking
-6. 🚧 **Notes/Documents** - Text-heavy domain
-   - **Widget:** 1x1 - Recent note titles/dates
-   - **Full Page:** Searchable note repository with preview/full view
+6. ✅ **Clinical Notes (TIU)** - **COMPLETE (2026-01-02)**
+   - **Widget:** 1x1 - Recent note titles/dates (5 most recent)
+   - **Full Page:** Searchable note repository with filtering by type and date range
+   - **Implementation Status:**
+     - ✅ ETL: Complete Bronze/Silver/Gold pipeline
+     - ✅ PostgreSQL: patient_clinical_notes table with 106 notes
+     - ✅ API: 6 endpoints (JSON, widget, full page, filtered results)
+     - ✅ UI: Dashboard widget + full page with type/date filtering
+     - ✅ Note Types: Progress Notes, Consult Notes, Discharge Summaries, Imaging Reports
+     - ✅ AI Integration: Phase 4 complete (clinical notes included in AI summaries)
+   - **See:** `docs/spec/clinical-notes-design.md`
 
 **Phase 8: Later Domains**
 7. 🚧 **Radiology/Imaging** - Integration with external viewers
    - **Widget:** 1x1 - Recent imaging studies
    - **Full Page:** Imaging history with thumbnail previews, report links
-8. 🚧 **Immunizations** - Patient safety and preventive care
-   - **Widget:** 1x1 - Recent immunizations and due vaccines
-   - **Full Page:** Complete immunization record with lot numbers, sites
-   - **UI Status:** Placeholder added to sidebar and dashboard (row 5, position 1) - 2025-12-14
+8. ✅ **Immunizations** - **COMPLETE (2026-01-14)**
+   - **Widget:** 1x1 - Recent immunizations (5 most recent, 2-year lookback)
+   - **Full Page:** Complete immunization record with CVX codes, series tracking, adverse reactions
+   - **Implementation Status:**
+     - ✅ ETL: Complete Bronze/Silver/Gold pipeline with CVX reference table
+     - ✅ PostgreSQL: patient_immunizations table with 138 immunizations + 30 CVX vaccines
+     - ✅ API: 6 endpoints (JSON, widget, full page, filtered results)
+     - ✅ UI: Dashboard widget with summary stats (6 cards) + full page with filtering
+     - ✅ Key Features: Multi-source harmonization (VistA + Cerner), series parsing ("1 of 2", "BOOSTER"), adverse reaction tracking
+     - ⏳ AI Integration: Phase 7 planned (immunization history, CDC ACIP compliance, dose forecasting)
+   - **See:** `docs/spec/immunizations-design.md` (v1.4)
 9. 🚧 **Procedures** - Surgical and procedural history
    - **Widget:** 1x1 - Recent procedures
    - **Full Page:** Procedure history with CPT codes, providers, outcomes
@@ -2234,36 +2260,44 @@ For each new domain, follow the established pattern:
 
 ---
 
-## 11. Phase 7: AI/ML and Advanced Features (Future)
+## 11. Phase 10: AI/ML Clinical Insights - ✅ COMPLETE (Phase 6 - January 20, 2026)
 
-**Duration:** Ongoing (3-6 weeks for initial features)
+**Duration:** 3 weeks (2025-12-28 to 2026-01-20)
 
-**Goal:** Add AI-assisted features using Gold Parquet data.
+**Goal:** Add AI-assisted clinical decision support using LangGraph agent framework.
 
-### 11.1 AI/ML Use Cases
+### 11.1 Implementation Status
 
-**Phase 7A: Chart Overview Summarization**
-- Read Gold Parquet for patient (encounters, meds, problems, labs, vitals, allergies)
-- Generate natural language summary
-- Display in Patient Overview page
+**✅ Phase 1-3: Core Tools (2025-12-30)**
+- Drug-drug interaction (DDI) risk assessment
+- Patient clinical summaries (demographics, meds, vitals, allergies, encounters)
+- Vital sign trend analysis with statistical interpretation
 
-**Phase 7B: Drug-Drug Interaction Detection**
-- Read Gold medications Parquet
-- Query DDI knowledge base
-- Highlight risky combinations
-- Cross-reference with patient allergies
+**✅ Phase 4: Clinical Notes Integration (2026-01-03)**
+- Clinical notes included in AI patient summaries
+- Dedicated `get_clinical_notes_summary` tool
+- 500-char note previews for context optimization
 
-**Phase 7C: Patient Flag-Aware Summaries**
-- Incorporate flags into AI narrative
-- Generate risk-aware care recommendations
-- Consider allergies, vitals trends, and active conditions
+**✅ Phase 5: Enhanced Context (2026-01-04)**
+- System prompts architecture
+- Patient flag-aware risk narratives
+- Optimized token usage
 
-**Phase 7D: Vital Sign Trend Analysis**
-- AI-powered anomaly detection in vital trends
-- Predictive warnings for deteriorating conditions
-- Integration with flags system for high-risk patients
+**✅ Phase 6: Conversation Memory (2026-01-20)**
+- PostgreSQL checkpointer with LangGraph AsyncPostgresSaver
+- User-scoped thread IDs (`{user_id}_{patient_icn}`)
+- Cross-session conversation persistence
+- Clear chat history functionality
+- 4 tables in `public` schema (checkpoints, checkpoint_writes, checkpoint_blobs, checkpoint_migrations)
 
-### 11.2 Architecture
+### 11.2 Operational AI Tools (4)
+
+1. **`check_ddi_risks`** - Drug-drug interaction analysis with severity assessment
+2. **`get_patient_summary`** - Comprehensive patient overview (demographics, meds, vitals, allergies, encounters, notes)
+3. **`analyze_vitals_trends`** - Statistical vitals analysis with clinical interpretation
+4. **`get_clinical_notes_summary`** - Clinical note queries with type/date filtering
+
+### 11.3 Architecture
 
 ```
 Gold Parquet (DuckDB/Polars queries)
@@ -2277,21 +2311,28 @@ FastAPI Endpoint
 UI Display (with "AI-generated" disclaimer)
 ```
 
-**Key Design Decisions:**
-- AI/ML reads directly from Gold Parquet (no need for PostgreSQL)
-- Use DuckDB for fast analytical queries across domains
-- Cache AI responses to reduce API costs
-- Always label AI-generated content
-- Leverage existing domains (Vitals, Allergies, Flags) for richer context
+- **LLM:** OpenAI GPT-4 Turbo (`gpt-4-turbo-preview`)
+- **Framework:** LangGraph for agent workflow orchestration
+- **Conversation Memory:** PostgreSQL checkpointer (Phase 6)
+- **UI:** `/insight` conversational interface with HTMX
+- **Data Sources:** PostgreSQL serving database (patient demographics, medications, vitals, allergies, encounters, clinical notes)
+
+### 11.4 Future Enhancements (Phase 7+)
+
+- **Phase 7:** Immunizations integration (3 new tools: history, CDC ACIP compliance, dose forecasting)
+- **Phase 8+:** Care gap analysis, semantic search with pgvector, vector embeddings
+- **RAG Enhancement:** CDC "Pink Book" ACIP schedule embeddings
+
+**See:** `docs/spec/ai-insight-design.md` (v2.4) for complete implementation details.
 
 ---
 
-## 11.3 Phase 8: Vista RPC Broker Simulator (Real-Time Data Layer)
+## 11.5 Phase 8: Vista RPC Broker Simulator - ✅ PHASES 1-5 COMPLETE (January 13, 2026)
 
-**Status:** 🚧 In Development - Phase 3 MVP Complete (2025-12-17)
-**Duration:** 5-6 weeks (Phases 1-6 as defined in vista-rpc-broker-design.md)
-**Priority:** Medium - Addresses T-0 (today) data latency gap
-**Current Progress:** ✅ 50% complete (Phase 1-3 complete: Walking Skeleton, Multi-Site Support, Vitals MVP)
+**Status:** ✅ Phases 1-5 Complete - 4 Clinical Domains Operational
+**Duration:** 6 weeks (Phases 1-5 as defined in vista-rpc-broker-design.md v2.0)
+**Priority:** High - Addresses T-0 (today) data latency gap
+**Current Progress:** ✅ 80% complete (Phase 1-5 complete: Infrastructure, Multi-Site, Vitals, Encounters, Allergies, Medications)
 
 ### Overview
 
@@ -2328,10 +2369,17 @@ UI Display (with "AI-generated" disclaimer)
 |-------|-------|----------|--------|------------------|
 | **Phase 1** | Walking Skeleton | 1 week | ✅ Complete (Days 1-5/5) | ✅ Patient registry with real data<br>✅ DataLoader (ICN→DFN resolution)<br>✅ RPCHandler base class<br>✅ RPCRegistry infrastructure<br>✅ First RPC handler (ORWPT PTINQ)<br>✅ M-Serializer<br>✅ FastAPI integration<br>✅ 94 tests, 100% passing<br>✅ Comprehensive README.md |
 | **Phase 2** | Multi-Site Support | 1 week | ✅ Complete (Days 6-7/7) | ✅ VistaClient with site selection<br>✅ 3 sites (200, 500, 630)<br>✅ Domain-specific site limits<br>✅ T-notation date parsing<br>✅ Multi-site RPC calls<br>✅ 42 unit tests + manual guide<br>✅ 136 total tests (100% passing) |
-| **Phase 3** | Vitals MVP | 3 days | ✅ Complete (2025-12-17) | ✅ GMV LATEST VM RPC handler<br>✅ Merge/dedupe logic (318 lines)<br>✅ UI "Refresh from VistA" button<br>✅ Green site badges<br>✅ T-notation date system<br>✅ End-to-end integration<br>✅ 305 PG + 10 Vista = 315 vitals |
-| **Phase 4** | Additional Vitals RPCs | 1 week | ⏳ Not Started | GMV EXTRACT REC, GMV MANAGER, date-range queries |
-| **Phase 5** | Allergies & Medications | 1 week | ⏳ Not Started | 8 RPCs across 2 domains, additional merge/dedupe |
-| **Phase 6** | Polish & Documentation | 1 week | ⏳ Not Started | Error handling, performance tuning, docs |
+| **Phase 3** | Vitals MVP | 3 days | ✅ Complete (2025-12-17) | ✅ GMV LATEST VM RPC handler<br>✅ Merge/dedupe logic (318 lines)<br>✅ UI "Refresh VistA" button<br>✅ Green site badges<br>✅ T-notation date system<br>✅ End-to-end integration<br>✅ 305 PG + 10 Vista = 315 vitals |
+| **Phase 4** | Encounters & Allergies | 1 week | ✅ Complete (2025-12-19) | ✅ ORWCV ADMISSIONS RPC (90-day lookback)<br>✅ ORQQAL LIST RPC (allergies)<br>✅ HTMX + OOB swaps pattern<br>✅ Session-based caching (30-min TTL)<br>✅ 3-5 site queries for safety-critical domains |
+| **Phase 5** | Medications Domain | 1 week | ✅ Complete (2026-01-13) | ✅ ORWPS COVER RPC (active meds)<br>✅ 69 mock medications across 3 sites<br>✅ Session cache integration<br>✅ Status filter logic (inpatient always included)<br>✅ Merge/dedupe: `{site}:{rx_number}`<br>✅ ~168 total tests passing |
+| **Phase 6** | Laboratory Results | 1 week | ⏳ Next Priority | ORQORB namespace RPCs, lab panels with trending |
+| **Phase 7** | Clinical Notes (TIU) | 1 week | ⏳ Future | TIU namespace RPCs, note content retrieval |
+
+**📊 Current Status:**
+- ✅ **4 clinical domains** with full "Refresh VistA" functionality operational
+- ✅ **Domains Complete:** Vitals (GMV), Encounters (ORWCV), Allergies (ORQQAL), Medications (ORWPS)
+- ✅ **Total test coverage:** ~168 tests (94 Vista service + 42 VistaClient + 32 domain integration)
+- 🎯 **27% of planned domains complete** (4 of ~15)
 
 ### Dependencies
 
