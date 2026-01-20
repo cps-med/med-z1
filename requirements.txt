@@ -70,3 +70,11 @@ langchain-openai==1.1.6
 langgraph==1.0.5
 openai==2.14.0
 markdown==3.10
+langgraph-checkpoint-postgres==3.0.3
+
+# PostgreSQL async adapter for LangGraph checkpointer (Phase 6)
+# Note: psycopg v3 (different from psycopg2-binary v2)
+# - psycopg2-binary: Used by SQLAlchemy for sync database queries
+# - psycopg v3: Used by LangGraph for async checkpoint operations
+# Both packages coexist without conflict
+psycopg[binary,pool]>=3.1.0
