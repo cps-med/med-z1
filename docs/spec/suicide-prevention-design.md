@@ -1,10 +1,20 @@
 # Suicide Prevention AI Design Specification - med-z1
 
-**Document Version:** 1.0
-**Date:** 2026-01-17
+**Document Version:** 1.1
+**Date:** 2026-01-20
 **Status:** ✅ Specification Complete - ⏳ Implementation Pending
 **Implementation Phase:** Phase 7 (Clinical Intelligence)
 **Based on:** VA REACH VET 2.0 Architecture + VA/DoD CPG Suicide Risk Assessment (2024)
+
+**Changelog:**
+
+- **v1.1 (2026-01-20):**
+  - **Section 3.3 added:** Data Freshness Requirements - Documents ETL pipeline limitation (T-1 data staleness creates 13-hour delay risk), dependency on clinical notes timeliness for safety override, and production requirement for real-time data access
+  - **Section 3.4 added:** VistA Real-Time Integration Strategy - Documents TIU namespace RPC approach, site selection policy (3-5 sites for safety-critical domain), merge/deduplication strategy (canonical event keys), session caching pattern (30-min TTL), and 3-phase implementation timeline with trade-offs analysis
+  - **Section 6.6 added:** Risk Model Configuration Management - Documents database-backed coefficient approach (Option A, recommended) vs JSON configuration (Option B, rejected), provides PostgreSQL schema design, operational workflow for model updates without code deployment, backward-compatible migration path, and clinical governance process for production model updates
+  - **Section 13.5 updated:** Technical References - Added comprehensive references to Vista RPC Broker design specification (v2.0), implementation guide (vista/README.md), Vista client service (app/services/vista_client.py), and session cache service (app/services/vista_cache.py) with detailed relevance descriptions
+- **v1.0 (2026-01-17):**
+  - Initial design specification covering REACH VET 2.0 implementation, ETL pipeline, NLP processing, AI integration, and security considerations
 
 **⚠️ TODO - Post-Implementation:**
 - Update `docs/guide/developer-setup-guide.md` to reflect AI Suicide Prevention enhancement
@@ -204,6 +214,287 @@ scipy>=1.11.0  # For statistical functions (already likely present)
 - MST indicator (health factor or ICD: Z91.89 for personal history of trauma)
 - DSM-5/ICD-10 codes for depression, anxiety, substance use disorders
 - Medication classes: Opioids, Benzodiazepines, Antidepressants (from existing Dim.NationalDrug)
+
+### 3.3 Data Freshness Requirements
+
+**⚠️ Critical Safety Consideration:** Suicide risk factors can change rapidly, especially clinical documentation of suicidal ideation, hopelessness, or recent crisis events.
+
+#### 3.3.1 ETL Pipeline Limitation
+
+**Batch Processing Frequency:**
+- **Current Pattern:** Nightly ETL runs (Bronze → Silver → Gold → PostgreSQL)
+- **Data Currency:** T-1 (yesterday and earlier), always at least **1 day behind real-time**
+- **Update Cadence:** Risk scores recalculated once per 24 hours
+
+**High-Risk Scenario (Data Staleness):**
+
+```
+Timeline:
+┌─────────────────────────────────────────────────────────────────┐
+│ Day 1, 2:00 PM: Patient presents to clinic in distress         │
+│                 Clinician documents in progress note:            │
+│                 "Patient reports suicidal ideation with plan.   │
+│                  Denies intent at this time. Safety plan        │
+│                  reviewed. Will follow up in 48 hours."         │
+├─────────────────────────────────────────────────────────────────┤
+│ Day 1, 2:30 PM: Different clinician in another clinic queries  │
+│                 med-z1 AI: "What is this patient's suicide     │
+│                 risk?"                                          │
+│                                                                 │
+│ AI Response: Uses yesterday's ETL data (T-1)                   │
+│              **MISSES TODAY'S NOTE WITH "SUICIDAL IDEATION"** │
+│              Incorrectly assesses as "Standard Risk"           │
+│              No safety override triggered                       │
+├─────────────────────────────────────────────────────────────────┤
+│ Day 2, 3:00 AM: ETL pipeline runs, processes Day 1 notes       │
+│                 Risk score now reflects "High Risk" tier       │
+│                 **But intervention opportunity delayed by 13hrs**│
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Consequence:** Missed opportunity for immediate safety assessment and intervention during critical window.
+
+#### 3.3.2 Dependency on Clinical Notes Timeliness
+
+**Code-Level Impact:**
+
+The risk scoring algorithm (Section 6.3, lines 929-935) includes a **safety override** that forces High Risk tier when recent suicidal ideation is detected:
+
+```python
+# Override: If current suicidal ideation detected in notes (< 30 days), force to High
+features_df = features_df.with_columns([
+    pl.when(pl.col('has_current_si_notes'))
+      .then(pl.lit('High'))
+      .otherwise(pl.col('risk_tier'))
+      .alias('risk_tier')
+])
+```
+
+**This safety mechanism depends on:**
+- Clinical notes being processed through NLP pipeline (Section 9)
+- `has_current_si_notes` flag calculated from narrative text keyword extraction
+- Notes being available in PostgreSQL `clinical.clinical_notes` table
+
+**If notes are T-1 stale:**
+- ❌ Today's note with "suicidal ideation" **NOT PROCESSED**
+- ❌ `has_current_si_notes` flag remains `FALSE`
+- ❌ Safety override **WILL NOT TRIGGER**
+- ❌ Patient incorrectly assessed as "Standard Risk" or "Moderate Risk"
+
+#### 3.3.3 Production Deployment Requirement
+
+**For ANY real-world pilot or production deployment:**
+
+> **Real-time clinical notes access for suicide risk assessment is MANDATORY, not optional.**
+
+**Rationale:**
+1. **Patient Safety:** Cannot tolerate 13-hour delay in detecting documented crisis indicators
+2. **Clinical Workflow:** Risk assessment often occurs during active clinical encounters (same-day)
+3. **Liability:** Deploying a "suicide risk" tool with known T-1 data lag creates medico-legal exposure
+4. **VA Standards:** Aligns with VA Mental Health Services emphasis on timely crisis identification
+
+**Mitigation Strategy:** See Section 3.4 for VistA real-time integration approach.
+
+### 3.4 VistA Real-Time Integration Strategy
+
+**Status:** ⏳ **Design Required** - Not included in Phase 1 MVP (Days 1-15)
+
+**Implementation Priority:**
+- **Phase 1 (MVP):** ETL-only with prominent disclaimers (acceptable for development/testing with synthetic data)
+- **Phase 2 (Pre-Production):** **MANDATORY** VistA TIU integration before any real-world pilot or deployment
+
+#### 3.4.1 Existing Infrastructure (Reusable Pattern)
+
+med-z1 has **operational VistA RPC Broker integration** (port 8003) with 4 clinical domains already implemented:
+
+| Domain | RPC Handler | Status | Site Queries | Cache TTL |
+|--------|-------------|--------|--------------|-----------|
+| Vitals | `GMV LATEST VM` | ✅ Operational | 2 sites | 30 min |
+| Encounters | `ORWCV ADMISSIONS` | ✅ Operational | 3 sites | 30 min |
+| Allergies | `ORQQAL LIST` | ✅ Operational | 3-5 sites | 30 min |
+| Medications | `ORWPS COVER` | ✅ Operational | 3 sites | 30 min |
+
+**Established Pattern:**
+1. User clicks "Refresh VistA" button in UI
+2. HTTP POST request to Vista service (port 8003)
+3. Vista service queries 2-5 VistA sites in parallel (simulated 1-3s latency per site)
+4. Automatic ICN → DFN resolution (VistA uses local patient IDs, not ICN)
+5. Merge/dedupe with PostgreSQL T-1 data using canonical event keys
+6. Store merged result in session cache (30-minute TTL, server-side)
+7. AI tools automatically access cached Vista data via `request.app.state.session`
+
+**See:** `docs/spec/vista-rpc-broker-design.md` (v2.0) for complete technical specification
+
+#### 3.4.2 Proposed Approach for Clinical Notes (TIU Namespace)
+
+**VistA TIU (Text Integration Utilities) RPCs:**
+
+```
+RPC: TIU GET DOCUMENT TEXT
+Namespace: TIU
+Purpose: Retrieve full text of a clinical note by document IEN
+Input: DFN (patient ID), Document IEN, Site Sta3n
+Output: Multi-line note text (caret-delimited sections)
+
+RPC: TIU DOCUMENTS BY CONTEXT
+Purpose: List recent clinical note documents for a patient
+Input: DFN, Date Range (e.g., T-30 to T-0), Note Type Filter
+Output: Array of (IEN^Title^Author^Date^Status)
+```
+
+**Implementation Approach:**
+
+```python
+# vista/app/rpc_handlers/tiu_handlers.py
+
+class TIUDocumentsByContextHandler(RPCHandler):
+    """Retrieve recent clinical notes list for patient."""
+
+    def handle(self, params: dict) -> str:
+        dfn = params['dfn']
+        sta3n = params['sta3n']
+        lookback_days = params.get('lookback_days', 30)  # Default: last 30 days
+
+        # Load mock data from vista/app/data/clinical_notes/
+        # Filter to T-30 through T-0 (today) using T-notation dates
+        # Return caret-delimited list of note metadata
+
+        return self._format_vista_response(note_list)
+
+class TIUGetDocumentTextHandler(RPCHandler):
+    """Retrieve full note text for a specific document."""
+
+    def handle(self, params: dict) -> str:
+        dfn = params['dfn']
+        sta3n = params['sta3n']
+        document_ien = params['document_ien']
+
+        # Load note text from JSON (mock) or query real VistA (future)
+        # Return multi-line text in VistA format
+
+        return note_text
+```
+
+**AI Tool Integration Workflow:**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ User Query: "What is this patient's suicide risk?"         │
+└─────────────────────────────────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────────────────┐
+│ Step 1: AI Tool checks session cache                       │
+│   - Key: f"vista_clinical_notes_{user_id}_{icn}"           │
+│   - Check age: < 30 minutes?                               │
+└─────────────────────────────────────────────────────────────┘
+                         ↓
+        ┌────────────────┴────────────────┐
+        │ Cached?                         │
+        └────────────────┬────────────────┘
+                  Yes    │    No
+                         ↓
+         ┌───────────────────────────────┐
+         │ Prompt user:                  │
+         │ "For most current assessment, │
+         │  refresh VistA data?"         │
+         │ [Refresh Button]              │
+         └───────────────┬───────────────┘
+                         ↓
+         ┌───────────────────────────────┐
+         │ User clicks Refresh           │
+         │ → Query 3-5 VistA sites       │
+         │ → Retrieve notes (T-30 to T-0)│
+         │ → Store in session cache      │
+         └───────────────┬───────────────┘
+                         ↓
+         ┌───────────────────────────────┐
+         │ Step 2: Merge PostgreSQL + Vista notes │
+         │   - PostgreSQL: T-1 and earlier        │
+         │   - Vista: T-0 (today) only            │
+         │   - Dedupe by note_id + site           │
+         └───────────────┬────────────────────────┘
+                         ↓
+         ┌───────────────────────────────────────┐
+         │ Step 3: Run NLP on merged note corpus │
+         │   - Keyword extraction (suicidal      │
+         │     ideation, hopelessness, etc.)     │
+         │   - Sentiment analysis                │
+         │   - Generate `has_current_si_notes`   │
+         └───────────────┬───────────────────────┘
+                         ↓
+         ┌───────────────────────────────────────┐
+         │ Step 4: Recalculate risk score        │
+         │   - Combine PostgreSQL features +     │
+         │     fresh NLP flags                   │
+         │   - Apply logistic regression         │
+         │   - Check safety override (line 929)  │
+         └───────────────┬───────────────────────┘
+                         ↓
+         ┌───────────────────────────────────────┐
+         │ Step 5: Display risk assessment       │
+         │   - Risk tier (High/Moderate/Standard)│
+         │   - Contributing factors              │
+         │   - ⚠️ Data timestamp:                │
+         │     "Based on clinical notes as of    │
+         │      2026-01-20 14:30 (T-0)"          │
+         └───────────────────────────────────────┘
+```
+
+#### 3.4.3 Site Selection Policy for TIU Domain
+
+**Safety-Critical Domain:** Clinical notes (like Allergies) require broader site coverage than non-critical domains.
+
+**Recommendation:**
+- **Default site queries:** 3-5 sites (top treating facilities by recent encounter count)
+- **Rationale:** Patient may have documented crisis at non-primary site
+- **Performance:** 3-5s total latency (1-3s per site × parallel queries)
+- **Hard maximum:** 10 sites (architectural firebreak, user override required)
+
+**See:** `docs/spec/vista-rpc-broker-design.md` Section 2.8 (Site Selection Policy)
+
+#### 3.4.4 Merge/Deduplication Strategy
+
+**Canonical Note Key:** `{site_sta3n}:{note_id}:{note_date}`
+
+**Example:**
+```python
+# PostgreSQL T-1 note
+pg_key = "500:12345678:2026-01-19"  # Anchorage, note ID 12345678, yesterday
+
+# Vista T-0 note (today)
+vista_key = "500:12345679:2026-01-20"  # Anchorage, note ID 12345679, today
+
+# Different notes (different IDs, different dates) → Keep both
+# Same note (same ID, same date) → Deduplicate, prefer Vista version
+```
+
+**See:** `docs/spec/vista-rpc-broker-design.md` Section 2.9.1 (Merge/Deduplication Rules)
+
+#### 3.4.5 Implementation Phases & Timeline
+
+| Phase | Scope | Data Freshness | Timeline | Risk Mitigation |
+|-------|-------|----------------|----------|-----------------|
+| **Phase 1 (MVP)** | ETL-only, no Vista | T-1 (stale) | Days 1-15 | ⚠️ **Prominent disclaimers in AI responses**<br>"Risk assessment based on data through [ETL date]. Clinical notes from today are not yet included. If patient presented today with concerning symptoms, verify with direct chart review." |
+| **Phase 2 (Pre-Production)** | Vista TIU integration | T-0 (fresh) | +5-7 days | ✅ **MANDATORY before any real-world pilot**<br>Implement "Refresh VistA" button in AI chatbot UI<br>Session cache (30-min TTL) prevents repeated VistA queries |
+| **Phase 3 (Enhancement)** | Auto-refresh on AI query | T-0 (fresh, transparent) | Future | ✅ Automatic background refresh when `check_suicide_risk_factors` tool invoked<br>No manual button required |
+
+**Decision Guidance:**
+- ✅ **Phase 1 acceptable for:** Development, testing with synthetic data, proof-of-concept demos
+- ❌ **Phase 1 NOT acceptable for:** Real-world pilot, production deployment, any scenario with actual patients
+- ✅ **Phase 2 required for:** Any deployment scenario involving real patient data and clinical decision-making
+
+#### 3.4.6 Trade-offs Summary
+
+| Approach | Data Freshness | Performance | Complexity | Production-Ready? |
+|----------|----------------|-------------|------------|-------------------|
+| **ETL-only (Phase 1)** | T-1 (stale, 13hr delay) | Fast (pre-computed, <50ms) | Low | ❌ No (safety risk) |
+| **Vista + ETL (Phase 2)** | T-0 (fresh, includes today) | 3-5s latency on refresh | Medium | ✅ Yes |
+| **Auto-refresh (Phase 3)** | T-0 (fresh, transparent UX) | 3-5s latency on every query | High | ✅ Yes (best UX) |
+
+**Recommendation for Production Deployment:**
+- Start with **Phase 2** (user-triggered "Refresh VistA")
+- Monitor usage patterns and user feedback
+- Evolve to **Phase 3** (auto-refresh) if latency acceptable and no performance degradation observed
 
 ---
 
@@ -1120,7 +1411,360 @@ def load_risk_scores_to_postgres():
     print(f"Loaded {len(scores_df)} risk scores and {len(factors_df)} risk factors to PostgreSQL")
 ```
 
+### 6.6 Risk Model Configuration Management
+
+**Problem Statement:**
+
+The current REACH VET 2.0 logistic regression implementation (Section 8.3) hardcodes regression coefficients directly in Python code:
+
+```python
+# app/services/suicide_risk_scoring.py (lines 871-897)
+COEFFICIENTS = {
+    'prior_attempt': 2.5,         # Hardcoded β weight
+    'prior_hospitalization': 1.8,
+    'mst_exposure': 1.8,
+    'recent_ed_visit': 1.2,
+    'psychiatric_diagnosis': 1.5,
+    # ... additional coefficients
+}
+
+def calculate_reach_vet_score(risk_factors: dict) -> float:
+    """Calculate REACH VET 2.0 logistic regression score."""
+    score = 0.0
+    for factor, weight in COEFFICIENTS.items():
+        if risk_factors.get(factor):
+            score += weight
+    return score
+```
+
+**Clinical Model Calibration Reality:**
+
+- **Model drift:** Predictive models degrade over time as population characteristics change
+- **Validation cycles:** VA periodically validates REACH VET against new cohort data (e.g., FY2024 vs FY2025)
+- **Coefficient updates:** Clinical findings may indicate "Prior Attempt" weight should be 2.6 instead of 2.5
+- **Deployment friction:** Hardcoded coefficients require:
+  1. Code change in Python module
+  2. Git commit/review
+  3. Deployment pipeline (build, test, stage, prod)
+  4. Potential rollback complexity if model performs poorly
+
+**This friction discourages clinical model iteration and creates operational risk.**
+
 ---
+
+#### 6.6.1 Recommended Approach: Database-Backed Configuration (Option A)
+
+**Rationale:**
+
+- **Clinical governance:** Model coefficients are clinical parameters, not application code
+- **Hot-swappable:** Update coefficients without code deployment
+- **Audit trail:** Track model version history and validation results
+- **Multi-model support:** Enable A/B testing of model variants
+- **Production-ready:** Standard pattern for ML model management
+
+**Database Schema:**
+
+```sql
+-- PostgreSQL schema
+CREATE TABLE reference.suicide_risk_model_coefficients (
+    model_version VARCHAR(20) PRIMARY KEY,     -- e.g., 'REACH_VET_2.0_FY2024'
+    is_active BOOLEAN NOT NULL DEFAULT FALSE,  -- Only one active model at a time
+    effective_date DATE NOT NULL,              -- When this model version became active
+    validation_data JSONB,                     -- Link to validation study results
+    coefficients JSONB NOT NULL,               -- Risk factor weights (JSON object)
+    created_at TIMESTAMP DEFAULT NOW(),
+    created_by VARCHAR(100),                   -- Who deployed this model
+    notes TEXT                                 -- Clinical rationale for changes
+);
+
+-- Example row
+INSERT INTO reference.suicide_risk_model_coefficients VALUES (
+    'REACH_VET_2.0_FY2024',
+    TRUE,                                      -- Active model
+    '2024-10-01',
+    '{"auc": 0.72, "sensitivity": 0.68, "specificity": 0.75}',
+    '{
+        "prior_attempt": 2.5,
+        "prior_hospitalization": 1.8,
+        "mst_exposure": 1.8,
+        "recent_ed_visit": 1.2,
+        "psychiatric_diagnosis": 1.5,
+        "inpatient_mh_visit": 1.3,
+        "poly_substance_abuse": 1.4,
+        "high_risk_medications": 0.8,
+        "sleep_disorders": 0.6,
+        "chronic_pain": 0.7
+    }'::JSONB,
+    '2024-10-01 14:30:00',
+    'clinical.research@va.gov',
+    'FY2024 validation cohort (n=150,000). AUC improved from 0.70 to 0.72.'
+);
+
+-- Ensure only one active model
+CREATE UNIQUE INDEX idx_active_model ON reference.suicide_risk_model_coefficients (is_active)
+    WHERE is_active = TRUE;
+```
+
+**Application Code Changes:**
+
+```python
+# app/services/suicide_risk_scoring.py (updated implementation)
+import psycopg2
+from config import DATABASE_URL
+
+def get_active_model_coefficients() -> dict:
+    """
+    Retrieve active REACH VET model coefficients from database.
+
+    Returns:
+        dict: Risk factor coefficients (e.g., {'prior_attempt': 2.5, ...})
+
+    Raises:
+        RuntimeError: If no active model is configured
+    """
+    conn = psycopg2.connect(DATABASE_URL)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT model_version, coefficients
+        FROM reference.suicide_risk_model_coefficients
+        WHERE is_active = TRUE
+    """)
+
+    row = cursor.fetchone()
+    cursor.close()
+    conn.close()
+
+    if not row:
+        raise RuntimeError("No active suicide risk model configured in database")
+
+    model_version, coefficients_json = row
+    print(f"Loaded suicide risk model: {model_version}")
+
+    return coefficients_json  # PostgreSQL JSONB returns as Python dict
+
+
+def calculate_reach_vet_score(risk_factors: dict) -> float:
+    """
+    Calculate REACH VET 2.0 logistic regression score.
+
+    Args:
+        risk_factors: Boolean flags for each risk factor
+
+    Returns:
+        float: Raw logistic regression score (higher = higher risk)
+    """
+    coefficients = get_active_model_coefficients()  # Load from DB
+
+    score = 0.0
+    for factor, weight in coefficients.items():
+        if risk_factors.get(factor):
+            score += weight
+
+    return score
+```
+
+**Operational Workflow:**
+
+```bash
+# Clinical team validates new model coefficients (off-platform)
+# Research study shows "prior_attempt" should be 2.6 (was 2.5)
+
+# Database administrator updates model (no code deployment)
+psql -U postgres -d medzero <<EOF
+BEGIN;
+
+-- Mark old model inactive
+UPDATE reference.suicide_risk_model_coefficients
+SET is_active = FALSE
+WHERE model_version = 'REACH_VET_2.0_FY2024';
+
+-- Insert new model
+INSERT INTO reference.suicide_risk_model_coefficients VALUES (
+    'REACH_VET_2.0_FY2025',
+    TRUE,
+    '2025-02-01',
+    '{"auc": 0.74, "sensitivity": 0.70, "specificity": 0.76}',
+    '{
+        "prior_attempt": 2.6,                  -- Updated coefficient
+        "prior_hospitalization": 1.8,
+        "mst_exposure": 1.8,
+        "recent_ed_visit": 1.2,
+        "psychiatric_diagnosis": 1.5,
+        "inpatient_mh_visit": 1.3,
+        "poly_substance_abuse": 1.4,
+        "high_risk_medications": 0.8,
+        "sleep_disorders": 0.6,
+        "chronic_pain": 0.7
+    }'::JSONB,
+    NOW(),
+    'clinical.research@va.gov',
+    'FY2025 validation. Increased prior_attempt weight based on 200K patient cohort.'
+);
+
+COMMIT;
+EOF
+
+# Restart application to clear any cached coefficients (optional)
+# Or: wait 30 minutes for cache TTL if caching is implemented
+
+# New model takes effect immediately for all new risk calculations
+```
+
+**Benefits:**
+
+| Benefit | Description |
+|---------|-------------|
+| **Rapid iteration** | Update coefficients in minutes, not days/weeks |
+| **Clinical ownership** | Research team controls model parameters directly |
+| **Audit trail** | Full history of model versions and justifications |
+| **Rollback safety** | Revert to previous model with single UPDATE statement |
+| **Multi-model testing** | Run A/B tests by switching active model per user cohort |
+| **No deployment risk** | Zero code changes = zero regression risk |
+
+---
+
+#### 6.6.2 Alternative Approach: JSON Configuration File (Option B - Not Recommended)
+
+**Approach:**
+
+Store coefficients in a version-controlled JSON file (e.g., `config/reach_vet_coefficients.json`):
+
+```json
+{
+    "model_version": "REACH_VET_2.0_FY2024",
+    "effective_date": "2024-10-01",
+    "coefficients": {
+        "prior_attempt": 2.5,
+        "prior_hospitalization": 1.8,
+        "mst_exposure": 1.8,
+        "recent_ed_visit": 1.2,
+        "psychiatric_diagnosis": 1.5,
+        "inpatient_mh_visit": 1.3,
+        "poly_substance_abuse": 1.4,
+        "high_risk_medications": 0.8,
+        "sleep_disorders": 0.6,
+        "chronic_pain": 0.7
+    }
+}
+```
+
+**Trade-offs:**
+
+| Aspect | JSON File | Database Table |
+|--------|-----------|----------------|
+| **Ease of update** | Requires code deployment | No deployment needed |
+| **Version control** | Git history ✅ | Database migrations |
+| **Audit trail** | Git blame | Explicit audit columns ✅ |
+| **Multi-model support** | Manual file swaps | Query-based switching ✅ |
+| **Rollback** | Git revert + deploy | Single UPDATE statement ✅ |
+| **Clinical governance** | Engineers involved ❌ | Clinical team owns ✅ |
+
+**Verdict:** JSON configuration is better than hardcoded constants but still requires deployment friction. **Database approach (Option A) is strongly recommended for production.**
+
+---
+
+#### 6.6.3 Implementation Guidance
+
+**Phase 1 (MVP - Hardcoded):**
+
+- Use hardcoded `COEFFICIENTS` dictionary in `app/services/suicide_risk_scoring.py`
+- **Rationale:** Faster initial development, deferred complexity
+- **Risk:** Production deployment will require database migration before go-live
+
+**Phase 2 (Database-Backed - Production Requirement):**
+
+1. **Create reference table:**
+   ```bash
+   psql -U postgres -d medzero -f db/ddl/suicide_risk_model_coefficients.sql
+   ```
+
+2. **Seed initial model:**
+   ```bash
+   psql -U postgres -d medzero -f db/seeds/reach_vet_2.0_baseline.sql
+   ```
+
+3. **Update application code:**
+   - Replace hardcoded `COEFFICIENTS` with `get_active_model_coefficients()` function
+   - Add caching (30-minute TTL) to avoid per-request DB queries
+   - Add fallback logic if DB query fails (return hardcoded defaults + log error)
+
+4. **Test model switching:**
+   ```bash
+   pytest scripts/test_model_coefficient_switching.py
+   ```
+
+5. **Document operational procedures:**
+   - How to validate new coefficients (clinical research workflow)
+   - How to deploy new model (SQL script template)
+   - How to rollback if model performs poorly (SQL revert script)
+
+**Migration Path:**
+
+```python
+# Backward-compatible implementation (supports both hardcoded and DB-backed)
+FALLBACK_COEFFICIENTS = {
+    'prior_attempt': 2.5,
+    'prior_hospitalization': 1.8,
+    # ... hardcoded defaults
+}
+
+def get_active_model_coefficients() -> dict:
+    """Load coefficients from DB, fallback to hardcoded if unavailable."""
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT coefficients FROM reference.suicide_risk_model_coefficients
+            WHERE is_active = TRUE
+        """)
+        row = cursor.fetchone()
+        cursor.close()
+        conn.close()
+
+        if row:
+            return row[0]  # Database coefficients
+        else:
+            logger.warning("No active model in DB, using fallback coefficients")
+            return FALLBACK_COEFFICIENTS
+
+    except Exception as e:
+        logger.error(f"Failed to load model coefficients from DB: {e}")
+        return FALLBACK_COEFFICIENTS  # Graceful degradation
+```
+
+---
+
+#### 6.6.4 Clinical Governance Process (Future)
+
+**Model Update Workflow (Production):**
+
+1. **Validation Study:** Clinical research team validates new coefficients against holdout cohort
+2. **Approval:** Clinical governance committee reviews validation metrics (AUC, sensitivity, specificity)
+3. **Staging Deployment:** Database administrator inserts new model version with `is_active = FALSE`
+4. **A/B Testing (Optional):** Split traffic 80/20 between old/new model, monitor outcomes for 2 weeks
+5. **Production Cutover:** Set new model `is_active = TRUE`, old model `is_active = FALSE`
+6. **Monitoring:** Track risk score distribution changes, alert on anomalies
+7. **Rollback Plan:** Revert to previous model if clinical outcomes degrade
+
+**Example Monitoring Query:**
+
+```sql
+-- Compare risk score distributions before/after model change
+SELECT
+    model_version,
+    risk_tier,
+    COUNT(*) as patient_count,
+    ROUND(AVG(risk_score), 2) as avg_score
+FROM clinical.suicide_risk_scores
+WHERE calculation_date >= CURRENT_DATE - INTERVAL '30 days'
+GROUP BY model_version, risk_tier
+ORDER BY model_version, risk_tier;
+```
+
+---
+
+
 
 ## 7. AI Subsystem Integration (LangGraph)
 
@@ -2284,6 +2928,31 @@ Before deployment, confirm:
 **VA CDW Data Model Documentation**
 - **Location:** Internal VA documentation
 - **Relevance:** Schema definitions for `Outpat.Visit`, `RxOut.RxOutpat`, `SPatient.SPatient`, `TIU.TIUDocumentText`.
+
+**med-z1 VistA RPC Broker Design Specification**
+- **Location:** `docs/spec/vista-rpc-broker-design.md` (v2.0, 2026-01-13)
+- **Relevance:** Real-time VistA data integration architecture for T-0 clinical notes access (Section 3.4). Documents TIU namespace RPCs (`TIU GET DOCUMENT TEXT`, `TIU DOCUMENTS BY CONTEXT`), session caching pattern (30-minute TTL), site selection policy (3-5 sites for safety-critical domains), and merge/deduplication strategy.
+- **Key Sections:**
+  - Section 2.2: RPC Protocol and JSON Response Format
+  - Section 4: Session-Based Caching (TTL, user-scoped isolation)
+  - Section 5: Site Selection Policy (domain-specific limits)
+  - Section 6.4: TIU Namespace RPCs (clinical notes retrieval)
+
+**med-z1 VistA RPC Broker Implementation Guide**
+- **Location:** `vista/README.md`
+- **Relevance:** Practical guidance for integrating VistA real-time data into med-z1 services. Documents `vista/app/main.py` FastAPI service (port 8003), RPC handler registration patterns, and testing procedures with mock VistA sites (Alexandria 200, Anchorage 500, Palo Alto 630).
+- **Key Endpoints:**
+  - `POST /rpc/execute?site={sta3n}&icn={icn}` - Execute RPC with ICN-to-DFN resolution
+  - `GET /sites` - Available VistA sites
+  - `GET /health` - Service health check
+
+**med-z1 Vista Client Service**
+- **Location:** `app/services/vista_client.py`
+- **Relevance:** HTTP client wrapper for VistA RPC Broker with intelligent site selection, timeout handling (25 seconds), and error recovery patterns. Used by suicide risk ETL pipeline for T-0 clinical notes retrieval.
+
+**med-z1 Session Cache Service**
+- **Location:** `app/services/vista_cache.py`
+- **Relevance:** Server-side caching layer for VistA RPC responses (30-minute TTL, user-scoped via session ID). Reduces latency for repeated queries and protects VistA systems from excessive load during suicide risk assessment workflows.
 
 ### 13.6 Regulatory & Compliance
 
