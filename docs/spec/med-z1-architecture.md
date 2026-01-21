@@ -256,16 +256,16 @@ page_router = APIRouter(tags=["vitals-pages"])
 ### 3.4 Decision Matrix: When to Create a Dedicated Router
 
 **Create dedicated router file (`app/routes/<domain>.py`) when:**
-- ✅ Domain has a full page view with URL like `/patient/{icn}/<domain>`
-- ✅ Domain requires complex page-level filtering, sorting, or charting
-- ✅ Domain has multiple page routes (list view, detail view, etc.)
-- ✅ Separation improves maintainability (>300 lines of route code)
+- Domain has a full page view with URL like `/patient/{icn}/<domain>`
+- Domain requires complex page-level filtering, sorting, or charting
+- Domain has multiple page routes (list view, detail view, etc.)
+- Separation improves maintainability (>300 lines of route code)
 
 **Keep routes in `patient.py` when:**
-- ✅ Domain only needs JSON API endpoints
-- ✅ Domain uses modal overlays instead of full pages
-- ✅ Domain is in early implementation (API-first approach)
-- ✅ Domain is tightly coupled to patient context
+- Domain only needs JSON API endpoints
+- Domain uses modal overlays instead of full pages
+- Domain is in early implementation (API-first approach)
+- Domain is tightly coupled to patient context
 
 ### 3.5 Endpoint URL Conventions
 
@@ -534,11 +534,11 @@ SELECT location FROM patient_vitals;  -- Error: column doesn't exist
 #### 4.3.4 Root-Level Fix Philosophy
 
 **When fixing location field issues:**
-- ✅ **DO** update source INSERT scripts in `mock/sql-server/cdwwork/insert/`
-- ✅ **DO** ensure database can be rebuilt from scratch
-- ✅ **DO** rerun full ETL pipeline after source data changes
-- ❌ **DO NOT** use temporary UPDATE/patch scripts (violates rebuild-from-scratch principle)
-- ❌ **DO NOT** leave obsolete scripts in repository
+- **DO** update source INSERT scripts in `mock/sql-server/cdwwork/insert/`
+- **DO** ensure database can be rebuilt from scratch
+- **DO** rerun full ETL pipeline after source data changes
+- **DO NOT** use temporary UPDATE/patch scripts (violates rebuild-from-scratch principle)
+- **DO NOT** leave obsolete scripts in repository
 
 **Example: Labs Domain Location Fix (2025-12-16)**
 ```bash
@@ -583,7 +583,7 @@ When implementing location fields for a new domain:
 
 ### 5.1 Current Implementation (Development/Testing)
 
-**Authentication Status:** ✅ **IMPLEMENTED (2025-12-18)**
+**Authentication Status:** **IMPLEMENTED (2025-12-18)**
 
 med-z1 now includes a complete session-based authentication system designed for development and testing environments. While production deployment will require VA SSO integration, the current implementation provides robust authentication for development, testing, and demonstration purposes.
 
@@ -691,72 +691,75 @@ SESSION_COOKIE_SAMESITE = "lax"             # CSRF protection
 #### 5.1.5 Security Features
 
 **Password Security:**
-- ✅ Bcrypt hashing with 12 rounds (configurable via `BCRYPT_ROUNDS`)
-- ✅ Passwords never stored in plaintext
-- ✅ Password strength requirements (future enhancement)
+- Bcrypt hashing with 12 rounds (configurable via `BCRYPT_ROUNDS`)
+- Passwords never stored in plaintext
+- Password strength requirements (future enhancement)
 
 **Session Security:**
-- ✅ Session ID stored server-side (PostgreSQL), not in cookie payload
-- ✅ HttpOnly cookies (JavaScript cannot access)
-- ✅ SameSite=lax (CSRF protection)
-- ✅ Secure flag in production (HTTPS only)
-- ✅ Session timeout with sliding window
-- ✅ All previous sessions invalidated on new login
+- Session ID stored server-side (PostgreSQL), not in cookie payload
+- HttpOnly cookies (JavaScript cannot access)
+- SameSite=lax (CSRF protection)
+- Secure flag in production (HTTPS only)
+- Session timeout with sliding window
+- All previous sessions invalidated on new login
 
 **Audit Trail:**
-- ✅ All login attempts logged (success/failure)
-- ✅ Failed login reasons tracked (user not found, invalid password, account locked)
-- ✅ Logout events logged
-- ✅ Session timeouts logged
-- ✅ IP address and user agent captured
-- ✅ Audit logs indexed for security review and compliance
+- All login attempts logged (success/failure)
+- Failed login reasons tracked (user not found, invalid password, account locked)
+- Logout events logged
+- Session timeouts logged
+- IP address and user agent captured
+- Audit logs indexed for security review and compliance
 
 **Account Lockout:**
-- ✅ Failed login attempt counter
-- ✅ Account locking capability (`is_locked` flag)
-- ⚠️ Automatic lockout after N failures (future enhancement)
+- Failed login attempt counter
+- Account locking capability (`is_locked` flag)
+- Automatic lockout after N failures (future enhancement)
 
 #### 5.1.6 Test Users
 
 **Development Users** (created via `scripts/create_test_users.py`):
+
 - `clinician.alpha@va.gov` - Primary test user
 - `clinician.bravo@va.gov` - Secondary test user
-- All test users have password: `password123` (development only)
+- All test users have a common password (development only)
 
 ### 5.2 Authorization (Future State)
 
-**Current State:** ❌ **NOT IMPLEMENTED**
+**Current State:** **NOT IMPLEMENTED**
+
 - All authenticated users have full access to all patient data
 - No role-based access control (RBAC)
 - No row-level security (RLS)
 - No data sensitivity classifications
 
-**Future Enhancements (Production):**
-- ✅ Role-based access control (RBAC)
+**Future Enhancements (Production):**  
+
+- Role-based access control (RBAC)
   - Roles: Clinician, Nurse, Pharmacist, Administrator, Read-Only
   - Permission system for data domains (vitals, meds, notes, etc.)
-- ✅ Row-level security for sensitive data
+- Row-level security for sensitive data
   - Patient flags with narrative text (restricted to need-to-know)
   - Mental health data (restricted access)
   - Substance abuse treatment records (42 CFR Part 2)
-- ✅ Break-the-glass emergency access
+- Break-the-glass emergency access
   - Override restrictions with audit trail and justification
-- ✅ Site-based access controls
+- Site-based access controls
   - Users limited to home site data by default
   - Cross-site access with justification
 
 ### 5.3 Production Requirements (Future)
 
 **SSO Integration:**
-- ✅ VA PIV/CAC card authentication
-- ✅ SAML/OAuth integration with VA identity provider
-- ✅ Multi-factor authentication (MFA)
+- VA PIV/CAC card authentication
+- SAML/OAuth integration with VA identity provider
+- Multi-factor authentication (MFA)
 
 **Compliance:**
-- ✅ HIPAA compliance (PHI protection)
-- ✅ VA Directive 6500 (IT security)
-- ✅ FISMA controls
-- ✅ Audit log retention (minimum 7 years)
+- HIPAA compliance (PHI protection)
+- VA Directive 6500 (IT security)
+- FISMA controls
+- Audit log retention (minimum 7 years)
 
 **See Also:**
 - ADR-008: Vista Session Caching for AI Integration (dual cookie architecture)
