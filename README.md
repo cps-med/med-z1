@@ -54,7 +54,7 @@ Refer to the Developer Setup Guide for information on local development environm
 
 You may need to reach out to a peer developer to get secret and sensitive information that is not under version control, such as the contents of .env files.  
 
-## Quick Reference Guide.
+## Quick Reference Guide
 
 ### Docker Startup
 
@@ -68,41 +68,6 @@ docker start med-insight-minio
  - or -
 docker start sqlserver2019 postgres16 med-insight-minio
 ```
-
-### PostgreSQL Database Setup (First-Time Only)
-
-**IMPORTANT:** Before running any ETL pipelines or setting up user authentication, you must create the `medz1` database. This is a one-time setup step for new developers.
-
-```bash
-# Step 1: Connect to the default 'postgres' database
-docker exec -it postgres16 psql -U postgres -d postgres
-
-# Step 2: Create the medz1 database (in psql prompt)
-CREATE DATABASE medz1;
-
-# Step 3: Verify creation
-\l
-
-# Step 4: Exit
-\q
-```
-
-**Verification:**
-```bash
-# Connect to the newly created medz1 database
-docker exec -it postgres16 psql -U postgres -d medz1
-
-# Verify connection
-SELECT current_database();
--- Should return: medz1
-
-# Exit
-\q
-```
-
-After creating the database, you can run the DDL scripts from `db/ddl/` and seed scripts from `db/seeds/` to set up tables and initial data.
-
-**See also:** `docs/spec/implementation-roadmap.md` (Phase 1, Task 1.1) for detailed PostgreSQL setup instructions.
 
 ### PostgreSQL CLI Startup 
 
