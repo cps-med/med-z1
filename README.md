@@ -4,9 +4,50 @@
 
 Med-z1 combines data from the legacy VistA-based CDW database, **CDWWork**, the VA new EHR CDW database, **CDWWork2**, and mock **VistA** sites with current data, offering a unified view of the complete VA organization.
 
-Refer to `med-z1/docs/spec/med-z1-plan.md` for more information on this project.  
-
 Refer to `med-z1/docs/screenshot/` for a set of web app UI screenshots.
+
+## Application Architecture
+The figure below, from `med-z1/docs/spec/med-z1-architecture.md`, provides a summary view of the med-z1 application architecture.  
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        med-z1 System                            │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│   ┌───────────────┐      ┌───────────────┐                      │
+│   │   CCOW Vault  │      │ VistA Service │                      │
+│   │   (FastAPI)   │◄────►│   (FastAPI)   │                      │
+│   │   Port 8001   │      │   Port 8003   │                      │
+│   └───────────────┘      └─────┬─────────┘                      │
+│             ▲ Active           │ T-0                            │
+│             │ Patient          │                                │
+│             ▼ Context          ▼                                │
+│   ┌──────────────────────────────────┐      ┌───────────────┐   │
+│   │              Web UI              │      │     AI/ML     │   │
+│   │             (FastAPI)            │◄────►│     Tools     │   │
+│   │             Port 8000            │      │  (LangGraph)  │   │
+│   └──────────────────────────────────┘      └───────────────┘   │
+│             ▲                                                   │
+│             │ T-1 and prior                                     │
+│   ┌─────────┴───────────────────────────────────────────────┐   │
+│   │              PostgreSQL Serving Database                │   │
+│   │    (demographics, allergies, labs, vitals, etc.)        │   │
+│   └─────────────────────────────────────────────────────────┘   │
+│             ▲                                                   │
+│             │ ETL Pipeline                                      │
+│   ┌─────────┴───────────────────────────────────────────────┐   │
+│   │               MinIO Object Storage (S3)                 │   │
+│   │           Bronze → Silver → Gold (Parquet)              │   │
+│   └─────────────────────────────────────────────────────────┘   │
+│             ▲                                                   │
+│             │ ETL Pipeline                                      │
+│   ┌─────────┴───────────────────────────────────────────────┐   │
+│   │               Mock CDW (SQL Server 2019)                │   │
+│   │       CDWWork (VistA) + CDWWork2 (Oracle Health)        │   │
+│   └─────────────────────────────────────────────────────────┘   │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
 
 ## Local Environment Setup
 Refer to the Developer Setup Guide for information on local development environment setup, and general guidance. This document is located at: `docs/guide/developer-setup-guide.md`.

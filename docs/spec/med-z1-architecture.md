@@ -68,7 +68,7 @@ This document captures architectural decisions, patterns, and rationale for the 
 │             │ ETL Pipeline                                      │
 │   ┌─────────┴───────────────────────────────────────────────┐   │
 │   │               Mock CDW (SQL Server 2019)                │   │
-│   │       CDWWork (VistA) + CDWWork1 (Oracle Health)        │   │
+│   │       CDWWork (VistA) + CDWWork2 (Oracle Health)        │   │
 │   └─────────────────────────────────────────────────────────┘   │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
