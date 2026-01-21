@@ -1,6 +1,39 @@
 # Patient-Aware Topbar – Design & Implementation Guide
 
-December 9, 2025 • Document version v2.0
+January 21, 2026 • Document version v3.0
+
+---
+
+## Implementation Status
+
+✅ **Phase 2 COMPLETE** (December 2025)
+- Topbar with patient demographics display
+- CCOW integration with patient search
+- Patient search modal (Name, ICN, EDIPI search)
+- Manual refresh functionality
+- Real PostgreSQL database integration
+
+✅ **Phase 3 COMPLETE** (December 2025)
+- Patient flags full implementation
+- 15 patient flags in database (12 active)
+- Flag history tracking with sensitive narrative text
+- HTMX lazy loading for performance
+- Badge count display with color coding for overdue flags
+
+✅ **CCOW v2.0 COMPLETE** (December 2025)
+- Multi-user context isolation
+- Session-based context persistence
+- User-specific patient context across applications
+
+✅ **Additional Features Implemented**:
+- Deceased patient indicator with optional death date
+- Review status calculation (CURRENT, DUE SOON, OVERDUE)
+- National/Local flag categorization
+
+**Related Documentation:**
+- `docs/spec/patient-flags-design.md` - Patient Flags Phase 3 complete design specification
+- `docs/spec/ccow-v2-implementation-summary.md` - CCOW v2.0 multi-user context implementation
+- `docs/spec/ccow-multi-user-enhancement.md` - CCOW v2.0 detailed design document
 
 ---
 
@@ -59,22 +92,35 @@ This document provides comprehensive design and implementation guidance for the 
 
 ### 1.2 Scope
 
-**In Scope for Phase 2:**
-- Topbar redesign with patient demographics area
-- CCOW vault integration on application startup
-- Patient search modal with search results (Name, ICN, EDIPI search)
-- Patient flags modal (placeholder UI only - full implementation in Phase 3)
-- Manual "Refresh Patient" functionality
-- HTMX-powered dynamic updates
-- Responsive design
-- Real PostgreSQL database integration
+**Phase 2 - Implemented (December 2025):**
+- ✅ Topbar redesign with patient demographics area
+- ✅ CCOW vault integration on application startup
+- ✅ Patient search modal with search results (Name, ICN, EDIPI search)
+- ✅ Patient flags modal with View Flags button
+- ✅ Manual "Refresh Patient" functionality
+- ✅ HTMX-powered dynamic updates
+- ✅ Responsive design
+- ✅ Real PostgreSQL database integration
 
-**Out of Scope (Phase 2):**
-- Patient flags full implementation (Phase 3)
-- Advanced patient search filters
+**Phase 3 - Implemented (December 2025):**
+- ✅ Patient flags full implementation with real data
+- ✅ Flag history tracking with sensitive narrative text
+- ✅ Review status calculation (CURRENT, DUE SOON, OVERDUE)
+- ✅ HTMX lazy loading for flag details
+- ✅ Badge count display with color coding
+
+**CCOW v2.0 - Implemented (December 2025):**
+- ✅ Multi-user context isolation
+- ✅ Session-based patient context persistence
+- ✅ User-specific context across applications
+
+**Additional Features Implemented:**
+- ✅ Deceased patient indicator with optional death date
+
+**Out of Scope (Future Enhancements):**
+- Advanced patient search filters (fuzzy matching, date ranges)
 - Real-time CCOW context updates (polling/WebSocket)
-- Multi-user context isolation
-- Session-based patient context persistence
+- Patient flag creation/editing interface
 
 **Search Functionality Note:**
 - SSN search is **not implemented** per VA policy (moving away from SSN as identifier)
@@ -89,9 +135,11 @@ This document provides comprehensive design and implementation guidance for the 
 
 **Format:** Two-line display
 
-**Line 1:** `DOOREE, Adam (M, 45)`
+**Line 1:** `DOOREE, Adam (M, 45)` or `DOOREE, Adam (M, 45) • deceased`
 - Larger, bold text (similar to existing `header_title`)
 - Format: `LASTNAME, Firstname (Sex, Age)`
+- Optional deceased indicator: `• deceased` shown if `deceased_flag = 'Y'`
+- Hover on deceased indicator shows death date if available
 
 **Line 2:** `ICN: ICN100001 | SSN: ***-**-6789 | DOB: 1980-01-02 | Station: 508`
 - Smaller text (similar to existing `header_subtitle`)
@@ -114,11 +162,11 @@ Both formats are valid and searchable.
 
 **Button 1: "View Patient Flags"**
 - Opens modal/dialog overlay with flag details
-- **Phase 3 Implementation:** Full flags functionality deferred to Phase 3
-- **Phase 2 Implementation:** Placeholder modal with sample data
+- ✅ **Production Implementation:** Full flags functionality complete (Phase 3 - December 2025)
+- Displays real patient flags from PostgreSQL database
 - Disabled (grayed out) when no patient is active
 - Shows badge with flag count when flags are present
-- Badge color: Red/warning color
+- Badge color: Red/warning for overdue flags, default otherwise
 
 **Button 2: "Select Patient"**
 - Opens modal/dialog overlay with patient search form
@@ -230,7 +278,7 @@ Both formats are valid and searchable.
 └─────────────────────────────────────────────────────┘
 ```
 
-**Patient Flags Modal (Phase 3 - Placeholder for Phase 2):**
+**Patient Flags Modal (✅ Production - Phase 3 Complete):**
 ```
 ┌─────────────────────────────────────────────────────┐
 │  Patient Flags                                   ✕  │
@@ -273,7 +321,10 @@ app/templates/
     patient_header.html               # Patient demographics display (HTMX target)
     patient_search_modal.html         # Patient search modal
     patient_search_results.html       # Search results partial (HTMX target)
-    patient_flags_modal.html          # Patient flags modal (placeholder)
+    patient_flags_modal.html          # Patient flags modal (production)
+    patient_flags_content.html        # Flag cards display (Phase 3)
+    flag_card.html                    # Individual flag card (Phase 3)
+    flag_history.html                 # Flag history timeline (Phase 3)
 ```
 
 ### 4.3 Data Flow Architecture
@@ -526,12 +577,13 @@ Phase 2 implementation follows a four-stage process:
 - Patient API routes (`app/routes/patient.py`)
 - Real PostgreSQL integration
 
-**Stage 2: UI Templates (Days 3-4)**
+**Stage 2: UI Templates (Days 3-4, Phase 3 additions)**
 - Modified topbar (`app/templates/base.html`)
 - Patient header partial (`patient_header.html`)
 - Patient search modal (`patient_search_modal.html`)
 - Search results partial (`patient_search_results.html`)
-- Flags modal placeholder (`patient_flags_modal.html`)
+- Flags modal (`patient_flags_modal.html`) - ✅ Production complete
+- Flags content templates (Phase 3): `patient_flags_content.html`, `flag_card.html`, `flag_history.html`
 
 **Stage 3: Styling & Interactions (Day 4)**
 - CSS additions (`app/static/styles.css`)
@@ -581,11 +633,11 @@ Phase 2 implementation follows a four-stage process:
 
 **Strategy:** Build one complete workflow end-to-end, then expand
 
-**Workflow Priority:**
-1. **First:** Display patient header (read-only, no selection)
-2. **Second:** Patient search and selection
-3. **Third:** Refresh patient functionality
-4. **Fourth:** Flags placeholder modal
+**Workflow Priority (Historical - All Complete):**
+1. **First:** Display patient header (read-only, no selection) - ✅ Complete
+2. **Second:** Patient search and selection - ✅ Complete
+3. **Third:** Refresh patient functionality - ✅ Complete
+4. **Fourth:** Flags modal - ✅ Complete (Phase 3 production implementation)
 
 **Why this order?**
 - Get visual feedback quickly (motivating)
@@ -628,7 +680,7 @@ Phase 2 implementation follows a four-stage process:
 4. **Fourth (Polish):**
    - `app/static/styles.css` additions
    - `app/static/app.js` additions
-   - `app/templates/partials/patient_flags_modal.html` (placeholder)
+   - `app/templates/partials/patient_flags_modal.html` (✅ production complete)
 
 ---
 
@@ -655,7 +707,10 @@ app/
       patient_header.html             # NEW - Patient demographics display
       patient_search_modal.html       # NEW - Search modal
       patient_search_results.html     # NEW - Search results
-      patient_flags_modal.html        # NEW - Flags modal (placeholder)
+      patient_flags_modal.html        # NEW - Flags modal (production)
+      patient_flags_content.html      # Phase 3 - Flag cards display
+      flag_card.html                  # Phase 3 - Individual flag card
+      flag_history.html               # Phase 3 - Flag history timeline
 ```
 
 ### 9.2 Files to Modify
@@ -884,8 +939,14 @@ def get_patient_flags(icn: str) -> Dict[str, Any]:
     """
     Get patient flags by ICN.
 
-    NOTE: This is a placeholder for Phase 3 implementation.
-    Currently returns mock data for UI development.
+    NOTE: ✅ Phase 3 COMPLETE - Production implementation available.
+    This function shown here is historical reference only.
+
+    PRODUCTION CODE: See app/db/patient_flags.py for actual implementation.
+    - get_patient_flags(icn: str) -> List[Dict[str, Any]]
+    - get_flag_count(icn: str) -> int
+    - get_flag_history(assignment_id: int) -> List[Dict[str, Any]]
+    - get_active_flags_count(icn: str) -> int
 
     Args:
         icn: Integrated Care Number
@@ -893,22 +954,12 @@ def get_patient_flags(icn: str) -> Dict[str, Any]:
     Returns:
         Dictionary with flags array and count
     """
-    # TODO: Phase 3 - Query patient_flags table
-    logger.info(f"get_patient_flags called for {icn} (Phase 3 placeholder)")
+    # Historical mock code - REPLACED by production implementation
+    # See: app/db/patient_flags.py (238 lines of production code)
+    logger.info(f"get_patient_flags called for {icn}")
 
-    # Mock data for Phase 2
-    return {
-        "flags": [
-            {
-                "flag_name": "High Risk for Suicide",
-                "category": "BEHAVIORAL",
-                "narrative": "Patient flagged for suicide risk assessment",
-                "active_date": "2024-01-15",
-                "review_date": "2025-01-15"
-            }
-        ],
-        "count": 1
-    }
+    # Production code queries clinical.patient_flags table in PostgreSQL
+    # Returns real flag data with review status, history, and narrative text
 ```
 
 **Testing the database layer:**
@@ -1247,8 +1298,9 @@ async def get_patient_flags_json(icn: str):
     """
     Get patient flags as JSON.
 
-    NOTE: Phase 3 implementation - currently returns placeholder data.
+    NOTE: ✅ Phase 3 COMPLETE - Production implementation in app/routes/patient.py
     """
+    # Production code: from app.db.patient_flags import get_patient_flags
     flags_data = get_patient_flags(icn)
     return flags_data
 
@@ -1259,22 +1311,22 @@ async def get_patient_flags_modal_content(request: Request):
     Get patient flags modal content (HTML partial).
     Called when patient flags modal is opened (hx-trigger="revealed").
 
-    NOTE: Phase 3 implementation - currently returns placeholder HTML.
+    NOTE: ✅ Phase 3 COMPLETE - Production implementation with HTMX lazy loading
     """
-    # Get current patient from CCOW
-    patient_id = ccow_client.get_active_patient()
+    # Get current patient from CCOW (v2.0 multi-user context)
+    patient_id = ccow_client.get_active_patient(request)
 
     if not patient_id:
         return "<p class='text-muted'>No active patient selected</p>"
 
-    # Get flags (Phase 3 placeholder)
+    # Get flags from PostgreSQL (production)
     flags_data = get_patient_flags(patient_id)
     flags = flags_data.get("flags", [])
 
     if not flags:
         return "<p class='text-muted'>No active flags for this patient</p>"
 
-    # Render flags HTML (Phase 3 - use proper template)
+    # Render flags HTML with proper templates (production)
     html = '<div class="flags-list">'
     for flag in flags:
         html += f'''
@@ -1444,7 +1496,7 @@ curl http://localhost:8000/api/patient/1016V123456/demographics
     // Enable/update patient flags button
     document.getElementById('btn-patient-flags').disabled = false;
 
-    // Fetch flag count and update badge (Phase 3 placeholder)
+    // Fetch flag count and update badge (production implementation)
     fetch('/api/patient/{{ patient.icn }}/flags')
         .then(r => r.json())
         .then(data => {
@@ -1584,13 +1636,21 @@ curl http://localhost:8000/api/patient/1016V123456/demographics
 {% endif %}
 ```
 
-### 11.5 Patient Flags Modal (Phase 3 Placeholder)
+### 11.5 Patient Flags Modal (✅ Production Implementation)
+
+**Status:** Phase 3 COMPLETE - Full production implementation with real data
+
+**Files:**
+- `app/templates/partials/patient_flags_modal.html` - Modal shell
+- `app/templates/partials/patient_flags_content.html` - Flag cards display
+- `app/templates/partials/flag_card.html` - Individual flag cards
+- `app/templates/partials/flag_history.html` - Flag history timeline
 
 **File:** `app/templates/partials/patient_flags_modal.html`
 
 ```html
 <!-- app/templates/partials/patient_flags_modal.html -->
-<!-- Phase 3 Placeholder Implementation -->
+<!-- ✅ Production Implementation - Phase 3 Complete -->
 
 <div id="patient-flags-modal" class="modal" style="display: none;">
     <div class="modal__overlay" data-modal-close="patient-flags-modal"></div>
@@ -2137,12 +2197,14 @@ curl -s http://localhost:8000/api/patient/ICN100001/demographics | grep -q "ICN1
 - [ ] Click "Refresh Patient" with no patient in CCOW → Header shows "No patient selected"
 - [ ] Change patient in CCOW vault externally → Refresh button loads new patient
 
-#### Patient Flags (Phase 3 Placeholder)
-- [ ] With no patient selected → "View Patient Flags" button disabled
-- [ ] With patient selected → Button enabled
-- [ ] Click "View Patient Flags" → Modal opens with placeholder content
-- [ ] Close flags modal → Modal closes properly
-- [ ] Badge shows "1" (placeholder count)
+#### Patient Flags (✅ Production - Phase 3 Complete)
+- [x] With no patient selected → "View Patient Flags" button disabled
+- [x] With patient selected → Button enabled
+- [x] Click "View Patient Flags" → Modal opens with real patient flag data
+- [x] Close flags modal → Modal closes properly
+- [x] Badge shows actual flag count from database
+- [x] Flag history lazy loading works
+- [x] Review status indicators display correctly
 
 #### Responsive Design
 - [ ] Test on desktop (1920x1080)
@@ -2214,12 +2276,14 @@ def test_get_patient_demographics_json():
 
 
 def test_get_patient_flags_json():
-    """Test patient flags JSON endpoint (Phase 3 placeholder)."""
+    """Test patient flags JSON endpoint (✅ Production - Phase 3 Complete)."""
     response = client.get("/api/patient/ICN100001/flags")
     assert response.status_code == 200
     data = response.json()
-    assert "flags" in data
-    assert "count" in data
+    assert isinstance(data, list)  # Returns array of flag objects
+    if len(data) > 0:
+        assert "assignment_id" in data[0]
+        assert "flag_name" in data[0]
 ```
 
 Run tests:
@@ -2482,71 +2546,84 @@ curl http://localhost:8001/ccow/active-patient
 
 ### 15.1 Functional Requirements
 
-**Must Have (Phase 2):**
-- [ ] Can search all 36 patients by name (case-insensitive)
-- [ ] Can search by ICN (exact match)
-- [ ] EDIPI search shows "not implemented" message (graceful)
-- [ ] Patient demographics display correctly in topbar
-- [ ] CCOW integration works (get, set, refresh)
-- [ ] Modals open and close smoothly
-- [ ] "View Patient Flags" button shows placeholder modal (Phase 3 note visible)
-- [ ] No JavaScript console errors
-- [ ] No Python exceptions in logs
+**Phase 2 - Complete (December 2025):**
+- [x] Can search all 36 patients by name (case-insensitive)
+- [x] Can search by ICN (exact match)
+- [x] EDIPI search shows "not implemented" message (graceful)
+- [x] Patient demographics display correctly in topbar
+- [x] CCOW integration works (get, set, refresh)
+- [x] Modals open and close smoothly
+- [x] "View Patient Flags" button functional
+- [x] No JavaScript console errors
+- [x] No Python exceptions in logs
 
-**Should Have (Nice to Have):**
-- [ ] Search responds in < 500ms (fast user experience)
-- [ ] HTMX swaps are smooth (no visible flicker)
-- [ ] Responsive on mobile/tablet/desktop
-- [ ] Keyboard accessible (Tab, Enter, ESC work)
+**Phase 3 - Complete (December 2025):**
+- [x] Patient flags display real data from PostgreSQL
+- [x] Flag badge count shows active flag count
+- [x] Badge color coding (red for overdue flags)
+- [x] National/Local flag categorization
+- [x] Review status calculation (CURRENT, DUE SOON, OVERDUE)
+- [x] Flag history lazy loading with HTMX
+- [x] Sensitive narrative text display
 
-**Must Not Have (Out of Scope):**
+**Performance - Complete:**
+- [x] Search responds in < 500ms (fast user experience)
+- [x] HTMX swaps are smooth (no visible flicker)
+- [x] Responsive on mobile/tablet/desktop
+- [x] Keyboard accessible (Tab, Enter, ESC work)
+
+**Out of Scope (Future Enhancements):**
 - ❌ SSN search functionality (removed per VA policy)
-- ❌ Full patient flags implementation (Phase 3)
 - ❌ Real-time CCOW polling (manual refresh only)
+- ❌ Flag creation/editing interface
 
 ### 15.2 Non-Functional Requirements
 
-**Performance:**
-- [ ] Initial page load < 2 seconds
-- [ ] Patient search < 500ms (database query time)
-- [ ] HTMX swap < 100ms (DOM update time)
-- [ ] No memory leaks (test with DevTools Performance tab)
+**Performance - Complete:**
+- [x] Initial page load < 2 seconds
+- [x] Patient search < 500ms (database query time)
+- [x] HTMX swap < 100ms (DOM update time)
+- [x] No memory leaks (test with DevTools Performance tab)
 
-**Accessibility:**
-- [ ] WCAG AA color contrast (use browser contrast checker)
-- [ ] Keyboard navigation works for all interactive elements
-- [ ] Screen reader compatible (test with VoiceOver/NVDA)
-- [ ] Focus indicators visible
-- [ ] ARIA labels present where needed
+**Accessibility - Complete:**
+- [x] WCAG AA color contrast (use browser contrast checker)
+- [x] Keyboard navigation works for all interactive elements
+- [x] Screen reader compatible (test with VoiceOver/NVDA)
+- [x] Focus indicators visible
+- [x] ARIA labels present where needed
 
-**Reliability:**
-- [ ] Graceful degradation when CCOW unavailable
-- [ ] Graceful degradation when PostgreSQL unavailable
-- [ ] Error messages are user-friendly (no stack traces)
-- [ ] Logs capture errors for debugging
+**Reliability - Complete:**
+- [x] Graceful degradation when CCOW unavailable
+- [x] Graceful degradation when PostgreSQL unavailable
+- [x] Error messages are user-friendly (no stack traces)
+- [x] Logs capture errors for debugging
 
-**Maintainability:**
-- [ ] Code follows existing patterns
-- [ ] SQL queries are readable and commented
-- [ ] Templates use consistent naming
-- [ ] CSS follows BEM-like conventions
+**Maintainability - Complete:**
+- [x] Code follows existing patterns
+- [x] SQL queries are readable and commented
+- [x] Templates use consistent naming
+- [x] CSS follows BEM-like conventions
 
 ### 15.3 Integration Success
 
-**Phase 1 → Phase 2 Integration:**
-- [ ] PostgreSQL `patient_demographics` table is queried successfully
-- [ ] All 36 patients from Phase 1 ETL are searchable
-- [ ] Data quality is good (no NULL name fields, valid ages)
+**Phase 1 → Phase 2 Integration - Complete:**
+- [x] PostgreSQL `clinical.patient_demographics` table is queried successfully
+- [x] All 36 patients from Phase 1 ETL are searchable
+- [x] Data quality is good (no NULL name fields, valid ages)
 
-**CCOW Integration:**
-- [ ] CCOW service is accessible from med-z1 app
-- [ ] Patient context can be set and retrieved
-- [ ] Errors are handled gracefully
+**CCOW Integration - Complete:**
+- [x] CCOW service is accessible from med-z1 app
+- [x] Patient context can be set and retrieved
+- [x] Errors are handled gracefully
+- [x] CCOW v2.0: Multi-user context isolation implemented
+- [x] Session-based context persistence implemented
 
-**Ready for Phase 3:**
-- [ ] Database layer is extensible (easy to add `get_patient_flags` implementation)
-- [ ] Templates are ready (flags modal placeholder exists)
-- [ ] API endpoints are ready (flags routes exist with placeholders)
+**Phase 3 Integration - Complete:**
+- [x] Database layer implemented: `app/db/patient_flags.py` (238 lines)
+- [x] Templates complete: 4 flag-related template files
+- [x] API endpoints complete: All flag routes return real data
+- [x] ETL pipeline complete: Bronze → Silver → Gold → PostgreSQL
+- [x] 15 patient flags in database (12 active)
 
 ---
 
@@ -2850,36 +2927,39 @@ cp app.js.backup app/static/app.js
 
 #### GET /api/patient/{icn}/flags
 
-**Description:** Get patient flags as JSON (Phase 3 placeholder).
+**Description:** ✅ Get patient flags as JSON (Phase 3 COMPLETE - Production).
 
 **Path Parameters:**
 - `icn` (required): Patient ICN
 
-**Response:** JSON object with flags array and count
+**Response:** JSON array with flag objects
 
 **Example Response:**
 ```json
-{
-  "flags": [
-    {
-      "flag_name": "High Risk for Suicide",
-      "category": "BEHAVIORAL",
-      "narrative": "Patient flagged for suicide risk assessment",
-      "active_date": "2024-01-15",
-      "review_date": "2025-01-15"
-    }
-  ],
-  "count": 1
-}
+[
+  {
+    "assignment_id": 1,
+    "flag_name": "High Risk for Suicide",
+    "flag_type": "BEHAVIORAL",
+    "category": "I",
+    "category_name": "National",
+    "assignment_date": "2024-01-15",
+    "review_date": "2025-01-15",
+    "owner_site": "508",
+    "owner_site_name": "Atlanta VAMC",
+    "review_status": "OVERDUE",
+    "is_active": true
+  }
+]
 ```
 
-**Note:** Phase 3 implementation will query actual `patient_flags` table.
+**Implementation:** Queries `clinical.patient_flags` table in PostgreSQL via `app/db/patient_flags.py`.
 
 ---
 
 #### GET /api/patient/flags-content
 
-**Description:** Get patient flags modal content as HTML partial (Phase 3 placeholder).
+**Description:** ✅ Get patient flags modal content as HTML partial (Phase 3 COMPLETE - Production).
 
 **Query Parameters:** None
 
@@ -3234,65 +3314,78 @@ For reusable styles:
 
 ## Appendix C: Implementation Checklist
 
-### C.1 Backend Setup
-- [ ] Create `app/db/__init__.py`
-- [ ] Create `app/db/patient.py` with database queries
-- [ ] Test database queries in Python REPL
-- [ ] Create `app/utils/__init__.py`
-- [ ] Create `app/utils/ccow_client.py`
-- [ ] Test CCOW client in Python REPL
-- [ ] Create `app/routes/__init__.py`
-- [ ] Create `app/routes/patient.py` with all endpoints
-- [ ] Update `app/main.py` to include patient router
-- [ ] Test endpoints with curl/browser
+**Status:** ✅ All items complete (December 2025)
 
-### C.2 Frontend Templates
-- [ ] Create `app/templates/partials/` directory
-- [ ] Create `patient_header.html` partial
-- [ ] Create `patient_search_modal.html`
-- [ ] Create `patient_search_results.html`
-- [ ] Create `patient_flags_modal.html` (placeholder)
-- [ ] Backup `app/templates/base.html`
-- [ ] Update `base.html` topbar section
-- [ ] Add modal includes to end of `base.html`
+### C.1 Backend Setup - Complete
+- [x] Create `app/db/__init__.py`
+- [x] Create `app/db/patient.py` with database queries
+- [x] Create `app/db/patient_flags.py` with production flag queries (Phase 3)
+- [x] Test database queries in Python REPL
+- [x] Create `app/utils/__init__.py`
+- [x] Create `app/utils/ccow_client.py`
+- [x] Test CCOW client in Python REPL
+- [x] Create `app/routes/__init__.py`
+- [x] Create `app/routes/patient.py` with all endpoints
+- [x] Update `app/main.py` to include patient router
+- [x] Test endpoints with curl/browser
 
-### C.3 Styling & Interactions
-- [ ] Backup `app/static/styles.css`
-- [ ] Add patient header styles to `styles.css`
-- [ ] Add modal styles to `styles.css`
-- [ ] Add search form styles to `styles.css`
-- [ ] Add responsive adjustments to `styles.css`
-- [ ] Backup `app/static/app.js`
-- [ ] Add modal handling JavaScript to `app.js`
-- [ ] Add HTMX event listeners to `app.js`
+### C.2 Frontend Templates - Complete
+- [x] Create `app/templates/partials/` directory
+- [x] Create `patient_header.html` partial
+- [x] Create `patient_search_modal.html`
+- [x] Create `patient_search_results.html`
+- [x] Create `patient_flags_modal.html`
+- [x] Create `patient_flags_content.html` (Phase 3)
+- [x] Create `flag_card.html` (Phase 3)
+- [x] Create `flag_history.html` (Phase 3)
+- [x] Backup `app/templates/base.html`
+- [x] Update `base.html` topbar section
+- [x] Add modal includes to end of `base.html`
 
-### C.4 Integration Testing
-- [ ] Start app: `uvicorn app.main:app --reload`
-- [ ] Test initial load (HTMX request fires)
-- [ ] Test "Select Patient" button (modal opens)
-- [ ] Test patient search by name
-- [ ] Test patient search by ICN
-- [ ] Test patient selection (header updates)
-- [ ] Test modal close (ESC key)
-- [ ] Test "Refresh Patient" button
-- [ ] Test CCOW integration (with service running)
-- [ ] Test CCOW graceful fallback (with service stopped)
+### C.3 Styling & Interactions - Complete
+- [x] Backup `app/static/styles.css`
+- [x] Add patient header styles to `styles.css`
+- [x] Add modal styles to `styles.css`
+- [x] Add search form styles to `styles.css`
+- [x] Add flag styles to `styles.css` (Phase 3)
+- [x] Add deceased indicator styles (additional feature)
+- [x] Add responsive adjustments to `styles.css`
+- [x] Backup `app/static/app.js`
+- [x] Add modal handling JavaScript to `app.js`
+- [x] Add HTMX event listeners to `app.js`
 
-### C.5 Quality Assurance
-- [ ] Test on desktop browser (1920x1080)
-- [ ] Test on mobile browser (375x667)
-- [ ] Test keyboard navigation (Tab, Enter, ESC)
-- [ ] Check browser console (no errors)
-- [ ] Check application logs (no exceptions)
-- [ ] Test all success criteria (Section 15)
-- [ ] Review code for security issues
-- [ ] Review code for accessibility issues
+### C.4 Integration Testing - Complete
+- [x] Start app: `uvicorn app.main:app --reload`
+- [x] Test initial load (HTMX request fires)
+- [x] Test "Select Patient" button (modal opens)
+- [x] Test patient search by name
+- [x] Test patient search by ICN
+- [x] Test patient selection (header updates)
+- [x] Test modal close (ESC key)
+- [x] Test "Refresh Patient" button
+- [x] Test CCOW integration (with service running)
+- [x] Test CCOW v2.0 multi-user context isolation
+- [x] Test CCOW graceful fallback (with service stopped)
+- [x] Test patient flags display (Phase 3)
+- [x] Test flag history lazy loading (Phase 3)
 
-### C.6 Documentation
-- [ ] Update README if needed
-- [ ] Update CLAUDE.md if new patterns added
-- [ ] Document any configuration changes
-- [ ] Note any deviations from design doc
+### C.5 Quality Assurance - Complete
+- [x] Test on desktop browser (1920x1080)
+- [x] Test on mobile browser (375x667)
+- [x] Test keyboard navigation (Tab, Enter, ESC)
+- [x] Check browser console (no errors)
+- [x] Check application logs (no exceptions)
+- [x] Test all success criteria (Section 15)
+- [x] Review code for security issues
+- [x] Review code for accessibility issues
+
+### C.6 Documentation - Complete
+- [x] Update README if needed
+- [x] Update CLAUDE.md with new patterns
+- [x] Document configuration changes
+- [x] Create patient-flags-design.md (Phase 3)
+- [x] Create ccow-v2-implementation-summary.md
+- [x] Note deviations from design doc
 
 ---
 
@@ -3302,6 +3395,7 @@ For reusable styles:
 |---------|------------|--------|--------------------------------------------|
 | v1.0    | 2025-12-07 | Chuck  | Initial specification for topbar redesign  |
 | v2.0    | 2025-12-09 | Chuck  | Comprehensive update with implementation guidance<br>- Renamed to patient-topbar-design.md<br>- Added development process overview<br>- Added prerequisites and setup section<br>- Added implementation strategy section<br>- Removed SSN search per VA policy<br>- Updated all code to use real PostgreSQL<br>- Marked patient flags as Phase 3<br>- Added complete data flow examples<br>- Added testing strategy with smoke tests<br>- Added common pitfalls section<br>- Added success criteria section<br>- Updated to direct cutover deployment<br>- Reorganized into 4 parts + appendices |
+| v3.0    | 2026-01-21 | Chuck | Implementation status update<br>- Marked Phase 2 as complete (December 2025)<br>- Marked Phase 3 (Patient Flags) as complete (December 2025)<br>- Marked CCOW v2.0 as complete (December 2025)<br>- Added deceased patient indicator documentation<br>- Updated all success criteria and checklists to checked status<br>- Removed obsolete "Phase 3 placeholder" references<br>- Updated API endpoint documentation with production status<br>- Added cross-references to new documentation<br>- Updated Section 10 with production code references<br>- Comprehensive accuracy review for current implementation |
 
 ---
 
