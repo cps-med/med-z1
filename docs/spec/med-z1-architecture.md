@@ -36,35 +36,41 @@ This document captures architectural decisions, patterns, and rationale for the 
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        med-z1 System                             │
+│                        med-z1 System                            │
 ├─────────────────────────────────────────────────────────────────┤
-│                                                                   │
-│  ┌──────────────┐      ┌──────────────┐     ┌──────────────┐   │
-│  │  Web UI      │      │  CCOW Vault  │     │  AI/ML       │   │
-│  │  (FastAPI)   │◄────►│  (FastAPI)   │     │  Services    │   │
-│  │  Port 8000   │      │  Port 8001   │     │              │   │
-│  └──────┬───────┘      └──────────────┘     └──────────────┘   │
-│         │                                                        │
-│         ▼                                                        │
-│  ┌──────────────────────────────────────────────────────┐      │
-│  │           PostgreSQL Serving Database                 │      │
-│  │  (patient_demographics, patient_allergies, etc.)     │      │
-│  └──────────────────────────────────────────────────────┘      │
-│         ▲                                                        │
-│         │ ETL Pipeline                                          │
-│         │                                                        │
-│  ┌──────┴───────────────────────────────────────────────┐      │
-│  │              MinIO Object Storage (S3)                │      │
-│  │         Bronze → Silver → Gold (Parquet)             │      │
-│  └──────────────────────────────────────────────────────┘      │
-│         ▲                                                        │
-│         │ ETL Extraction                                        │
-│         │                                                        │
-│  ┌──────┴───────────────────────────────────────────────┐      │
-│  │        Mock CDW (SQL Server 2019)                     │      │
-│  │  CDWWork (VistA) + CDWWork1 (Oracle Health)          │      │
-│  └──────────────────────────────────────────────────────┘      │
-│                                                                   │
+│                                                                 │
+│   ┌───────────────┐      ┌───────────────┐                      │
+│   │   CCOW Vault  │      │ VistA Service │                      │
+│   │   (FastAPI)   │◄────►│   (FastAPI)   │                      │
+│   │   Port 8001   │      │   Port 8003   │                      │
+│   └───────────────┘      └─────┬─────────┘                      │
+│             ▲ Active           │ T-0                            │
+│             │ Patient          │                                │
+│             ▼ Context          ▼                                │
+│   ┌──────────────────────────────────┐      ┌───────────────┐   │
+│   │              Web UI              │      │     AI/ML     │   │
+│   │             (FastAPI)            │◄────►│     Tools     │   │
+│   │             Port 8000            │      │  (LangGraph)  │   │
+│   └──────────────────────────────────┘      └───────────────┘   │
+│             ▲                                                   │
+│             │ T-1 and prior                                     │
+│   ┌─────────┴───────────────────────────────────────────────┐   │
+│   │              PostgreSQL Serving Database                │   │
+│   │    (demographics, allergies, labs, vitals, etc.)        │   │
+│   └─────────────────────────────────────────────────────────┘   │
+│             ▲                                                   │
+│             │ ETL Pipeline                                      │
+│   ┌─────────┴───────────────────────────────────────────────┐   │
+│   │               MinIO Object Storage (S3)                 │   │
+│   │           Bronze → Silver → Gold (Parquet)              │   │
+│   └─────────────────────────────────────────────────────────┘   │
+│             ▲                                                   │
+│             │ ETL Pipeline                                      │
+│   ┌─────────┴───────────────────────────────────────────────┐   │
+│   │               Mock CDW (SQL Server 2019)                │   │
+│   │       CDWWork (VistA) + CDWWork1 (Oracle Health)        │   │
+│   └─────────────────────────────────────────────────────────┘   │
+│                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -74,24 +80,70 @@ This document captures architectural decisions, patterns, and rationale for the 
 - FastAPI application serving HTML via Jinja2 templates
 - HTMX for dynamic updates without full page reloads
 - Routes organized by function: patient, dashboard, vitals, etc.
-- Direct queries to PostgreSQL serving database
+- Queries PostgreSQL serving database for historical data (T-1 and earlier)
+- Integrates with VistA Service for real-time data (T-0, today)
+- Communicates with CCOW Vault for patient context management
+- Invokes AI/ML Tools for clinical insights and decision support
 
 **CCOW Vault (ccow/):**
-- Separate FastAPI service for patient context management
+- Separate FastAPI service for patient context management (Port 8001)
 - Thread-safe in-memory context storage
 - REST API for get/set/clear active patient
 - Enables context synchronization across applications
+- Bidirectional communication with Web UI for active patient tracking
+
+**VistA Service (vista/):**
+- Separate FastAPI service simulating VA VistA RPC Broker (Port 8003)
+- Provides real-time clinical data (T-0, today) complementing historical PostgreSQL data
+- Multi-site simulation (3 sites: Alexandria 200, Anchorage 500, Palo Alto 630)
+- Automatic ICN → DFN resolution per site
+- Session-based caching (30-minute TTL) for performance
+- Simulated network latency (1-3 seconds per site) for realistic testing
+- Supports "Refresh VistA" UI pattern for on-demand real-time data retrieval
+- **Implemented RPCs (5):** ORWPT PTINQ (demographics), GMV LATEST VM (vitals), ORWCV ADMISSIONS (encounters), ORQQAL LIST (allergies), ORWPS COVER (medications)
+
+**AI/ML Tools (ai/):**
+- LangGraph-powered clinical decision support agents
+- Integrates with Web UI via FastAPI endpoints
+- Accesses both PostgreSQL data (T-1+) and cached VistA data (T-0) for comprehensive analysis
+- **Implemented Tools (4):**
+  - `check_ddi_risks` - Drug-drug interaction analysis
+  - `get_patient_summary` - Comprehensive patient overview (demographics, meds, vitals, allergies, encounters, notes)
+  - `analyze_vitals_trends` - Statistical vitals analysis with clinical interpretation
+  - `get_clinical_notes_summary` - Query clinical notes with filtering
+- OpenAI GPT-4 Turbo backend with centralized prompt management
+- Session-aware: Uses Vista session cache when available (see ADR-008)
+
+**PostgreSQL Serving Database:**
+- Fast, indexed queries for historical clinical data (T-1 and earlier)
+- Organized into schemas: `auth` (authentication), `clinical` (patient data)
+- Clinical tables: demographics, vitals, allergies, medications, flags, encounters, labs, clinical notes, immunizations
+- Loaded from Gold layer Parquet files via ETL pipeline
+- Supports complex filtering, sorting, and pagination
+- Used by Web UI and AI/ML Tools for data retrieval
+
+**MinIO Object Storage (S3):**
+- Medallion architecture: Bronze → Silver → Gold layers
+- Stores Parquet files for each transformation stage
+- Bronze: Raw extracts from Mock CDW, minimal transformation
+- Silver: Cleaned, harmonized, joined data across sources (CDWWork + CDWWork2)
+- Gold: Curated, query-optimized views ready for PostgreSQL load
+- Enables reproducible ETL pipeline with audit trail
 
 **ETL Pipeline (etl/):**
 - Bronze: Raw extraction from mock CDW to Parquet
 - Silver: Cleaned, harmonized, joined data
 - Gold: Curated, query-optimized views with ICN/patient_key
 - PostgreSQL Load: Final serving database tables
+- Full pipeline execution: `python -m etl.bronze_<domain> && python -m etl.silver_<domain> && python -m etl.gold_<domain> && python -m etl.load_<domain>`
 
 **Mock CDW (mock/sql-server/):**
 - Development-only SQL Server 2019 database
 - Synthetic, non-PHI/PII data only
-- Two databases: CDWWork (VistA-like), CDWWork1 (Oracle Health-like)
+- Two databases: CDWWork (VistA-like), CDWWork2 (Oracle Health-like)
+- Comprehensive schemas: Dim, SPatient, Vital, Allergy, RxOut, BCMA, Inpat, Chem, TIU, Immun (138 immunizations)
+- Simulates VA Corporate Data Warehouse structure and content
+- Data source for Bronze ETL extraction
 
 ---
 
@@ -130,7 +182,7 @@ app/
 # In app/routes/patient.py
 router = APIRouter(prefix="/api/patient", tags=["patient"])
 
-@router.get("/{icn}/allergies")              # JSON API
+@router.get("/{icn}/allergies")               # JSON API
 @router.get("/{icn}/allergies/critical")      # JSON API
 @router.get("/{icn}/allergies/{id}/details")  # JSON API
 ```
@@ -1022,7 +1074,7 @@ app.add_middleware(
 ### A. Related Documentation
 
 - `docs/spec/med-z1-plan.md` - Product and technical development plan
-- `docs/spec/ai-insight-design.md` - AI Clinical Insights implementation specification (Phase 1 MVP Complete ✅)
+- `docs/spec/ai-insight-design.md` - AI Clinical Insights implementation specification (Phase 1 MVP Complete)
 - `docs/spec/patient-dashboard-design.md` - Dashboard and widget system design
 - `docs/spec/vitals-design.md` - Vitals implementation specification
 - `docs/spec/patient-flags-design.md` - Patient Flags implementation specification
@@ -1034,12 +1086,17 @@ app.add_middleware(
 
 ### B. Glossary
 
-- **ICN:** Integrated Care Number (patient identifier)
-- **SID:** Surrogate ID (internal database key)
-- **CDW:** Corporate Data Warehouse (VA data warehouse)
 - **CCOW:** Clinical Context Object Workgroup (context management standard)
-- **Medallion Architecture:** Bronze/Silver/Gold data pipeline pattern
+- **CDW:** Corporate Data Warehouse (VA data warehouse)
+- **DFN:** Divisional File Number (VistA patient identifier, site-specific)
 - **HTMX:** HTML over-the-wire library for dynamic UI updates
+- **ICN:** Integrated Care Number (patient identifier)
+- **IEN:** Internal Entry Number (VistA record identifier within a specific file/table at a specific site)
+- **Medallion Architecture:** Bronze/Silver/Gold data pipeline pattern
+- **PHI/PII:** Protected Health Information / Personally Identifiable Information
+- **RPC:** Remote Procedure Call (VistA inter-system communication protocol)
+- **SID:** Surrogate ID (internal database key)
+- **Sta3n:** Station Number (VA facility identifier)
 
 ---
 
