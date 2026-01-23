@@ -334,20 +334,19 @@ AI_CONFIG = {
 }
 
 # -----------------------------------------------------------
-# Optional logging of config (without secrets)
+# Greeting message displayed on config.py execution
 # -----------------------------------------------------------
 
 if __name__ != "__main__":
-    logger = logging.getLogger(__name__)
-    logger.info(f"Loaded config from: {ENV_PATH}")
-    logger.info(f"Project root: {PROJECT_ROOT}")
-    logger.info(f"CDWWORK server: {CDWWORK_DB_SERVER} / DB: {CDWWORK_DB_NAME}")
-    logger.info(f"CDWWORK2 server: {CDWWORK2_DB_SERVER} / DB: {CDWWORK2_DB_NAME}")
-    logger.info(f"EXTRACT server: {EXTRACT_DB_SERVER} / DB: {EXTRACT_DB_NAME}")
-    logger.info(f"MinIO endpoint: {MINIO_ENDPOINT}, bucket: {MINIO_BUCKET_NAME}")
-    logger.info(f"USE_MINIO: {USE_MINIO}")
-    logger.info(f"PostgreSQL: {POSTGRES_HOST}:{POSTGRES_PORT} / DB: {POSTGRES_DB}")
-    logger.info(f"ASCII extract folder: {ASCII_EXTRACT_FOLDER}")
-    logger.info(f"Log directory: {LOG_DIRECTORY_PATH}")
-    logger.info(f"CCOW enabled: {CCOW_ENABLED}, URL: {CCOW_URL}")
-    logger.info(f"Vista enabled: {VISTA_ENABLED}, URL: {VISTA_SERVICE_URL}")
+    print()
+    print(f"Loaded config from: {ENV_PATH}")
+    print(f"      Project root: {PROJECT_ROOT}")
+    print(f"    CDWWORK server: {CDWWORK_DB_SERVER} / DB: {CDWWORK_DB_NAME}")
+    print(f"   CDWWORK2 server: {CDWWORK2_DB_SERVER} / DB: {CDWWORK2_DB_NAME}")
+    print(f"    MinIO endpoint: {MINIO_ENDPOINT}, bucket: {MINIO_BUCKET_NAME}")
+    print(f"         USE_MINIO: {USE_MINIO}")
+    print(f"        PostgreSQL: {POSTGRES_HOST}:{POSTGRES_PORT} / DB: {POSTGRES_DB}")
+    print(f"      CCOW enabled: {CCOW_ENABLED}, URL: {CCOW_URL}")
+    print(f"     Vista enabled: {VISTA_ENABLED}, URL: {VISTA_SERVICE_URL}")
+    print(f"   Session timeout: {SESSION_TIMEOUT_MINUTES} minutes")
+    print()
