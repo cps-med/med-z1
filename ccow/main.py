@@ -3,14 +3,15 @@
 # ---------------------------------------------------------------------
 # FastAPI application providing HTTP REST API for CCOW Context Vault.
 #
-# Version: v2.0 (Multi-User Enhancement)
+# Version: v2.1 (Cross-Application Authentication Enhancement)
+# Date: 2026-01-27
 #
 # Exposes the shared ContextVault singleton (from vault.py) via HTTP
 # endpoints, enabling distributed applications to synchronize patient
 # context across the med-z1 ecosystem. Each authenticated user maintains
 # an independent patient context.
 #
-# v2.0 REST API Endpoints:
+# v2.1 REST API Endpoints:
 # - GET  /                          - Service info
 # - GET  /ccow/health               - Health check
 # - GET  /ccow/active-patient       - Get current user's patient context
@@ -20,16 +21,33 @@
 # - GET  /ccow/active-patients      - Get all active contexts (admin)
 # - POST /ccow/cleanup              - Trigger stale context cleanup (admin)
 #
-# v2.0 Key Changes:
-# - All endpoints (except health) require authentication (session_id cookie)
+# v2.1 Key Changes (2026-01-27):
+# - Added X-Session-ID header support for cross-application integration
+# - Enables external CCOW-aware apps (med-z4, CPRS) to authenticate
+# - Maintains backward compatibility with session_id cookie
+# - Session validation uses UTC timestamps (via auth_helper)
+# - Smart timezone handling (supports both timezone-aware and naive datetimes)
+#
+# v2.0 Key Changes (2025-12-20):
+# - All endpoints (except health) require authentication
 # - user_id extracted from validated session (not trusted from request body)
 # - Context operations are user-scoped (multi-user isolation)
 # - History can be filtered by user or global scope
 #
-# Security Model:
-# - Session validation via auth_helper.get_user_from_session()
+# Authentication Methods (v2.1):
+# 1. X-Session-ID header (priority) - for external CCOW-aware applications
+# 2. session_id cookie (fallback) - for med-z1 browser-based sessions
+#
+# Both methods validate against shared auth.sessions table (PostgreSQL):
+# - Session UUIDs are validated for existence, active status, expiration
+# - Timezone-aware expiration checks (UTC standard)
 # - user_id extracted from database, not request parameters
 # - Prevents user_id spoofing attacks
+#
+# Session Management:
+# - All applications (med-z1, med-z4) write to same auth.sessions table
+# - Session timestamps use UTC for consistency across timezones
+# - See: docs/spec/timezone-and-session-management.md for integration details
 #
 # Auto-generated API docs available at:
 # - Swagger UI: http://localhost:8001/docs
@@ -38,6 +56,7 @@
 
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any
+import logging
 
 from fastapi import FastAPI, HTTPException, status, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
@@ -53,10 +72,12 @@ from .models import (
     CleanupResponse,
 )
 
+logger = logging.getLogger(__name__)
+
 app = FastAPI(
     title="CCOW Context Vault",
-    description="Multi-user CCOW-style patient context synchronization service (v2.0)",
-    version="2.0.0",
+    description="Multi-user CCOW-style patient context synchronization service (v2.1)",
+    version="2.1.0",
 )
 
 # CORS configuration (development-friendly; tighten for production)
@@ -73,12 +94,59 @@ app.add_middleware(
 # Authentication Dependency
 # ---------------------------------------------------------------------
 
+def get_session_id_from_request(request: Request) -> Optional[str]:
+    """
+    Extract session_id from request, supporting multiple auth methods.
+
+    Priority order:
+    1. X-Session-ID header (for cross-application CCOW integration)
+    2. session_id cookie (for med-z1 internal routes)
+
+    This enables:
+    - med-z1 (port 8000): Cookie-based auth (browser sessions)
+    - med-z4 (port 8002): Header-based auth (httpx client)
+    - CPRS/external apps: Either method
+
+    Args:
+        request: FastAPI Request object
+
+    Returns:
+        Session UUID string, or None if not found
+
+    Example Usage:
+        # med-z1 (cookie-based):
+        GET /ccow/active-patient
+        Cookie: session_id=<uuid>
+
+        # med-z4 (header-based):
+        GET /ccow/active-patient
+        X-Session-ID: <uuid>
+    """
+    # Check header first (explicit cross-app authentication)
+    session_id = request.headers.get("X-Session-ID")
+    if session_id:
+        logger.debug("Session extracted from X-Session-ID header")
+        return session_id
+
+    # Fall back to cookie (med-z1 browser-based sessions)
+    session_id = request.cookies.get("session_id")
+    if session_id:
+        logger.debug("Session extracted from session_id cookie")
+        return session_id
+
+    return None
+
+
 async def get_current_user(request: Request) -> Dict[str, Any]:
     """
-    FastAPI dependency to extract and validate user from session cookie.
+    FastAPI dependency to extract and validate user from session.
+
+    Supports authentication via:
+    - X-Session-ID header (external CCOW-aware apps like med-z4)
+    - session_id cookie (med-z1 internal use)
 
     This function:
-    1. Extracts session_id from cookie
+    1. Extracts session_id from header (priority) or cookie (fallback)
     2. Validates session against auth.sessions table
     3. Checks session is active and not expired
     4. Returns user information (user_id, email, display_name)
@@ -94,11 +162,12 @@ async def get_current_user(request: Request) -> Dict[str, Any]:
             "display_name": str,   # User display name
         }
     """
-    session_id = request.cookies.get("session_id")
+    session_id = get_session_id_from_request(request)
+
     if not session_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing session cookie"
+            detail="Missing authentication: X-Session-ID header or session_id cookie required"
         )
 
     user = get_user_from_session(session_id)
@@ -120,8 +189,8 @@ async def root():
     """Root endpoint for quick service introspection."""
     return {
         "service": "ccow",
-        "message": "CCOW Context Vault v2.0 (Multi-User) is running",
-        "version": "2.0.0",
+        "message": "CCOW Context Vault v2.1 (Multi-User + Cross-App Auth) is running",
+        "version": "2.1.0",
     }
 
 
@@ -131,7 +200,7 @@ async def health_check():
     return {
         "status": "healthy",
         "service": "ccow-vault",
-        "version": "2.0.0",
+        "version": "2.1.0",
         "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "active_contexts": vault.get_context_count(),
     }
@@ -146,8 +215,9 @@ async def get_active_patient(user: Dict = Depends(get_current_user)):
     """
     Get the current user's active patient context.
 
-    Requires:
-        - Valid session_id cookie (authenticated user)
+    Authentication:
+        - X-Session-ID header (external apps), OR
+        - session_id cookie (med-z1)
 
     Returns:
         PatientContext for the current user
@@ -173,8 +243,9 @@ async def set_active_patient(
     """
     Set or update the current user's active patient context.
 
-    Requires:
-        - Valid session_id cookie (authenticated user)
+    Authentication:
+        - X-Session-ID header (external apps), OR
+        - session_id cookie (med-z1)
 
     Request Body:
         {
@@ -206,8 +277,9 @@ async def clear_active_patient(
     """
     Clear the current user's active patient context.
 
-    Requires:
-        - Valid session_id cookie (authenticated user)
+    Authentication:
+        - X-Session-ID header (external apps), OR
+        - session_id cookie (med-z1)
 
     Request Body (optional):
         {
@@ -249,8 +321,9 @@ async def get_context_history(
     """
     Get context change history, filtered by scope.
 
-    Requires:
-        - Valid session_id cookie (authenticated user)
+    Authentication:
+        - X-Session-ID header (external apps), OR
+        - session_id cookie (med-z1)
 
     Query Parameters:
         - scope: str (default: "user")
@@ -302,8 +375,9 @@ async def get_all_active_patients(user: Dict = Depends(get_current_user)):
     """
     Get all active patient contexts across all users (admin/debugging).
 
-    Requires:
-        - Valid session_id cookie (authenticated user)
+    Authentication:
+        - X-Session-ID header (external apps), OR
+        - session_id cookie (med-z1)
 
     Returns:
         GetAllActiveContextsResponse with:
@@ -326,8 +400,9 @@ async def cleanup_stale_contexts(user: Dict = Depends(get_current_user)):
     """
     Trigger manual cleanup of stale contexts (admin/debugging).
 
-    Requires:
-        - Valid session_id cookie (authenticated user)
+    Authentication:
+        - X-Session-ID header (external apps), OR
+        - session_id cookie (med-z1)
 
     Returns:
         CleanupResponse with:

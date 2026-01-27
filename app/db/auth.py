@@ -8,7 +8,7 @@
 # ---------------------------------------------------------------------
 
 from typing import Optional, Dict, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import create_engine, text
 from sqlalchemy.pool import NullPool
 import bcrypt
@@ -198,7 +198,7 @@ def create_session(
         Session ID (UUID string) if successful, None otherwise
     """
     timeout_minutes = AUTH_CONFIG["session_timeout_minutes"]
-    now = datetime.now()
+    now = datetime.now(timezone.utc)  # Use UTC for all timestamps
     expires_at = now + timedelta(minutes=timeout_minutes)
 
     query = text("""
@@ -303,7 +303,7 @@ def extend_session(session_id: str) -> bool:
         True if successful, False otherwise
     """
     timeout_minutes = AUTH_CONFIG["session_timeout_minutes"]
-    now = datetime.now()
+    now = datetime.now(timezone.utc)  # Use UTC for all timestamps
     new_expires_at = now + timedelta(minutes=timeout_minutes)
 
     query = text("""
@@ -406,7 +406,7 @@ def update_last_login(user_id: str) -> bool:
         with engine.connect() as conn:
             result = conn.execute(query, {
                 "user_id": user_id,
-                "timestamp": datetime.now(),
+                "timestamp": datetime.now(timezone.utc),
             })
             conn.commit()
             return result.rowcount > 0
@@ -475,7 +475,7 @@ def log_audit_event(
             conn.execute(query, {
                 "user_id": user_id if user_id else None,
                 "event_type": event_type,
-                "event_timestamp": datetime.now(),
+                "event_timestamp": datetime.now(timezone.utc),
                 "email": email,
                 "ip_address": ip_address,
                 "user_agent": user_agent,
@@ -508,12 +508,12 @@ def cleanup_expired_sessions() -> int:
         OR (is_active = FALSE AND created_at < :cutoff)
     """)
 
-    cutoff = datetime.now() - timedelta(days=7)  # Delete inactive sessions older than 7 days
+    cutoff = datetime.now(timezone.utc) - timedelta(days=7)  # Delete inactive sessions older than 7 days
 
     try:
         with engine.connect() as conn:
             result = conn.execute(query, {
-                "now": datetime.now(),
+                "now": datetime.now(timezone.utc),
                 "cutoff": cutoff,
             })
             conn.commit()

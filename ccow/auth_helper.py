@@ -3,13 +3,13 @@
 # ---------------------------------------------------------------------
 # Session validation and user extraction for CCOW Context Vault.
 #
-# This module provides functions to validate session cookies and extract
-# user information from med-z1's authentication system. The CCOW vault
-# uses these functions to ensure requests are authenticated and to
-# determine which user's context to operate on.
+# This module provides functions to validate session IDs (from cookie or
+# header) and extract user information from med-z1's authentication system.
+# The CCOW vault uses these functions to ensure requests are authenticated
+# and to determine which user's context to operate on.
 #
 # Security Model:
-# - CCOW vault validates session_id cookie against auth.sessions table
+# - CCOW vault validates session_id against auth.sessions table
 # - user_id is extracted from validated session (not trusted from request body)
 # - This prevents user_id spoofing attacks
 #
@@ -17,8 +17,16 @@
 # - Directly queries auth.sessions and auth.users tables
 # - Uses same DATABASE_URL as med-z1 app
 # - Validates is_active and expires_at for each session
+# - Smart timezone handling (supports both timezone-aware and naive datetimes)
 #
-# Version: v2.0 (Multi-User Enhancement)
+# Timezone Handling (v2.1):
+# - Session expiration uses UTC timestamps (standard as of 2026-01-27)
+# - Gracefully handles legacy timezone-naive sessions (backward compatible)
+# - If expires_at has timezone → use UTC for comparison
+# - If expires_at is naive → use local time for comparison (legacy)
+#
+# Version: v2.1 (Cross-Application Authentication)
+# Date: 2026-01-27
 # ---------------------------------------------------------------------
 
 from typing import Optional, Dict, Any

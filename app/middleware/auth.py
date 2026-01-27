@@ -10,7 +10,7 @@
 from fastapi import Request
 from fastapi.responses import RedirectResponse
 from starlette.middleware.base import BaseHTTPMiddleware
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 
 from app.db import auth as auth_db
@@ -73,7 +73,14 @@ class AuthMiddleware(BaseHTTPMiddleware):
             return self._redirect_to_login_with_cleared_cookie()
 
         # Check if session has expired
-        if session['expires_at'] < datetime.now():
+        # Compare with UTC if expires_at is timezone-aware, otherwise use timezone-naive comparison
+        expires_at = session['expires_at']
+        if expires_at.tzinfo is None:
+            now = datetime.now()  # Timezone-naive (should not happen after fix, but handle gracefully)
+        else:
+            now = datetime.now(timezone.utc)  # Timezone-aware UTC
+
+        if expires_at < now:
             logger.info(f"Session expired: {session_id}")
             auth_db.log_audit_event(
                 event_type='session_timeout',

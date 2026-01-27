@@ -1,8 +1,9 @@
 # CCOW Context Vault – Multi-User Enhancement Design
 
-**Document Version:** v2.0
-**Date:** 2025-12-20
-**Status:** ✅ IMPLEMENTATION COMPLETE (December 20, 2025)
+**Document Version:** v2.1.1
+**Date:** 2026-01-27 (Updated)
+**Original Date:** 2025-12-20
+**Status:** ✅ IMPLEMENTATION COMPLETE (v2.1.1 - January 27, 2026)
 **Parent Document:** `ccow-vault-design.md` (v1.1 baseline)
 
 > ** Document Purpose**
@@ -18,20 +19,29 @@
 > **Summary**
 > This document specifies the enhancement of the CCOW Context Vault from a single global patient context to a **multi-user, per-user patient context** system. Each authenticated user will maintain their own active patient context, isolated from other users, while preserving context across login/logout cycles within med-z1 and supporting true multi-application CCOW synchronization.
 
-> **✅ IMPLEMENTATION STATUS: COMPLETE**
-> All planned features have been successfully implemented and tested as of December 20, 2025.
-> - **Testing Guide:** See `ccow-v2-testing-guide.md` for API testing with curl/Insomnia
-> - **Session Integration:** See `session-timeout-behavior.md` for authentication details
+> **✅ IMPLEMENTATION STATUS: COMPLETE (v2.1.1)**
+> All planned features have been successfully implemented and tested.
+> - **v2.0** (2025-12-20): Multi-user context isolation
+> - **v2.1** (2026-01-27): Cross-application authentication (X-Session-ID header)
+> - **v2.1.1** (2026-01-27): Timezone fix and session management standardization
+>
+> **Testing Guides:**
+> - **CCOW v2.1 Testing:** See `docs/guide/ccow-v2.1-testing-guide.md`
+> - **Session Integration:** See `docs/spec/session-timeout-behavior.md`
+> - **Multi-App Integration:** See `docs/spec/timezone-and-session-management.md`
+> - **med-z4 Quick Start:** See `docs/spec/med-z4-integration-quickstart.md`
 >
 > **Key Achievements:**
-> - ✅ Per-user context isolation (multi-user support)
-> - ✅ Session-based authentication with PostgreSQL validation
-> - ✅ Context persistence across logout/login cycles
-> - ✅ History tracking (user/global scoping)
-> - ✅ Timezone bug fix in session validation
-> - ✅ All 7 route files updated
-> - ✅ 21 unit tests + 14 integration tests (comprehensive coverage)
-> - ✅ Manual testing successful with multiple users
+> - ✅ Per-user context isolation (multi-user support) - v2.0
+> - ✅ Session-based authentication with PostgreSQL validation - v2.0
+> - ✅ Context persistence across logout/login cycles - v2.0
+> - ✅ History tracking (user/global scoping) - v2.0
+> - ✅ X-Session-ID header authentication (cross-app) - v2.1
+> - ✅ UTC timezone standardization (session management) - v2.1.1
+> - ✅ All 7 route files updated - v2.0
+> - ✅ 21 unit tests + 14 integration tests (comprehensive coverage) - v2.0
+> - ✅ Manual testing successful with multiple users - v2.0
+> - ✅ Cross-application testing (med-z1 ↔ CCOW ↔ med-z4) - v2.1
 
 ---
 
@@ -50,6 +60,8 @@
 11. [Security Considerations](#11-security-considerations)
 12. [Future Enhancements](#12-future-enhancements)
 13. [Implementation Checklist](#13-implementation-checklist)
+14. [Cross-Application Authentication (v2.1)](#14-cross-application-authentication-v21-enhancement)
+15. [Timezone and Session Management (v2.1.1)](#15-timezone-and-session-management-v21-enhancement)
 
 ---
 
@@ -2632,11 +2644,385 @@ Use this checklist to track implementation progress:
 
 ---
 
+## 14. Cross-Application Authentication (v2.1 Enhancement)
+
+**Status:** ✅ Implemented (2026-01-27)
+
+### 14.1 Overview
+
+CCOW Vault v2.1 adds support for cross-application authentication to enable integration with external CCOW-aware applications (med-z4, CPRS emulator, imaging systems, etc.) that use different session cookie names.
+
+**Problem Solved:**
+- med-z1 uses `session_id` cookie
+- med-z4 uses `med_z4_session_id` cookie
+- Both write to the same `auth.sessions` table (session UUIDs are compatible)
+- CCOW Vault needs to accept sessions from both applications
+
+**Solution:**
+Added `X-Session-ID` header support as an explicit cross-application authentication method, while maintaining backward compatibility with cookie-based authentication.
+
+### 14.2 Authentication Methods
+
+CCOW Vault now supports two authentication methods with clear priority:
+
+#### Method 1: X-Session-ID Header (Priority)
+**Use Case:** External CCOW-aware applications (med-z4, CPRS, imaging systems)
+
+```http
+GET /ccow/active-patient HTTP/1.1
+Host: localhost:8001
+X-Session-ID: 550e8400-e29b-41d4-a716-446655440000
+Content-Type: application/json
+```
+
+**Advantages:**
+- ✅ Explicit cross-application authentication (clear intent)
+- ✅ No cookie name conflicts
+- ✅ Standard HTTP header convention
+- ✅ Works with any HTTP client (httpx, requests, curl)
+
+#### Method 2: session_id Cookie (Fallback)
+**Use Case:** med-z1 internal browser-based sessions
+
+```http
+GET /ccow/active-patient HTTP/1.1
+Host: localhost:8001
+Cookie: session_id=550e8400-e29b-41d4-a716-446655440000
+Content-Type: application/json
+```
+
+**Advantages:**
+- ✅ Backward compatible with existing med-z1 code
+- ✅ Automatic browser cookie handling
+- ✅ Zero changes required to med-z1 routes
+
+### 14.3 Priority Order
+
+If both are present, **header takes priority**:
+
+```python
+# Implementation in ccow/main.py
+def get_session_id_from_request(request: Request) -> Optional[str]:
+    # 1. Check X-Session-ID header first
+    session_id = request.headers.get("X-Session-ID")
+    if session_id:
+        return session_id
+
+    # 2. Fall back to session_id cookie
+    return request.cookies.get("session_id")
+```
+
+### 14.4 Security Model
+
+Both authentication methods use **identical validation**:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 1. Extract session_id (header or cookie)                    │
+│    ↓                                                         │
+│ 2. Validate against auth.sessions table                     │
+│    - Session exists?                                         │
+│    - is_active = TRUE?                                       │
+│    - expires_at > NOW()?                                     │
+│    ↓                                                         │
+│ 3. Extract user_id from validated session                   │
+│    ↓                                                         │
+│ 4. Perform CCOW operation for that user_id                  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Security Properties:**
+- ✅ No additional attack surface (same validation for both paths)
+- ✅ Session reuse prevention (TTL enforced by auth.sessions)
+- ✅ No user_id spoofing (extracted from database, not request)
+
+### 14.5 Integration Examples
+
+#### med-z1 (Cookie-Based) - No Changes Required
+
+```python
+# app/routes/patient.py (unchanged)
+@router.get("/patient/{icn}")
+async def patient_overview(icn: str, request: Request):
+    # session_id cookie automatically sent by browser
+    ccow_client.set_active_patient(request, patient_id=icn, set_by="med-z1")
+    # ...
+```
+
+#### med-z4 (Header-Based) - New Capability
+
+```python
+# med-z4/services/ccow_service.py
+import httpx
+from fastapi import Request
+
+async def set_active_patient(request: Request, patient_id: str) -> bool:
+    """Set active patient in CCOW vault using header-based auth."""
+
+    # Extract med-z4's session_id from med_z4_session_id cookie
+    session_id = request.cookies.get("med_z4_session_id")
+    if not session_id:
+        return False
+
+    # Call CCOW vault with X-Session-ID header
+    async with httpx.AsyncClient() as client:
+        response = await client.put(
+            "http://localhost:8001/ccow/active-patient",
+            headers={"X-Session-ID": session_id},  # Pass session via header
+            json={"patient_id": patient_id, "set_by": "med-z4"}
+        )
+        return response.status_code == 200
+```
+
+#### CPRS Emulator (Either Method)
+
+```python
+# cprs/ccow_integration.py
+
+# Option A: Header-based (recommended for non-browser clients)
+requests.put(
+    "http://localhost:8001/ccow/active-patient",
+    headers={"X-Session-ID": cprs_session_id},
+    json={"patient_id": "ICN100001", "set_by": "cprs"}
+)
+
+# Option B: Cookie-based (if using browser/session cookies)
+requests.put(
+    "http://localhost:8001/ccow/active-patient",
+    cookies={"session_id": cprs_session_id},
+    json={"patient_id": "ICN100001", "set_by": "cprs"}
+)
+```
+
+### 14.6 Testing
+
+#### Test 1: Cookie-Based Auth (Regression Test)
+
+```bash
+# Login to med-z1
+curl -X POST http://localhost:8000/login \
+  -d "email=clinician.alpha@va.gov&password=VaDemo2025!" \
+  -c cookies.txt
+
+# Set active patient via cookie (med-z1 existing behavior)
+curl -X PUT http://localhost:8001/ccow/active-patient \
+  -b cookies.txt \
+  -H "Content-Type: application/json" \
+  -d '{"patient_id": "ICN100001", "set_by": "med-z1"}'
+
+# Expected: 200 OK (no regression)
+```
+
+#### Test 2: Header-Based Auth (New Feature)
+
+```bash
+# Extract session_id from any authenticated med-z1 or med-z4 session
+SESSION_ID="550e8400-e29b-41d4-a716-446655440000"
+
+# Set active patient via header (med-z4 new capability)
+curl -X PUT http://localhost:8001/ccow/active-patient \
+  -H "X-Session-ID: $SESSION_ID" \
+  -H "Content-Type: application/json" \
+  -d '{"patient_id": "ICN100001", "set_by": "med-z4"}'
+
+# Expected: 200 OK (new feature works)
+```
+
+#### Test 3: Priority Order (Header > Cookie)
+
+```bash
+# Pass both header and cookie with different session IDs
+curl -X GET http://localhost:8001/ccow/active-patient \
+  -H "X-Session-ID: <valid-session-1>" \
+  -b "session_id=<valid-session-2>"
+
+# Expected: Uses session-1 from header (header takes priority)
+# Response will contain user_id from session-1
+```
+
+### 14.7 Implementation Files
+
+| File | Change | Status |
+|------|--------|--------|
+| `ccow/main.py` | Added `get_session_id_from_request()` helper | ✅ Complete |
+| `ccow/main.py` | Updated `get_current_user()` to use helper | ✅ Complete |
+| `ccow/main.py` | Updated all endpoint docstrings | ✅ Complete |
+| `ccow/main.py` | Version bump: 2.0.0 → 2.1.0 | ✅ Complete |
+| `docs/spec/ccow-multi-user-enhancement.md` | Added Section 14 (this section) | ✅ Complete |
+
+### 14.8 Backward Compatibility
+
+**✅ Zero Breaking Changes:**
+- med-z1 continues using cookie-based auth (no code changes required)
+- All existing med-z1 routes work exactly as before
+- Same session validation logic for both paths
+- No database schema changes
+- No configuration changes
+
+**✅ Additive Enhancement:**
+- New capability (header-based auth) added alongside existing capability
+- Clear priority order (header > cookie) eliminates ambiguity
+- Future-proof for additional CCOW-aware applications (med-z5, med-z6, etc.)
+
+---
+
+## 15. Timezone and Session Management (v2.1 Enhancement)
+
+**Status:** ✅ Implemented (2026-01-27)
+
+### 15.1 Overview
+
+During the v2.1 implementation, a timezone inconsistency was identified and fixed in the session management layer. While CCOW Vault has always used UTC for timestamps (since v2.0), the underlying `app/db/auth.py` session creation functions were using local timezone, which could cause issues in multi-application deployments.
+
+**Issue Identified:**
+- `app/db/auth.py` used `datetime.now()` (local timezone)
+- This predated the v2.1 CCOW refactoring (existed since Dec 18)
+- Could cause session expiration issues across different server timezones
+- Could cause DST-related bugs
+
+**Solution:**
+- Fixed all `datetime.now()` calls to use `datetime.now(timezone.utc)`
+- Updated both session creation and validation logic
+- Maintains backward compatibility with smart timezone-aware/naive comparison
+
+### 15.2 Files Modified
+
+| File | Functions Fixed | Status |
+|------|----------------|--------|
+| `app/db/auth.py` | `create_session()` | ✅ Fixed |
+| `app/db/auth.py` | `extend_session()` | ✅ Fixed |
+| `app/db/auth.py` | `update_last_login()` | ✅ Fixed |
+| `app/db/auth.py` | `log_audit_event()` | ✅ Fixed |
+| `app/db/auth.py` | `cleanup_expired_sessions()` | ✅ Fixed |
+| `app/middleware/auth.py` | Session expiration check | ✅ Enhanced |
+| `ccow/auth_helper.py` | Session validation | ✅ Already correct |
+
+### 15.3 Timezone Standard
+
+**Principle:** All timestamps in the med-z1 ecosystem use UTC
+
+```python
+# ✅ CORRECT - Always use UTC
+from datetime import datetime, timezone
+now = datetime.now(timezone.utc)
+expires_at = now + timedelta(minutes=15)
+
+# ❌ WRONG - Never use naive datetime
+from datetime import datetime
+now = datetime.now()  # Uses local timezone (system-dependent)
+```
+
+### 15.4 Session Validation Pattern
+
+CCOW and med-z1 use smart validation that handles both timezone-aware and naive datetimes:
+
+```python
+# ccow/auth_helper.py (lines 112-115)
+if expires_at.tzinfo is None:
+    now = datetime.now()  # Graceful fallback for legacy data
+else:
+    now = datetime.now(timezone.utc)  # UTC comparison
+
+if expires_at < now:
+    # Session expired
+    return None
+```
+
+**Why this pattern?**
+- Backward compatible with any existing timezone-naive sessions
+- Works correctly with new UTC-aware sessions
+- No breaking changes during transition
+
+### 15.5 Multi-Application Integration
+
+**Shared Session Table:** `auth.sessions` (PostgreSQL)
+
+All applications write to the same table with UTC timestamps:
+
+| Application | Cookie Name | Session Table | Timezone |
+|-------------|-------------|---------------|----------|
+| med-z1 | `session_id` | auth.sessions | UTC ✅ |
+| med-z4 | `med_z4_session_id` | auth.sessions | UTC ✅ |
+| CCOW Vault | N/A (reads only) | auth.sessions | UTC ✅ |
+
+**Key Requirements for External Apps:**
+1. Copy session functions from `med-z1/app/db/auth.py` (includes UTC fix)
+2. Configure `DATABASE_URL` to point to shared database
+3. Use unique cookie name (e.g., `med_z4_session_id`)
+4. Pass session to CCOW via `X-Session-ID` header
+
+### 15.6 Benefits
+
+| Benefit | Impact |
+|---------|--------|
+| **Timezone Consistency** | Sessions work identically worldwide |
+| **DST Safety** | No bugs during daylight saving transitions |
+| **Multi-App SSO** | Shared sessions work correctly across med-z1, med-z4 |
+| **Audit Compliance** | Absolute UTC timestamps for legal requirements |
+| **Cloud Ready** | Deploy to any region without code changes |
+
+### 15.7 Testing Validation
+
+**Verify UTC Storage:**
+
+```sql
+-- Check recent sessions
+SELECT
+    session_id,
+    created_at,
+    expires_at,
+    (expires_at - NOW() AT TIME ZONE 'UTC') AS time_remaining
+FROM auth.sessions
+ORDER BY created_at DESC
+LIMIT 5;
+```
+
+**Expected:** `time_remaining` should show ~14-15 minutes for fresh sessions
+
+**Test Session Expiration:**
+
+```bash
+# 1. Login
+curl -X POST http://localhost:8000/login \
+  -d "email=clinician.alpha@va.gov&password=VaDemo2025!" \
+  -c cookies.txt
+
+# 2. Verify session valid
+curl -X GET http://localhost:8001/ccow/active-patient -b cookies.txt
+# Expected: 200 OK or 404 (no context)
+
+# 3. Wait 16 minutes
+
+# 4. Verify session expired
+curl -X GET http://localhost:8001/ccow/active-patient -b cookies.txt
+# Expected: 401 Unauthorized (session expired)
+```
+
+### 15.8 Related Documentation
+
+For detailed integration guidance, see:
+- **`docs/spec/timezone-and-session-management.md`** - Comprehensive 40-page guide
+  - Complete timezone standard
+  - Session management architecture
+  - Multi-application integration patterns
+  - Testing and validation procedures
+  - Troubleshooting guide
+
+- **`docs/spec/med-z4-integration-quickstart.md`** - Quick start guide
+  - 30-minute implementation guide
+  - Copy-paste ready code examples
+  - Testing procedures
+  - Common issues and fixes
+
+---
+
 ## Document Version History
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | v2.0 | 2025-12-20 | System | Initial multi-user enhancement design |
+| v2.1 | 2026-01-27 | System | Added Section 14: Cross-application authentication (X-Session-ID header support) |
+| v2.1.1 | 2026-01-27 | System | Added Section 15: Timezone and session management fix |
 
 ---
 
