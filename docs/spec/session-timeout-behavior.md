@@ -4,6 +4,8 @@
 
 This document explains when user sessions expire, what actions reset the timeout timer, and how the session activity tracking works in med-z1.
 
+**Current Default Timeout:** 25 minutes (as of 2026-01-19, aligned with clinical workflow patterns)
+
 ---
 
 ## Session Timeout Mechanism
@@ -12,9 +14,9 @@ This document explains when user sessions expire, what actions reset the timeout
 
 The med-z1 application uses a **sliding window timeout** mechanism:
 
-1. **Initial Login**: Session created with `expires_at = NOW + 15 minutes`
-2. **User Activity**: Every authenticated request extends `expires_at` by 15 more minutes
-3. **Inactivity**: If no requests for 15 minutes, session expires
+1. **Initial Login**: Session created with `expires_at = NOW + 25 minutes`
+2. **User Activity**: Every authenticated request extends `expires_at` by 25 more minutes
+3. **Inactivity**: If no requests for 25 minutes, session expires
 4. **Expiry Check**: On next request, expired sessions are invalidated and user redirected to login
 
 ### Key Timestamps
@@ -33,20 +35,20 @@ FROM auth.sessions;
 ```
 14:00:00 - User logs in
            created_at = 14:00:00
-           expires_at = 14:15:00 (15 min timeout)
+           expires_at = 14:25:00 (25 min timeout)
 
 14:05:00 - User clicks "Vitals" page
            last_activity_at = 14:05:00
-           expires_at = 14:20:00 (extended!)
+           expires_at = 14:30:00 (extended!)
 
 14:10:00 - User refreshes page
            last_activity_at = 14:10:00
-           expires_at = 14:25:00 (extended again!)
+           expires_at = 14:35:00 (extended again!)
 
-14:30:00 - User idle for 20 minutes
-           expires_at = 14:25:00 (no change, user inactive)
+14:40:00 - User idle for 30 minutes
+           expires_at = 14:35:00 (no change, user inactive)
 
-14:31:00 - User tries to click dashboard
+14:41:00 - User tries to click dashboard
            Session expired! (NOW > expires_at)
            Redirected to login page
 ```
@@ -117,12 +119,12 @@ Only **public routes** skip session extension:
 ### Scenario 1: Active User (Session Stays Alive)
 
 ```
-14:00 - Login (expires_at = 14:15)
-14:05 - Click Vitals (expires_at = 14:20) ✅
-14:10 - Refresh page (expires_at = 14:25) ✅
-14:15 - View medications (expires_at = 14:30) ✅
-14:20 - Select different patient (expires_at = 14:35) ✅
-14:25 - Click dashboard (expires_at = 14:40) ✅
+14:00 - Login (expires_at = 14:25)
+14:05 - Click Vitals (expires_at = 14:30) ✅
+14:10 - Refresh page (expires_at = 14:35) ✅
+14:15 - View medications (expires_at = 14:40) ✅
+14:20 - Select different patient (expires_at = 14:45) ✅
+14:25 - Click dashboard (expires_at = 14:50) ✅
 
 Result: Session NEVER expires because user is active every 5 minutes.
 ```
@@ -130,26 +132,26 @@ Result: Session NEVER expires because user is active every 5 minutes.
 ### Scenario 2: Idle User (Session Expires)
 
 ```
-14:00 - Login (expires_at = 14:15)
-14:05 - Click Vitals (expires_at = 14:20) ✅
+14:00 - Login (expires_at = 14:25)
+14:05 - Click Vitals (expires_at = 14:30) ✅
 14:10 - User takes phone call, walks away from computer
-        ... 20 minutes pass ...
-14:30 - User returns, clicks Dashboard
-        ❌ Session expired at 14:20
+        ... 30 minutes pass ...
+14:40 - User returns, clicks Dashboard
+        ❌ Session expired at 14:30
         → Redirected to login page
 ```
 
 ### Scenario 3: User Leaves Browser Tab Open
 
 ```
-14:00 - Login (expires_at = 14:15)
-14:05 - View patient dashboard (expires_at = 14:20) ✅
+14:00 - Login (expires_at = 14:25)
+14:05 - View patient dashboard (expires_at = 14:30) ✅
 14:10 - Switch to different browser tab (email, etc.)
-        ... 20 minutes pass ...
-14:30 - Switch back to med-z1 tab
+        ... 30 minutes pass ...
+14:40 - Switch back to med-z1 tab
         ❌ Tab still visible, but session expired
 
-14:31 - Click any link
+14:41 - Click any link
         → Session check fails
         → Redirected to login page
 ```
@@ -237,8 +239,10 @@ User sees login page
 
 ```bash
 # .env
-SESSION_TIMEOUT_MINUTES=15
+SESSION_TIMEOUT_MINUTES=25
 ```
+
+**Note:** Default changed from 15 to 25 minutes on 2026-01-19 to better align with clinical workflow patterns (users frequently multitask, take phone calls, etc.).
 
 ### Adjusting Timeout
 
@@ -250,13 +254,13 @@ SESSION_TIMEOUT_MINUTES=2
 
 **Development (normal work):**
 ```bash
-# Standard timeout
-SESSION_TIMEOUT_MINUTES=15
+# Standard timeout (current default)
+SESSION_TIMEOUT_MINUTES=25
 ```
 
-**Production (user convenience):**
+**Production (extended for clinical users):**
 ```bash
-# Longer timeout for production users
+# Longer timeout for clinical workflow
 SESSION_TIMEOUT_MINUTES=30
 ```
 
@@ -333,7 +337,7 @@ async def dispatch(self, request: Request, call_next):
 UPDATE auth.sessions
 SET
     last_activity_at = NOW(),           -- Track activity
-    expires_at = NOW() + INTERVAL '15 minutes'  -- Extend by 15 min
+    expires_at = NOW() + INTERVAL '25 minutes'  -- Extend by 25 min
 WHERE session_id = :session_id
 AND is_active = TRUE;
 ```
@@ -369,9 +373,9 @@ AND is_active = TRUE;
 **For Production:**
 
 1. **Set appropriate timeout** based on use case:
-   - Clinical workstations: 30 minutes (users multitask)
+   - Clinical workstations: 25-30 minutes (users multitask)
    - Public terminals: 5 minutes (shared computers)
-   - Remote access: 15 minutes (balance security/convenience)
+   - Remote access: 15-20 minutes (balance security/convenience)
 
 2. **Add logout button** prominently in UI (already implemented)
 
@@ -381,7 +385,7 @@ AND is_active = TRUE;
    setTimeout(() => {
        alert("Your session will expire in 2 minutes. Click OK to stay logged in.");
        htmx.ajax('GET', '/api/ping'); // Extend session
-   }, 13 * 60 * 1000); // 13 minutes (15 min timeout - 2 min warning)
+   }, 23 * 60 * 1000); // 23 minutes (25 min timeout - 2 min warning)
    ```
 
 4. **Monitor session duration** via audit logs:
@@ -449,7 +453,7 @@ AND is_active = TRUE;
 ## Summary
 
 **Session expires when:**
-- ❌ No authenticated requests for 15 minutes (configurable)
+- ❌ No authenticated requests for 25 minutes (configurable)
 - ❌ User clicks logout
 - ❌ User closes browser (session cookie cleared)
 
@@ -465,6 +469,6 @@ AND is_active = TRUE;
 - ❌ User is on login page (not authenticated yet)
 
 **Key Principle:**
-> "Any intentional user interaction with the application extends the session timeout by 15 minutes."
+> "Any intentional user interaction with the application extends the session timeout by 25 minutes."
 
-The system uses a **sliding window timeout** - as long as you're actively using the application, your session will never expire. Only extended periods of inactivity (default: 15 minutes) will cause automatic logout.
+The system uses a **sliding window timeout** - as long as you're actively using the application, your session will never expire. Only extended periods of inactivity (default: 25 minutes) will cause automatic logout.

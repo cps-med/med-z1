@@ -2,21 +2,34 @@
 
 December 20, 2025 • Document version v1.2 (v2.0 completion update)
 
+> **📘 Document Status**
+> This document describes the **baseline CCOW Context Vault architecture** (v1.1 - single global context).
+>
+> **For the current production implementation (v2.0 - multi-user context isolation), see:**
+> - **`ccow-multi-user-enhancement.md`** - Complete v2.0 design specification **START HERE FOR CURRENT IMPLEMENTATION**
+>
+> **This baseline document (v1.1) remains useful for:**
+> - Understanding foundational architecture concepts (FastAPI patterns, threading, Pydantic models)
+> - Historical context for design decisions
+> - Reference for core CCOW patterns and implementation techniques
+> - Learning the evolution from single-user to multi-user architecture
+
+---
+
 > **Note**
 > This document consolidates and refines the earlier design specs:
 > - `ccow-context-vault-design.md`
 > - `ccow-design-chatgpt-v3.md`
 > It is intended to be the **baseline reference** for the CCOW Context Vault v1.1 implementation.
 
-> **✅ IMPORTANT: Multi-User Enhancement (v2.0) - COMPLETE**
+> **✅ Multi-User Enhancement (v2.0) - COMPLETE**
 > **Version 1.1** (this document) describes the **single global context** implementation (baseline).
 > **Version 2.0** multi-user enhancement has been **COMPLETED** (December 20, 2025).
 >
-> **For current implementation status, see:**
-> - **Design Spec:** `docs/ccow-multi-user-enhancement.md` (v2.0 detailed design)
-> - **Implementation Summary:** `docs/ccow-v2-implementation-summary.md` (what was built)
-> - **Testing Guide:** `docs/ccow-v2-testing-guide.md` (how to test with curl/Insomnia)
-> - **Session Timeout:** `docs/session-timeout-behavior.md` (authentication integration)
+> **For current implementation details, see:**
+> - **Design Spec:** `ccow-multi-user-enhancement.md` (v2.0 detailed design)
+> - **Testing Guide:** `ccow-v2-testing-guide.md` (how to test with curl/Insomnia)
+> - **Session Timeout:** `session-timeout-behavior.md` (authentication integration)
 >
 > **Key v2.0 Features:**
 > - ✅ Per-user context isolation (multi-user support)
@@ -25,8 +38,6 @@ December 20, 2025 • Document version v1.2 (v2.0 completion update)
 > - ✅ History tracking (user/global scopes)
 > - ✅ Timezone-aware session validation
 > - ✅ Comprehensive test coverage (21 unit + 14 integration tests)
->
-> This document (v1.1) remains useful for understanding the baseline architecture and foundational concepts.
 
 ---
 

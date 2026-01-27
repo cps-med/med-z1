@@ -3,16 +3,25 @@
 **Document Version:** v2.0
 **Date:** 2025-12-20
 **Status:** ✅ IMPLEMENTATION COMPLETE (December 20, 2025)
-**Parent Document:** `docs/ccow-vault-design.md` (v1.1)
+**Parent Document:** `ccow-vault-design.md` (v1.1 baseline)
+
+> ** Document Purpose**
+> This document specifies the **v2.0 multi-user enhancement** to the CCOW Context Vault.
+>
+> **Prerequisites:** Read `ccow-vault-design.md` first to understand the baseline architecture (v1.1).
+> That document covers foundational concepts (FastAPI patterns, threading, Pydantic models, core CCOW patterns).
+>
+> **This document focuses on:** The changes from v1.1 (single global context) → v2.0 (per-user context isolation).
+
+---
 
 > **Summary**
 > This document specifies the enhancement of the CCOW Context Vault from a single global patient context to a **multi-user, per-user patient context** system. Each authenticated user will maintain their own active patient context, isolated from other users, while preserving context across login/logout cycles within med-z1 and supporting true multi-application CCOW synchronization.
 
 > **✅ IMPLEMENTATION STATUS: COMPLETE**
 > All planned features have been successfully implemented and tested as of December 20, 2025.
-> - **Implementation Summary:** See `docs/ccow-v2-implementation-summary.md` for full details
-> - **Testing Guide:** See `docs/ccow-v2-testing-guide.md` for API testing with curl/Insomnia
-> - **Session Integration:** See `docs/session-timeout-behavior.md` for authentication details
+> - **Testing Guide:** See `ccow-v2-testing-guide.md` for API testing with curl/Insomnia
+> - **Session Integration:** See `session-timeout-behavior.md` for authentication details
 >
 > **Key Achievements:**
 > - ✅ Per-user context isolation (multi-user support)
