@@ -193,6 +193,12 @@ Demographics data is the **foundation** for all other clinical domains, providin
 
 ## 4. Data Architecture
 
+**⚠️ Authoritative Database Schemas:** For complete, accurate database schemas, see:
+- **SQL Server (CDW Mock):** [`docs/guide/med-z1-sqlserver-guide.md`](../guide/med-z1-sqlserver-guide.md)
+- **PostgreSQL (Serving DB):** [`docs/guide/med-z1-postgres-guide.md`](../guide/med-z1-postgres-guide.md)
+
+This section provides implementation context and design rationale. Refer to the database guides for authoritative schema definitions.
+
 ### 4.1 Source Systems (Mock CDW)
 
 **Primary Source Table:**

@@ -184,6 +184,12 @@ Laboratory data is sourced from VistA File #63 (LAB DATA) and flows into CDW as 
 
 ## 4. Data Architecture
 
+**⚠️ Authoritative Database Schemas:** For complete, accurate database schemas, see:
+- **SQL Server (CDW Mock):** [`docs/guide/med-z1-sqlserver-guide.md`](../guide/med-z1-sqlserver-guide.md)
+- **PostgreSQL (Serving DB):** [`docs/guide/med-z1-postgres-guide.md`](../guide/med-z1-postgres-guide.md)
+
+This section provides implementation context and design rationale. Refer to the database guides for authoritative schema definitions.
+
 ### 4.1 Source System - CDWWork Schema
 
 **VistA Source:** LAB DATA File #63, LABORATORY TEST File #60

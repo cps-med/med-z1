@@ -693,357 +693,138 @@ GO
 
 ## 6. Clinical Domain Schemas
 
-### 6.1 Demographics - VeteranMill.SPerson
+**⚠️ Authoritative Database Schemas:** For complete, accurate CDWWork2 database schemas, see:
+- **SQL Server Guide:** [`docs/guide/med-z1-sqlserver-guide.md`](../guide/med-z1-sqlserver-guide.md)
 
-**Purpose**: Core patient demographics for Cerner sites.
+The SQL Server guide contains detailed table definitions, column specifications, indexes, and sample data for all CDWWork2 schemas. This section provides **strategic design rationale and harmonization patterns** specific to CDWWork2.
 
-**Schema**:
+---
+
+### 6.1 CDWWork2 Schema Overview
+
+**Purpose**: CDWWork2 simulates Oracle Health (Cerner Millennium) clinical data as received in the VA Corporate Data Warehouse, representing the ~30 VA sites that have transitioned from VistA to Oracle Health.
+
+**Key Architectural Differences from CDWWork (VistA)**:
+
+| Aspect | CDWWork (VistA) | CDWWork2 (Cerner) |
+|--------|-----------------|-------------------|
+| **Naming Convention** | Schema-based (e.g., `Vital.VitalSign`) | "Mill" suffix (e.g., `VitalMill.VitalResult`) |
+| **Code Sets** | Dimension tables (e.g., `Dim.VitalType`) | Central `NDimMill.CodeValue` table with CodeSet grouping |
+| **Encounter Context** | Optional for many domains | **REQUIRED** for most clinical domains |
+| **Blood Pressure** | Single row with `BPSystolic`/`BPDiastolic` columns | Two separate rows (Systolic event + Diastolic event) |
+| **Denormalization** | Minimal (relies on FK joins) | Heavy (stores both SID and display text for performance) |
+
+**Schemas Implemented (Phase 1 Complete)**:
+1. **VeteranMill.SPerson** - Patient demographics
+2. **EncMill.Encounter** - Healthcare encounters (visits, admissions)
+3. **NDimMill.CodeValue** - Central code set system
+4. **NDimMill.CodeValueSet** - Code set metadata
+5. **NDimMill.SiteTransition** - VA site EHR system tracking
+
+**Schemas Planned (Phase 2+)**:
+- **VitalMill.VitalResult** - Vital signs (event-based model)
+- **AllergyMill.PersonAllergy** + **AllergyMill.AdverseReaction** - Allergies and reactions
+- **LabMill.LabResult** - Laboratory results
+- **RxMill.MedicationOrder** - Medication orders
+
+---
+
+### 6.2 Strategic Design Patterns
+
+#### 6.2.1 Code Set System (NDimMill.CodeValue)
+
+**Pattern**: Cerner uses a centralized code set architecture where all coded values (gender, marital status, encounter types, vital types, units, etc.) are stored in a single `NDimMill.CodeValue` table, grouped by `CodeSet`.
+
+**Example Code Sets**:
+- **Set 48**: Gender (Male, Female, Unknown)
+- **Set 38**: Marital Status (Single, Married, Divorced, Widowed)
+- **Set 72**: Vital Types (Systolic BP, Diastolic BP, Temperature, Pulse, Respirations, O2 Saturation, BMI)
+- **Set 90**: Units of Measure (mmHg, F, C, bpm, %, kg, lbs, cm, in)
+
+**Denormalization Pattern**: Clinical tables store **both** the CodeValueSID (FK) and the display text:
 ```sql
-CREATE TABLE VeteranMill.SPerson (
-    PatientSID              BIGINT          PRIMARY KEY,  -- Shared with CDWWork
-    PatientICN              VARCHAR(50)     NOT NULL,     -- Integration Control Number
-    PatientName             VARCHAR(255),
-    SSN                     VARCHAR(11),                  -- Format: 123-45-6789
-    DateOfBirth             DATE,
-
-    -- Code Set References (with denormalized display text)
-    GenderCodeValueSID      BIGINT,                       -- FK to NDimMill.CodeValue (Set 48)
-    Gender                  VARCHAR(20),                  -- Denormalized: "Male"
-
-    MaritalStatusCodeValueSID BIGINT,                     -- FK to NDimMill.CodeValue (Set 38)
-    MaritalStatus           VARCHAR(50),                  -- Denormalized: "Married"
-
-    EthnicityCodeValueSID   BIGINT,                       -- FK to NDimMill.CodeValue (Set 27)
-    Ethnicity               VARCHAR(100),                 -- Denormalized: "Hispanic or Latino"
-
-    -- Contact Info
-    StreetAddress           VARCHAR(255),
-    City                    VARCHAR(100),
-    State                   VARCHAR(2),                   -- Two-letter code
-    ZipCode                 VARCHAR(10),
-    PhoneNumber             VARCHAR(20),
-    EmailAddress            VARCHAR(100),
-
-    -- Metadata
-    CreatedDateTime         DATETIME2       DEFAULT GETDATE(),
-    UpdatedDateTime         DATETIME2,
-    Sta3n                   INT,                          -- Station number (648, 663, or 531)
-
-    INDEX IX_PatientICN (PatientICN),
-    INDEX IX_Sta3n (Sta3n)
-);
+GenderCodeValueSID BIGINT,        -- FK to NDimMill.CodeValue
+Gender             VARCHAR(20)    -- Denormalized: "Male"
 ```
 
-**Key Design Points**:
-- **PatientSID**: Same values as CDWWork's `SPatient.Spatient.PatientSID` for shared patients
-- **Code Set FKs**: Store both SID and denormalized text for performance
-- **Sta3n**: Identifies which Cerner site manages this patient (648, 663, or 531)
+**Rationale**:
+- ✅ Improves query performance (no JOIN required for display)
+- ✅ Simplifies ETL and UI code
+- ✅ Mirrors production CDW extraction patterns
+- ⚠️ Requires ETL to keep denormalized text in sync
 
-**VistA ↔ Cerner Field Mapping**:
+For complete code set tables and values, see the SQL Server guide Section 4 (CDWWork2 Schemas).
 
-| CDWWork (VistA) | CDWWork2 (Cerner) | Notes |
-|----------------|------------------|-------|
-| `SPatient.Spatient.PatientSID` | `VeteranMill.SPerson.PatientSID` | Shared primary key |
-| `SPatient.Spatient.PatientICN` | `VeteranMill.SPerson.PatientICN` | Shared ICN |
-| `SPatient.Spatient.PatientName` | `VeteranMill.SPerson.PatientName` | Direct mapping |
-| `SPatient.Spatient.DOB` | `VeteranMill.SPerson.DateOfBirth` | Column name differs |
-| `SPatient.Spatient.Gender` | `NDimMill.CodeValue (Set 48) → Gender` | VistA uses text, Cerner uses code set |
-| `SPatient.Spatient.MaritalStatus` | `NDimMill.CodeValue (Set 38) → MaritalStatus` | VistA uses text, Cerner uses code set |
+#### 6.2.2 Encounter-Centric Model
 
-### 6.2 Encounters - EncMill.Encounter
+**Pattern**: Cerner's architecture requires most clinical observations to be linked to a specific `EncounterSID` (visit context).
 
-**Purpose**: Capture all healthcare encounters (visits, admissions) at Cerner sites.
+**Impact on ETL**:
+- VistA data may not have encounter context (e.g., vital signs at a standalone clinic visit)
+- Silver layer must either:
+  1. Map to existing encounter if date/location match
+  2. Create synthetic "Outpatient Encounter" record if needed
+  3. Document as "No encounter context" for certain VistA-sourced events
 
-**Schema**:
+**Example**: VistA vital sign from 2024-09-15 at Alexandria (VistA site) gets loaded to CDWWork without EncounterSID. When merged in Silver layer, if no matching encounter exists, create placeholder encounter or flag as "standalone observation."
+
+#### 6.2.3 Event-Based Vitals Model
+
+**VistA Pattern** (CDWWork):
 ```sql
-CREATE TABLE EncMill.Encounter (
-    EncounterSID            BIGINT          PRIMARY KEY,
-    EncounterID             BIGINT,                       -- Original Cerner encounter ID
-    PatientSID              BIGINT          NOT NULL,     -- FK to VeteranMill.SPerson
-
-    -- Encounter Type/Status (with denormalized display text)
-    EncounterTypeCodeValueSID BIGINT,                     -- FK to NDimMill.CodeValue (Set 281)
-    EncounterType           VARCHAR(50),                  -- Denormalized: "Inpatient"
-
-    AdmitStatusCodeValueSID BIGINT,                       -- FK to NDimMill.CodeValue (Set 261)
-    AdmitStatus             VARCHAR(50),                  -- Denormalized: "Active"
-
-    -- Dates/Times
-    AdmitDateTime           DATETIME2       NOT NULL,
-    DischargeDateTime       DATETIME2,                    -- NULL if still active
-
-    -- Location (reuse CDWWork Dim.Location if possible, or create EncMill.Location)
-    AdmitLocationSID        INT,                          -- FK to Dim.Location (shared)
-    AdmitLocationName       VARCHAR(100),                 -- Denormalized
-
-    DischargeLocationSID    INT,
-    DischargeLocationName   VARCHAR(100),
-
-    -- Metadata
-    Sta3n                   INT             NOT NULL,     -- Station (648, 663, or 531)
-
-    INDEX IX_Patient (PatientSID),
-    INDEX IX_AdmitDateTime (AdmitDateTime),
-    INDEX IX_Sta3n (Sta3n)
-);
+-- ONE row for blood pressure
+VitalSignSID | VitalType | BPSystolic | BPDiastolic | VitalDateTime
+1234         | BP        | 135        | 88          | 2024-09-15 08:30
 ```
 
-**Key Design Points**:
-- **EncounterSID**: Primary key for all encounter references
-- **Encounter Type**: Inpatient, Outpatient, Emergency, Telehealth
-- **Admit/Discharge Dates**: Tracks encounter timeline
-- **Location**: Reuse `Dim.Location` from CDWWork for simplicity (shared dimension)
-
-**Sample Data**:
+**Cerner Pattern** (CDWWork2):
 ```sql
--- Patient 1001 has 3 encounters at Portland (648) - Cerner site
-INSERT INTO EncMill.Encounter (EncounterSID, PatientSID, EncounterTypeCodeValueSID, EncounterType,
-    AdmitStatusCodeValueSID, AdmitStatus, AdmitDateTime, DischargeDateTime, Sta3n)
-VALUES
-(5001, 1001, 28101, 'Inpatient', 26102, 'Discharged', '2024-09-15 08:00', '2024-09-20 14:30', 648),
-(5002, 1001, 28102, 'Outpatient', 26102, 'Discharged', '2024-11-03 10:15', '2024-11-03 11:00', 648),
-(5003, 1001, 28102, 'Outpatient', 26102, 'Discharged', '2024-12-01 09:30', '2024-12-01 10:15', 648);
+-- TWO rows for blood pressure
+VitalResultSID | EventType      | ResultValueNumeric | EventDateTime
+5001           | Systolic BP    | 135.0             | 2024-09-15 08:30
+5002           | Diastolic BP   | 88.0              | 2024-09-15 08:30
 ```
 
-### 6.3 Allergies - AllergyMill Schema
+**ETL Harmonization Strategy**:
+- **Bronze Layer**: Preserve source structure (VistA = 1 row, Cerner = 2 rows)
+- **Silver Layer**: Unpivot VistA BP into two rows to match Cerner pattern
+- **Gold Layer**: Create patient-centric parquet with standardized structure (2-row BP model)
+- **PostgreSQL**: Store harmonized structure matching Gold
 
-**Purpose**: Document allergies and adverse reactions at Cerner sites.
+**Performance Note**: Unpivoting VistA BP measurements may require iterating over DataFrame rows. Optimize with vectorized operations where possible.
 
-**6.3.1 AllergyMill.PersonAllergy**:
-```sql
-CREATE TABLE AllergyMill.PersonAllergy (
-    AllergyInstanceSID      BIGINT          PRIMARY KEY,
-    PatientSID              BIGINT          NOT NULL,     -- FK to VeteranMill.SPerson
-    EncounterSID            BIGINT          NOT NULL,     -- FK to EncMill.Encounter (REQUIRED)
+#### 6.2.4 Shared vs Separate Dimensions
 
-    -- Allergen Information
-    SubstanceDisplay        VARCHAR(255)    NOT NULL,     -- e.g., "PENICILLIN VK 500MG"
-    AllergenClassDisplay    VARCHAR(100),                 -- e.g., "PENICILLIN" (standardized)
-    AllergenType            VARCHAR(50),                  -- DRUG, FOOD, ENVIRONMENTAL
+**Shared Dimensions** (Cross-Database):
+- **Dim.Location** - Reused for both CDWWork and CDWWork2 (same physical wards/clinics)
+- **SStaff.SStaff** - Providers work across both systems during transition period
+- **Sta3n** - Station number is universal across VA
 
-    -- Severity (with denormalized display)
-    SeverityCodeValueSID    BIGINT,                       -- FK to NDimMill.CodeValue (Set 4002)
-    Severity                VARCHAR(50),                  -- Denormalized: "Severe"
+**Separate Dimensions**:
+- **VitalType**: VistA uses `Dim.VitalType`, Cerner uses `NDimMill.CodeValue (Set 72)`
+- **Allergen**: VistA uses `Dim.Allergen`, Cerner uses free-text `SubstanceDisplay` + `AllergenClassDisplay`
 
-    -- Status
-    ActiveInd               BIT             DEFAULT 1,    -- Is allergy still active?
+**Production Consideration**: In real CDW, `Dim.Location` may diverge post-migration as Cerner sites rename/restructure wards. Our mock assumes stable location IDs for simplicity.
 
-    -- Documentation
-    Comments                TEXT,                         -- Free-text clinical notes
-    EnteredDateTime         DATETIME2       NOT NULL,
-    EnteredByStaffSID       BIGINT,                       -- FK to SStaff.SStaff (shared)
+---
 
-    -- Metadata
-    Sta3n                   INT             NOT NULL,
+### 6.3 VistA ↔ Cerner Field Mapping Summary
 
-    INDEX IX_Patient (PatientSID),
-    INDEX IX_Encounter (EncounterSID),
-    INDEX IX_AllergenType (AllergenType),
-    INDEX IX_Active (ActiveInd)
-);
-```
+For complete field-by-field mappings, see the SQL Server guide. Key mapping patterns:
 
-**6.3.2 AllergyMill.AdverseReaction** (Bridge Table):
-```sql
-CREATE TABLE AllergyMill.AdverseReaction (
-    AdverseReactionSID      BIGINT          PRIMARY KEY,
-    AllergyInstanceSID      BIGINT          NOT NULL,     -- FK to PersonAllergy
+| Domain | VistA Primary Key | Cerner Primary Key | Notes |
+|--------|-------------------|-------------------|-------|
+| Demographics | `PatientSID` | `PatientSID` | Shared key for same patients |
+| Encounters | `InpatientSID` | `EncounterSID` | Different naming |
+| Vitals | `VitalSignSID` | `VitalResultSID` | Different naming, event model |
+| Allergies | `PatientAllergySID` | `AllergyInstanceSID` | Different naming |
+| Labs | `LabChemSID` | `LabResultSID` | Different naming |
 
-    -- Reaction (with denormalized display)
-    ReactionCodeValueSID    BIGINT          NOT NULL,     -- FK to NDimMill.CodeValue (Set 4003)
-    Reaction                VARCHAR(100),                 -- Denormalized: "Hives"
+**Universal Identifier**: `PatientICN` (Integrated Care Number) is the **only guaranteed cross-system patient identifier**. ETL Silver layer must perform ICN-based resolution to merge VistA and Cerner records for the same patient.
 
-    INDEX IX_AllergyInstance (AllergyInstanceSID)
-);
-```
+---
 
-**VistA ↔ Cerner Field Mapping**:
-
-| CDWWork (VistA) | CDWWork2 (Cerner) | Notes |
-|----------------|------------------|-------|
-| `Allergy.PatientAllergy.PatientAllergySID` | `AllergyMill.PersonAllergy.AllergyInstanceSID` | Different column name |
-| `Allergy.PatientAllergy.PatientSID` | `AllergyMill.PersonAllergy.PatientSID` | Direct mapping |
-| `Dim.Allergen.AllergenName` | `AllergyMill.PersonAllergy.SubstanceDisplay` | VistA uses FK, Cerner stores text |
-| `Dim.AllergySeverity.SeverityName` | `NDimMill.CodeValue (Set 4002) → Severity` | VistA uses Dim table, Cerner uses code set |
-| N/A (optional in VistA) | `AllergyMill.PersonAllergy.EncounterSID` | **REQUIRED** in Cerner |
-| `Allergy.PatientAllergyReaction` | `AllergyMill.AdverseReaction` | Both use bridge table pattern |
-
-**Sample Data**:
-```sql
--- Patient 1001 has penicillin allergy documented during Encounter 5001
-INSERT INTO AllergyMill.PersonAllergy (AllergyInstanceSID, PatientSID, EncounterSID,
-    SubstanceDisplay, AllergenClassDisplay, AllergenType, SeverityCodeValueSID, Severity,
-    ActiveInd, Comments, EnteredDateTime, Sta3n)
-VALUES
-(1, 1001, 5001, 'PENICILLIN VK 500MG', 'PENICILLIN', 'DRUG', 400203, 'Severe', 1,
- 'Patient developed anaphylaxis after first dose. EpiPen administered.',
- '2024-09-15 10:00', 648);
-
--- Reactions for this allergy
-INSERT INTO AllergyMill.AdverseReaction (AdverseReactionSID, AllergyInstanceSID,
-    ReactionCodeValueSID, Reaction)
-VALUES
-(1, 1, 400305, 'Anaphylaxis'),
-(2, 1, 400301, 'Hives'),
-(3, 1, 400304, 'Swelling');
-```
-
-### 6.4 Vitals - VitalMill.VitalResult
-
-**Purpose**: Store vital sign measurements from Cerner sites.
-
-**Architectural Note**:
-
-⚠️ In production Cerner Millennium systems, vitals are often stored in a generic `ClinicalEvent` table (Cerner's event-based architecture) and extracted into domain-specific views for CDW syndication. For med-z1 simplicity, we model vitals directly as `VitalMill.VitalResult` - a **simplified representation** of what CDW provides to consumers, not the raw Cerner source structure.
-
-This approach is consistent with CDW's "domain-centric" extraction pattern, where Cerner's generic event model is transformed into domain-specific tables (vitals, labs, I&O, etc.) for easier consumption by downstream applications. Our mock skips the intermediate `ClinicalEvent` layer and goes directly to the domain view structure.
-
-**Schema**:
-```sql
-CREATE TABLE VitalMill.VitalResult (
-    VitalResultSID          BIGINT          PRIMARY KEY,
-    PatientSID              BIGINT          NOT NULL,     -- FK to VeteranMill.SPerson
-    EncounterSID            BIGINT          NOT NULL,     -- FK to EncMill.Encounter (REQUIRED)
-
-    -- Vital Type (with denormalized display)
-    EventCodeValueSID       BIGINT          NOT NULL,     -- FK to NDimMill.CodeValue (Set 72)
-    EventType               VARCHAR(50),                  -- Denormalized: "Systolic BP"
-
-    -- Result Value
-    ResultValue             VARCHAR(100),                 -- The measurement (e.g., "120", "98.6")
-    ResultValueNumeric      DECIMAL(10,2),                -- Numeric version for calculations
-
-    -- Units (with denormalized display)
-    ResultUnitsCodeValueSID BIGINT,                       -- FK to NDimMill.CodeValue (Set 90)
-    ResultUnits             VARCHAR(20),                  -- Denormalized: "mmHg"
-
-    -- When/Where
-    EventDateTime           DATETIME2       NOT NULL,
-    LocationSID             INT,                          -- FK to Dim.Location (shared)
-    LocationName            VARCHAR(100),                 -- Denormalized
-
-    -- Who
-    VerifiedPersonnelSID    BIGINT,                       -- FK to SStaff.SStaff (shared)
-
-    -- Metadata
-    Sta3n                   INT             NOT NULL,
-
-    INDEX IX_Patient (PatientSID),
-    INDEX IX_Encounter (EncounterSID),
-    INDEX IX_EventType (EventCodeValueSID),
-    INDEX IX_EventDateTime (EventDateTime)
-);
-```
-
-**Key Design Points**:
-- **Event-Based Model**: Each vital measurement is a discrete "event" (not aggregated like VistA's BP)
-- **Split BP Values**: Systolic and Diastolic stored as separate rows (not columns like VistA)
-- **Numeric Conversion**: Store both text (`ResultValue`) and numeric (`ResultValueNumeric`) for charting
-
-**VistA ↔ Cerner Field Mapping**:
-
-| CDWWork (VistA) | CDWWork2 (Cerner) | Notes |
-|----------------|------------------|-------|
-| `Vital.VitalSign.VitalSignSID` | `VitalMill.VitalResult.VitalResultSID` | Different column name |
-| `Vital.VitalSign.VitalType` | `NDimMill.CodeValue (Set 72) → EventType` | VistA uses Dim.VitalType, Cerner uses code set |
-| `Vital.VitalSign.VitalResultNumeric` | `VitalMill.VitalResult.ResultValueNumeric` | Direct mapping (concept) |
-| `Vital.VitalSign.Units` | `NDimMill.CodeValue (Set 90) → ResultUnits` | VistA stores text, Cerner uses code set |
-| `Vital.VitalSign.BPSystolic` / `BPDiastolic` | **Two rows** in VitalMill.VitalResult | VistA uses columns, Cerner uses separate event rows |
-| N/A (optional) | `VitalMill.VitalResult.EncounterSID` | **REQUIRED** in Cerner |
-
-**Sample Data** (Blood Pressure - Split into Two Rows):
-```sql
--- Patient 1001 BP measurement during Encounter 5001: 135/88 mmHg
--- VistA would store this as ONE row with two columns (BPSystolic=135, BPDiastolic=88)
--- Cerner stores this as TWO rows (one for systolic, one for diastolic)
-
-INSERT INTO VitalMill.VitalResult (VitalResultSID, PatientSID, EncounterSID,
-    EventCodeValueSID, EventType, ResultValue, ResultValueNumeric,
-    ResultUnitsCodeValueSID, ResultUnits, EventDateTime, Sta3n)
-VALUES
--- Systolic BP
-(1, 1001, 5001, 7201, 'Systolic BP', '135', 135.0, 9001, 'mmHg', '2024-09-15 08:30', 648),
--- Diastolic BP
-(2, 1001, 5001, 7202, 'Diastolic BP', '88', 88.0, 9001, 'mmHg', '2024-09-15 08:30', 648);
-
--- Temperature
-(3, 1001, 5001, 7203, 'Temperature', '98.6', 98.6, 9002, 'F', '2024-09-15 08:30', 648),
--- Pulse
-(4, 1001, 5001, 7204, 'Pulse', '72', 72.0, 9004, 'bpm', '2024-09-15 08:30', 648);
-```
-
-### 6.5 Labs - LabMill.LabResult
-
-**Purpose**: Store laboratory test results from Cerner sites.
-
-**Schema**:
-```sql
-CREATE TABLE LabMill.LabResult (
-    LabResultSID            BIGINT          PRIMARY KEY,
-    PatientSID              BIGINT          NOT NULL,     -- FK to VeteranMill.SPerson
-    EncounterSID            BIGINT          NOT NULL,     -- FK to EncMill.Encounter (REQUIRED)
-
-    -- Test Identification
-    LabTestCodeValueSID     BIGINT          NOT NULL,     -- FK to NDimMill.CodeValue (could use separate set)
-    LabTestName             VARCHAR(100),                 -- Denormalized: "Glucose"
-    LoincCode               VARCHAR(20),                  -- Standard LOINC code
-
-    -- Result Value
-    ResultValue             VARCHAR(255),                 -- The result (numeric or text)
-    ResultValueNumeric      DECIMAL(18,6),                -- Numeric version (NULL for non-numeric)
-
-    -- Reference Range
-    NormalRangeLow          VARCHAR(50),
-    NormalRangeHigh         VARCHAR(50),
-
-    -- Abnormal Flag (with denormalized display)
-    AbnormalFlagCodeValueSID BIGINT,                      -- FK to NDimMill.CodeValue (Set 6000)
-    AbnormalFlag            VARCHAR(50),                  -- Denormalized: "High"
-
-    -- Units
-    ResultUnits             VARCHAR(50),
-
-    -- When/Where
-    ResultDateTime          DATETIME2       NOT NULL,
-    CollectionDateTime      DATETIME2,
-    SpecimenID              BIGINT,                       -- FK to specimen table (future)
-    CollectionLocationSID   INT,                          -- FK to Dim.Location (shared)
-    CollectionLocation      VARCHAR(100),                 -- Denormalized
-
-    -- Metadata
-    Sta3n                   INT             NOT NULL,
-
-    INDEX IX_Patient (PatientSID),
-    INDEX IX_Encounter (EncounterSID),
-    INDEX IX_LabTest (LabTestCodeValueSID),
-    INDEX IX_ResultDateTime (ResultDateTime)
-);
-```
-
-**VistA ↔ Cerner Field Mapping**:
-
-| CDWWork (VistA) | CDWWork2 (Cerner) | Notes |
-|----------------|------------------|-------|
-| `Chem.LabChem.LabChemSID` | `LabMill.LabResult.LabResultSID` | Different column name |
-| `Dim.LabTest.LabTestName` | `LabMill.LabResult.LabTestName` | VistA uses FK to Dim, Cerner denormalizes |
-| `Chem.LabChem.LabChemResultValue` | `LabMill.LabResult.ResultValue` | Direct mapping |
-| `Chem.LabChem.ReferenceRangeLow/High` | `LabMill.LabResult.NormalRangeLow/High` | Column name differs |
-| N/A (VistA uses text) | `NDimMill.CodeValue (Set 6000) → AbnormalFlag` | Cerner uses structured code set |
-| N/A (optional) | `LabMill.LabResult.EncounterSID` | **REQUIRED** in Cerner |
-
-**Sample Data**:
-```sql
--- Patient 1001 Glucose lab during Encounter 5001
-INSERT INTO LabMill.LabResult (LabResultSID, PatientSID, EncounterSID,
-    LabTestName, LoincCode, ResultValue, ResultValueNumeric,
-    NormalRangeLow, NormalRangeHigh, AbnormalFlagCodeValueSID, AbnormalFlag,
-    ResultUnits, ResultDateTime, Sta3n)
-VALUES
-(1, 1001, 5001, 'Glucose', '2345-7', '145', 145.0,
- '70', '100', 600002, 'High', 'mg/dL', '2024-09-15 12:00', 648);
-```
-
-### 6.6 Site Metadata - NDimMill.SiteTransition
+### 6.4 Site Metadata - NDimMill.SiteTransition
 
 **Purpose**: Track which VA sites use VistA vs Oracle Health (Cerner) and their migration timeline. This reference table supports the approved Q2 decision to display go-live dates in the UI.
 

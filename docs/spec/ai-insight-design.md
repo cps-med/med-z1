@@ -326,6 +326,12 @@ app.add_middleware(
 
 ## 3. Data Sources
 
+**⚠️ Authoritative Database Schemas:** For complete, accurate database schemas, see:
+- **SQL Server (CDW Mock):** [`docs/guide/med-z1-sqlserver-guide.md`](../guide/med-z1-sqlserver-guide.md)
+- **PostgreSQL (Serving DB):** [`docs/guide/med-z1-postgres-guide.md`](../guide/med-z1-postgres-guide.md)
+
+This section provides implementation context and design rationale. Refer to the database guides for authoritative schema definitions.
+
 ### 3.1 Primary Data Sources
 
 **Phase 1-3 (Complete):**

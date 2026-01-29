@@ -477,6 +477,12 @@ med-z1/
 
 ## 5. Database Schema Design
 
+**⚠️ Authoritative Database Schemas:** For complete, accurate database schemas, see:
+- **SQL Server (CDW Mock):** [`docs/guide/med-z1-sqlserver-guide.md`](../guide/med-z1-sqlserver-guide.md)
+- **PostgreSQL (Serving DB):** [`docs/guide/med-z1-postgres-guide.md`](../guide/med-z1-postgres-guide.md)
+
+This section provides implementation context and design rationale. Refer to the database guides for authoritative schema definitions.
+
 ### 5.1 Schema Organization
 
 Create a new `auth` schema in PostgreSQL to separate authentication concerns from clinical data:
