@@ -353,7 +353,7 @@ def get_medication_counts(icn: str) -> Dict[str, int]:
             outpatient_query = text("""
                 SELECT
                     COUNT(*) as total,
-                    COUNT(*) FILTER (WHERE is_active = TRUE) as active,
+                    COUNT(*) FILTER (WHERE rx_status_computed = 'ACTIVE') as active,
                     COUNT(*) FILTER (WHERE is_controlled_substance = TRUE) as controlled
                 FROM clinical.patient_medications_outpatient
                 WHERE patient_icn = :icn

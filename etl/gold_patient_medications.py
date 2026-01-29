@@ -82,6 +82,31 @@ def transform_rxout_gold():
     logger.info(f"  - {active_count} active prescriptions out of {len(df)}")
 
     # ==================================================================
+    # Step 3b: Update rx_status_computed to reflect actual medication state
+    # ==================================================================
+    logger.info("Step 3b: Updating rx_status_computed to reflect expiration/discontinuation...")
+
+    df = df.with_columns([
+        # rx_status_computed: Override based on actual state
+        # Priority: DISCONTINUED > EXPIRED > ACTIVE (use original status if none apply)
+        pl.when(pl.col("discontinued_datetime").is_not_null())
+        .then(pl.lit("DISCONTINUED"))
+        .when(
+            (pl.col("expiration_datetime").is_not_null()) &
+            (pl.col("expiration_datetime") <= current_date)
+        )
+        .then(pl.lit("EXPIRED"))
+        .otherwise(pl.col("rx_status_computed"))  # Keep original status if not discontinued/expired
+        .alias("rx_status_computed")
+    ])
+
+    # Log status distribution
+    status_counts = df.group_by("rx_status_computed").agg(pl.len().alias("count"))
+    logger.info(f"  - Status distribution after update:")
+    for row in status_counts.iter_rows(named=True):
+        logger.info(f"    {row['rx_status_computed']}: {row['count']}")
+
+    # ==================================================================
     # Step 4: Calculate days_until_expiration
     # ==================================================================
     logger.info("Step 4: Calculating days_until_expiration...")

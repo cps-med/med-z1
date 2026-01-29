@@ -469,6 +469,27 @@ SQL Server (CDW Mock)
 | `ProviderSID` | INT | NULL | FK to SStaff.SStaff | `10958` |
 | `Sta3n` | SMALLINT | NULL | Facility | `508` |
 
+##### Important Notes on Active Medications
+
+**⚠️ NOTE (2026-01-29):** The ETL pipeline now automatically computes `rx_status_computed` based on `ExpirationDateTime` and `DiscontinuedDateTime` to ensure consistency between the database fields and the UI display:
+
+- If `DiscontinuedDateTime IS NOT NULL` → `rx_status_computed = 'DISCONTINUED'`
+- Else if `ExpirationDateTime <= current_date` → `rx_status_computed = 'EXPIRED'`
+- Otherwise → Uses original `RxStatus` value (typically `'ACTIVE'`)
+
+**For Mock Data:** To ensure test patients have truly active medications that will display in the "Active" filter:
+1. Set `ExpirationDateTime` to a future date (e.g., `DATEADD(MONTH, 6, GETDATE())`)
+2. Set `DiscontinuedDateTime` to `NULL`
+3. Set `RxStatus` to `'ACTIVE'`
+
+**Example INSERT for active medication:**
+```sql
+INSERT INTO RxOut.RxOutpat (PatientSID, LocalDrugSID, IssueDateTime, RxStatus, ExpirationDateTime, DiscontinuedDateTime)
+VALUES (123456789, 10001, GETDATE(), 'ACTIVE', DATEADD(MONTH, 6, GETDATE()), NULL);
+```
+
+See `etl/gold_patient_medications.py` (Step 3b) for the exact ETL logic.
+
 ##### Indexes
 
 | Index Name | Columns | Type | Notes |

@@ -655,6 +655,34 @@ The `clinical` schema contains patient-centric clinical data tables. All tables 
 | `source_system` | VARCHAR(50) | NULL | Data source system (see [Data Source System Field Values](#data-source-system-field-values)) | `"CDWWork"` (historical + real-time VistA) |
 | `last_updated` | TIMESTAMP | NULL | Record last updated timestamp | `"2025-12-13 10:00:00"` |
 
+##### Important Notes on rx_status_computed vs is_active
+
+**⚠️ NOTE (2026-01-29):** The ETL pipeline automatically computes `rx_status_computed` to ensure consistency with expiration and discontinuation dates:
+
+- **`rx_status_computed`** (String): The authoritative status field used for UI filtering and display
+  - If `discontinued_date IS NOT NULL` → `'DISCONTINUED'`
+  - Else if `expiration_date <= current_date` → `'EXPIRED'`
+  - Otherwise → Uses original `rx_status` from source data (typically `'ACTIVE'`)
+
+- **`is_active`** (Boolean): A convenience field for quick boolean checks
+  - `TRUE` if not discontinued AND not expired
+  - `FALSE` otherwise
+
+**For UI Queries:** Always use `rx_status_computed = 'ACTIVE'` for filtering active medications (not `is_active = TRUE`), as this ensures consistency with the displayed status badges.
+
+**ETL Logic:** See `etl/gold_patient_medications.py` (Step 3b) for exact computation logic.
+
+**Database Query Example:**
+```sql
+-- Get active medications for a patient (UI filter)
+SELECT * FROM clinical.patient_medications_outpatient
+WHERE patient_icn = 'ICN100001'
+  AND rx_status_computed = 'ACTIVE'
+ORDER BY issue_date DESC;
+```
+
+See also: `app/db/medications.py:356` for the active medication count query implementation.
+
 #### Indexes
 
 | Index Name | Columns | Type | Notes |
