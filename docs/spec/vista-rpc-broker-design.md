@@ -2,103 +2,94 @@
 
 **Document Version:** v2.0
 **Date:** 2026-01-13
-**Status:** ✅ Phase 1-5 COMPLETE (4 Clinical Domains Operational)
-
-**📝 Documentation Update Policy:**
-When updating this design document with implementation progress or design changes, also update:
-- `vista/README.md` - Practical guide (API examples, endpoints, test coverage, capabilities)
-- `docs/implementation-roadmap.md` Section 11.3 - Phase 8 progress tracking
+**Status:** Phase 1-5 COMPLETE (4 Clinical Domains Operational)
 
 **Changelog v2.0** (2026-01-13):
-- ✅ **Phase 5 COMPLETE** - Medications domain fully implemented
-- ✅ **Four clinical domains** with full "Refresh VistA" functionality operational
-- ✅ **Medications Domain:** ORWPS COVER RPC, 69 mock medications across 3 sites, 30 unit tests passing
+- **Phase 5 COMPLETE** - Medications domain fully implemented
+- **Four clinical domains** with full "Refresh VistA" functionality operational
+- **Medications Domain:** ORWPS COVER RPC, 69 mock medications across 3 sites, 30 unit tests passing
   - Session cache integration for filter persistence
   - Facility column added to medications table
   - Provider field populated for Vista records
   - Status filter logic refined (inpatient always included)
   - Merge/dedupe with canonical key: `{site}:{prescription_number}`
-- ✅ **Button Label Standardization:** All domains now use "Refresh VistA" (shortened from "Refresh from VistA")
-- ✅ **Domains Complete:** Vitals (GMV), Encounters (ORWCV), Allergies (ORQQAL), Medications (ORWPS)
-- 🎯 **Total domains with VistA integration:** 4 of ~15 planned (27% complete)
-- 🎯 **Next target:** Laboratory Results (ORQORB namespace, Phase 6)
+- **Button Label Standardization:** All domains now use "Refresh VistA" (shortened from "Refresh from VistA")
+- **Domains Complete:** Vitals (GMV), Encounters (ORWCV), Allergies (ORQQAL), Medications (ORWPS)
+- **Total domains with VistA integration:** 4 of ~15 planned (27% complete)
+- **Next target:** Laboratory Results (ORQORB namespace, Phase 6)
 
 **Changelog v1.9** (2026-01-13):
-- ✅ **Phase 3-4 COMPLETE** - Vitals, Encounters, Allergies fully implemented
-- ✅ Three clinical domains with full "Refresh from VistA" functionality operational
-- ✅ **Vitals Domain:** GMV LATEST VM RPC, merge/dedupe, 2-site queries, T-notation dates
-- ✅ **Encounters Domain:** ORWCV ADMISSIONS RPC, 90-day lookback, 3-site queries, pagination preserved
-- ✅ **Allergies Domain:** ORQQAL LIST RPC, 3-5 site queries, safety-critical coverage
-- ✅ Session-based caching (30-min TTL) operational across all domains
-- ✅ HTMX + OOB swaps pattern established and working
-- 🎯 **Total domains with VistA integration:** 3 of ~15 planned (20% complete)
+- **Phase 3-4 COMPLETE** - Vitals, Encounters, Allergies fully implemented
+- Three clinical domains with full "Refresh from VistA" functionality operational
+- **Vitals Domain:** GMV LATEST VM RPC, merge/dedupe, 2-site queries, T-notation dates
+- **Encounters Domain:** ORWCV ADMISSIONS RPC, 90-day lookback, 3-site queries, pagination preserved
+- **Allergies Domain:** ORQQAL LIST RPC, 3-5 site queries, safety-critical coverage
+- Session-based caching (30-min TTL) operational across all domains
+- HTMX + OOB swaps pattern established and working
+- **Total domains with VistA integration:** 3 of ~15 planned (20% complete)
 
 **Changelog v1.8** (2025-12-19):
-- ✅ **Encounters Domain (ORWCV Namespace)** - Added Section 6.5
-- ✅ Specified `ORWCV ADMISSIONS` RPC for inpatient encounters
-- ✅ Defined VistA response format (9 fields, caret-delimited)
-- ✅ Documented merge/dedupe strategy for PostgreSQL + Vista data
-- ✅ Added canonical event key pattern for encounter deduplication
-- 📝 **Implementation scope:** Last 90 days, 3 sites, active + discharged encounters
-- 🎯 **Phase 3 target:** Mirror Vitals "Refresh from VistA" pattern exactly
+- **Encounters Domain (ORWCV Namespace)** - Added Section 6.5
+- Specified `ORWCV ADMISSIONS` RPC for inpatient encounters
+- Defined VistA response format (9 fields, caret-delimited)
+- Documented merge/dedupe strategy for PostgreSQL + Vista data
+- Added canonical event key pattern for encounter deduplication
+- **Implementation scope:** Last 90 days, 3 sites, active + discharged encounters
+- **Phase 3 target:** Mirror Vitals "Refresh from VistA" pattern exactly
 
 **Changelog v1.7** (2025-12-17):
-- ✅ **Phase 2 COMPLETE** - Multi-Site Support fully implemented
-- ✅ Created `app/services/vista_client.py` (310 lines) - HTTP client with intelligent site selection
-- ✅ Implemented `get_target_sites()` with domain-specific limits (vitals=2, allergies=5, medications=3, demographics=1, labs=3)
-- ✅ Implemented T-notation date parsing (T-0, T-7, T-30, etc.)
-- ✅ Implemented hard maximum enforcement (10 sites architectural firebreak)
-- ✅ Created comprehensive unit tests: 42 tests in `app/tests/test_vista_client.py` (100% pass rate)
-- ✅ Created usage examples: `app/services/vista_client_example.py` (7 integration patterns)
-- ✅ Created manual testing script: `app/services/test_vista_manual.py` (7 test scenarios)
-- ✅ Created manual testing guide: `vista/MANUAL_TESTING.md` (comprehensive curl/Python/browser testing)
-- ✅ Added Section 2.12 - Architectural Philosophy (Why MPI Doesn't Track Domain Data)
-- ✅ Updated `.env` with VISTA_CONFIG variables
-- ✅ Updated `config.py` with VISTA_SERVICE_URL, VISTA_TIMEOUT, VISTA_ENABLED
-- ✅ Updated `CLAUDE.md` with correct Vista service startup command
-- 📝 **Total test coverage: ~136 tests (94 Vista + 42 VistaClient), 100% pass rate**
-- 🎯 **Phase 2 fully complete - ready for Phase 3 (Merge/Dedupe Logic)**
+- **Phase 2 COMPLETE** - Multi-Site Support fully implemented
+- Created `app/services/vista_client.py` (310 lines) - HTTP client with intelligent site selection
+- Implemented `get_target_sites()` with domain-specific limits (vitals=2, allergies=5, medications=3, demographics=1, labs=3)
+- Implemented T-notation date parsing (T-0, T-7, T-30, etc.)
+- Implemented hard maximum enforcement (10 sites architectural firebreak)
+- Created comprehensive unit tests: 42 tests in `app/tests/test_vista_client.py` (100% pass rate)
+- Created usage examples: `app/services/vista_client_example.py` (7 integration patterns)
+- Created manual testing script: `app/services/test_vista_manual.py` (7 test scenarios)
+- Created manual testing guide: `vista/MANUAL_TESTING.md` (comprehensive curl/Python/browser testing)
+- Added Section 2.12 - Architectural Philosophy (Why MPI Doesn't Track Domain Data)
+- Updated `.env` with VISTA_CONFIG variables
+- Updated `config.py` with VISTA_SERVICE_URL, VISTA_TIMEOUT, VISTA_ENABLED
+- Updated `CLAUDE.md` with correct Vista service startup command
+- **Total test coverage: ~136 tests (94 Vista + 42 VistaClient), 100% pass rate**
+- **Phase 2 fully complete - ready for Phase 3 (Merge/Dedupe Logic)**
 
 **Changelog v1.6** (2025-12-17):
-- ✅ **Phase 1 Days 4-5 COMPLETE** - Full walking skeleton operational
-- ✅ Implemented ORWPT PTINQ RPC handler with VistA format support
-- ✅ Implemented M-Serializer with 10+ serialization/parsing functions (38 tests passing)
-- ✅ Implemented FastAPI service with all endpoints (POST /rpc/execute, GET /sites, /health, /docs)
-- ✅ Created comprehensive integration test suite (19 tests, 100% pass rate)
-- ✅ Manual testing complete - service running on port 8003
-- ✅ Updated Section 8 (Implementation Plan) with complete Phase 1 status
-- 📝 **Total test coverage: ~94 tests, 100% pass rate**
-- 🎯 **Phase 1 fully complete - ready for Phase 2 (Multi-Site Support)**
+- **Phase 1 Days 4-5 COMPLETE** - Full walking skeleton operational
+- Implemented ORWPT PTINQ RPC handler with VistA format support
+- Implemented M-Serializer with 10+ serialization/parsing functions (38 tests passing)
+- Implemented FastAPI service with all endpoints (POST /rpc/execute, GET /sites, /health, /docs)
+- Created comprehensive integration test suite (19 tests, 100% pass rate)
+- Manual testing complete - service running on port 8003
+- Updated Section 8 (Implementation Plan) with complete Phase 1 status
+- **Total test coverage: ~94 tests, 100% pass rate**
+- **Phase 1 fully complete - ready for Phase 2 (Multi-Site Support)**
 
 **Changelog v1.5** (2025-12-17):
-- ✅ Added Section 2.11.5 - Data Persistence Strategy (Future Implementation)
-- ✅ Documented user preference for Option A (session-based server-side cache)
-- ✅ Rationale: Performance improvement, reduced VistA load, consistent UX
-- 📝 Implementation timeline: Deferred to Phase 6+ (post-multi-site, post-Dashboard widgets)
-- 📝 Current Phase 1: Stateless real-time fetching (no persistence)
+- Added Section 2.11.5 - Data Persistence Strategy (Future Implementation)
+- Documented user preference for Option A (session-based server-side cache)
+- Rationale: Performance improvement, reduced VistA load, consistent UX
+- Implementation timeline: Deferred to Phase 6+ (post-multi-site, post-Dashboard widgets)
+- Current Phase 1: Stateless real-time fetching (no persistence)
 
 **Changelog v1.4** (2025-12-16):
-- ✅ Updated Section 2.11 (UI/UX Integration Pattern) with finalized UI specifications
-- ✅ Added Section 2.11.1 - Detailed button placement and layout specifications
-- ✅ Resolved open UI/UX questions from Section 11
-- ✅ Documented implementation scope: Full clinical domain pages only (Phase 1)
-- ✅ Deferred features: Dashboard widgets, keyboard shortcuts (future phases)
-- 📝 Created Vitals page mockup showing exact button placement and layout
+- Updated Section 2.11 (UI/UX Integration Pattern) with finalized UI specifications
+- Added Section 2.11.1 - Detailed button placement and layout specifications
+- Documented implementation scope: Full clinical domain pages only (Phase 1)
+- Deferred features: Dashboard widgets, keyboard shortcuts (future phases)
+- Created Vitals page mockup showing exact button placement and layout
 
 **Changelog v1.3** (2025-12-15):
-- ✅ Updated Section 8 (Implementation Plan) with Phase 1 actual implementation details
-- ✅ Documented DataLoader, RPCHandler, and RPCRegistry implementations
-- ✅ Added test coverage summary (32 tests, 100% pass rate)
-- ✅ Marked Phase 1 Days 1-3 as complete with detailed task breakdown
-- ✅ Created vista/README.md - Comprehensive user/developer/ops guide
-- 📝 Phase 1 Complete: FastAPI service operational with ORWPT PTINQ RPC
+- Updated Section 8 (Implementation Plan) with Phase 1 actual implementation details
+- Documented DataLoader, RPCHandler, and RPCRegistry implementations
+- Added test coverage summary (32 tests, 100% pass rate)
+- Created vista/README.md - Comprehensive user/developer/ops guide
+- Phase 1 Complete: FastAPI service operational with ORWPT PTINQ RPC
 
 **Changelog v1.2** (2025-12-15):
-- ✅ Added **ICN → DFN resolution** strategy (Section 2.7) - Critical for realistic simulation
-- ✅ Added **Site Selection Policy** (Section 2.8) - Prevents regression to legacy JLV failure mode
-- ✅ Added **Merge/Deduplication Rules** (Section 2.9.1) - Ensures data quality when combining PostgreSQL + Vista
-- 🔄 Updated section numbering (2.8 → 2.9, 2.9 → 2.10, etc.)
-- 📝 Based on senior solutions architect review feedback
+- Added **ICN → DFN resolution** strategy (Section 2.7) - Critical for realistic simulation
+- Added **Site Selection Policy** (Section 2.8) - Prevents regression to legacy JLV failure mode
+- Added **Merge/Deduplication Rules** (Section 2.9.1) - Ensures data quality when combining PostgreSQL + Vista
 
 ## 1. Overview
 
@@ -213,11 +204,11 @@ async def execute_rpc(site: str, request: RpcRequest):
 ```
 
 **Rationale**:
-- ✅ Single service on port 8003 (easy to run on laptop)
-- ✅ Realistic multi-site simulation (each site has independent data)
-- ✅ Base class pattern enables per-site customization if needed
-- ✅ Site parameter in API makes intent explicit
-- ✅ Simple to add/remove sites without code changes (config-driven)
+- Single service on port 8003 (easy to run on laptop)
+- Realistic multi-site simulation (each site has independent data)
+- Base class pattern enables per-site customization if needed
+- Site parameter in API makes intent explicit
+- Simple to add/remove sites without code changes (config-driven)
 
 **API Design**: Site number passed as query parameter:
 ```
@@ -267,12 +258,12 @@ Content-Type: application/json
 **Decision**: Level 1 - Data Format Only
 
 **Characteristics**:
-- ✅ Correct delimiters (caret `^`, pipe `|`, semicolon `;`)
-- ✅ Correct field structure and ordering per ICD documentation
-- ✅ Clean, predictable, well-formed responses
-- ✅ Basic error handling (e.g., patient not found, invalid RPC)
-- ❌ No VistA quirks, edge cases, or inconsistencies (unless needed for specific testing)
-- ❌ No security keys, permissions, or context management
+- Correct delimiters (caret `^`, pipe `|`, semicolon `;`)
+- Correct field structure and ordering per ICD documentation
+- Clean, predictable, well-formed responses
+- Basic error handling (e.g., patient not found, invalid RPC)
+- No VistA quirks, edge cases, or inconsistencies (unless needed for specific testing)
+- No security keys, permissions, or context management
 
 **Upgrade Path**: Can evolve to Level 2 (realistic quirks) if med-z1 needs to handle VistA edge cases.
 
@@ -443,10 +434,10 @@ vista/data/sites/
 ```
 
 **Benefits**:
-- ✅ Single source of truth for patient identity
-- ✅ Consistent ICNs across Mock CDW and Vista
-- ✅ Enables future MPI service implementation
-- ✅ Documents which sites each patient has visited
+- Single source of truth for patient identity
+- Consistent ICNs across Mock CDW and Vista
+- Enables future MPI service implementation
+- Documents which sites each patient has visited
 
 **Usage**:
 - Mock CDW SQL insert scripts read from this file to populate `SPatient.SPatient` table
@@ -615,10 +606,10 @@ async def get_vitals_realtime(
 ```
 
 **Benefits**:
-- ✅ **Performance bounded by default** (max 3 sites × 3 seconds = 9 seconds worst case)
-- ✅ **User control without footguns** (explicit action required for wider queries)
-- ✅ **Domain-specific tuning** (safety-critical domains can query more sites)
-- ✅ **Prevents architectural regression** (impossible to accidentally query all 140+ sites)
+- **Performance bounded by default** (max 3 sites × 3 seconds = 9 seconds worst case)
+- **User control without footguns** (explicit action required for wider queries)
+- **Domain-specific tuning** (safety-critical domains can query more sites)
+- **Prevents architectural regression** (impossible to accidentally query all 140+ sites)
 
 **Success Metrics**:
 - 90th percentile "Refresh from VistA" response time: <10 seconds
@@ -853,10 +844,10 @@ def dedupe_vista_multi_site_results(
 ```
 
 **Benefits**:
-- ✅ **No duplicate data shown** (clean UI, prevents confusion)
-- ✅ **Deterministic merge** (same result every time, testable)
-- ✅ **Prefer freshness** (Vista data prioritized for recent dates)
-- ✅ **Audit trail** (log conflicts for debugging)
+- **No duplicate data shown** (clean UI, prevents confusion)
+- **Deterministic merge** (same result every time, testable)
+- **Prefer freshness** (Vista data prioritized for recent dates)
+- **Audit trail** (log conflicts for debugging)
 
 **Testing**:
 ```python
@@ -941,11 +932,11 @@ class VistaServer:
 **Decision**: Show PostgreSQL data by default with user-controlled "Refresh from VistA" button for real-time updates
 
 **Implementation Scope (Phase 1)**:
-- ✅ **Full clinical domain pages only** (e.g., Vitals, Labs, Medications, Allergies)
-- ✅ Implemented on pages with dedicated routes (completed domains only)
-- ❌ **Not on dashboard widgets** (deferred to future phase)
-- ❌ **Not on Demographics page** (static data, no time-sensitive updates)
-- 📝 **Keyboard shortcuts**: Documented for future implementation, not Phase 1
+- **Full clinical domain pages only** (e.g., Vitals, Labs, Medications, Allergies)
+- Implemented on pages with dedicated routes (completed domains only)
+- **Not on dashboard widgets** (deferred to future phase)
+- **Not on Demographics page** (static data, no time-sensitive updates)
+- **Keyboard shortcuts**: Documented for future implementation, not Phase 1
 
 **Site Selection Default**:
 - **All available sites** queried by default (no manual site picker in Phase 1)
@@ -973,7 +964,7 @@ class VistaServer:
 ```
 ┌────────────────────────────────────────────────────────────────────┐
 │ Dashboard > Vital Signs                                            │
-│                       Data current through: Dec 13, 2025 (yesterday)│
+│                      Data current through: Dec 13, 2025 (yesterday)│
 │                                              [Refresh from VistA]  │
 └────────────────────────────────────────────────────────────────────┘
 ```
@@ -996,8 +987,8 @@ class VistaServer:
 1. **Initial Page Load** (Fast, <1 second):
    ```
    ┌──────────────────────────────────────────────────────────────────┐
-   │ Dashboard > Vital Signs    Data current through: Dec 13, 2025   │
-   │                            (yesterday)  [🔄 Refresh from VistA] │
+   │ Dashboard > Vital Signs    Data current through: Dec 13, 2025    │
+   │                            (yesterday)  [🔄 Refresh from VistA]  │
    └──────────────────────────────────────────────────────────────────┘
 
    Vitals (Last 7 Days)
@@ -1021,8 +1012,8 @@ class VistaServer:
 2. **User Clicks "Refresh from VistA"** (Processing, 1-5 seconds):
    ```
    ┌──────────────────────────────────────────────────────────────────┐
-   │ Dashboard > Vital Signs     🔄 Fetching real-time data...        │
-   │                                     [Refresh from VistA] (disabled)│
+   │ Dashboard > Vital Signs      🔄 Fetching real-time data...       │
+   │                                   [Refresh from VistA] (disabled)│
    └──────────────────────────────────────────────────────────────────┘
 
    Vitals (Last 7 Days)
@@ -1039,9 +1030,9 @@ class VistaServer:
 3. **After 1-5 seconds** (Success - Real-time data merged):
    ```
    ┌──────────────────────────────────────────────────────────────────┐
-   │ Dashboard > Vital Signs    Data current through: Dec 14, 2025   │
-   │                  (today, real-time) Last updated: 2:34 PM       │
-   │                                     [🔄 Refresh from VistA]     │
+   │ Dashboard > Vital Signs    Data current through: Dec 14, 2025    │
+   │                  (today, real-time) Last updated: 2:34 PM        │
+   │                                     [🔄 Refresh from VistA]      │
    └──────────────────────────────────────────────────────────────────┘
 
    Vitals (Last 7 Days)
@@ -1065,9 +1056,9 @@ class VistaServer:
 4. **Partial Success** (Some sites failed):
    ```
    ┌──────────────────────────────────────────────────────────────────┐
-   │ Dashboard > Vital Signs    Data current through: Dec 14, 2025   │
-   │         (real-time refresh incomplete - 2 of 3 sites responded) │
-   │                                     [🔄 Refresh from VistA]     │
+   │ Dashboard > Vital Signs    Data current through: Dec 14, 2025    │
+   │         (real-time refresh incomplete - 2 of 3 sites responded)  │
+   │                                     [🔄 Refresh from VistA]      │
    └──────────────────────────────────────────────────────────────────┘
    ```
 
@@ -1079,8 +1070,8 @@ class VistaServer:
 5. **Failure** (All sites failed or timeout):
    ```
    ┌──────────────────────────────────────────────────────────────────┐
-   │ Dashboard > Vital Signs    Unable to fetch real-time data       │
-   │                            [Retry] [View details]               │
+   │ Dashboard > Vital Signs    Unable to fetch real-time data        │
+   │                            [Retry] [View details]                │
    └──────────────────────────────────────────────────────────────────┘
    ```
 
@@ -1415,15 +1406,15 @@ This preference was documented based on user feedback during Phase 1 implementat
 **Key Insight**: Med-z1's site selection architecture intentionally mirrors the real VA Master Patient Index (MPI) design pattern.
 
 **What Real VA MPI Tracks**:
-- ✅ **Patient identity** (ICN, name, DOB, SSN)
-- ✅ **Treating facilities** (which VA sites the patient has visited)
-- ✅ **Last activity dates** (when patient was last seen at each site)
+- **Patient identity** (ICN, name, DOB, SSN)
+- **Treating facilities** (which VA sites the patient has visited)
+- **Last activity dates** (when patient was last seen at each site)
 
 **What Real VA MPI Does NOT Track**:
-- ❌ Which sites have vitals for this patient
-- ❌ Which sites have lab results
-- ❌ Which sites have medication records
-- ❌ Domain-specific data availability
+- Which sites have vitals for this patient
+- Which sites have lab results
+- Which sites have medication records
+- Domain-specific data availability
 
 **Why This Is The Correct Design**:
 
@@ -1447,7 +1438,7 @@ This preference was documented based on user feedback during Phase 1 implementat
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ Real VA Architecture                                         │
+│ Real VA Architecture                                        │
 ├─────────────────────────────────────────────────────────────┤
 │ MPI → Treating facilities + last_seen                       │
 │ App → Queries VistA sites based on MPI data                 │
@@ -1455,7 +1446,7 @@ This preference was documented based on user feedback during Phase 1 implementat
 └─────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────┐
-│ Med-z1 Architecture (Intentional Mirror)                     │
+│ Med-z1 Architecture (Intentional Mirror)                    │
 ├─────────────────────────────────────────────────────────────┤
 │ patient_registry.json → Treating facilities + last_seen     │
 │ VistaClient → Queries Vista sites based on registry         │
@@ -1469,7 +1460,7 @@ Since MPI doesn't know data availability, VA systems must use **heuristics** to 
 
 **Legacy JLV Approach (Anti-Pattern):**
 ```python
-# ❌ BAD: Query all 140+ VA facilities for every patient
+# BAD: Query all 140+ VA facilities for every patient
 sites_to_query = get_all_treating_facilities(icn)  # Returns 8-15 sites
 results = query_all_sites(sites_to_query)  # 20+ second page loads
 ```
@@ -1477,7 +1468,7 @@ results = query_all_sites(sites_to_query)  # 20+ second page loads
 
 **Med-z1 Approach (Optimized):**
 ```python
-# ✅ GOOD: Query most recent N facilities (domain-specific limits)
+# GOOD: Query most recent N facilities (domain-specific limits)
 sites_to_query = get_target_sites(icn, domain="vitals")  # Returns top 2 sites
 results = query_selected_sites(sites_to_query)  # <3 second loads
 ```
@@ -1489,14 +1480,14 @@ Patient seen at 8 VA facilities over 20 years:
 
 | Site | Last Seen | Relevance | Query Strategy |
 |------|-----------|-----------|----------------|
-| 200 | T-7 (7 days ago) | ⭐⭐⭐ Recent care, likely has fresh data | **Vitals**: ✅ Query<br>**Allergies**: ✅ Query |
-| 500 | T-30 (1 month ago) | ⭐⭐⭐ Recent care, likely has fresh data | **Vitals**: ✅ Query<br>**Allergies**: ✅ Query |
-| 630 | T-180 (6 months ago) | ⭐⭐ Recent care, might have relevant data | **Vitals**: ❌ Skip<br>**Allergies**: ✅ Query |
-| 402 | T-365 (1 year ago) | ⭐ Data probably stale | **Vitals**: ❌ Skip<br>**Allergies**: ✅ Query |
-| 405 | T-730 (2 years ago) | ⚠️ Unlikely to be relevant | **Vitals**: ❌ Skip<br>**Allergies**: ✅ Query |
-| 460 | T-1095 (3 years ago) | ⚠️ Historical interest only | **Vitals**: ❌ Skip<br>**Allergies**: ❌ Skip |
-| 528 | T-2555 (7 years ago) | ⚠️ Probably not needed | **Vitals**: ❌ Skip<br>**Allergies**: ❌ Skip |
-| 688 | T-7300 (20 years ago) | ⚠️ Ancient history | **Vitals**: ❌ Skip<br>**Allergies**: ❌ Skip |
+| 200 | T-7 (7 days ago) | ⭐⭐⭐ Recent care, likely has fresh data | **Vitals**: Query<br>**Allergies**: Query |
+| 500 | T-30 (1 month ago) | ⭐⭐⭐ Recent care, likely has fresh data | **Vitals**: Query<br>**Allergies**: Query |
+| 630 | T-180 (6 months ago) | ⭐⭐ Recent care, might have relevant data | **Vitals**: Skip<br>**Allergies**: Query |
+| 402 | T-365 (1 year ago) | ⭐ Data probably stale | **Vitals**: Skip<br>**Allergies**: Query |
+| 405 | T-730 (2 years ago) | ⚠️ Unlikely to be relevant | **Vitals**: Skip<br>**Allergies**: Query |
+| 460 | T-1095 (3 years ago) | ⚠️ Historical interest only | **Vitals**: Skip<br>**Allergies**: Skip |
+| 528 | T-2555 (7 years ago) | ⚠️ Probably not needed | **Vitals**: Skip<br>**Allergies**: Skip |
+| 688 | T-7300 (20 years ago) | ⚠️ Ancient history | **Vitals**: Skip<br>**Allergies**: Skip |
 
 **Query Optimization by Domain**:
 
@@ -1526,8 +1517,8 @@ The site selection algorithm doesn't determine **"which sites have data"** - it 
 3. **Domain-specific query limits** (to avoid querying all 140+ VA facilities)
 
 **The actual determination of data availability happens at execution time**, when each site's Vista system responds with either:
-- ✅ Data found: Returns records
-- ❌ No data: Returns VistA error format (`-1^No data found`)
+- Data found: Returns records
+- No data: Returns VistA error format (`-1^No data found`)
 
 This is a **fundamental pattern** in distributed healthcare systems:
 - **Don't try to maintain a central catalog of what data exists where** (impossible to keep current)
@@ -1542,7 +1533,7 @@ This is a **fundamental pattern** in distributed healthcare systems:
 | Network calls | 8-15 parallel | 1-5 parallel | **60-80% reduction** |
 | Page load time | 20+ seconds | <3 seconds | **85%+ faster** |
 | Data completeness | 100% | 95-99% | **Acceptable trade-off** |
-| User experience | ⚠️ Frustrating waits | ✅ Snappy, responsive | **Dramatically better** |
+| User experience | Frustrating waits | Snappy, responsive | **Dramatically better** |
 
 **When More Sites Are Needed**:
 
@@ -1731,7 +1722,7 @@ vista/
 │   ├── main.py                    # FastAPI application entry point
 │   │
 │   ├── config/
-│   │   └── sites.json             # ✅ Site registry (sta3n, names, metadata)
+│   │   └── sites.json             # Site registry (sta3n, names, metadata)
 │   │
 │   ├── data/
 │   │   └── sites/
@@ -1757,14 +1748,14 @@ vista/
 │       ├── __init__.py
 │       └── m_serializer.py        # VistA format serialization (^ | ;)
 │
-└── tests/                         # ✅ Test suite (parallel to app/)
+└── tests/                         # Test suite (parallel to app/)
     ├── __init__.py
     ├── test_api_integration.py
     ├── test_data_loader.py
     ├── test_demographics_handler.py
     ├── test_m_serializer.py
     ├── test_rpc_registry.py
-    ├── test_sites_config.py       # ✅ New: Tests for sites.json loading
+    ├── test_sites_config.py       # Tests for sites.json loading
     └── test_vitals_handler.py
 ```
 
@@ -1776,7 +1767,7 @@ vista/
 
 ### 5.1 Configuration Files
 
-**vista/app/config/sites.json** ✅ (Actual Implementation):
+**vista/app/config/sites.json** (Actual Implementation):
 ```json
 {
   "sites": [
@@ -1995,7 +1986,7 @@ PULSE^72^/min^3241201.0930^NURSE,JANE
 TEMPERATURE^98.6^F^3241201.0930^NURSE,JANE
 ```
 
-### 6.3 Allergies (ORQQAL Namespace) ✅ Implemented 2025-12-19
+### 6.3 Allergies (ORQQAL Namespace) Implemented 2025-12-19
 
 **RPC:** `ORQQAL LIST`
 
@@ -2049,7 +2040,7 @@ LATEX^MODERATE^3230405.1020^CONTACT DERMATITIS^ENVIRONMENTAL^630^NURSE,MICHAEL
 | `ORQQAL DETAIL` | Get allergy detail | `[DFN, ALLERGY_ID]` | Detailed allergy info |
 | `ORQQAL ALLERGY MATCH` | Match allergy by name | `[SEARCH_STRING]` | List of matching allergens |
 
-### 6.4 Medications (ORWPS, PSO Namespaces) ✅ Specified 2026-01-13
+### 6.4 Medications (ORWPS, PSO Namespaces) Specified 2026-01-13
 
 | RPC Name | Purpose | Parameters | Response Format |
 |----------|---------|------------|-----------------|
@@ -2058,7 +2049,7 @@ LATEX^MODERATE^3230405.1020^CONTACT DERMATITIS^ENVIRONMENTAL^630^NURSE,MICHAEL
 | `ORWPS ACTIVE` | Active medications list (future) | `[DFN]` | Active meds with dates |
 | `PSO SUPPLY` | Pharmacy supply data (future) | `[DFN, RX_NUMBER]` | Supply/refill details |
 
-**RPC:** `ORWPS COVER` ✅ **Primary Implementation (Phase 5)**
+**RPC:** `ORWPS COVER` **Primary Implementation (Phase 5)**
 
 **Purpose:** Retrieve active outpatient medications for a patient (medication "cover sheet" summary)
 
@@ -2106,7 +2097,7 @@ RX_NUMBER^DRUG_NAME^STATUS^QUANTITY/DAYS_SUPPLY^REFILLS_REMAINING^ISSUE_DATE^EXP
 
 **Mock Data Volume:** ~85-120 active medication records across 3 sites (30-40 per site)
 
-### 6.5 Encounters (ORWCV Namespace) ✅ Added 2025-12-19
+### 6.5 Encounters (ORWCV Namespace) Added 2025-12-19
 
 | RPC Name | Purpose | Parameters | Response Format |
 |----------|---------|------------|-----------------|
@@ -2407,72 +2398,72 @@ class VistaClient:
 
 ## 8. Implementation Plan
 
-### Phase 1: Walking Skeleton (Week 1) - ✅ COMPLETE (Days 1-5)
+### Phase 1: Walking Skeleton (Week 1) - COMPLETE (Days 1-5)
 
 **Goal**: Single-site, single-RPC working end-to-end with ICN → DFN resolution
 
-**Status**: ✅ **Phase 1 FULLY COMPLETE** - All infrastructure, handlers, tests, and integration complete (2025-12-17)
+**Status**: **Phase 1 FULLY COMPLETE** - All infrastructure, handlers, tests, and integration complete (2025-12-17)
 
 **Critical Requirements** (from v1.2 design updates):
-- ✅ ICN → DFN resolution implemented (Section 2.7)
-- ✅ Patient registry file created with ICN/DFN mappings
-- ✅ RPC handler infrastructure established
+- ICN → DFN resolution implemented (Section 2.7)
+- Patient registry file created with ICN/DFN mappings
+- RPC handler infrastructure established
 
 **Tasks** (Actual Implementation):
 
 **Day 1 (2025-12-15):**
-1. ✅ Create `vista/` directory structure (`vista/app/services/`, `vista/tests/`)
-2. ✅ Create `mock/shared/patient_registry.json` with 3 actual test patients from PostgreSQL
+1. Create `vista/` directory structure (`vista/app/services/`, `vista/tests/`)
+2. Create `mock/shared/patient_registry.json` with 3 actual test patients from PostgreSQL
    - ICN100001 (Dooree, Adam) - 316 clinical records
    - ICN100010 (Aminor, Alexander) - 305 clinical records
    - ICN100013 (Thompson, Irving) - 312 clinical records
    - Each patient mapped to treating facilities with DFNs for sites 200, 500, 630
 
 **Day 2:**
-3. ✅ Implemented `DataLoader` service (`vista/app/services/data_loader.py`)
+3. Implemented `DataLoader` service (`vista/app/services/data_loader.py`)
    - `resolve_icn_to_dfn(icn)` - Resolves ICN to site-specific DFN
    - `get_patient_info(icn)` - Retrieves full patient data from registry
    - `get_registered_patients()` - Lists all patients at site
    - `is_patient_registered(icn)` - Checks patient registration status
    - Site-specific initialization (each site gets own DataLoader instance)
    - Automatic patient_registry.json path resolution
-4. ✅ Created comprehensive test suite (`vista/tests/test_data_loader.py`)
+4. Created comprehensive test suite (`vista/tests/test_data_loader.py`)
    - 13 tests covering ICN→DFN resolution, patient lookup, multi-site scenarios
    - All tests passing
 
 **Day 3:**
-5. ✅ Implemented `RPCHandler` base class (`vista/app/services/rpc_handler.py`)
+5. Implemented `RPCHandler` base class (`vista/app/services/rpc_handler.py`)
    - Abstract base class for all RPC handlers
    - `rpc_name` property - Identifies which RPC handler implements
    - `execute(params, context)` - Main execution method
    - `validate_params(params)` - Optional parameter validation
    - `RPCExecutionError` - Custom exception for RPC failures
-6. ✅ Implemented `RPCRegistry` (`vista/app/services/rpc_registry.py`)
+6. Implemented `RPCRegistry` (`vista/app/services/rpc_registry.py`)
    - `register(handler)` - Register RPC handlers
    - `dispatch(rpc_name, params, context)` - Route requests to handlers
    - `get_handler(rpc_name)` - Retrieve specific handler
    - `list_rpcs()` - List all registered RPCs
    - `is_registered(rpc_name)` - Check registration status
    - Comprehensive error handling and logging
-7. ✅ Created comprehensive test suite (`vista/tests/test_rpc_registry.py`)
+7. Created comprehensive test suite (`vista/tests/test_rpc_registry.py`)
    - 19 tests covering handler registration, dispatch, error handling
    - All tests passing
 
 **Days 4-5 (2025-12-17):**
-8. ✅ Implemented first RPC handler: `ORWPT PTINQ` (`vista/app/handlers/demographics.py`)
+8. Implemented first RPC handler: `ORWPT PTINQ` (`vista/app/handlers/demographics.py`)
    - PatientInquiryHandler with full VistA format support
    - Parameter validation and comprehensive error handling
    - Returns VistA format: `NAME^SSN^DOB^SEX^VETERAN_STATUS`
-9. ✅ Implemented `M-Serializer` (`vista/app/utils/m_serializer.py`)
+9. Implemented `M-Serializer` (`vista/app/utils/m_serializer.py`)
    - `pack_vista_string()` - Format fields with ^ delimiters
    - `pack_vista_list()` - Multi-line responses
    - `format_patient_inquiry_response()` - ORWPT PTINQ formatting
    - `format_rpc_error()` - VistA error format (`-1^message`)
    - Parsing functions for request/response handling
-10. ✅ Patient registry data reused from Days 1-3
+10. Patient registry data reused from Days 1-3
     - `mock/shared/patient_registry.json` contains all necessary data
     - No separate vista/data directory needed (DataLoader reads from shared registry)
-11. ✅ Implemented FastAPI `main.py` (`vista/app/main.py` - 263 lines)
+11. Implemented FastAPI `main.py` (`vista/app/main.py` - 263 lines)
     - `POST /rpc/execute?site={sta3n}` - Execute RPCs
     - `GET /sites` - List available sites with registration counts
     - `GET /health` - Health check endpoint
@@ -2480,13 +2471,13 @@ class VistaClient:
     - `GET /docs` - Auto-generated Swagger documentation
     - Startup initialization for all 3 sites (200, 500, 630)
     - Complete error handling and structured logging
-12. ✅ Integration tests (`vista/tests/test_api_integration.py`)
+12. Integration tests (`vista/tests/test_api_integration.py`)
     - 19 comprehensive end-to-end API tests
     - Multi-site scenarios (patient registered at multiple sites)
     - Error handling (non-existent patients, invalid sites, missing parameters)
     - VistA response format validation
     - All tests passing (19/19)
-13. ✅ Manual testing with curl
+13. Manual testing with curl
     - Service running on http://localhost:8003
     - Tested: health check, sites list, ORWPT PTINQ at multiple sites, error cases
     - All manual tests passed
@@ -2499,23 +2490,23 @@ class VistaClient:
 - Clean separation of concerns (DataLoader, RPCHandler, RPCRegistry)
 
 **Test Coverage Summary** (Phase 1 Complete):
-- ✅ DataLoader: 13/13 tests passing
-- ✅ RPCRegistry: 19/19 tests passing
-- ✅ PatientInquiryHandler: tests passing (via integration tests)
-- ✅ M-Serializer: 38/38 tests passing
-- ✅ API Integration: 19/19 tests passing
-- ✅ **Total: ~94 tests, 100% pass rate**
+- DataLoader: 13/13 tests passing
+- RPCRegistry: 19/19 tests passing
+- PatientInquiryHandler: tests passing (via integration tests)
+- M-Serializer: 38/38 tests passing
+- API Integration: 19/19 tests passing
+- **Total: ~94 tests, 100% pass rate**
 
 **Success Criteria** (All Complete):
-- ✅ Patient registry created with real test data
-- ✅ ICN → DFN resolution works correctly for all three sites
-- ✅ Patient data loading infrastructure complete
-- ✅ RPC handler implementation (ORWPT PTINQ)
-- ✅ VistA response format serialization (M-Serializer)
-- ✅ FastAPI endpoint integration
-- ✅ End-to-end RPC execution verified
-- ✅ Multi-site queries functional
-- ✅ Service operational on port 8003
+- Patient registry created with real test data
+- ICN → DFN resolution works correctly for all three sites
+- Patient data loading infrastructure complete
+- RPC handler implementation (ORWPT PTINQ)
+- VistA response format serialization (M-Serializer)
+- FastAPI endpoint integration
+- End-to-end RPC execution verified
+- Multi-site queries functional
+- Service operational on port 8003
 
 ### Phase 2: Multi-Site Support (Week 2) - ✅ COMPLETE (Days 6-7)
 
@@ -2688,11 +2679,11 @@ class VistaClient:
 - Performance: ~1-2 second response time for Vista refresh
 
 **What's NOT in MVP** (Can add later):
-- ❌ Additional vitals RPCs (GMV EXTRACT REC, GMV MANAGER)
-- ❌ Other domains (allergies, medications)
-- ❌ Caching/session persistence
-- ❌ Partial failure UI indicators (show "2 of 3 sites responded")
-- ❌ Site selection override UI (manual site picker)
+- Additional vitals RPCs (GMV EXTRACT REC, GMV MANAGER)
+- Other domains (allergies, medications)
+- Caching/session persistence
+- Partial failure UI indicators (show "2 of 3 sites responded")
+- Site selection override UI (manual site picker)
 
 **Next Steps After MVP**:
 After Phase 3 MVP is working, choose enhancement path:
@@ -3016,15 +3007,15 @@ WHERE PatientICN = '1012853550V207686';  -- Replace with your test patient's ICN
 #### Alignment Options
 
 **Option A: Sites 200, 500, 630 have good CDW data**
-- ✅ **Action:** Use them as-is. No changes needed.
+- **Action:** Use them as-is. No changes needed.
 
 **Option B: Sites 200, 500, 630 exist but have sparse CDW data**
-- ✅ **Action:** Still use them. Create rich Vista JSON data independently.
-- 📝 **Note:** Some patients may only have Vista data at certain sites (valid test scenario).
+- **Action:** Still use them. Create rich Vista JSON data independently.
+- **Note:** Some patients may only have Vista data at certain sites (valid test scenario).
 
 **Option C: Sites 200, 500, 630 don't exist in CDW**
-- ✅ **Action (Recommended):** Update one test patient's primary station to 200.
-- ⚠️ **Alternative:** Use different sites that already have CDW data (update design doc site list).
+- **Action (Recommended):** Update one test patient's primary station to 200.
+- **Alternative:** Use different sites that already have CDW data (update design doc site list).
 
 #### Updating a Patient's Primary Station (If Needed)
 
@@ -3110,11 +3101,11 @@ Once you've confirmed at least one test patient has a primary station that match
 
 #### Recommendation Summary
 
-1. ✅ **Stick with sites 200, 500, 630** (design consistency, recognizable VA sites)
-2. ✅ **Run validation queries** above to check current CDW coverage
-3. ✅ **If needed:** Update one test patient's Sta3n to '200' (simple SQL UPDATE)
-4. ✅ **Create patient_registry.json** mapping existing ICNs to DFNs at each Vista site
-5. ✅ **Vista JSON data is independent** - control what exists per site regardless of CDW
+1. **Stick with sites 200, 500, 630** (design consistency, recognizable VA sites)
+2. **Run validation queries** above to check current CDW coverage
+3. **If needed:** Update one test patient's Sta3n to '200' (simple SQL UPDATE)
+4. **Create patient_registry.json** mapping existing ICNs to DFNs at each Vista site
+5. **Vista JSON data is independent** - control what exists per site regardless of CDW
 
 ---
 
@@ -3198,41 +3189,16 @@ class RealtimeOverlayService:
 - VistaClient multi-site orchestration (Section 2.6)
 
 **Benefits:**
-- ✅ Routes stay thin (consistent with med-z1 routing patterns)
-- ✅ Single place to update site limits or merge logic
-- ✅ Easier to add new domains (reuse existing service)
-- ✅ Clear separation of concerns (routing vs orchestration vs data access)
+- Routes stay thin (consistent with med-z1 routing patterns)
+- Single place to update site limits or merge logic
+- Easier to add new domains (reuse existing service)
+- Clear separation of concerns (routing vs orchestration vs data access)
 
 **Timeline:** Implement after 2-3 domains have established the pattern (Phase 6-7), then refactor existing routes to use the service.
 
 ---
 
 ## 11. Open Questions
-
-### 11.1 Resolved Questions
-
-~~1. **UI/UX: Button Placement and Layout**~~ ✅ **RESOLVED** (2025-12-16, v1.4)
-   - **Decision**: Right-justified at breadcrumb level
-   - **Layout**: Single-line preferred, two-line for narrow viewports
-   - **Typography**: Same font/size as breadcrumbs
-   - **Details**: See Section 2.11.1
-
-~~2. **UI/UX: Implementation Scope**~~ ✅ **RESOLVED** (2025-12-16, v1.4)
-   - **Decision**: Full clinical domain pages only (Phase 1)
-   - **Deferred**: Dashboard widgets, keyboard shortcuts (future phases)
-   - **Details**: See Section 2.11 (Implementation Scope)
-
-~~3. **UI/UX: Site Selection Default**~~ ✅ **RESOLVED** (2025-12-16, v1.4)
-   - **Decision**: Query all available sites by default
-   - **Date Range**: "today" or "now" (T-0 data only)
-   - **Details**: See Section 2.11 (Site Selection Default)
-
-~~4. **UI/UX: Tab Order and Accessibility**~~ ✅ **RESOLVED** (2025-12-16, v1.4)
-   - **Decision**: Button is next focusable element after breadcrumbs
-   - **ARIA Labels**: Explicit labels for screen readers
-   - **Details**: See Section 2.11.1 (Accessibility)
-
-### 11.2 Remaining Open Questions
 
 1. **Patient Data Overlap**: Should the same patient (same ICN) exist at multiple sites, or should each site have unique patients?
    - **Recommendation**: Same patients at multiple sites (more realistic for testing)
@@ -3257,23 +3223,14 @@ class RealtimeOverlayService:
 ## 12. Success Metrics
 
 **Phase 1 Completion Criteria**:
-- ✅ 15 RPCs implemented across 4 domains
-- ✅ 3 sites (200, 500, 630) with unique patient data
-- ✅ Med-z1 app successfully calls vista service
-- ✅ Multi-site aggregation working (patient data from multiple sites)
-- ✅ All responses match VistA format per ICD specification
-- ✅ Unit test coverage >80%
-- ✅ Integration tests for end-to-end flow (med-z1 → vista → response)
-- ✅ Documentation complete (`vista/README.md`, API docs, integration guide)
-
----
-
-## 13. References
-
-- VA JLV ICD (Interface Control Document) - RPC specifications
-- VistA RPC Broker documentation
-- FileMan date/time format specification
-- Prior research: `docs/vista-rpc-broker-research.md`
+- 15 RPCs implemented across 4 domains
+- 3 sites (200, 500, 630) with unique patient data
+- Med-z1 app successfully calls vista service
+- Multi-site aggregation working (patient data from multiple sites)
+- All responses match VistA format per ICD specification
+- Unit test coverage >80%
+- Integration tests for end-to-end flow (med-z1 → vista → response)
+- Documentation complete (`vista/README.md`, API docs, integration guide)
 
 ---
 

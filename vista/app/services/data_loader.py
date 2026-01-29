@@ -54,7 +54,7 @@ class DataLoader:
         self.icn_to_dfn = self._build_icn_dfn_map()
 
         logger.info(
-            f"DataLoader initialized for site {site_sta3n}: "
+            f"Initialized for site {site_sta3n}: "
             f"{len(self.icn_to_dfn)} patients registered"
         )
 
