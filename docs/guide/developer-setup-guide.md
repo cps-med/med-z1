@@ -93,11 +93,12 @@ Take a look at the project structure from the terminal:
 # standard bash command
 ls -al
 
-# corutils + alias command
+# corutils installed + alias command (created in .zshrc)
 ll
 
-# tree utility
+# tree utility (several variants)
 tree -L 1
+tree -L 1 -F
 tree -d -L 2
 ```
 
@@ -167,7 +168,9 @@ The med-z1 application uses a single, shared Python virtual environment. This en
 
 Note that for performance and compatibility reasons, med-z1 expects Python version 3.11 on macOS and version 3.10 (or 3.11) on Linux.
 
-Create virtual environment (Python v3.10 or v3.11)
+Create virtual environment in project root directory (med-z1)  
+
+This will create Python v3.10 (or v3.11) virtual environment for managing dependencies.
 ```bash
 python3 -m venv .venv
 ```
@@ -179,6 +182,11 @@ source .venv/bin/activate
 
 # Windows
 .venv\Scripts\activate
+```
+
+You can list the default "starter" dependencies in your new environment:  
+```bash
+pip list
 ```
 
 Install dependencies
@@ -405,7 +413,7 @@ If you need to completely remove an existing database, e.g., to begin a fresh in
 -- Connect to the default 'postgres' database
 \c postgres
 
--- 2. Drop the existing database (forcing active connections to close)
+-- Drop the existing database (forcing active connections to close)
 DROP DATABASE medz1 WITH (FORCE);
 ```
 
@@ -474,7 +482,7 @@ Password: VaDemo2025!
 
 ## PostgreSQL AI Infrastructure Setup
 
-This section explains the AI infrastructure tables within the PostgreSQL `medz1` database. These tables support the AI Clinical Insights feature, specifically enabling **conversation memory** (Phase 6) using LangGraph's PostgreSQL checkpointer.
+This section explains the AI infrastructure tables within the PostgreSQL `medz1` database. These tables support the AI Clinical Insights feature, specifically enabling **conversation memory** using LangGraph's PostgreSQL checkpointer.
 
 **Purpose:**
 - Enable persistent chat history across page refreshes and login sessions
@@ -483,13 +491,11 @@ This section explains the AI infrastructure tables within the PostgreSQL `medz1`
 - Auto-clear history on patient changes (different ICN = new conversation)
 - Manual clear via "Clear Chat History" button
 
-### **Important: Auto-Created Tables (No Manual Setup Required)**
-
-**As of Phase 6 implementation (2026-01-20):**
+**Note: Auto-Created Tables (No Manual Setup Required)**    
 
 The LangGraph checkpoint tables are **automatically created** when the FastAPI application starts. The `AsyncPostgresSaver.setup()` method in the lifespan handler creates these tables in the `public` schema if they don't exist.
 
-**No manual DDL execution is required.** Simply start the application:
+No manual DDL execution is required, simply start the application:
 
 ```bash
 # Tables are auto-created during application startup
@@ -556,86 +562,7 @@ docker exec -it postgres16 psql -U postgres -d medz1 -c "\d public.checkpoints"
 
 # View checkpoint_blobs table structure
 docker exec -it postgres16 psql -U postgres -d medz1 -c "\d public.checkpoint_blobs"
-
-# View migration version
-docker exec -it postgres16 psql -U postgres -d medz1 -c "SELECT * FROM public.checkpoint_migrations;"
 ```
-
-**Expected migration version:**
-```
- v
----
-  1
-(1 row)
-```
-
-### **Verify Checkpoint Data (After Using AI Insights)**
-
-After using the AI Insights chat feature, you can verify conversation data is being saved:
-
-```bash
-# View checkpoint threads (shows conversation sessions)
-docker exec -it postgres16 psql -U postgres -d medz1 -c "SELECT DISTINCT thread_id FROM public.checkpoints LIMIT 5;"
-```
-
-**Example output (after conversations):**
-```
-              thread_id
-------------------------------------
- session123_ICN100001
- session456_ICN100010
-(2 rows)
-```
-
-**Count checkpoints per thread:**
-```bash
-docker exec -it postgres16 psql -U postgres -d medz1 -c "
-SELECT thread_id, COUNT(*) as checkpoint_count
-FROM public.checkpoints
-GROUP BY thread_id
-ORDER BY checkpoint_count DESC
-LIMIT 5;
-"
-```
-
-### **Technical Notes**
-
-- **Schema:** `public` (LangGraph default, avoids connection string complexity)
-- **Auto-Creation:** Tables created by `AsyncPostgresSaver.setup()` at app startup
-- **Version:** LangGraph checkpoint schema v3.x (4 tables with blob optimization)
-- **Thread ID Format:** `{user_id}_{patient_icn}` for user+patient isolation ⭐ **User-scoped (persists across login sessions)**
-- **Storage:** ~50KB per conversation thread (typical, stored in checkpoint_blobs)
-- **Idempotent:** Safe to restart application - `setup()` only creates missing tables
-- **Manual DDL:** Optional DDL script exists at `db/ddl/create_ai_checkpoints_tables.sql` for reference only
-- **Clear History:** Users can manually clear conversation via "Clear Chat History" button (deletes from all checkpoint tables)
-
-### **Troubleshooting**
-
-**If tables are NOT created:**
-
-Check application startup logs for errors:
-```bash
-# Look for checkpointer initialization errors in uvicorn output
-# Expected: "✅ LangGraph checkpointer initialized successfully"
-# Error: "❌ Failed to initialize LangGraph checkpointer: [error]"
-```
-
-**Common issues:**
-1. **PostgreSQL not running:** `docker start postgres16`
-2. **Connection failed:** Check `POSTGRES_PASSWORD` in `.env` matches container
-3. **Missing dependency:** Install `psycopg[binary,pool]>=3.1.0`
-
-**Reinstall dependencies if needed:**
-```bash
-pip install "psycopg[binary,pool]>=3.1.0"
-```
-
-### **See Also**
-
-- `docs/spec/ai-insight-design.md` - Phase 6: Conversation Memory specification
-- `app/main.py` - Lifespan handler implementation
-- `db/ddl/create_ai_checkpoints_tables.sql` - Reference DDL (optional, for documentation)
-- LangGraph AsyncPostgresSaver documentation
 
 ## MinIO Setup and Bucket Creation
 
@@ -805,7 +732,7 @@ cd ~/swdev/med/med-z1/mock/sql-server/cdwwork/create
 sqlcmd -S 127.0.0.1,1433 -U sa -P 'MyS3cur3P@ssw0rd' -C -i _master.sql
 ```
 
-Replace `'MyS3cur3P@ssw0rd'` with your actual SQL Server password from the `.env` file.
+**Note:** Replace `'MyS3cur3P@ssw0rd'` with your actual SQL Server password from the `.env` file.
 
 ### Populate Mock Data
 
@@ -828,6 +755,8 @@ cd ~/swdev/med/med-z1/mock/sql-server/cdwwork/insert
 # Run sqlcmd directly with password
 sqlcmd -S 127.0.0.1,1433 -U sa -P 'MyS3cur3P@ssw0rd' -C -i _master.sql
 ```
+
+**Note:** Replace `'MyS3cur3P@ssw0rd'` with your actual SQL Server password from the `.env` file.
 
 Verify Database Creation via sqlcmd
 ```bash
@@ -943,7 +872,7 @@ Expected output should show **1 table** in the `reference` schema:
 
 Each clinical domain has a complete pipeline (Bronze → Silver → Gold → Load). Run pipelines in the order shown below to respect data dependencies.  
 
-Note that **_all of the clinical domain pipelines detailed below can be run via a single shell script_**, as described later in this guide.  
+**Important Note:** All of the clinical domain pipelines detailed below (1 through 10) can be run via a single shell script, as described later in this guide.
 
 All ETL scripts are run as Python modules from the project root:
 
@@ -1107,16 +1036,11 @@ python -m etl.gold_immunizations
 python -m etl.load_immunizations
 ```
 
-**Expected Results:**
-- PostgreSQL table: `clinical.patient_immunizations` (~138 records)
-- PostgreSQL reference table: `reference.vaccine` (30 CVX-coded vaccines)
-- Parquet files: `bronze/cdwwork/vaccine_dim/`, `bronze/cdwwork/immunization/`, `bronze/cdwwork2/immunization_mill/vaccine_code_raw/`, `bronze/cdwwork2/immunization_mill/vaccine_admin_raw/`, `silver/immunizations/immunization_harmonized.parquet`, `gold/immunizations/patient_immunizations_final.parquet`
-
 #### 10. Drug-Drug Interaction (DDI) Reference Data Pipeline
 
 The DDI pipeline provides reference data for the AI Clinical Insights feature. Unlike clinical domains, this pipeline does NOT load into PostgreSQL—the Gold Parquet is consumed directly by the AI service at runtime.
 
-**Prerequisites:**
+**Important Prerequisites:**
 - MinIO `med-sandbox` bucket must exist
 - Kaggle CSV file must be uploaded to: `med-sandbox/kaggle-data/ddi/db_drug_interactions.csv`
 
@@ -1132,14 +1056,8 @@ python -m etl.silver_ddi
 python -m etl.gold_ddi
 ```
 
-**Verification:**
-Via MinIO Web Console (http://localhost:9001):
-1. Navigate to `med-z1` bucket
-2. Check folders: `bronze/ddi/`, `silver/ddi/`, `gold/ddi/`
-3. Verify files exist: `ddi_raw.parquet`, `ddi_clean.parquet`, `ddi_reference.parquet`
-
 ### Verify ETL Pipeline Results
-After running pipelines, verify clinical domain data was successfully loaded into PostgreSQL.  
+After running all pipelines, verify clinical domain data was successfully loaded into PostgreSQL.  
 
 You can also verify that Parquet files were created in MinIO via the Web Console:
 ```bash
@@ -1154,14 +1072,12 @@ You can also verify that Parquet files were created in MinIO via the Web Console
 
 For convenience, you can run all ETL pipelines (clinical domains + DDI reference data) sequentially via a single shell script.  
 
-Note that the DDI pipeline requires the Kaggle CSV to exist in MinIO's `med-sandbox` bucket at path `kaggle-data/ddi/db_drug_interactions.csv`. If the file is missing, the script will fail at the DDI Bronze extraction step. See section 9 **_Drug-Drug Interaction (DDI) Reference Data Pipeline_** above for DDI prerequisites and how to verify MinIO setup.  
+**Important Note:** The DDI pipeline requires the Kaggle CSV to exist in MinIO's `med-sandbox` bucket at path `kaggle-data/ddi/db_drug_interactions.csv`. If the file is missing, the script will fail at the DDI Bronze extraction step. See section **_10. Drug-Drug Interaction (DDI) Reference Data Pipeline_** above for DDI prerequisites and how to verify MinIO setup.  
 
 Run the full ETL Pipeline:
 ```bash
 ./scripts/run_all_etl.sh
 ```
-
-
 
 ## Next Steps
 
