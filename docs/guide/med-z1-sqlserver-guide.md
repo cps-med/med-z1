@@ -18,7 +18,7 @@
    - [Schema: SStaff (Staff/Providers)](#schema-sstaff-staffproviders)
    - [Schema: Vital](#schema-vital)
    - [Schema: Allergy](#schema-allergy)
-   - [Schema: RxOut (Outpatient Pharmacy)](#schema-rxout-outpatient-pharmacy)
+   - [Schema: RxOut (Outpatient Pharmacy)](#schema---rxout-outpatient-pharmacy)
    - [Schema: BCMA (Medication Administration)](#schema-bcma-medication-administration)
    - [Schema: Inpat (Inpatient Encounters)](#schema-inpat-inpatient-encounters)
    - [Schema: Chem (Laboratory)](#schema-chem-laboratory)

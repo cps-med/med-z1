@@ -2967,6 +2967,453 @@ Before deployment, confirm:
 
 ---
 
+## 14. scikit-learn Implementation Guide
+
+### 14.1 Overview: scikit-learn's Role in Suicide Risk Assessment
+
+**scikit-learn** is the core machine learning library used to implement the REACH VET 2.0 predictive model in this suicide prevention system. This section clarifies how scikit-learn components are integrated into the ETL pipeline, model training, and inference workflows.
+
+**Key Use Case:** Transform clinical features (diagnoses, medications, utilization patterns, NLP-extracted psychosocial factors) into a **calibrated probability of suicide-related events** using logistic regression.
+
+---
+
+### 14.2 Where scikit-learn Fits in the Architecture
+
+```
+ETL Pipeline Flow:
+┌──────────────────────────────────────────────────────────────────────┐
+│ Bronze Layer (SQL Server → Parquet)                                  │
+│   Raw clinical data extraction                                       │
+│   ❌ No scikit-learn usage                                           │
+└──────────────────────────────────────────────────────────────────────┘
+                            ↓
+┌──────────────────────────────────────────────────────────────────────┐
+│ Silver Layer (Feature Engineering)                                   │
+│   Polars/Pandas data transformations                                 │
+│   ⚠️ Minimal scikit-learn usage (optional preprocessing)            │
+│   - StandardScaler (if normalizing continuous features)              │
+│   - LabelEncoder (if encoding categorical variables)                 │
+└──────────────────────────────────────────────────────────────────────┘
+                            ↓
+┌──────────────────────────────────────────────────────────────────────┐
+│ Gold Layer (Risk Scoring)  ⭐ PRIMARY SCIKIT-LEARN USAGE            │
+│   etl/gold/calculate_suicide_risk_scores.py                         │
+│   - LogisticRegression model (trained on historical data)           │
+│   - predict_proba() to generate risk probabilities                  │
+│   - Classification into High/Moderate/Standard tiers                │
+└──────────────────────────────────────────────────────────────────────┘
+                            ↓
+┌──────────────────────────────────────────────────────────────────────┐
+│ PostgreSQL Serving Layer                                             │
+│   clinical.clinical_risk_scores table stores predictions            │
+│   ❌ No scikit-learn usage (inference already complete)             │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+**Summary:** scikit-learn is primarily used in the **Gold ETL layer** for model inference (applying trained model to new patient data) and during **model training** (offline, prior to production deployment).
+
+---
+
+### 14.3 Core scikit-learn Components Used
+
+#### 14.3.1 LogisticRegression (Primary Model)
+
+**File:** `etl/gold/calculate_suicide_risk_scores.py` or `ai/models/suicide_risk_model.py`
+
+**Purpose:** Implements REACH VET 2.0 calibrated logistic regression model.
+
+**Key Methods:**
+```python
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+import polars as pl
+import numpy as np
+
+# ========================================================================
+# PHASE 1: Model Training (One-Time, Offline)
+# ========================================================================
+def train_reach_vet_model(training_data: pl.DataFrame):
+    """
+    Train logistic regression model on historical patient data.
+
+    This is done ONCE during development or when retraining the model.
+    The trained model is then serialized (pickle/joblib) and loaded for inference.
+
+    Input Features (X):
+    - has_prior_attempt (boolean)
+    - has_mst (boolean)
+    - has_psych_admission_2y (boolean)
+    - no_show_count_12m_ge3 (boolean)
+    - has_hopelessness_notes (boolean)
+    - has_concurrent_opioid_benzo (boolean)
+    - ... (20-25 total features)
+
+    Target (y):
+    - suicide_related_event (0/1) - binary outcome from historical data
+    """
+
+    # Prepare features and target
+    feature_columns = [
+        'has_prior_attempt', 'has_mst', 'has_psych_admission_2y',
+        'no_show_count_12m_ge3', 'has_hopelessness_notes',
+        'has_concurrent_opioid_benzo', 'has_firearm_access_notes',
+        'has_substance_use', 'has_depression', 'has_homeless',
+        'has_tbi', 'has_social_isolation_notes', 'has_opioid_rx',
+        'ed_visit_count_12m_ge3', 'has_benzo_rx', 'has_recent_loss_notes',
+        'has_unemployment_notes', 'has_chronic_pain', 'has_sleep_disorder',
+        'age_group_high_risk', 'is_male', 'is_rural'
+    ]
+
+    X = training_data.select(feature_columns).to_pandas()
+    y = training_data['suicide_related_event'].to_pandas()  # Historical outcomes
+
+    # Train/test split
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42, stratify=y
+    )
+
+    # Initialize and train logistic regression
+    model = LogisticRegression(
+        penalty='l2',           # L2 regularization (Ridge)
+        C=1.0,                  # Inverse regularization strength
+        class_weight='balanced', # Handle class imbalance (rare events)
+        max_iter=1000,
+        random_state=42
+    )
+
+    model.fit(X_train, y_train)
+
+    # Evaluate model
+    from sklearn.metrics import roc_auc_score, classification_report
+
+    y_pred_proba = model.predict_proba(X_test)[:, 1]  # Probability of event
+    auc = roc_auc_score(y_test, y_pred_proba)
+
+    print(f"Model AUC: {auc:.3f}")
+    print("\nModel Coefficients (Feature Importance):")
+    for feature, coef in zip(feature_columns, model.coef_[0]):
+        print(f"  {feature}: {coef:.3f}")
+
+    # Save trained model
+    import joblib
+    joblib.dump(model, 'models/suicide_risk_model_v1.pkl')
+
+    return model
+
+
+# ========================================================================
+# PHASE 2: Model Inference (Every ETL Run)
+# ========================================================================
+def apply_risk_model_to_patients(features_df: pl.DataFrame):
+    """
+    Apply trained logistic regression model to calculate risk scores.
+
+    This runs during EVERY Gold ETL execution (e.g., nightly batch).
+    Loads pre-trained model and generates predictions for all patients.
+
+    Input: features_df (Polars DataFrame with 22 boolean/numeric features)
+    Output: features_df with added columns:
+        - risk_probability (0.0-1.0)
+        - risk_tier ('High', 'Moderate', 'Standard')
+    """
+
+    import joblib
+
+    # Load pre-trained model
+    model = joblib.load('models/suicide_risk_model_v1.pkl')
+
+    # Prepare features (same order as training)
+    feature_columns = [
+        'has_prior_attempt', 'has_mst', 'has_psych_admission_2y',
+        # ... (all 22 features)
+    ]
+
+    X = features_df.select(feature_columns).to_pandas()
+
+    # Generate predictions
+    risk_probabilities = model.predict_proba(X)[:, 1]  # Probability of event (class 1)
+
+    # Add predictions to DataFrame
+    features_df = features_df.with_columns([
+        pl.Series('risk_probability', risk_probabilities)
+    ])
+
+    # Classify into risk tiers based on probability thresholds
+    features_df = features_df.with_columns([
+        pl.when(pl.col('risk_probability') >= 0.0015)  # Top 0.1%
+          .then(pl.lit('High'))
+          .when(pl.col('risk_probability') >= 0.0003)  # Top 1%
+          .then(pl.lit('Moderate'))
+          .otherwise(pl.lit('Standard'))
+          .alias('risk_tier')
+    ])
+
+    return features_df
+```
+
+**Key scikit-learn Concepts:**
+- **`fit(X, y)`**: Train model on features (X) and labels (y) - **ONE TIME**
+- **`predict_proba(X)`**: Generate probability estimates for new data - **EVERY ETL RUN**
+- **`coef_`**: Access learned coefficients (feature weights) for explainability
+- **Serialization (`joblib.dump/load`)**: Save trained model, load for inference
+
+---
+
+#### 14.3.2 Preprocessing (Optional - Silver Layer)
+
+**File:** `etl/silver/transform_suicide_risk_features.py`
+
+**Purpose:** Normalize continuous features or encode categorical variables.
+
+```python
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+
+def preprocess_features(features_df: pl.DataFrame):
+    """
+    Optional: Standardize continuous features if model requires.
+
+    Note: Logistic regression with binary features (0/1) typically does NOT
+    require scaling. Use StandardScaler only if adding continuous features
+    (e.g., age as integer, no-show rate as percentage).
+    """
+
+    # Example: Scale continuous features
+    scaler = StandardScaler()
+
+    # Only scale if continuous features exist (not needed for binary-only models)
+    if 'age' in features_df.columns:  # Example continuous feature
+        age_scaled = scaler.fit_transform(
+            features_df.select('age').to_pandas()
+        )
+        features_df = features_df.with_columns([
+            pl.Series('age_scaled', age_scaled.flatten())
+        ])
+
+    return features_df
+```
+
+**When to Use:**
+- **StandardScaler**: When mixing continuous (age, vitals) and binary features
+- **LabelEncoder**: When converting categorical text to numeric codes (rarely needed for this model)
+- **For REACH VET 2.0**: Likely NOT needed (all features are binary or already numeric)
+
+---
+
+#### 14.3.3 Model Evaluation Metrics
+
+**File:** `scripts/evaluate_suicide_risk_model.py` or integrated into training script
+
+**Purpose:** Assess model performance during development and validation.
+
+```python
+from sklearn.metrics import (
+    roc_auc_score,
+    roc_curve,
+    precision_recall_curve,
+    classification_report,
+    confusion_matrix
+)
+import matplotlib.pyplot as plt
+
+def evaluate_model_performance(model, X_test, y_test):
+    """
+    Comprehensive model evaluation using scikit-learn metrics.
+
+    Key Metrics for Suicide Risk:
+    - AUC-ROC: Overall discrimination ability (target: ≥ 0.75)
+    - Sensitivity at 0.1%: Catch rate for high-risk tier (target: ≥ 40%)
+    - Precision: Positive predictive value (avoid overwhelming clinicians with false positives)
+    """
+
+    # Generate predictions
+    y_pred_proba = model.predict_proba(X_test)[:, 1]
+
+    # Calculate AUC
+    auc = roc_auc_score(y_test, y_pred_proba)
+    print(f"AUC-ROC: {auc:.3f}")
+
+    # ROC Curve
+    fpr, tpr, thresholds = roc_curve(y_test, y_pred_proba)
+    plt.figure()
+    plt.plot(fpr, tpr, label=f'AUC = {auc:.3f}')
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate (Sensitivity)')
+    plt.title('ROC Curve - Suicide Risk Model')
+    plt.legend()
+    plt.savefig('reports/roc_curve.png')
+
+    # Precision-Recall Curve (more informative for imbalanced data)
+    precision, recall, _ = precision_recall_curve(y_test, y_pred_proba)
+    plt.figure()
+    plt.plot(recall, precision)
+    plt.xlabel('Recall (Sensitivity)')
+    plt.ylabel('Precision (PPV)')
+    plt.title('Precision-Recall Curve')
+    plt.savefig('reports/precision_recall_curve.png')
+
+    # Sensitivity at top 0.1% threshold
+    top_01_threshold = np.percentile(y_pred_proba, 99.9)
+    y_pred_high_risk = (y_pred_proba >= top_01_threshold).astype(int)
+
+    tn, fp, fn, tp = confusion_matrix(y_test, y_pred_high_risk).ravel()
+    sensitivity = tp / (tp + fn)
+    print(f"Sensitivity at 0.1% threshold: {sensitivity:.1%}")
+
+    # Classification report (for binary predictions)
+    y_pred_binary = (y_pred_proba >= 0.5).astype(int)
+    print(classification_report(y_test, y_pred_binary))
+```
+
+**Key scikit-learn Metrics:**
+- **`roc_auc_score()`**: Single number summarizing model discrimination
+- **`roc_curve()`**: Plot sensitivity vs. false positive rate
+- **`precision_recall_curve()`**: Better than ROC for imbalanced data (rare events)
+- **`confusion_matrix()`**: True positives, false positives, etc.
+- **`classification_report()`**: Precision, recall, F1-score summary
+
+---
+
+### 14.4 Python Scripts Using scikit-learn
+
+**Offline (One-Time Model Training):**
+```
+ai/models/train_suicide_risk_model.py
+├─ LogisticRegression.fit()
+├─ train_test_split()
+├─ roc_auc_score(), confusion_matrix()
+└─ joblib.dump() to save model
+```
+
+**Online (Every ETL Run - Inference):**
+```
+etl/gold/calculate_suicide_risk_scores.py
+├─ joblib.load() to load trained model
+├─ LogisticRegression.predict_proba()
+└─ Assign risk tiers based on probabilities
+```
+
+**Validation/Testing:**
+```
+scripts/evaluate_suicide_risk_model.py
+├─ roc_curve(), precision_recall_curve()
+├─ classification_report()
+└─ Generate evaluation plots
+```
+
+---
+
+### 14.5 Alternative Approach: Coefficient-Based Scoring (No Training)
+
+**Important Note:** The design document (Section 6.4) also describes a **coefficient-based approach** where published REACH VET 2.0 coefficients are hardcoded directly, WITHOUT using scikit-learn's training functionality.
+
+**Comparison:**
+
+| Approach | scikit-learn Usage | When to Use |
+|----------|-------------------|-------------|
+| **Coefficient-Based** | ❌ None (manual logistic calculation using `scipy.special.expit`) | Using published REACH VET 2.0 weights from literature |
+| **Trained Model** | ✅ Full (`fit()`, `predict_proba()`) | When training on med-z1 synthetic data or VA production data |
+
+**Coefficient-Based Implementation (No scikit-learn):**
+```python
+from scipy.special import expit  # Sigmoid function
+import polars as pl
+
+# Published REACH VET 2.0 coefficients from literature
+COEFFICIENTS = {
+    'intercept': -7.5,
+    'has_prior_attempt': 2.50,
+    'has_mst': 1.80,
+    'has_psych_admission_2y': 1.20,
+    # ... (all 22 features)
+}
+
+def calculate_risk_score_manual(features_df: pl.DataFrame):
+    """
+    Calculate risk scores using hardcoded coefficients (no scikit-learn).
+
+    This approach is valid if using published REACH VET 2.0 weights.
+    Skips training step entirely.
+    """
+
+    # Start with intercept
+    features_df = features_df.with_columns([
+        pl.lit(COEFFICIENTS['intercept']).alias('logit')
+    ])
+
+    # Add contribution from each feature
+    for feature, coef in COEFFICIENTS.items():
+        if feature == 'intercept':
+            continue
+        features_df = features_df.with_columns([
+            (pl.col('logit') + (pl.col(feature).cast(pl.Float64) * coef)).alias('logit')
+        ])
+
+    # Convert log-odds to probability
+    features_df = features_df.with_columns([
+        pl.col('logit').map_elements(lambda x: expit(x), return_dtype=pl.Float64)
+          .alias('risk_probability')
+    ])
+
+    return features_df
+```
+
+**Recommendation:** Use coefficient-based approach for Phase 1 (faster implementation), then transition to trained scikit-learn model in Phase 2 (better calibration on actual data).
+
+---
+
+### 14.6 Key Takeaways for Developers
+
+1. **Training vs. Inference:**
+   - **Training** (`fit()`): ONE TIME, offline, on historical data with known outcomes
+   - **Inference** (`predict_proba()`): EVERY ETL RUN, on new patients without outcomes
+
+2. **Model Persistence:**
+   - Use `joblib.dump(model, 'path.pkl')` to save trained model
+   - Use `joblib.load('path.pkl')` to load for inference
+   - Store model files in `models/` directory or MinIO object storage
+
+3. **Feature Consistency:**
+   - Training and inference MUST use identical feature names and order
+   - Missing features → errors or incorrect predictions
+   - Track feature lists in shared configuration
+
+4. **Class Imbalance:**
+   - Suicide events are rare (~0.1% base rate)
+   - Use `class_weight='balanced'` in LogisticRegression
+   - Evaluate using AUC, not accuracy (accuracy misleading for rare events)
+
+5. **Explainability:**
+   - Access `model.coef_` to understand feature importance
+   - Positive coefficients → increase risk, negative → decrease risk
+   - Store coefficients in `clinical_risk_factors` table for transparency
+
+6. **Model Updates:**
+   - Retrain periodically as new outcome data accumulates
+   - Version models (`suicide_risk_model_v1.pkl`, `v2.pkl`)
+   - A/B test new models before replacing production model
+
+---
+
+### 14.7 Learning Resources
+
+**scikit-learn Documentation:**
+- [LogisticRegression](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html)
+- [Model Persistence (joblib)](https://scikit-learn.org/stable/model_persistence.html)
+- [Metrics and Scoring](https://scikit-learn.org/stable/modules/model_evaluation.html)
+
+**Relevant Tutorials:**
+- [Logistic Regression for Binary Classification](https://scikit-learn.org/stable/auto_examples/linear_model/plot_logistic.html)
+- [Handling Imbalanced Classes](https://scikit-learn.org/stable/auto_examples/svm/plot_separating_hyperplane_unbalanced.html)
+
+**VA REACH VET References:**
+- McCarthy et al. (2015) - Predictive modeling for suicide attempts in the VA
+- Kessler et al. (2015) - Machine learning approaches to suicide risk
+
+---
+
+**End of scikit-learn Implementation Guide**
+
+---
 ## Appendices
 
 ### Appendix A: REACH VET 2.0 Variable Definitions (Detailed)
@@ -3033,6 +3480,7 @@ Before deployment, confirm:
 ```
 
 ---
+
 
 **End of Design Specification**
 
