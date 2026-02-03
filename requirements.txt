@@ -72,6 +72,22 @@ openai==2.14.0
 markdown==3.10
 langgraph-checkpoint-postgres==3.0.3
 
+# MCP (Model Context Protocol) - For building MCP servers
+mcp>=1.0.0
+
+# Vector Database - For semantic search / RAG
+chromadb>=0.4.0
+
+# PyTorch - For deep learning / ML models
+torch>=2.0.0
+torchvision>=0.15.0
+torchaudio>=2.0.0
+
+# ML Utilities
+scikit-learn>=1.3.0  # Data preprocessing, metrics, train/test split
+transformers>=4.30.0  # HuggingFace transformers (BioClinicalBERT)
+datasets>=2.14.0      # HuggingFace datasets library
+
 # PostgreSQL async adapter for LangGraph checkpointer
 # Note: psycopg v3 (different from psycopg2-binary v2)
 # - psycopg2-binary: Used by SQLAlchemy for sync database queries

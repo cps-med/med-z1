@@ -50,6 +50,38 @@ The AI Clinical Insights subsystem provides an intelligent chatbot interface to 
 - ✅ **Conversation Export:** Download chat transcripts as HTML files (Phase 5)
 - ✅ **Vista Integration:** Supports cached Vista RPC responses for real-time data overlay
 
+### Future Tool Enhancements (Planned)
+
+**Note:** The following tools have been implemented as **MCP servers** (Sections 5-6) for external clients like Claude Desktop, but are not yet available in the web UI's LangGraph agent. They can be added by creating `@tool` wrappers in `ai/tools/` that reuse the existing business logic.
+
+**Candidate Tools from MCP Server #2 (Clinical Decision Support):**
+- **`assess_fall_risk`** - Fall risk scoring (age + medications + polypharmacy)
+  - Logic exists in `mcp_servers/clinical_decision_support_server.py:_assess_fall_risk()`
+  - Would add geriatric safety assessment to web UI
+- **`calculate_ckd_egfr`** - CKD-EPI eGFR calculation for kidney function
+  - Logic exists in `mcp_servers/clinical_decision_support_server.py:_calculate_ckd_egfr()`
+  - Critical for medication dosing decisions
+- **`recommend_cancer_screening`** - USPSTF guideline-based screening recommendations
+  - Logic exists in `mcp_servers/clinical_decision_support_server.py:_recommend_cancer_screening()`
+  - Supports preventive care planning
+
+**Implementation Pattern:**
+```python
+# ai/tools/clinical_tools.py (new file)
+from langchain_core.tools import tool
+
+@tool
+def assess_fall_risk(patient_icn: str) -> str:
+    """Assess patient fall risk - LangGraph version"""
+    # Reuse logic from MCP server
+    # Same algorithm, different wrapper
+    pass
+```
+
+Then add to `ai/tools/__init__.py:ALL_TOOLS` list.
+
+**See:** `docs/spec/ai-insight-design.md` for architectural guidance on expanding tools.
+
 ## Architecture
 
 ```

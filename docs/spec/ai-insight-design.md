@@ -4911,6 +4911,91 @@ Vista RPC (real-time query at 14:23)
 - Read Gold Parquet for fast access to all domains
 - Tools: `generate_chart_summary(patient_icn)`
 
+---
+
+### 14.1.1 Port MCP Server Tools to LangGraph (2-4 weeks, 8-12 hours)
+
+**Context:** During MCP learning path implementation (Sections 5-6), clinical decision support tools were built for **external MCP clients** (Claude Desktop, etc.). These tools wrap existing med-z1 business logic but are **not yet available** in the web UI's LangGraph agent.
+
+**Opportunity:** Reuse the same clinical algorithms by creating LangGraph `@tool` wrappers that share the underlying services.
+
+**Candidate Tools from MCP Server #2 (Clinical Decision Support):**
+
+1. **`assess_fall_risk(patient_icn: str)`**
+   - **MCP Implementation:** `mcp_servers/clinical_decision_support_server.py:_assess_fall_risk()`
+   - **Algorithm:** Age (≥65 = +2), polypharmacy (≥5 meds = +1), high-risk medication classes (+1 each)
+   - **Output:** Risk level (Low/Moderate/High) + contributing factors + recommendations
+   - **Clinical Value:** Geriatric safety assessment for inpatient safety planning
+   - **Effort:** 2-3 hours (extract logic to `ai/services/fall_risk_analyzer.py`, create `@tool` wrapper)
+
+2. **`calculate_ckd_egfr(creatinine: float, age: int, sex: str, race_black: bool = False)`**
+   - **MCP Implementation:** `mcp_servers/clinical_decision_support_server.py:_calculate_ckd_egfr()`
+   - **Algorithm:** CKD-EPI 2021 equation (race-neutral)
+   - **Output:** eGFR value + CKD stage (G1-G5) + clinical recommendations
+   - **Clinical Value:** Essential for medication dosing adjustments (many drugs renally cleared)
+   - **Effort:** 2-3 hours (pure calculation function, easy to extract and wrap)
+
+3. **`recommend_cancer_screening(patient_icn: str)`**
+   - **MCP Implementation:** `mcp_servers/clinical_decision_support_server.py:_recommend_cancer_screening()`
+   - **Algorithm:** USPSTF guideline-based (colorectal, breast, cervical, lung, prostate)
+   - **Output:** Age/sex-stratified screening recommendations with evidence grades (A/B/C)
+   - **Clinical Value:** Preventive care planning, gap analysis
+   - **Effort:** 3-4 hours (guideline logic extraction, may need update mechanism for guideline changes)
+
+**Implementation Pattern:**
+
+```python
+# Step 1: Extract business logic to ai/services/ (if needed)
+# ai/services/fall_risk_analyzer.py
+class FallRiskAnalyzer:
+    def assess_risk(self, patient_icn: str) -> dict:
+        """Reusable fall risk assessment logic"""
+        # Logic from MCP server
+        pass
+
+# Step 2: Create LangGraph tool wrapper
+# ai/tools/clinical_tools.py (new file)
+from langchain_core.tools import tool
+from ai.services.fall_risk_analyzer import FallRiskAnalyzer
+
+@tool
+def assess_fall_risk(patient_icn: str) -> str:
+    """Assess patient fall risk based on age, medications, and polypharmacy.
+
+    Returns risk level (Low/Moderate/High) with contributing factors.
+    Useful for geriatric and inpatient safety planning.
+    """
+    analyzer = FallRiskAnalyzer()
+    result = analyzer.assess_risk(patient_icn)
+    return format_fall_risk_result(result)
+
+# Step 3: Add to ALL_TOOLS in ai/tools/__init__.py
+from ai.tools.clinical_tools import assess_fall_risk, calculate_egfr, recommend_cancer_screening
+
+ALL_TOOLS = [
+    check_ddi_risks,
+    get_patient_summary,
+    analyze_vitals_trends,
+    get_clinical_notes_summary,
+    assess_fall_risk,           # NEW
+    calculate_egfr,             # NEW
+    recommend_cancer_screening, # NEW
+]
+```
+
+**Benefits:**
+- ✅ Expands web UI capabilities without new logic development
+- ✅ Reuses thoroughly tested MCP server algorithms
+- ✅ Single source of truth (services shared by both MCP and LangGraph)
+- ✅ Quick implementation (logic already exists, just needs wrapper)
+
+**Dependencies:**
+- MCP Server #2 implementation (Section 6) - ✅ Complete as of 2026-02-02
+
+**Priority:** Medium (enhances web UI, but MCP servers already provide access via Claude Desktop)
+
+---
+
 ### 14.2 Phase 3+ Advanced Features (6-12 Months)
 
 **Multimodal (Images + Text)**
