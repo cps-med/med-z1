@@ -2623,7 +2623,7 @@ If a specific role requires TypeScript, learn it AFTER getting the offer. With y
 ### MCP Server Checklist
 
 - [x] Installed `mcp` Python SDK
-- [x] Created `mcp_servers/` directory structure
+- [x] Created `mcpsvr/` directory structure
 - [x] Implemented `@server.list_tools()` handler
 - [x] Implemented `@server.call_tool()` handler
 - [x] Wrapped sync functions with `asyncio.to_thread()`

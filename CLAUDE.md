@@ -27,6 +27,7 @@ med-z1/
       cdwwork2/  # Cerner/Oracle Health-like mock data
     shared/      # Shared patient registry (ICN/DFN mappings)
   ai/            # AI/ML and agentic components
+  mcpsvr/        # Model Context Protocol servers (expose data/AI to Claude Desktop)
   db/            # Serving DB DDL, migrations (create when needed)
   docs/          # Architecture, design docs
   lake/          # MinIO/Parquet access configs (create when needed)

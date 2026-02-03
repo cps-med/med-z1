@@ -27,19 +27,19 @@ If you need to test a server standalone (to check for errors), run it manually:
 **EHR Data Server:**
 ```bash
 cd /Users/chuck/swdev/med/med-z1
-python mcp_servers/ehr_server.py
+python mcpsvr/ehr_server.py
 ```
 
 **Clinical Decision Support Server:**
 ```bash
 cd /Users/chuck/swdev/med/med-z1
-python mcp_servers/clinical_decision_support_server.py
+python mcpsvr/clinical_decision_support_server.py
 ```
 
 **Alternative (module syntax):**
 ```bash
-python -m mcp_servers.ehr_server
-python -m mcp_servers.clinical_decision_support_server
+python -m mcpsvr.ehr_server
+python -m mcpsvr.clinical_decision_support_server
 ```
 
 Both methods work because the servers have path setup code built-in.
@@ -190,12 +190,12 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`
   "mcpServers": {
     "ehr-data": {
       "command": "/Users/chuck/swdev/med/med-z1/.venv/bin/python",
-      "args": ["/Users/chuck/swdev/med/med-z1/mcp_servers/ehr_server.py"],
+      "args": ["/Users/chuck/swdev/med/med-z1/mcpsvr/ehr_server.py"],
       "cwd": "/Users/chuck/swdev/med/med-z1"
     },
     "clinical-decision-support": {
       "command": "/Users/chuck/swdev/med/med-z1/.venv/bin/python",
-      "args": ["/Users/chuck/swdev/med/med-z1/mcp_servers/clinical_decision_support_server.py"],
+      "args": ["/Users/chuck/swdev/med/med-z1/mcpsvr/clinical_decision_support_server.py"],
       "cwd": "/Users/chuck/swdev/med/med-z1"
     }
   }
@@ -220,12 +220,12 @@ Edit `%APPDATA%\Claude\claude_desktop_config.json`:
   "mcpServers": {
     "ehr-data": {
       "command": "C:\\Users\\YourUsername\\path\\to\\med-z1\\.venv\\Scripts\\python.exe",
-      "args": ["C:\\Users\\YourUsername\\path\\to\\med-z1\\mcp_servers\\ehr_server.py"],
+      "args": ["C:\\Users\\YourUsername\\path\\to\\med-z1\\mcpsvr\\ehr_server.py"],
       "cwd": "C:\\Users\\YourUsername\\path\\to\\med-z1"
     },
     "clinical-decision-support": {
       "command": "C:\\Users\\YourUsername\\path\\to\\med-z1\\.venv\\Scripts\\python.exe",
-      "args": ["C:\\Users\\YourUsername\\path\\to\\med-z1\\mcp_servers\\clinical_decision_support_server.py"],
+      "args": ["C:\\Users\\YourUsername\\path\\to\\med-z1\\mcpsvr\\clinical_decision_support_server.py"],
       "cwd": "C:\\Users\\YourUsername\\path\\to\\med-z1"
     }
   }
@@ -300,7 +300,7 @@ psql $DATABASE_URL -c "SELECT COUNT(*) FROM patient_demographics"
 Run server standalone and watch for errors:
 ```bash
 cd /Users/chuck/swdev/med/med-z1
-python mcp_servers/ehr_server.py
+python mcpsvr/ehr_server.py
 # Then trigger tool call from Claude Desktop
 # Check terminal for error messages
 ```
@@ -310,7 +310,7 @@ python mcp_servers/ehr_server.py
 ```
 Claude Desktop
     ↓ (MCP Protocol - stdio)
-mcp_servers/ehr_server.py
+mcpsvr/ehr_server.py
     ↓ (asyncio.to_thread)
 app/db/*.py (Data Access Layer)
     ↓ (SQLAlchemy)

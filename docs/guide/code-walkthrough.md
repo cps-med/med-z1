@@ -20,7 +20,7 @@
 - Comprehensive testing instructions for all tools
 
 **v1.1 Changes (2026-02-02):**
-- Updated directory reference: `mcp/` → `mcp_servers/`
+- Updated directory reference: `mcp/` → `mcpsvr/`
 - Updated Claude Desktop config to use full paths (venv Python + script path)
 - Added troubleshooting for "Server disconnected" error
 - Added environment variables prerequisite
@@ -56,7 +56,7 @@
 All code is in proper directories matching production structure:
 ```
 med-z1/
-  mcp_servers/            # MCP servers
+  mcpsvr/            # MCP servers
   ai/ml/                  # PyTorch models
   ai/services/            # Business logic
   ai/tools/               # LangGraph tools
@@ -73,7 +73,7 @@ med-z1/
 ## Section 5: MCP Server #1 - EHR Data Server
 
 **Main Guide Reference:** Section 5 in `clinical-ai-career-preparation.md`
-**File:** `mcp_servers/ehr_server.py`
+**File:** `mcpsvr/ehr_server.py`
 **Lines:** 550 total
 **Complexity:** Beginner-Intermediate
 **Estimated Study Time:** 2-3 hours
@@ -98,7 +98,7 @@ This MCP server exposes your PostgreSQL patient database to AI assistants like C
                             │ MCP Protocol (JSON-RPC over stdio)
                             ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  mcp_servers/ehr_server.py                                  │
+│  mcpsvr/ehr_server.py                                  │
 │  ┌──────────────────────────────────────────────────────┐   │
 │  │ @server.call_tool()                                  │   │
 │  │ → handle_call_tool("get_patient_medications", ...)   │   │
@@ -120,7 +120,7 @@ This MCP server exposes your PostgreSQL patient database to AI assistants like C
                             │
                             ▼ (results returned back up the chain)
 ┌─────────────────────────────────────────────────────────────┐
-│  mcp_servers/ehr_server.py                                  │
+│  mcpsvr/ehr_server.py                                  │
 │  _format_medications(meds) → Markdown text                  │
 │  Returns: "**MEDICATIONS** (7 active)\n- GABAPENTIN..."     │
 └───────────────────────────┬─────────────────────────────────┘
@@ -634,7 +634,7 @@ if __name__ == "__main__":
 **MCP Transport: stdio (Standard Input/Output)**
 
 **How Claude Desktop Communicates:**
-1. Claude Desktop starts your server as subprocess: `python mcp_servers/ehr_server.py`
+1. Claude Desktop starts your server as subprocess: `python mcpsvr/ehr_server.py`
 2. Sends MCP requests via **stdin** (standard input)
 3. Reads MCP responses from **stdout** (standard output)
 4. All communication is JSON-RPC over stdio
@@ -742,10 +742,10 @@ python -c "import mcp; print('MCP installed')"
 
 ```bash
 cd /Users/chuck/swdev/med/med-z1
-python mcp_servers/ehr_server.py
+python mcpsvr/ehr_server.py
 ```
 
-**Note:** You can also use module syntax: `python -m mcp_servers.ehr_server` - both work because the script has path setup code at the top.
+**Note:** You can also use module syntax: `python -m mcpsvr.ehr_server` - both work because the script has path setup code at the top.
 
 **Expected Output:**
 ```
@@ -798,7 +798,7 @@ Create or edit `claude_desktop_config.json`:
   "mcpServers": {
     "ehr-data": {
       "command": "/Users/chuck/swdev/med/med-z1/.venv/bin/python",
-      "args": ["/Users/chuck/swdev/med/med-z1/mcp_servers/ehr_server.py"],
+      "args": ["/Users/chuck/swdev/med/med-z1/mcpsvr/ehr_server.py"],
       "cwd": "/Users/chuck/swdev/med/med-z1"
     }
   }
@@ -988,7 +988,7 @@ Give me a complete clinical summary of patient ICN100001
 
 **Run server standalone:**
 ```bash
-python mcp_servers/ehr_server.py
+python mcpsvr/ehr_server.py
 ```
 
 **In Claude Desktop, make a request:**
@@ -1087,7 +1087,7 @@ Once all tests pass:
 ## Section 6: MCP Server #2 - Clinical Decision Support
 
 **Main Guide Reference:** Section 6 in `clinical-ai-career-preparation.md`
-**File:** `mcp_servers/clinical_decision_support_server.py`
+**File:** `mcpsvr/clinical_decision_support_server.py`
 **Lines:** ~950 total
 **Complexity:** Intermediate-Advanced
 **Estimated Study Time:** 3-4 hours
@@ -1112,7 +1112,7 @@ This MCP server exposes clinical algorithms and risk assessment tools. Unlike Se
                             │ MCP Protocol
                             ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  mcp_servers/clinical_decision_support_server.py            │
+│  mcpsvr/clinical_decision_support_server.py            │
 │  @server.call_tool() → check_drug_interactions              │
 └───────────────────────────┬─────────────────────────────────┘
                             │
@@ -1681,7 +1681,7 @@ If this fails, you may need to run the DDI ETL pipeline first.
 
 ```bash
 cd /Users/chuck/swdev/med/med-z1
-python mcp_servers/clinical_decision_support_server.py
+python mcpsvr/clinical_decision_support_server.py
 ```
 
 **Expected Output:**
@@ -1707,12 +1707,12 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`
   "mcpServers": {
     "ehr-data": {
       "command": "/Users/chuck/swdev/med/med-z1/.venv/bin/python",
-      "args": ["/Users/chuck/swdev/med/med-z1/mcp_servers/ehr_server.py"],
+      "args": ["/Users/chuck/swdev/med/med-z1/mcpsvr/ehr_server.py"],
       "cwd": "/Users/chuck/swdev/med/med-z1"
     },
     "clinical-decision-support": {
       "command": "/Users/chuck/swdev/med/med-z1/.venv/bin/python",
-      "args": ["/Users/chuck/swdev/med/med-z1/mcp_servers/clinical_decision_support_server.py"],
+      "args": ["/Users/chuck/swdev/med/med-z1/mcpsvr/clinical_decision_support_server.py"],
       "cwd": "/Users/chuck/swdev/med/med-z1"
     }
   }

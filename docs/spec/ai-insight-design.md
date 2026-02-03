@@ -4922,21 +4922,21 @@ Vista RPC (real-time query at 14:23)
 **Candidate Tools from MCP Server #2 (Clinical Decision Support):**
 
 1. **`assess_fall_risk(patient_icn: str)`**
-   - **MCP Implementation:** `mcp_servers/clinical_decision_support_server.py:_assess_fall_risk()`
+   - **MCP Implementation:** `mcpsvr/clinical_decision_support_server.py:_assess_fall_risk()`
    - **Algorithm:** Age (≥65 = +2), polypharmacy (≥5 meds = +1), high-risk medication classes (+1 each)
    - **Output:** Risk level (Low/Moderate/High) + contributing factors + recommendations
    - **Clinical Value:** Geriatric safety assessment for inpatient safety planning
    - **Effort:** 2-3 hours (extract logic to `ai/services/fall_risk_analyzer.py`, create `@tool` wrapper)
 
 2. **`calculate_ckd_egfr(creatinine: float, age: int, sex: str, race_black: bool = False)`**
-   - **MCP Implementation:** `mcp_servers/clinical_decision_support_server.py:_calculate_ckd_egfr()`
+   - **MCP Implementation:** `mcpsvr/clinical_decision_support_server.py:_calculate_ckd_egfr()`
    - **Algorithm:** CKD-EPI 2021 equation (race-neutral)
    - **Output:** eGFR value + CKD stage (G1-G5) + clinical recommendations
    - **Clinical Value:** Essential for medication dosing adjustments (many drugs renally cleared)
    - **Effort:** 2-3 hours (pure calculation function, easy to extract and wrap)
 
 3. **`recommend_cancer_screening(patient_icn: str)`**
-   - **MCP Implementation:** `mcp_servers/clinical_decision_support_server.py:_recommend_cancer_screening()`
+   - **MCP Implementation:** `mcpsvr/clinical_decision_support_server.py:_recommend_cancer_screening()`
    - **Algorithm:** USPSTF guideline-based (colorectal, breast, cervical, lung, prostate)
    - **Output:** Age/sex-stratified screening recommendations with evidence grades (A/B/C)
    - **Clinical Value:** Preventive care planning, gap analysis

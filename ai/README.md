@@ -56,13 +56,13 @@ The AI Clinical Insights subsystem provides an intelligent chatbot interface to 
 
 **Candidate Tools from MCP Server #2 (Clinical Decision Support):**
 - **`assess_fall_risk`** - Fall risk scoring (age + medications + polypharmacy)
-  - Logic exists in `mcp_servers/clinical_decision_support_server.py:_assess_fall_risk()`
+  - Logic exists in `mcpsvr/clinical_decision_support_server.py:_assess_fall_risk()`
   - Would add geriatric safety assessment to web UI
 - **`calculate_ckd_egfr`** - CKD-EPI eGFR calculation for kidney function
-  - Logic exists in `mcp_servers/clinical_decision_support_server.py:_calculate_ckd_egfr()`
+  - Logic exists in `mcpsvr/clinical_decision_support_server.py:_calculate_ckd_egfr()`
   - Critical for medication dosing decisions
 - **`recommend_cancer_screening`** - USPSTF guideline-based screening recommendations
-  - Logic exists in `mcp_servers/clinical_decision_support_server.py:_recommend_cancer_screening()`
+  - Logic exists in `mcpsvr/clinical_decision_support_server.py:_recommend_cancer_screening()`
   - Supports preventive care planning
 
 **Implementation Pattern:**
