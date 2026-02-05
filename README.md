@@ -118,3 +118,9 @@ Note that the main app uses default port 8000 (the --port 8000 argument is optio
 **Password (all users):** `VaDemo2025!`
 
 For complete authentication details, see `docs/guide/mock-users-guide.md`.
+
+## License and Intellectual Property
+
+Copyright © 2026 Charles P. Sylvester. All rights reserved.
+
+This repository is public for portfolio and review purposes only. It is **not** open-source software. Unauthorized use, modification, or distribution of this code is strictly prohibited.
