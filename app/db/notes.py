@@ -268,7 +268,8 @@ def get_all_notes(
         where_conditions.append("document_class = :note_class")
         params["note_class"] = note_class
 
-    if date_range:
+    # Apply date range filter (skip if None, empty string, or 'all')
+    if date_range and date_range != 'all' and date_range != '':
         where_conditions.append("reference_datetime >= NOW() - INTERVAL :date_range DAY")
         params["date_range"] = str(date_range)
 

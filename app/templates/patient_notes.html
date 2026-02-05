@@ -115,7 +115,7 @@
                             <option value="90" {% if date_range_filter == 90 %}selected{% endif %}>Last 90 Days</option>
                             <option value="180" {% if date_range_filter == 180 %}selected{% endif %}>Last 6 Months</option>
                             <option value="365" {% if date_range_filter == 365 %}selected{% endif %}>Last Year</option>
-                            <option value="all" {% if date_range_filter == 'all' %}selected{% endif %}>All Notes</option>
+                            <option value="" {% if not date_range_filter %}selected{% endif %}>All Notes</option>
                         </select>
                     </div>
 
@@ -353,7 +353,7 @@
                     </div>
                     <h2 class="page-empty__title">No Clinical Notes Found</h2>
                     <p class="page-empty__message">
-                        {% if note_class_filter != 'all' or date_range_filter != 90 or author_filter or status_filter != 'all' %}
+                        {% if note_class_filter != 'all' or (date_range_filter and date_range_filter != 90) or author_filter or status_filter != 'all' %}
                             No notes match the current filter criteria. Try adjusting your filters.
                         {% else %}
                             No clinical notes have been recorded for this patient.

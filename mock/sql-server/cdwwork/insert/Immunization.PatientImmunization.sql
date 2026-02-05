@@ -305,6 +305,58 @@ VALUES
 GO
 
 -- =============================================================================
+-- PATIENT 1026 (ICN100016, Margaret E Wilson - DECEASED, Age 87)
+-- Scenario: Elderly veteran, complete adult immunization history (12 vaccines)
+-- Added 2026-02-04 - Historical immunizations for deceased patient
+-- =============================================================================
+
+INSERT INTO Immunization.PatientImmunization
+(PatientSID, VaccineSID, AdministeredDateTime, Series, Dose, Route, SiteOfAdministration, Reaction, OrderingProviderSID, AdministeringProviderSID, LocationSID, Sta3n, LotNumber, IsActive)
+VALUES
+-- Tetanus booster (Tdap) - 10 years ago
+(1026, 9, '2014-06-15 14:00:00', 'BOOSTER', '0.5 ML', 'IM', 'L DELTOID', NULL, 1001, 1002, 13, 508, 'TDAP201401', 1),
+
+-- Pneumococcal vaccines (PCV13 and PPSV23) - standard for elderly
+(1026, 10, '2016-09-20 10:30:00', 'SINGLE', '0.5 ML', 'IM', 'L DELTOID', NULL, 1003, 1004, 13, 508, 'PCV132016', 1),  -- PCV13 first
+(1026, 11, '2017-10-05 11:00:00', 'SINGLE', '0.65 ML', 'IM', 'R DELTOID', NULL, 1005, 1006, 13, 508, 'PPSV2017', 1),  -- PPSV23 one year later
+
+-- Shingrix series (zoster vaccine) - 2 dose series
+(1026, 16, '2018-08-10 09:30:00', '1 of 2', '0.5 ML', 'IM', 'L DELTOID', NULL, 1001, 1002, 13, 508, 'SHING201801', 1),
+(1026, 16, '2019-02-15 10:00:00', '2 of 2 COMPLETE', '0.5 ML', 'IM', 'R DELTOID', NULL, 1001, 1002, 13, 508, 'SHING201902', 1),
+
+-- Annual flu vaccines (high-dose for seniors 65+) - last 5 years including final year
+(1026, 18, '2020-10-20 13:30:00', 'ANNUAL 2020', '0.5 ML', 'IM', 'L DELTOID', NULL, 1003, 1004, 13, 508, 'FLUHD2020MW', 1),
+(1026, 18, '2021-10-15 14:00:00', 'ANNUAL 2021', '0.5 ML', 'IM', 'R DELTOID', NULL, 1005, 1006, 13, 508, 'FLUHD2021MW', 1),
+(1026, 18, '2022-10-18 13:45:00', 'ANNUAL 2022', '0.5 ML', 'IM', 'L DELTOID', NULL, 1001, 1002, 13, 508, 'FLUHD2022MW', 1),
+(1026, 18, '2023-10-12 14:15:00', 'ANNUAL 2023', '0.5 ML', 'IM', 'R DELTOID', NULL, 1003, 1004, 13, 508, 'FLUHD2023MW', 1),
+(1026, 18, '2024-10-08 13:30:00', 'ANNUAL 2024', '0.5 ML', 'IM', 'L DELTOID', NULL, 1005, 1006, 13, 508, 'FLUHD2024MW', 1),  -- Final flu vaccine, ~2 months before death
+
+-- COVID-19 series (Pfizer) - initial series in 2021
+(1026, 24, '2021-03-20 10:00:00', '1 of 2', '0.3 ML', 'IM', 'L DELTOID', NULL, 1001, 1002, 13, 508, 'COVID2021P1MW', 1),
+(1026, 24, '2021-04-17 10:30:00', '2 of 2 COMPLETE', '0.3 ML', 'IM', 'L DELTOID', NULL, 1001, 1002, 13, 508, 'COVID2021P2MW', 1),
+
+-- =============================================================================
+-- Patient 1027: Robert J Anderson - DECEASED 2024-11-15 (8 immunizations)
+-- 46 yo M combat veteran - deployment vaccines + routine adult vaccines
+-- Added 2026-02-04
+-- =============================================================================
+
+-- Military deployment vaccines (pre-deployment 2006)
+(1027, 26, '2006-02-10 08:00:00', '1 of 3', '0.5 ML', 'SC', 'L ARM', NULL, 1007, 1008, 14, 528, 'HEPAB200601', 1),  -- Hepatitis A/B series
+(1027, 26, '2006-03-15 08:00:00', '2 of 3', '0.5 ML', 'SC', 'R ARM', NULL, 1007, 1008, 14, 528, 'HEPAB200602', 1),
+(1027, 26, '2006-08-20 08:00:00', '3 of 3 COMPLETE', '0.5 ML', 'SC', 'L ARM', NULL, 1007, 1008, 14, 528, 'HEPAB200603', 1),
+
+-- Tdap booster (post-discharge)
+(1027, 9, '2015-04-15 10:00:00', 'BOOSTER', '0.5 ML', 'IM', 'L DELTOID', NULL, 1004, 1005, 14, 528, 'TDAP201501', 1),
+
+-- Annual flu vaccines (last 4 years including final year)
+(1027, 18, '2021-10-12 14:00:00', 'ANNUAL 2021', '0.5 ML', 'IM', 'L DELTOID', NULL, 1004, 1005, 14, 528, 'FLU2021MW', 1),
+(1027, 18, '2022-10-18 13:30:00', 'ANNUAL 2022', '0.5 ML', 'IM', 'R DELTOID', NULL, 1004, 1005, 14, 528, 'FLU2022MW', 1),
+(1027, 18, '2023-10-15 14:15:00', 'ANNUAL 2023', '0.5 ML', 'IM', 'L DELTOID', NULL, 1004, 1005, 14, 528, 'FLU2023MW', 1),
+(1027, 18, '2024-10-10 13:45:00', 'ANNUAL 2024', '0.5 ML', 'IM', 'R DELTOID', NULL, 1004, 1005, 14, 528, 'FLU2024MW', 1);  -- Final flu vaccine, ~1 month before death
+GO
+
+-- =============================================================================
 -- Verification queries
 -- =============================================================================
 

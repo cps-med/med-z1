@@ -326,13 +326,28 @@ VALUES
     (186, 114, 2),  -- DOXYCYCLINE: RASH
     (187, 114, 5),  -- REDNESS
     (188, 115, 18), -- POLLEN: SNEEZING
-    (189, 115, 56); -- WATERY EYES
+    (189, 115, 56), -- WATERY EYES
+
+    -- Allergy 116-117: Patient 1026 - Margaret E Wilson - DECEASED 2024-12-01 (2 allergies, 6 reactions)
+    -- Added 2026-02-04 - Severe penicillin anaphylaxis and latex contact dermatitis
+    (190, 116, 30), -- PENICILLIN: ANAPHYLAXIS (severe, life-threatening)
+    (191, 116, 1),  -- HIVES
+    (192, 116, 12), -- DIFFICULTY BREATHING
+    (193, 117, 2),  -- LATEX: RASH (contact dermatitis)
+    (194, 117, 4),  -- SWELLING
+    (195, 117, 3),  -- ITCHING
+
+    -- Allergy 118: Patient 1027 - Robert J Anderson - DECEASED 2024-11-15 (1 allergy, 3 reactions)
+    -- Added 2026-02-04 - Adverse reaction to codeine requiring ED visit
+    (196, 118, 16), -- CODEINE: NAUSEA (severe)
+    (197, 118, 17), -- VOMITING
+    (198, 118, 18); -- DIZZINESS
 GO
 
 -- Disable IDENTITY_INSERT
 SET IDENTITY_INSERT Allergy.PatientAllergyReaction OFF;
 GO
 
-PRINT '189 patient allergy reaction records inserted successfully';
-PRINT 'Average reactions per allergy: ~1.6 reactions';
+PRINT '198 patient allergy reaction records inserted successfully (including Patients 1026, 1027 - DECEASED)';
+PRINT 'Average reactions per allergy: ~1.7 reactions';
 GO

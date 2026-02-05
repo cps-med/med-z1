@@ -441,13 +441,28 @@ VALUES
         'HISTORICAL', 1, 'VERIFIED', 518),
     (115, 1036, 30, 1, 'POLLEN', '2019-04-15 09:00:00', NULL, 518,
         'Seasonal allergic rhinitis.',
-        'HISTORICAL', 1, 'UNVERIFIED', 518);
+        'HISTORICAL', 1, 'UNVERIFIED', 518),
+
+    -- Patient 1026: Margaret E Wilson - DECEASED 2024-12-01 (2 allergies)
+    -- Added 2026-02-04 - Important drug allergies documented for elderly patient
+    (116, 1026, 1, 3, 'PENICILLIN', '2015-06-10 10:00:00', NULL, 508,
+        'Patient reports severe anaphylactic reaction to penicillin VK in 1960s. Required emergency treatment. Patient instructed to avoid all penicillin and cephalosporin antibiotics. Medical alert bracelet worn.',
+        'HISTORICAL', 1, 'VERIFIED', 508),
+    (117, 1026, 8, 2, 'LATEX', '2018-08-15 14:30:00', '2018-08-15 14:00:00', 508,
+        'Developed contact dermatitis with rash and swelling when exposed to latex gloves during medical procedure. Symptoms resolved with antihistamines. Non-latex gloves used for all subsequent procedures.',
+        'OBSERVED', 1, 'VERIFIED', 508),
+
+    -- Patient 1027: Robert J Anderson - DECEASED 2024-11-15 (1 allergy)
+    -- Added 2026-02-04 - Documented drug allergy for combat veteran with PTSD
+    (118, 1027, 3, 2, 'CODEINE', '2017-09-20 10:00:00', '2017-09-18 08:00:00', 528,
+        'Patient experienced severe nausea, vomiting, and dizziness after taking codeine-containing cough syrup. Symptoms lasted 6 hours, required ED visit. Patient advised to avoid all codeine-containing medications. Alternatives prescribed for pain management.',
+        'OBSERVED', 1, 'VERIFIED', 528);
 GO
 
 -- Disable IDENTITY_INSERT
 SET IDENTITY_INSERT Allergy.PatientAllergy OFF;
 GO
 
-PRINT '115 patient allergy records inserted successfully';
-PRINT 'Distribution: 37 patients (6 with 0 allergies, 31 with 1-8 allergies)';
+PRINT '118 patient allergy records inserted successfully';
+PRINT 'Distribution: 39 patients (including Patients 1026, 1027 - DECEASED)';
 GO

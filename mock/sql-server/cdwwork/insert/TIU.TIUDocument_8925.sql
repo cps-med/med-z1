@@ -197,14 +197,31 @@ VALUES
     (50117, 1004, 102, '2025-11-28 09:00:00', '2025-11-28 09:45:00', 'COMPLETED', 15004, NULL, NULL, 508, 'TIU50117'),
     (50118, 1004, 100, '2025-11-12 11:00:00', '2025-11-12 11:45:00', 'COMPLETED', 15001, NULL, NULL, 508, 'TIU50118'),
     (50119, 1004, 401, '2025-10-28 14:00:00', '2025-10-28 14:45:00', 'COMPLETED', 15005, NULL, NULL, 508, 'TIU50119'),
-    (50120, 1004, 100, '2025-10-12 10:00:00', '2025-10-12 10:45:00', 'COMPLETED', 15001, NULL, NULL, 508, 'TIU50120');
+    (50120, 1004, 100, '2025-10-12 10:00:00', '2025-10-12 10:45:00', 'COMPLETED', 15001, NULL, NULL, 508, 'TIU50120'),
+
+    -- ========================================
+    -- Patient 1026 (ICN100016 - Margaret E Wilson - DECEASED): 3 notes
+    -- Added 2026-02-04 - Final hospitalization clinical notes
+    -- ========================================
+    (50121, 1026, 100, '2024-11-26 10:00:00', '2024-11-26 11:30:00', 'COMPLETED', 15001, NULL, NULL, 508, 'TIU50121'),
+    (50122, 1026, 100, '2024-11-27 09:00:00', '2024-11-27 10:15:00', 'COMPLETED', 15001, NULL, NULL, 508, 'TIU50122'),
+    (50123, 1026, 300, '2024-12-01 14:35:00', '2024-12-01 16:00:00', 'COMPLETED', 15002, 15001, NULL, 508, 'TIU50123'),
+
+    -- ========================================
+    -- Patient 1027 (ICN100017 - Robert J Anderson - DECEASED): 4 notes
+    -- Added 2026-02-04 - Psychiatric treatment and death documentation
+    -- ========================================
+    (50124, 1027, 200, '2019-06-21 14:00:00', '2019-06-21 15:30:00', 'COMPLETED', 15004, NULL, NULL, 528, 'TIU50124'),
+    (50125, 1027, 100, '2023-03-11 10:00:00', '2023-03-11 11:00:00', 'COMPLETED', 15004, NULL, NULL, 528, 'TIU50125'),
+    (50126, 1027, 100, '2024-11-14 15:00:00', '2024-11-14 15:45:00', 'COMPLETED', 15004, NULL, NULL, 528, 'TIU50126'),
+    (50127, 1027, 300, '2024-11-15 10:00:00', '2024-11-15 11:30:00', 'COMPLETED', 15005, 15004, NULL, 528, 'TIU50127');
 GO
 
 -- Disable IDENTITY_INSERT
 SET IDENTITY_INSERT TIU.TIUDocument_8925 OFF;
 GO
 
-PRINT '120 clinical note metadata records inserted successfully';
-PRINT 'Distribution: Progress Notes (70), Consults (25), Discharge Summaries (15), Imaging (10)';
-PRINT 'Patients: 1001 (40), 1002 (30), 1010 (25), 1013 (15), 1003 (5), 1004 (5)';
+PRINT '127 clinical note metadata records inserted successfully';
+PRINT 'Distribution: Progress Notes (74), Consults (26), Discharge Summaries (17), Imaging (10)';
+PRINT 'Patients: 1001 (40), 1002 (30), 1010 (25), 1013 (15), 1003 (5), 1004 (5), 1026 (3 - DECEASED), 1027 (4 - DECEASED)';
 GO

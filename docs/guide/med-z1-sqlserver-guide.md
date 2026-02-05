@@ -43,8 +43,8 @@ The **med-z1 SQL Server Mock CDW databases** simulate the VA Corporate Data Ware
 **Key Characteristics:**
 - **Purpose:** Source system for ETL Bronze layer extraction
 - **Two Databases:**
-  - **CDWWork**: Simulates VistA-based CDW data (primary VA EHR system)
-  - **CDWWork2**: Simulates Cerner/Oracle Health-based CDW data (community care/DoD integration)
+  - **CDWWork**: Simulates VistA-based CDW data (legacy VA EHR system, 135+ sites)
+  - **CDWWork2**: Simulates Cerner/Oracle Health-based CDW data (new VA EHR system, ~5 sites)
 - **Data Type:** Mock synthetic data only (safe for version control and public repositories)
 - **Access Pattern:** Read-only for ETL processes; populated via SQL INSERT scripts
 - **Identity Model:** SID-based surrogate keys with ICN for cross-database patient identity
@@ -67,7 +67,7 @@ SQL Server (CDW Mock)
 
 | Schema | Purpose | Tables | Key Tables |
 |--------|---------|--------|------------|
-| `Dim` | Dimensions and reference data | ~15 | Location, Sta3n, PatientRecordFlag, TIUDocumentDefinition, VitalType, Allergen, LocalDrug, NationalDrug, LabTest, Vaccine |
+| `Dim` | Dimensions and reference data | ~20 | Location, Sta3n, PatientRecordFlag, TIUDocumentDefinition, VitalType, Allergen, LocalDrug, NationalDrug, LabTest, Vaccine |
 | `SPatient` | Patient demographics and administrative | 6 | SPatient, SPatientAddress, SPatientInsurance, SPatientDisability, PatientRecordFlagAssignment, PatientRecordFlagHistory |
 | `SStaff` | Staff and providers | 2 | SStaff, RadiologyNuclearMedicineReport |
 | `Vital` | Vital signs | 2 | VitalSign, VitalSignQualifier |

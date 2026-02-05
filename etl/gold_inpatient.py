@@ -16,9 +16,47 @@
 import polars as pl
 from datetime import datetime, timezone
 import logging
+from sqlalchemy import create_engine
+from config import CDWWORK_DB_CONFIG
 from lake.minio_client import MinIOClient, build_silver_path, build_gold_path
 
 logger = logging.getLogger(__name__)
+
+
+def load_patient_icn_lookup():
+    """
+    Load PatientSID to PatientICN lookup from CDWWork.
+    Returns a polars DataFrame with PatientSID to PatientICN mapping.
+    """
+    logger.info("Loading PatientSID to PatientICN lookup from CDWWork")
+
+    # Create SQLAlchemy connection string
+    conn_str = (
+        f"mssql+pyodbc://{CDWWORK_DB_CONFIG['user']}:"
+        f"{CDWWORK_DB_CONFIG['password']}@"
+        f"{CDWWORK_DB_CONFIG['server']}/"
+        f"{CDWWORK_DB_CONFIG['name']}?"
+        f"driver={CDWWORK_DB_CONFIG['driver']}&"
+        f"TrustServerCertificate=yes"
+    )
+
+    engine = create_engine(conn_str)
+
+    query = """
+    SELECT
+        PatientSID,
+        PatientICN
+    FROM SPatient.SPatient
+    WHERE PatientICN IS NOT NULL
+    """
+
+    with engine.connect() as conn:
+        patient_icn_df = pl.read_database(query, connection=conn)
+
+    logger.info(f"  - Loaded {len(patient_icn_df)} PatientSID → PatientICN mappings")
+    logger.info(f"  - Sample mapping: {patient_icn_df.head(3)}")
+
+    return patient_icn_df
 
 
 def transform_inpatient_gold():
@@ -41,25 +79,36 @@ def transform_inpatient_gold():
     logger.info(f"  - Loaded {len(df)} encounters from Silver layer")
 
     # ==================================================================
-    # Step 2: Generate patient ICN from patient_sid
+    # Step 2: Join with PatientSID → PatientICN lookup
     # ==================================================================
-    logger.info("Step 2: Generating patient ICN from patient_sid...")
+    logger.info("Step 2: Joining with PatientSID → PatientICN lookup...")
 
-    # Patient ICN Resolution Strategy (same pattern as vitals/medications):
-    # PatientSID in different tables may have different ranges, but they map
-    # to the same ICN using: ICN = "ICN" + str(100000 + patient_sid)
-    #
-    # For inpatient encounters:
-    #   patient_sid=1001 → ICN100001
-    #   patient_sid=1002 → ICN100002
-    #   ...
-    #   patient_sid=1036 → ICN100036
+    # Load PatientSID to PatientICN mapping from CDWWork
+    icn_lookup = load_patient_icn_lookup()
+
+    # Join encounters with ICN lookup
+    # Note: Silver has lowercase "patient_sid", lookup has uppercase "PatientSID"
+    df = df.join(
+        icn_lookup.select([
+            pl.col("PatientSID").alias("patient_sid"),  # Match Silver's lowercase column
+            pl.col("PatientICN").alias("patient_icn")
+        ]),
+        on="patient_sid",
+        how="left"
+    )
+
+    # Add patient_key alias (same as patient_icn, for consistency)
     df = df.with_columns([
-        pl.format("ICN{}", (100000 + pl.col("patient_sid"))).alias("patient_icn"),
-        pl.format("ICN{}", (100000 + pl.col("patient_sid"))).alias("patient_key"),
+        pl.col("patient_icn").alias("patient_key")
     ])
 
-    logger.info(f"  - Generated patient ICN for all {len(df)} encounters")
+    # Check for any encounters without ICN (should be none)
+    missing_icn = df.filter(pl.col("patient_icn").is_null()).shape[0]
+    if missing_icn > 0:
+        logger.warning(f"  - WARNING: {missing_icn} encounters missing PatientICN")
+    else:
+        logger.info(f"  - All {len(df)} encounters have PatientICN")
+
     logger.info(f"  - Sample ICNs: {df.select('patient_icn').unique().head(5)['patient_icn'].to_list()}")
 
     # ==================================================================

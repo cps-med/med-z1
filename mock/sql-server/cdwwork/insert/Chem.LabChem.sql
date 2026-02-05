@@ -361,6 +361,84 @@ VALUES
 (1013, 28, 'CH 20250409-014', '5.4', 5.4, '%', NULL, '4.0 - 5.6', '2025-04-09 09:00:00', '2025-04-09 12:00:00', 'CH', 137, 552, 'Whole Blood');
 GO
 
+-- =============================================================================
+-- DECEASED PATIENT LABS
+-- =============================================================================
+
+PRINT 'Inserting labs for Patient 1026 (Margaret Wilson - DECEASED)...';
+GO
+
+-- Patient 1026: Margaret E Wilson - DECEASED 2024-12-01
+-- Final hospitalization labs showing multi-organ failure
+-- Collection: 2024-11-26 (hospital day 2 of final admission)
+-- Added 2026-02-04
+
+-- Patient 1026: BMP Panel (2024-11-26) - 7 results, showing severe metabolic derangement
+-- Acute kidney injury, electrolyte imbalances, hyperglycemia
+INSERT INTO [Chem].[LabChem] ([PatientSID], [LabTestSID], [AccessionNumber], [Result], [ResultNumeric], [ResultUnit], [AbnormalFlag], [RefRange], [CollectionDateTime], [ResultDateTime], [VistaPackage], [LocationSID], [Sta3n], [SpecimenType])
+VALUES
+(1026, 1, 'CH 20241126-1026', '128', 128.0, 'mmol/L', 'L', '135 - 145', '2024-11-26 06:00:00', '2024-11-26 07:45:00', 'CH', 33, 508, 'Serum'),
+(1026, 2, 'CH 20241126-1026', '5.8', 5.8, 'mmol/L', 'H', '3.5 - 5.0', '2024-11-26 06:00:00', '2024-11-26 07:45:00', 'CH', 33, 508, 'Serum'),
+(1026, 3, 'CH 20241126-1026', '98', 98.0, 'mmol/L', NULL, '98 - 107', '2024-11-26 06:00:00', '2024-11-26 07:45:00', 'CH', 33, 508, 'Serum'),
+(1026, 4, 'CH 20241126-1026', '18', 18.0, 'mmol/L', 'L', '22 - 29', '2024-11-26 06:00:00', '2024-11-26 07:45:00', 'CH', 33, 508, 'Serum'),
+(1026, 5, 'CH 20241126-1026', '55', 55.0, 'mg/dL', 'H', '7 - 20', '2024-11-26 06:00:00', '2024-11-26 07:45:00', 'CH', 33, 508, 'Serum'),
+(1026, 6, 'CH 20241126-1026', '3.8', 3.8, 'mg/dL', 'H', '0.7 - 1.3', '2024-11-26 06:00:00', '2024-11-26 07:45:00', 'CH', 33, 508, 'Serum'),
+(1026, 7, 'CH 20241126-1026', '185', 185.0, 'mg/dL', 'H', '70 - 100', '2024-11-26 06:00:00', '2024-11-26 07:45:00', 'CH', 33, 508, 'Serum');
+GO
+
+-- Patient 1026: CBC Panel (2024-11-26) - 8 results, showing anemia and hematologic stress
+INSERT INTO [Chem].[LabChem] ([PatientSID], [LabTestSID], [AccessionNumber], [Result], [ResultNumeric], [ResultUnit], [AbnormalFlag], [RefRange], [CollectionDateTime], [ResultDateTime], [VistaPackage], [LocationSID], [Sta3n], [SpecimenType])
+VALUES
+(1026, 8, 'CH 20241126-1026B', '10.2', 10.2, 'K/uL', NULL, '4.5 - 11.0', '2024-11-26 06:00:00', '2024-11-26 08:15:00', 'CH', 33, 508, 'Whole Blood'),
+(1026, 9, 'CH 20241126-1026B', '3.2', 3.2, 'M/uL', 'L', '4.5 - 5.9', '2024-11-26 06:00:00', '2024-11-26 08:15:00', 'CH', 33, 508, 'Whole Blood'),
+(1026, 10, 'CH 20241126-1026B', '9.2', 9.2, 'g/dL', 'L', '13.5 - 17.5', '2024-11-26 06:00:00', '2024-11-26 08:15:00', 'CH', 33, 508, 'Whole Blood'),
+(1026, 11, 'CH 20241126-1026B', '28', 28.0, '%', 'L', '40 - 52', '2024-11-26 06:00:00', '2024-11-26 08:15:00', 'CH', 33, 508, 'Whole Blood'),
+(1026, 12, 'CH 20241126-1026B', '185', 185.0, 'K/uL', NULL, '150 - 400', '2024-11-26 06:00:00', '2024-11-26 08:15:00', 'CH', 33, 508, 'Whole Blood'),
+(1026, 13, 'CH 20241126-1026B', '88', 88.0, 'fL', NULL, '80 - 100', '2024-11-26 06:00:00', '2024-11-26 08:15:00', 'CH', 33, 508, 'Whole Blood'),
+(1026, 14, 'CH 20241126-1026B', '29', 29.0, 'pg', NULL, '27 - 33', '2024-11-26 06:00:00', '2024-11-26 08:15:00', 'CH', 33, 508, 'Whole Blood'),
+(1026, 15, 'CH 20241126-1026B', '33', 33.0, 'g/dL', NULL, '32 - 36', '2024-11-26 06:00:00', '2024-11-26 08:15:00', 'CH', 33, 508, 'Whole Blood');
+GO
+
+-- Patient 1027: Robert J Anderson - DECEASED 2024-11-15
+-- Mental health patient with generally normal physical health labs
+-- Collection: Routine labs (2024-10-15) + ED toxicology (2024-11-15)
+-- Added 2026-02-04
+
+-- Patient 1027: Routine BMP Panel (2024-10-15) - 7 results, all within normal limits
+-- One month before death, showing stable physical health
+INSERT INTO [Chem].[LabChem] ([PatientSID], [LabTestSID], [AccessionNumber], [Result], [ResultNumeric], [ResultUnit], [AbnormalFlag], [RefRange], [CollectionDateTime], [ResultDateTime], [VistaPackage], [LocationSID], [Sta3n], [SpecimenType])
+VALUES
+(1027, 1, 'CH 20241015-1027', '140', 140.0, 'mmol/L', NULL, '135 - 145', '2024-10-15 08:00:00', '2024-10-15 09:30:00', 'CH', 34, 528, 'Serum'),
+(1027, 2, 'CH 20241015-1027', '4.2', 4.2, 'mmol/L', NULL, '3.5 - 5.0', '2024-10-15 08:00:00', '2024-10-15 09:30:00', 'CH', 34, 528, 'Serum'),
+(1027, 3, 'CH 20241015-1027', '102', 102.0, 'mmol/L', NULL, '98 - 107', '2024-10-15 08:00:00', '2024-10-15 09:30:00', 'CH', 34, 528, 'Serum'),
+(1027, 4, 'CH 20241015-1027', '25', 25.0, 'mmol/L', NULL, '22 - 29', '2024-10-15 08:00:00', '2024-10-15 09:30:00', 'CH', 34, 528, 'Serum'),
+(1027, 5, 'CH 20241015-1027', '14', 14.0, 'mg/dL', NULL, '7 - 20', '2024-10-15 08:00:00', '2024-10-15 09:30:00', 'CH', 34, 528, 'Serum'),
+(1027, 6, 'CH 20241015-1027', '1.0', 1.0, 'mg/dL', NULL, '0.7 - 1.3', '2024-10-15 08:00:00', '2024-10-15 09:30:00', 'CH', 34, 528, 'Serum'),
+(1027, 7, 'CH 20241015-1027', '92', 92.0, 'mg/dL', NULL, '70 - 100', '2024-10-15 08:00:00', '2024-10-15 09:30:00', 'CH', 34, 528, 'Serum');
+GO
+
+-- Patient 1027: Routine CBC Panel (2024-10-15) - 8 results, all normal
+INSERT INTO [Chem].[LabChem] ([PatientSID], [LabTestSID], [AccessionNumber], [Result], [ResultNumeric], [ResultUnit], [AbnormalFlag], [RefRange], [CollectionDateTime], [ResultDateTime], [VistaPackage], [LocationSID], [Sta3n], [SpecimenType])
+VALUES
+(1027, 8, 'CH 20241015-1027B', '7.2', 7.2, 'K/uL', NULL, '4.5 - 11.0', '2024-10-15 08:00:00', '2024-10-15 10:00:00', 'CH', 34, 528, 'Whole Blood'),
+(1027, 9, 'CH 20241015-1027B', '5.1', 5.1, 'M/uL', NULL, '4.5 - 5.9', '2024-10-15 08:00:00', '2024-10-15 10:00:00', 'CH', 34, 528, 'Whole Blood'),
+(1027, 10, 'CH 20241015-1027B', '15.2', 15.2, 'g/dL', NULL, '13.5 - 17.5', '2024-10-15 08:00:00', '2024-10-15 10:00:00', 'CH', 34, 528, 'Whole Blood'),
+(1027, 11, 'CH 20241015-1027B', '45', 45.0, '%', NULL, '40 - 52', '2024-10-15 08:00:00', '2024-10-15 10:00:00', 'CH', 34, 528, 'Whole Blood'),
+(1027, 12, 'CH 20241015-1027B', '220', 220.0, 'K/uL', NULL, '150 - 400', '2024-10-15 08:00:00', '2024-10-15 10:00:00', 'CH', 34, 528, 'Whole Blood'),
+(1027, 13, 'CH 20241015-1027B', '90', 90.0, 'fL', NULL, '80 - 100', '2024-10-15 08:00:00', '2024-10-15 10:00:00', 'CH', 34, 528, 'Whole Blood'),
+(1027, 14, 'CH 20241015-1027B', '30', 30.0, 'pg', NULL, '27 - 33', '2024-10-15 08:00:00', '2024-10-15 10:00:00', 'CH', 34, 528, 'Whole Blood'),
+(1027, 15, 'CH 20241015-1027B', '34', 34.0, 'g/dL', NULL, '32 - 36', '2024-10-15 08:00:00', '2024-10-15 10:00:00', 'CH', 34, 528, 'Whole Blood');
+GO
+
+-- Patient 1027: ED Toxicology Screen (2024-11-15) - 3 results from final ED visit
+-- No unexpected substances detected, therapeutic medications present
+INSERT INTO [Chem].[LabChem] ([PatientSID], [LabTestSID], [AccessionNumber], [Result], [ResultNumeric], [ResultUnit], [AbnormalFlag], [RefRange], [CollectionDateTime], [ResultDateTime], [VistaPackage], [LocationSID], [Sta3n], [SpecimenType])
+VALUES
+(1027, 20, 'TOX 20241115-1027', 'NEGATIVE', NULL, NULL, NULL, 'NEGATIVE', '2024-11-15 07:10:00', '2024-11-15 08:00:00', 'CH', 34, 528, 'Urine'),
+(1027, 21, 'TOX 20241115-1027', 'DETECTED', NULL, 'ng/mL', NULL, 'THERAPEUTIC', '2024-11-15 07:10:00', '2024-11-15 08:00:00', 'CH', 34, 528, 'Serum'),
+(1027, 22, 'TOX 20241115-1027', 'NEGATIVE', NULL, NULL, NULL, 'NEGATIVE', '2024-11-15 07:10:00', '2024-11-15 08:00:00', 'CH', 34, 528, 'Serum');
+GO
+
 PRINT 'Laboratory results inserted successfully.';
 GO
 

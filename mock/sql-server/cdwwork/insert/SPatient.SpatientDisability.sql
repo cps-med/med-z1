@@ -26,5 +26,13 @@ VALUES
 (1007, 1007,    'PtIEN15407',  516, 11001, 'Y', 50.5, 'U', 'U', 'U', 'U', 'O', '6', 'U', 'N'),
 (1008, 1008,    'PtIEN15408',  516, 11001, 'Y', 50.5, 'U', 'U', 'U', 'U', 'O', '6', 'U', 'N'),
 (1021, 1606021, 'PtIEN887021', 508, 11001, 'Y', 50.5, 'U', 'U', 'U', 'U', 'O', '6', 'U', 'N'),
-(1026, 1606026, 'PtIEN887026', 516, 11001, 'Y', 50.5, 'U', 'U', 'U', 'U', 'O', '6', 'U', 'N');
+(1026, 1606026, 'PtIEN887026', 516, 11001, 'Y', 50.5, 'U', 'U', 'U', 'U', 'O', '6', 'U', 'N'),
+
+-- Patient 1026: Margaret E Wilson - DECEASED - Service connected disability 50%
+-- Added 2026-02-04 - WWII era veteran with service-connected conditions
+(1027, 1026, 'PtIEN1026', 508, 11001, 'Y', 50.0, 'N', 'N', 'N', 'N', NULL, NULL, 'N', 'N'),
+
+-- Patient 1027: Robert J Anderson - DECEASED - Service connected disability 70% (PTSD)
+-- Added 2026-02-04 - OIF/OEF combat veteran with service-connected PTSD
+(1028, 1027, 'PtIEN1027', 528, 11001, 'Y', 70.0, 'N', 'N', 'N', 'N', NULL, NULL, 'N', 'N');
 GO

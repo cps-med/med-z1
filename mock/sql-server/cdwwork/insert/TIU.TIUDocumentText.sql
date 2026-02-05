@@ -1492,9 +1492,458 @@ OBJECTIVE: T 98.6 degrees F. Sinus exam: Tenderness over maxillary and frontal s
 
 ASSESSMENT: Acute bacterial rhinosinusitis
 
-PLAN: Amoxicillin-clavulanate 875/125mg BID x 10 days. Saline nasal rinses TID. Intranasal steroid spray. Analgesics for pain. Return if no improvement in 3-5 days or worsening symptoms. RTC 2 weeks or PRN.', 555);
+PLAN: Amoxicillin-clavulanate 875/125mg BID x 10 days. Saline nasal rinses TID. Intranasal steroid spray. Analgesics for pain. Return if no improvement in 3-5 days or worsening symptoms. RTC 2 weeks or PRN.', 555),
+
+    -- =============================================
+    -- Patient 1026 (Margaret E Wilson - DECEASED) - Final Hospitalization Notes
+    -- Added 2026-02-04 - End-of-life documentation
+    -- =============================================
+
+    (50121, 'PROGRESS NOTE - PALLIATIVE CARE CONSULTATION
+
+DATE: November 26, 2024
+
+REASON FOR CONSULT: Goals of care discussion for 87-year-old female with multi-organ failure
+
+HISTORY OF PRESENT ILLNESS: Mrs. Wilson is an 87-year-old female veteran admitted 11/25/24 with acute decompensation of chronic heart failure in the setting of COPD, diabetes, and chronic kidney disease. Patient became acutely dyspneic at home with worsening lower extremity edema despite home diuretics. EMS called by family, brought to ED where found to be in acute respiratory distress with O2 sat 86% on room air, BP 160/95, evidence of volume overload and acute kidney injury.
+
+PAST MEDICAL HISTORY:
+- Congestive heart failure (EF 35% per 2023 echo)
+- Chronic obstructive pulmonary disease (on 2L home O2)
+- Diabetes mellitus type 2 (uncontrolled, HbA1c 8.2%)
+- Chronic kidney disease Stage 3b (baseline Cr 2.0-2.3)
+- Hypertension
+- Hyperlipidemia
+- History of penicillin anaphylaxis
+
+MEDICATIONS ON ADMISSION: Lisinopril, furosemide, metoprolol, insulin glargine, metformin, atorvastatin, tiotropium, albuterol
+
+HOSPITAL COURSE TO DATE: Admitted to medical ward 11/25/24. Initial management with IV diuresis, oxygen supplementation. Despite aggressive diuresis, minimal urine output. Labs this AM show worsening kidney function (Cr 3.8, BUN 55), hyponatremia (Na 128), hyperkalemia (K 5.8), metabolic acidosis (CO2 18), and uncontrolled hyperglycemia (glucose 185). Hemoglobin dropped to 9.2 suggesting worsening anemia of chronic disease.
+
+Cardiology consulted - recommend gentle diuresis but patient showing signs of cardiorenal syndrome. Nephrology aware - not candidate for dialysis given advanced age, multiple comorbidities, and poor functional status.
+
+PALLIATIVE CARE ASSESSMENT:
+Met with patient and family (daughter present at bedside). Patient is alert and oriented, able to participate in discussion despite mild dyspnea. Long discussion regarding current illness trajectory, prognosis, and treatment options.
+
+Patient''s Understanding: Mrs. Wilson understands she is ''very sick'' and that her ''organs are failing.'' She states she has lived ''a good, long life'' and does not want aggressive interventions.
+
+Values/Goals: Patient expressed clear wishes to remain comfortable and avoid prolonged suffering. States quality of life more important than quantity. Does not want to be on ''machines'' or have chest compressions. Wants to be able to talk to family.
+
+Decision-Making Capacity: Patient has full capacity and made decisions independently with family support.
+
+CODE STATUS DISCUSSION: After detailed discussion of risks/benefits of CPR, intubation, and aggressive interventions, patient elected DNR/DNI. Family in full agreement. Patient declined transfer to ICU if condition worsens.
+
+COMFORT MEASURES: Discussed focus on symptom management including pain, dyspnea, anxiety. Patient agreeable to medications as needed for comfort.
+
+ASSESSMENT: 87-year-old female with multi-organ system failure (cardiorenal syndrome, respiratory failure, metabolic derangements) in the setting of multiple advanced chronic illnesses. Prognosis poor - likely hours to days. Patient has decision-making capacity and has clearly expressed wishes for comfort-focused care.
+
+RECOMMENDATIONS:
+1. Goals of care: Comfort measures, DNR/DNI (code status changed in CPRS)
+2. Discontinue labs and vital signs monitoring except as needed for comfort
+3. Morphine sulfate 2-4mg IV/SC q2h PRN for dyspnea/pain/comfort
+4. Lorazepam 0.5-1mg IV/SC q4h PRN for anxiety/agitation
+5. Scopolamine patch for secretion management
+6. Continue oxygen for comfort, titrate to patient comfort rather than specific saturation goals
+7. May continue gentle diuresis if helps with dyspnea (patient comfort)
+8. Family meeting held - all questions answered, contact information provided
+9. Chaplain services offered (patient declined at this time)
+10. Social work consulted for family support
+11. Palliative care available for re-consultation PRN
+
+PROGNOSIS: Hours to days given severe multi-organ failure
+
+Patient and family verbalized understanding of diagnosis, prognosis, and plan. Family grateful for honest communication and attention to patient comfort. Will continue to follow.
+
+Electronically signed: Dr. Sarah Mitchell, MD - Palliative Care', 4187),
+
+    (50122, 'PROGRESS NOTE - HOSPITAL DAY 3
+
+DATE: November 27, 2024
+
+SUBJECTIVE: Patient resting quietly in bed. Daughter at bedside throughout night. Patient less responsive today compared to yesterday. Able to open eyes to voice but minimally verbal. Denies pain when asked. Breathing appears comfortable on 4L O2 by nasal cannula.
+
+Family reports patient had restful night, received morphine twice for shortness of breath with good effect. No apparent distress.
+
+OBJECTIVE:
+Vitals (comfort measures only - spot checks for management):
+- Blood pressure: 100/60 mmHg (down from 128/70 yesterday)
+- Heart rate: 95 bpm (up from 82 yesterday)
+- Respiratory rate: 24 breaths/min, mildly labored but no gasping
+- O2 saturation: 89% on 4L nasal cannula
+- Temperature: 98.1 degrees F
+
+General: Elderly female lying in bed, eyes closed, arousable to voice. Appears comfortable. No signs of pain or distress.
+
+HEENT: Dry mucous membranes. Scopolamine patch in place behind ear.
+
+Cardiovascular: Irregular rhythm, distant heart sounds. No JVD assessment per comfort care plan.
+
+Pulmonary: Diminished breath sounds bilaterally with scattered crackles. Respiratory effort increased but not labored. No use of accessory muscles.
+
+Extremities: 3+ pitting edema bilateral lower extremities (unchanged). Cool extremities, mottling noted on lower legs/feet.
+
+Neuro: Lethargic but arousable. Follows simple commands intermittently. Squeezes hand when prompted.
+
+INTERVAL EVENTS:
+- Morphine sulfate 4mg IV given at 02:00 and 06:30 for increased work of breathing, good response
+- Lorazepam 0.5mg IV given at 23:00 for restlessness
+- Family at bedside continuously, daughter staying overnight
+- Patient taking small sips of water, declined breakfast tray
+- Foley catheter draining minimal dark concentrated urine (oliguria consistent with renal failure)
+- No laboratory draws per comfort care plan
+
+ASSESSMENT:
+1. Multi-organ system failure - progressive decline as expected
+2. Comfort measures only - DNR/DNI
+3. Dyspnea - managed with PRN opioids
+4. End-of-life care
+
+Clinical decline evident with worsening hypotension, tachycardia, increased respiratory effort, decreased level of consciousness, and peripheral mottling - all consistent with active dying process. Patient appears comfortable at present.
+
+PLAN:
+1. Continue comfort-focused care
+2. Morphine 2-4mg IV/SC q2h PRN for dyspnea, pain, or distress - liberalize dosing as needed
+3. Lorazepam 0.5-1mg IV/SC q4h PRN for anxiety/agitation
+4. Continue oxygen for comfort
+5. Mouth care q2h for dry mucous membranes
+6. Family support - daughter coping well, understands prognosis
+7. Keep patient clean, dry, and comfortable
+8. No escalation of care per patient wishes
+9. Notify family that patient is actively dying, prognosis now hours
+
+Family meeting: Spoke with patient''s daughter at length this morning. Explained signs of active dying process. Daughter tearful but grateful for care. She understands her mother is dying and time is short. Wants to remain at bedside. Son called and updated, flying in from out of state but may not arrive in time. Chaplain visited briefly per family request.
+
+Patient will be monitored closely for signs of distress. Goal remains comfort.
+
+Electronically signed: Dr. James Anderson, MD - Hospitalist', 3254),
+
+    (50123, 'DISCHARGE SUMMARY - EXPIRED
+
+PATIENT: Wilson, Margaret E
+MRN: PtIEN1026
+DOB: March 15, 1938
+AGE: 87 years
+DATE OF DEATH: December 1, 2024, 14:35 hours
+
+ADMISSION DATE: November 25, 2024
+DISCHARGE DATE: December 1, 2024 (Expired)
+LENGTH OF STAY: 6 days
+ATTENDING PHYSICIAN: Dr. James Anderson, MD
+
+ADMITTING DIAGNOSIS: Acute decompensated heart failure
+
+DISCHARGE DIAGNOSIS (CAUSE OF DEATH):
+1. Multi-organ system failure
+2. Cardiorenal syndrome, acute-on-chronic
+3. Acute respiratory failure
+4. Congestive heart failure, NYHA Class IV
+5. Chronic kidney disease Stage 4, acute kidney injury superimposed
+6. Chronic obstructive pulmonary disease, severe
+7. Diabetes mellitus type 2, uncontrolled
+8. Metabolic acidosis
+9. Anemia of chronic disease
+
+HOSPITAL COURSE:
+Mrs. Margaret Wilson was an 87-year-old female veteran with multiple chronic medical conditions who presented to the emergency department on November 25, 2024 with acute respiratory distress and decompensated heart failure. She was found to be in acute respiratory failure with O2 saturation 86% on room air, volume overloaded with significant peripheral edema, and in acute kidney injury.
+
+She was admitted to the medical ward for aggressive diuresis and supportive care. Initial laboratory studies revealed severe metabolic derangements including acute kidney injury (creatinine 3.8, BUN 55 - significantly elevated from baseline 2.0), hyperkalemia (5.8), hyponatremia (128), metabolic acidosis (CO2 18), hyperglycemia (185), and anemia (hemoglobin 9.2).
+
+Despite medical management including IV diuretics, oxygen supplementation, and supportive care, the patient showed minimal response. Cardiology and nephrology were consulted. The patient was determined to have cardiorenal syndrome with multi-organ failure and was not a candidate for dialysis given her age, multiple comorbidities, and poor functional status.
+
+On November 26, 2024 (hospital day 2), palliative care was consulted for goals of care discussion. After extensive discussion with the patient and her family regarding prognosis and treatment options, Mrs. Wilson elected to focus on comfort measures only. She made herself DNR/DNI (Do Not Resuscitate/Do Not Intubate) with full decision-making capacity. The patient clearly expressed her wish to avoid aggressive interventions and prioritize comfort and dignity.
+
+Care was transitioned to comfort-focused measures with morphine for dyspnea/pain and lorazepam for anxiety as needed. Laboratory draws and vital sign monitoring were discontinued except as needed for comfort management. The patient''s condition continued to decline as expected with progressive multi-organ failure.
+
+On November 27-30, 2024, the patient showed signs of active dying with decreased level of consciousness, hypotension, tachycardia, increased work of breathing, and peripheral mottling. She remained comfortable with PRN medications for symptom management. Family remained at bedside providing emotional support.
+
+On December 1, 2024 at 14:35 hours, Mrs. Margaret Wilson was pronounced deceased by the attending physician. Death was expected and consistent with natural disease progression of multi-organ failure. Patient appeared comfortable at time of death with daughter at bedside.
+
+PROCEDURES: None
+
+CODE STATUS: DNR/DNI (changed 11/26/24 per patient request)
+
+CONSULTATIONS:
+- Cardiology (11/26/24)
+- Nephrology (11/26/24)
+- Palliative Care (11/26/24)
+- Social Work (11/26/24)
+- Chaplain Services (11/27/24)
+
+MEDICATIONS AT TIME OF DEATH:
+- Morphine sulfate 2-4mg IV/SC q2h PRN for dyspnea/pain
+- Lorazepam 0.5-1mg IV/SC q4h PRN for anxiety
+- Scopolamine transdermal patch for secretion management
+- Oxygen by nasal cannula for comfort
+- All other home medications discontinued per comfort care plan
+
+CONDITION AT DISCHARGE: Expired
+
+DISPOSITION: Body released to funeral home per family request. Death certificate completed.
+
+AUTOPSY: Declined by family
+
+FOLLOW-UP: Not applicable
+
+FAMILY NOTIFICATION: Daughter (next of kin) was present at bedside at time of death. Son notified by phone immediately after death. Family expressed gratitude for compassionate end-of-life care provided to their mother.
+
+ATTENDING PHYSICIAN STATEMENT:
+Mrs. Wilson received appropriate medical care for her terminal condition. Her wishes for comfort-focused care were honored throughout her hospitalization. She died peacefully with family present, which was consistent with her expressed goals of care. There were no unexpected complications or deviations from expected disease trajectory.
+
+This case was discussed with the Chief of Medicine. Death was due to natural causes - multi-organ system failure in the setting of advanced cardiopulmonary disease. No autopsy indicated.
+
+Electronically signed: Dr. James Anderson, MD - Attending Physician
+Co-signed: Dr. Robert Chen, MD - Chief of Medicine
+
+Date of Signature: December 1, 2024, 16:00 hours', 5239),
+
+    -- ========================================
+    -- Patient 1027 (ICN100017 - Robert J Anderson - DECEASED by suicide): 4 notes
+    -- Added 2026-02-04 - Mental health treatment trajectory and death documentation
+    -- ========================================
+
+    (50124, 'CONSULTATION NOTE - PSYCHIATRY
+
+PATIENT: Anderson, Robert J
+MRN: PtIEN1027
+DOB: August 22, 1978
+AGE: 40 years
+DATE OF SERVICE: June 21, 2019
+CONSULTATION TYPE: Inpatient Psychiatry
+
+REASON FOR CONSULTATION: Suicide attempt, overdose, need for psychiatric evaluation and safety assessment
+
+CHIEF COMPLAINT: "I just wanted it all to stop."
+
+HISTORY OF PRESENT ILLNESS:
+Mr. Robert Anderson is a 40-year-old male OIF/OEF combat veteran who was admitted to medical service on 6/20/19 following intentional overdose of prescription medications (sertraline and trazodone - approximately 30 tablets total). Patient was found unresponsive by friend who called 911. Patient was medically stabilized in ED with gastric lavage and activated charcoal. Now medically cleared for psychiatric evaluation.
+
+Patient reports escalating depression over past 6 months following divorce finalized in January 2019 and loss of employment in March 2019. States he has been feeling increasingly hopeless and isolated. Describes persistent thoughts of death and suicide for "at least 3 months." Made deliberate plan and wrote suicide note (found by EMS). Reports drinking heavily (6-8 beers daily) for past 2 months as form of self-medication.
+
+COMBAT HISTORY: Deployed to Iraq 2006-2007, 2008-2009 as Army infantry. Experienced multiple IED blasts and firefights. Lost 3 close friends during second deployment. Honorably discharged 2009. Enrolled in VA care 2010.
+
+PSYCHIATRIC HISTORY:
+- Diagnosed PTSD 2010, treatment with CPT therapy 2011-2012
+- Diagnosed Major Depressive Disorder 2011
+- Started sertraline 2012, multiple medication trials over years
+- Previous psychiatric hospitalization 2013 (suicidal ideation without attempt)
+- Substance Use Disorder (alcohol) - periods of sobriety alternating with heavy use
+- Denied previous suicide attempts prior to current episode
+
+MENTAL STATUS EXAMINATION:
+- Appearance: Disheveled, tearful at times, poor eye contact
+- Behavior: Cooperative but withdrawn, psychomotor retardation
+- Speech: Soft, slow, decreased volume and spontaneity
+- Mood: "Hopeless" (subjective), Depressed (objective)
+- Affect: Constricted, tearful
+- Thought Process: Linear but slowed, ruminative
+- Thought Content: Pervasive themes of worthlessness, guilt about combat experiences, hopelessness about future
+- Suicidal Ideation: ACUTE - expresses regret he survived, states "I still want to die"
+- Homicidal Ideation: Denied
+- Perceptual Disturbances: Denied current hallucinations
+- Insight: Poor - minimizes severity of attempt
+- Judgment: Impaired - recent suicide attempt
+
+ASSESSMENT:
+1. Major Depressive Disorder, severe, recurrent, with suicidal behavior (F33.2)
+2. Post-Traumatic Stress Disorder, chronic (F43.10)
+3. Alcohol Use Disorder, moderate (F10.20)
+4. Recent suicide attempt by overdose (T43.201A)
+5. Psychosocial stressors: Divorce, unemployment, social isolation
+
+ACUTE SUICIDE RISK: HIGH
+- Recent serious attempt with clear intent
+- Ongoing ideation with continued wish to die
+- Multiple risk factors: Depression, PTSD, substance use, recent losses
+- Protective factors LIMITED: Some connection with friend who found him, veteran identity
+
+RECOMMENDATIONS:
+1. PSYCHIATRIC HOSPITALIZATION - acute inpatient mental health unit, voluntary or involuntary if patient refuses
+2. 1:1 observation for safety
+3. Medication review - consider medication change given overdose on current antidepressant
+4. Substance abuse evaluation and treatment
+5. Social work for resource coordination (housing, employment assistance)
+6. Family contact and support engagement if patient agrees
+7. Suicide Prevention Coordinator follow-up post-discharge
+8. High Risk for Suicide flag in medical record
+
+Patient agrees to voluntary psychiatric admission. Will transfer to Mental Health Unit this afternoon.
+
+Electronically signed: Dr. Jennifer Williams, MD - Staff Psychiatrist', 3421),
+
+    (50125, 'PROGRESS NOTE - PSYCHIATRIC HOSPITALIZATION
+
+PATIENT: Anderson, Robert J
+MRN: PtIEN1027
+DATE OF SERVICE: March 11, 2023
+HOSPITAL DAY: 2 of current admission
+
+CHIEF COMPLAINT: "My PTSD is out of control."
+
+INTERVAL HISTORY:
+46-year-old male OIF/OEF combat veteran admitted 3/10/23 for acute exacerbation of PTSD symptoms with suicidal ideation and safety concerns. Patient presented to ED voluntarily stating he was having intrusive combat memories, nightmares every night, severe anxiety, and thoughts of harming himself.
+
+Patient reports trigger was news coverage of Afghanistan withdrawal which brought back intense memories of Iraq deployments and friends lost in combat. States he has been having "near constant" flashbacks for past 2 weeks, unable to sleep more than 2-3 hours per night, hypervigilant and "jumpy," avoiding leaving apartment.
+
+Developed specific suicide plan (firearm - owns handgun) but came to ED instead of acting on plan. States "I knew I needed help before I did something stupid." This represents significant improvement in insight and help-seeking compared to 2019 suicide attempt.
+
+HOSPITAL COURSE:
+Day 1: Admitted to mental health unit, placed on Q15 minute safety checks. Medications continued (sertraline 100mg, prazosin 2mg, trazodone 50mg). Patient cooperative with staff, participated in milieu groups.
+
+Day 2 (today): Patient slept 5 hours last night with medications. Reports reduced suicidal thoughts - now rates SI at 2/10 (was 8/10 on admission). States he feels "safer here" and is "glad I came in."
+
+MENTAL STATUS EXAMINATION:
+- Improved from admission: Less anxious, better sleep, engaging with treatment team
+- Mood: "A little better" (subjective), Less depressed (objective)
+- Affect: Constricted but more reactive than admission
+- Thought Content: Suicidal ideation decreased significantly, no current plan or intent, identifies reasons for living (wants to see niece grow up, doesn''t want to hurt mother)
+- Safety: Contracts for safety, agrees to notify staff if SI increases
+
+CURRENT MEDICATIONS:
+1. Sertraline 100mg daily
+2. Prazosin 2mg qHS (nightmares)
+3. Trazodone 50mg qHS (sleep)
+4. Hydroxyzine 25mg TID PRN anxiety
+5. Naltrexone 50mg daily (alcohol use disorder - sober 18 months)
+
+ASSESSMENT & PLAN:
+1. PTSD, chronic - ACUTE EXACERBATION improving with structure and safety of inpatient setting
+2. Major Depressive Disorder - STABLE on current medications
+3. Suicidal Ideation - IMPROVED, now low acuity
+4. Alcohol Use Disorder - IN REMISSION (18 months sober, attending AA)
+
+PLAN:
+- Continue current medications
+- Daily psychiatrist visits, individual therapy sessions
+- Trauma-focused group therapy
+- Discharge planning: Expected 3/17/23 if continued improvement
+- Outpatient follow-up with psychiatrist within 1 week of discharge
+- Continue case management and peer support services
+- Suicide Prevention Coordinator follow-up
+- Update High Risk flag with improved status
+
+Patient making good progress. Hopeful for discharge early next week with safety plan and close follow-up.
+
+Electronically signed: Dr. Jennifer Williams, MD - Staff Psychiatrist', 2854),
+
+    (50126, 'PROGRESS NOTE - OUTPATIENT PSYCHIATRY
+
+PATIENT: Anderson, Robert J
+MRN: PtIEN1027
+DATE OF SERVICE: November 14, 2024
+VISIT TYPE: Follow-up
+
+INTERVAL HISTORY:
+46-year-old male combat veteran presenting for routine mental health follow-up. Last seen in office 8 weeks ago (9/19/24). Patient reports worsening depressive symptoms over past 4-6 weeks. Describes low mood, anhedonia, social withdrawal, poor sleep despite medications, and passive suicidal thoughts.
+
+Patient states he lost his part-time job 6 weeks ago (position eliminated due to budget cuts). Has been isolating at home, not attending AA meetings or veteran peer support groups. Reports increased nightmares and PTSD symptoms. Rates depression at 7/10 (was 3/10 at last visit).
+
+CONCERNING: Patient endorsed suicidal ideation - passive death wish ("wouldn''t mind if I didn''t wake up") but DENIES active plan or intent. States "I''m not going to do anything" but affect is flat and engagement seems poor.
+
+MENTAL STATUS EXAMINATION:
+- Appearance: Poor grooming, appears fatigued
+- Behavior: Less engaged than usual, minimal eye contact
+- Mood: "Terrible" (subjective), Depressed (objective)
+- Affect: Flat, constricted
+- Suicidal Ideation: PRESENT - passive but no plan/intent at this time
+- Denies homicidal ideation
+- Denies current substance use
+
+SAFETY ASSESSMENT:
+Risk factors: Unemployment, social isolation, worsening depression, PTSD symptoms, history of suicide attempt (2019)
+Protective factors: No current plan, states he won''t act on thoughts, mother''s 70th birthday next week
+RISK LEVEL: MODERATE-HIGH
+
+MEDICATIONS REVIEWED:
+1. Sertraline 100mg daily - reports compliance
+2. Prazosin 1mg qHS - "not helping with nightmares"
+3. Trazodone 50mg qHS - "not sleeping well"
+4. Naltrexone 50mg daily - reports continued sobriety
+5. Gabapentin 300mg TID - reports helps somewhat with anxiety
+
+ASSESSMENT:
+1. Major Depressive Disorder - WORSENING, concerning for acute crisis
+2. PTSD - symptoms increased
+3. Suicidal ideation - PASSIVE, needs close monitoring
+
+PLAN:
+1. SAFETY PLANNING: Created updated safety plan, patient has crisis line numbers, agrees to call if SI worsens
+2. Increase prazosin to 2mg qHS for nightmares
+3. Schedule URGENT follow-up appointment in 1 week (11/21/24)
+4. Social work referral for employment assistance resources
+5. Encouraged return to AA meetings and veteran peer support
+6. Discussed benefits of PHP (Partial Hospitalization Program) if symptoms worsen - patient declined at this time
+7. Patient has emergency contact information and agrees to go to ED if safety concerns arise
+8. Will call patient in 2-3 days to check in
+
+CLINICAL CONCERN: Patient at increased risk given recent stressors and symptom escalation. Close monitoring essential. Patient appeared to engage with safety planning but affect remained flat. Will follow up closely.
+
+Electronically signed: Dr. Jennifer Williams, MD - Staff Psychiatrist', 2784),
+
+    (50127, 'AUTOPSY REPORT AND DEATH SUMMARY
+
+PATIENT: Anderson, Robert James
+MRN: PtIEN1027
+DOB: August 22, 1978
+DATE OF DEATH: November 15, 2024, 08:30 hours
+AGE AT DEATH: 46 years
+LOCATION: Emergency Department, VA Upstate New York Healthcare System
+
+MANNER OF DEATH: Suicide
+CAUSE OF DEATH: Self-inflicted injury
+
+CIRCUMSTANCES OF DEATH:
+Patient was brought to Emergency Department by ambulance on November 15, 2024 at approximately 07:00 hours following report of self-harm. Patient was found unresponsive at his residence by friend who called 911. Emergency medical services initiated resuscitation en route to hospital.
+
+Upon arrival to ED, patient had sustained critical injuries. Resuscitation efforts were initiated immediately including IV access, medications (lorazepam 2mg IV, haloperidol 5mg IM for agitation), and supportive care. Despite aggressive resuscitative measures, patient was pronounced deceased at 08:30 hours by attending emergency physician.
+
+MEDICAL HISTORY:
+- Post-Traumatic Stress Disorder (combat-related), diagnosed 2010
+- Major Depressive Disorder, severe recurrent, diagnosed 2011
+- Previous suicide attempt by overdose, 2019
+- Alcohol Use Disorder, in remission (sober since 2020)
+- Service-connected disability 70% (PTSD)
+
+RECENT CLINICAL COURSE:
+Patient was seen in outpatient psychiatry clinic on 11/14/24 (day prior to death) with worsening depressive symptoms and passive suicidal ideation. Safety plan was reviewed and updated. Patient denied active suicidal intent at that visit and agreed to follow-up. HIGH RISK FOR SUICIDE flag was active in patient''s chart.
+
+AUTOPSY FINDINGS:
+External examination and internal examination performed by county medical examiner. Findings consistent with intentional self-inflicted injury. Toxicology screen showed therapeutic levels of prescribed psychiatric medications (sertraline, prazosin, trazodone, gabapentin) - no evidence of overdose or non-prescribed substances.
+
+NOTIFICATION:
+- Mother (next of kin) notified 11/15/24 at 09:15 hours by Social Work
+- VA Suicide Prevention Coordinator notified 11/15/24 at 09:30 hours
+- Patient''s outpatient psychiatrist (Dr. Williams) notified 11/15/24 at 10:00 hours
+
+REVIEW AND ANALYSIS:
+This represents a tragic loss of a combat veteran with chronic PTSD and depression. Patient had HIGH RISK FOR SUICIDE flag active, was engaged in mental health treatment, and was seen by psychiatry the day before death. Despite close clinical monitoring and safety planning, patient completed suicide less than 24 hours after clinic visit.
+
+Risk factors: Recent job loss, social isolation, worsening depression, history of previous attempt
+Protective factors noted at last visit: Connection to mother, upcoming family event
+
+This case will be reviewed by Suicide Prevention Team and Quality Improvement Committee per VHA policy. Clinical documentation indicates appropriate risk assessment and safety planning were completed at last visit. Patient did not communicate escalation of suicide intent between clinic visit and time of death.
+
+FOLLOW-UP ACTIONS COMPLETED:
+1. Root Cause Analysis initiated per VHA Directive 1074
+2. Peer review of clinical documentation (appropriate standard of care provided)
+3. Psychological autopsy scheduled with Suicide Prevention Coordinator
+4. Family support services offered to mother and extended family
+5. Staff debriefing completed for treatment team
+6. Critical Incident Review scheduled
+
+ATTENDING STATEMENT:
+Mr. Anderson was a combat veteran who struggled with chronic and severe mental health conditions related to his military service. He received comprehensive psychiatric care including medications, therapy, case management, and peer support. This tragic outcome occurred despite active treatment and close monitoring. The treatment team provided appropriate evidence-based care consistent with VA clinical practice guidelines.
+
+Death was due to suicide. No evidence of medical error or deviation from standard of care.
+
+Electronically signed: Dr. Michael Foster, MD - Emergency Medicine
+Co-signed: Dr. Jennifer Williams, MD - Staff Psychiatrist
+Reviewed: Dr. Sarah Mitchell, MD - Chief of Psychiatry
+
+Date of Report: November 15, 2024, 11:30 hours', 3642);
 GO
 
-PRINT '120 clinical note text records inserted successfully';
+PRINT '127 clinical note text records inserted successfully';
 PRINT 'All notes have properly escaped apostrophes for SQL Server compatibility';
+PRINT 'Patient 1026 (Margaret Wilson - DECEASED): 3 end-of-life notes added';
+PRINT 'Patient 1027 (Robert Anderson - DECEASED): 4 psychiatric/suicide notes added';
 GO

@@ -184,6 +184,46 @@
           "_note": "Occasional visits"
         }
       ]
+    },
+    {
+      "_note": "Patient 5 - DECEASED elderly patient (Added 2026-02-04). Died 2024-12-01 from natural causes (multi-organ failure). Comprehensive end-of-life care documentation across all clinical domains.",
+      "icn": "ICN100016",
+      "ssn": "888-88-1026",
+      "name_last": "WILSON",
+      "name_first": "MARGARET",
+      "name_middle": "E",
+      "dob": "1938-03-15",
+      "sex": "F",
+      "treating_facilities": [
+        {
+          "sta3n": "508",
+          "name": "ALEXANDRIA",
+          "dfn": "100026",
+          "first_seen": "2015-06-10",
+          "last_seen": "2024-11-28",
+          "_note": "Single site patient - primary care throughout life, final admission and death at this facility"
+        }
+      ]
+    },
+    {
+      "_note": "Patient 6 - DECEASED veteran with mental health crisis (Added 2026-02-04). Died 2024-11-15 by suicide. Combat veteran with PTSD, major depressive disorder, substance use disorder. HIGH RISK FOR SUICIDE flag history.",
+      "icn": "ICN100017",
+      "ssn": "999-99-1027",
+      "name_last": "ANDERSON",
+      "name_first": "ROBERT",
+      "name_middle": "J",
+      "dob": "1978-08-22",
+      "sex": "M",
+      "treating_facilities": [
+        {
+          "sta3n": "528",
+          "name": "UPSTATE_NEW_YORK",
+          "dfn": "100027",
+          "first_seen": "2010-03-15",
+          "last_seen": "2024-11-14",
+          "_note": "Single site patient - VA care since return from deployment, mental health treatment, final ED visit day before death"
+        }
+      ]
     }
   ]
 }

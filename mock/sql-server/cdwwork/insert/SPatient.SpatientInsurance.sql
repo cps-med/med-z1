@@ -95,7 +95,15 @@ VALUES
 
 -- Patients with Self-Pay
 (1032, 1606025, 'PtIEN887025', 'PtInsIEN0025', 508, 92, 'RETIRED', '2010-01-01', '2010-02-01'),
-(1033, 1606030, 'PtIEN887030', 'PtInsIEN0030', 552, 92, 'RETIRED', '2012-01-01', '2012-02-01');
+(1033, 1606030, 'PtIEN887030', 'PtInsIEN0030', 552, 92, 'RETIRED', '2012-01-01', '2012-02-01'),
+
+-- Patient 1026: Margaret E Wilson - DECEASED - Medicare (elderly patient, retired)
+-- Added 2026-02-04 - Medicare coverage effective from age 65
+(1034, 1026, 'PtIEN1026', 'PtInsIEN1026', 508, 1, 'RETIRED', '2003-03-15', '2003-04-01'),
+
+-- Patient 1027: Robert J Anderson - DECEASED - VA healthcare only (100% service-connected, unemployed)
+-- Added 2026-02-04 - VA enrollment effective from discharge, no private insurance
+(1035, 1027, 'PtIEN1027', 'PtInsIEN1027', 528, 92, 'UNEMPLOYED', '2010-03-15', '2010-04-01');
 GO
 
 PRINT 'Inserted ' + CAST(@@ROWCOUNT AS VARCHAR) + ' insurance records with correct InsuranceCompanySID values';

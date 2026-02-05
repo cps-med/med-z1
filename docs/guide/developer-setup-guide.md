@@ -1,6 +1,6 @@
 # Med-Z1 Developer Setup Guide
 
-This guide provides instructions for installing, configuring, and running the **med-z1** application on a development machine running the macOS or Linux operating system. For Linux machines, it is targeted for pop!_OS, but should be useful for other Linux variants.  
+This guide provides instructions for installing, configuring, and running the **med-z1** application on a development machine running the macOS or Linux operating system. For Linux machines, it is targeted for Ubuntu, but should be useful for other Linux variants.  
 
 **Prerequistite:** This application is designed to run using Python version 3.11 on macOS machines and version 3.10 on Linux based machines. Higher versions of Python may have incompatibility issues witih some of the supporting dependencies, such as numpy, pandas, and polars.
 
@@ -30,7 +30,7 @@ xcode-select -p
 ```
 
 **Linux**
-Most Linux distributions (including Pop!_OS) come with git pre-installed.  
+Most Linux distributions (Ubunto) come with git pre-installed.  
 
 If git is not installed, install via apt
 ```bash
@@ -546,15 +546,6 @@ docker exec -it postgres16 psql -U postgres -d medz1 -c "\dt public.*point*"
 (4 rows)
 ```
 
-### **Table Descriptions**
-
-**LangGraph v3.x creates 4 tables:**
-
-1. **`checkpoints`** - Main conversation state metadata (thread_id, checkpoint_id, parent_id)
-2. **`checkpoint_writes`** - Transactional writes during checkpoint creation (internal LangGraph use)
-3. **`checkpoint_blobs`** - Binary blob storage for large checkpoint data (performance optimization)
-4. **`checkpoint_migrations`** - Schema version tracking for LangGraph upgrades
-
 **View table structures:**
 ```bash
 # View checkpoints table structure
@@ -652,7 +643,7 @@ odbcinst -q -d
 # Should see: [ODBC Driver 18 for SQL Server]
 ```
 
-**Linux/Pop!_OS Setup**
+**Linux Setup**
 
 ```bash
 # Import the public repository GPG keys
@@ -696,7 +687,7 @@ sqlcmd -S 127.0.0.1,1433 -U sa -P 'MyS3cur3P@ssw0rd' -C -Q "SELECT @@VERSION"
 
 The **med-z1** application uses Microsoft SQL Server 2019 to simulate the VA Corporate Data Warehouse (CDW) for local development. The mock CDW contains synthetic patient data for a number of VistA sites (aka "stations") and spans multiple clinical domains, such as Allergies, Vitals, Labs, Encounters, Clinical Notes, and Immunizations.
 
-### CDWWork Database (VistA)
+### CDWWork Database (VistA Sites)
 
 This section guides you through creating the **CDWWork** database schema and populating it with mock patient data.
 
@@ -803,7 +794,7 @@ GO
 EXIT
 ```
 
-### CDWWork2 Database (Cerner / Oracle Health)
+### CDWWork2 Database (Oracle Health / Cerner Sites)
 
 This section guides you through creating the **CDWWork2** database schema and populating it with mock patient data.  
 

@@ -109,10 +109,17 @@ VALUES
      0, 'INACTIVE', '2024-03-10 11:00:00', '2024-09-15 10:00:00',
      '660', '660', '660', 90, 7, '2024-06-10 09:00:00', NULL),
 
-    -- Patient 1026: Active Behavioral (Cat I, OVERDUE for review)
-    (1026, 2, 'BEHAVIORAL', 'I', 'N', 2, NULL,
-     1, 'ACTIVE', '2022-11-01 14:00:00', NULL,
-     '668', '668', '668', 730, 30, '2023-05-15 10:00:00', '2024-10-30 10:00:00'),
+    -- Patient 1026: Margaret E Wilson - DECEASED (Palliative Care flag, inactivated at death)
+    -- Added 2026-02-04 - Flag activated Oct 2024 when goals of care shifted to comfort, inactivated at death Dec 1, 2024
+    (1026, 13, 'PALLIATIVE CARE', 'II', 'L', NULL, 11,
+     0, 'INACTIVE', '2024-10-15 09:00:00', '2024-12-01 14:35:00',
+     '508', '508', '508', 30, 7, '2024-11-15 10:00:00', NULL),
+
+    -- Patient 1027: Robert J Anderson - DECEASED (High Risk for Suicide flag, active at time of death)
+    -- Added 2026-02-04 - Flag activated after 2019 suicide attempt, remained active through death Nov 15, 2024
+    (1027, 1, 'HIGH RISK FOR SUICIDE', 'I', 'N', 1, NULL,
+     0, 'INACTIVE', '2019-06-21 14:00:00', '2024-11-15 08:30:00',
+     '528', '528', '528', 90, 7, '2024-11-14 15:00:00', NULL),
 
     -- Patient 1028: Active High Risk for Suicide (Cat I, CURRENT)
     (1028, 1, 'HIGH RISK FOR SUICIDE', 'I', 'N', 1, NULL,

@@ -149,8 +149,16 @@ VALUES
 (1036, 1606029, 'PtIEN887029', 552, 1, 'HOME', '567 Wilmington Pike', '', '', 'Dayton', 'Montgomery', 'OH', 4963, '45420', '454200029', '', 'UNITED STATES', 1200005271, 'EMPLOYED'),
 
 -- PatientSID 1606030: ZZTEST,BILL (Sta3n 552 - Dayton)
-(1037, 1606030, 'PtIEN887030', 552, 1, 'HOME', '891 Far Hills Avenue', 'Apt 6C', '', 'Dayton', 'Montgomery', 'OH', 4963, '45419', '454190030', '', 'UNITED STATES', 1200005271, 'RETIRED');
+(1037, 1606030, 'PtIEN887030', 552, 1, 'HOME', '891 Far Hills Avenue', 'Apt 6C', '', 'Dayton', 'Montgomery', 'OH', 4963, '45419', '454190030', '', 'UNITED STATES', 1200005271, 'RETIRED'),
+
+-- PatientSID 1026: Margaret E Wilson - DECEASED (Sta3n 508 - Alexandria, VA)
+-- Added 2026-02-04 - Home address where patient lived until death
+(1038, 1026, 'PtIEN1026', 508, 1, 'HOME', '1245 Oak Street', '', '', 'Alexandria', 'Alexandria (city)', 'VA', 294, '22314', '223141026', '', 'UNITED STATES', 1200005271, 'RETIRED'),
+
+-- PatientSID 1027: Robert J Anderson - DECEASED (Sta3n 528 - Upstate New York)
+-- Added 2026-02-04 - Last known address prior to death
+(1039, 1027, 'PtIEN1027', 528, 1, 'HOME', '2847 James Street', 'Apt 3B', '', 'Syracuse', 'Onondaga', 'NY', 363, '13206', '132061027', '', 'UNITED STATES', 1200005271, 'UNEMPLOYED');
 GO
 
-PRINT 'Address records added successfully - All 37 patients now have addresses';
+PRINT 'Address records added successfully - All 39 patients now have addresses';
 GO

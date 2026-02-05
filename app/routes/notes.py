@@ -9,7 +9,7 @@
 from fastapi import APIRouter, HTTPException, Request, Query
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from typing import Optional
+from typing import Optional, Union
 import logging
 
 from app.db.notes import (
@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 async def get_patient_notes_endpoint(
     icn: str,
     note_class: Optional[str] = Query('all'),
-    date_range: Optional[int] = None,
+    date_range: Union[int, str, None] = Query(None),
     author: Optional[str] = None,
     status: Optional[str] = Query('all'),
     sort_by: Optional[str] = Query('reference_datetime'),
@@ -62,6 +62,15 @@ async def get_patient_notes_endpoint(
         JSON with list of clinical notes and pagination info
     """
     try:
+        # Convert empty string to None for date_range
+        if date_range == '' or date_range == 'all':
+            date_range = None
+        elif isinstance(date_range, str):
+            try:
+                date_range = int(date_range)
+            except ValueError:
+                date_range = None
+
         offset = (page - 1) * per_page
 
         result = get_all_notes(
@@ -254,7 +263,7 @@ async def get_notes_page(
     request: Request,
     icn: str,
     note_class: Optional[str] = Query('all'),
-    date_range: Optional[int] = Query(90),  # Default 90 days
+    date_range: Union[int, str, None] = Query(90),  # Default 90 days
     author: Optional[str] = None,
     status: Optional[str] = Query('all'),
     sort_by: Optional[str] = Query('reference_datetime'),
@@ -282,6 +291,15 @@ async def get_notes_page(
         Full HTML page with notes table
     """
     try:
+        # Convert empty string to None for date_range
+        if date_range == '' or date_range == 'all':
+            date_range = None
+        elif isinstance(date_range, str):
+            try:
+                date_range = int(date_range)
+            except ValueError:
+                date_range = None
+
         # Get patient demographics for header
         patient = get_patient_demographics(icn)
 
