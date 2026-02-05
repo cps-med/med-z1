@@ -49,7 +49,7 @@ from app.middleware.auth import AuthMiddleware
 # -----------------------------------------------------------
 # Lifespan handler for startup/shutdown tasks
 # -----------------------------------------------------------
-# Phase 6: Conversation Memory
+# Conversation Memory
 # Initialize LangGraph AsyncPostgresSaver at startup for persistent chat history
 
 @asynccontextmanager
