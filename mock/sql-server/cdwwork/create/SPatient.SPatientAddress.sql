@@ -33,7 +33,7 @@ CREATE TABLE SPatient.SPatientAddress
 );
 GO
 
--- create indexes for the SPatient.PatientInsurance table
+-- create indexes for the SPatient.PatientAddress table
 CREATE INDEX IX_SPatientAddressSID ON SPatient.SPatientAddress (SPatientAddressSID);
 CREATE INDEX IX_PatientSID ON SPatient.SPatientAddress (PatientSID);
 CREATE INDEX IX_PatientIEN ON SPatient.SPatientAddress (PatientIEN);

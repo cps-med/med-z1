@@ -4,6 +4,7 @@
 # Create MinIO Parquet Silver version from Bronze version
 #  - read from med-z1/bronze/cdwwork/patient
 #  - read from med-z1/bronze/cdwwork/patient_address
+#  - read from med-z1/bronze/cdwwork/patient_phone
 #  - read from med-z1/bronze/cdwwork/patient_insurance
 #  - read from med-z1/bronze/cdwwork/insurance_company_dim
 #  - read from med-z1/bronze/cdwwork/patient_disability (Phase 2)
@@ -12,9 +13,10 @@
 # ---------------------------------------------------------------------
 # Version History:
 #   v1.0 (2025-12-10): Initial Silver transformation
-#   v2.0 (2025-12-11): Added address, phone, and insurance data
+#   v2.0 (2025-12-11): Added address, phone (placeholder), and insurance data
 #   v3.0 (2025-12-14): Added marital_status, religion, service_connected_percent,
 #                       deceased_flag, death_date (Demographics Phase 2)
+#   v4.0 (2026-02-06): Integrated real phone data from patient_phone Bronze layer
 # ---------------------------------------------------------------------
 # To run this script from the project root folder, treat it as a
 # module (for now... there are other options to consider later).
@@ -63,6 +65,11 @@ def transform_patient_silver():
     disability_path = build_bronze_path("cdwwork", "patient_disability", "patient_disability_raw.parquet")
     df_disability = minio_client.read_parquet(disability_path)
     logger.info(f"Bronze patient disability data read: {len(df_disability)} records")
+
+    # Read Bronze Patient Phone Parquet from MinIO
+    phone_path = build_bronze_path("cdwwork", "patient_phone", "patient_phone_raw.parquet")
+    df_phone = minio_client.read_parquet(phone_path)
+    logger.info(f"Bronze patient phone data read: {len(df_phone)} records")
 
     # Prep to calculate current age from DOB
     today = datetime.now(timezone.utc).date()
@@ -171,6 +178,19 @@ def transform_patient_silver():
     )
     logger.info(f"Selected {len(df_service_connected)} service connected records")
 
+    # Select primary phone for each patient
+    # Logic: OrdinalNumber = 1 (primary phone)
+    df_primary_phone = (
+        df_phone
+        .filter(pl.col("OrdinalNumber") == 1)
+        .select([
+            pl.col("PatientSID").alias("patient_sid_phone"),
+            pl.col("PhoneNumber").str.strip_chars().alias("phone_primary"),
+        ])
+        .unique(subset=["patient_sid_phone"])  # Deduplicate: one phone per patient
+    )
+    logger.info(f"Selected {len(df_primary_phone)} primary phone records")
+
     # Join primary address to patient (left join - not all patients may have addresses)
     df = df_patient.join(
         df_primary_address,
@@ -198,9 +218,17 @@ def transform_patient_silver():
     )
     logger.info("Joined service connected data to patient records")
 
-    # Add phone placeholder (hardcoded for MVP)
+    # Join primary phone to patient (left join - not all patients may have phone numbers)
+    df = df.join(
+        df_primary_phone,
+        left_on="patient_sid",
+        right_on="patient_sid_phone",
+        how="left"
+    )
+    logger.info("Joined primary phone to patient records")
+
+    # Add timestamp
     df = df.with_columns([
-        pl.lit("Not available").alias("phone_primary"),
         pl.lit(datetime.now(timezone.utc)).alias("last_updated"),
     ])
 
