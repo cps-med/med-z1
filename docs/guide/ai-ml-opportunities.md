@@ -1,10 +1,10 @@
 # med-z1 AI/ML Assessment and Enhancement Opportunities
 
-**Document Version:** v1.1
-**Created:** 2026-02-05
-**Updated:** 2026-02-05
-**Focus:** Predictive Analytics for Risk Stratification and Clinical Decision Support
-**Target ML Technologies:** Traditional ML (scikit-learn, XGBoost)
+**Document Version:** v1.1  
+**Created:** 2026-02-05  
+**Updated:** 2026-02-05  
+**Focus:** Predictive Analytics for Risk Stratification and Clinical Decision Support  
+**Target ML Technologies:** Traditional ML (scikit-learn, XGBoost)  
 
 **Changelog:**
 - **v1.1 (2026-02-05):**
@@ -21,26 +21,17 @@
 
 This assessment evaluates the current state of AI/ML capabilities in med-z1 and identifies opportunities to enhance the product with predictive analytics focused on risk stratification, readmission prediction, and care gap identification using traditional machine learning approaches.
 
-**Key Findings:**
-- ✅ **Strong Foundation:** Excellent LLM-based conversational AI (LangGraph + GPT-4) operational
-- ✅ **Good Data Infrastructure:** PostgreSQL + VistA real-time integration with comprehensive clinical domains
-- ⚠️ **Limited Predictive ML:** Currently uses only descriptive statistics (linear regression for trend visualization)
-- ⚠️ **No Model Training:** scikit-learn installed but not used for predictive modeling
-- ⚠️ **Untapped Data:** Rich longitudinal data available but not leveraged for outcome prediction
-
-**Opportunity:** med-z1 has the data and infrastructure to implement high-value predictive ML models that could significantly improve clinical outcomes, reduce readmissions, and identify high-risk patients proactively.
+Med-z1 has the data and infrastructure to implement high-value predictive ML models that could significantly improve clinical outcomes, reduce readmissions, and identify high-risk patients proactively.
 
 ---
 
 ## Table of Contents
 
 1. [Current AI/ML State](#1-current-aiml-state)
-   - [1.3 Reusable Patterns from MCP Subsystem](#13-reusable-patterns-from-mcp-subsystem)
 2. [Available Data Assets](#2-available-data-assets)
 3. [Gaps and Limitations](#3-gaps-and-limitations)
 4. [Recommended ML Enhancements](#4-recommended-ml-enhancements)
 5. [Implementation Roadmap](#5-implementation-roadmap)
-   - [Phase 3: Suicide Prevention Risk Model (NEW)](#phase-3-suicide-prevention-risk-model-weeks-8-11)
 6. [Technical Architecture](#6-technical-architecture)
 7. [Model Development Guidelines](#7-model-development-guidelines)
 8. [Success Metrics](#8-success-metrics)
@@ -128,16 +119,16 @@ This assessment evaluates the current state of AI/ML capabilities in med-z1 and 
 - Comment: "Data preprocessing, metrics, train/test split"
 
 **Actual Usage:**
-- ❌ **ZERO** - Not used anywhere in the codebase
+- **ZERO** - Not used anywhere in the codebase
 - No model training scripts
 - No predictive models
 - No model persistence/loading
 - No train/test splitting
 
 **NumPy Usage:**
-- ✅ Limited to `np.polyfit()` for linear regression (trend visualization)
-- ✅ Basic statistics: `np.mean()`, `np.max()`, `np.sum()`
-- ❌ No feature engineering or predictive modeling
+- Limited to `np.polyfit()` for linear regression (trend visualization)
+- Basic statistics: `np.mean()`, `np.max()`, `np.sum()`
+- No feature engineering or predictive modeling
 
 **Conclusion:** scikit-learn is installed but completely unutilized for predictive analytics.
 
@@ -462,7 +453,7 @@ Based on your priorities (risk stratification, high-risk patients, medication ma
 
 ### 4.1 **30-Day Hospital Readmission Risk Model**
 
-**Priority:** ⭐⭐⭐⭐⭐ **HIGHEST**
+**Priority: HIGHEST**
 
 **Business Value:**
 - Medicare penalties for excess readmissions (~$563M annually across VA system)
@@ -508,7 +499,7 @@ Based on your priorities (risk stratification, high-risk patients, medication ma
 
 ### 4.2 **High-Risk Patient Identification Score**
 
-**Priority:** ⭐⭐⭐⭐⭐ **HIGHEST**
+**Priority: HIGHEST**
 
 **Business Value:**
 - Identify top 5% of patients who consume 50% of resources
@@ -788,7 +779,7 @@ Based on your priorities (risk stratification, high-risk patients, medication ma
 
 **Goal:** Implement REACH VET 2.0 predictive model for suicide risk identification
 
-**Priority:** ⭐⭐⭐⭐⭐ **MISSION-CRITICAL** (VA's highest clinical priority)
+**Priority: MISSION-CRITICAL** (VA's highest clinical priority)
 
 **Why Second (After Readmission):**
 1. **Architectural Alignment:** Both use logistic regression with feature engineering—same ML patterns
@@ -972,7 +963,7 @@ ai/ml/
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│ 1. Data Extraction (scripts/ml/extract_*.py)           │
+│ 1. Data Extraction (scripts/ml/extract_*.py)            │
 │    - Query PostgreSQL clinical tables                   │
 │    - Build training dataset (CSV or Parquet)            │
 │    - Label outcomes (readmitted Y/N, falls, etc.)       │
@@ -1332,15 +1323,15 @@ for group in ['White', 'Black', 'Hispanic', 'Other']:
 After first readmission model is trained (Week 7):
 
 **Go Criteria:**
-- ✅ AUC-ROC ≥0.70 (acceptable discrimination)
-- ✅ Calibration within 5% (predicted vs actual risk)
-- ✅ Top 20% risk tier has ≥30% readmission rate (concentration of risk)
-- ✅ Clinical champion validates feature definitions
+- AUC-ROC ≥0.70 (acceptable discrimination)
+- Calibration within 5% (predicted vs actual risk)
+- Top 20% risk tier has ≥30% readmission rate (concentration of risk)
+- Clinical champion validates feature definitions
 
 **No-Go Criteria:**
-- ❌ AUC-ROC <0.65 (random forest performs no better than baseline)
-- ❌ Poor calibration (predicted 30% but actual 10%)
-- ❌ Insufficient training data (<300 encounters with outcomes)
+- AUC-ROC <0.65 (random forest performs no better than baseline)
+- Poor calibration (predicted 30% but actual 10%)
+- Insufficient training data (<300 encounters with outcomes)
 
 If no-go: Re-evaluate data quality, feature engineering, or target definition before proceeding.
 
@@ -1349,10 +1340,10 @@ If no-go: Re-evaluate data quality, feature engineering, or target definition be
 ## Conclusion
 
 med-z1 has an **excellent foundation** for adding predictive ML capabilities:
-- ✅ Strong LLM-based conversational AI (best-in-class)
-- ✅ Comprehensive PostgreSQL clinical data (12 domains)
-- ✅ Real-time VistA integration (4 domains operational)
-- ✅ MCP servers for external AI integration
+- Strong LLM-based conversational AI (best-in-class)
+- Comprehensive PostgreSQL clinical data (12 domains)
+- Real-time VistA integration (4 domains operational)
+- MCP servers for external AI integration
 
 **The gap:** No predictive modeling despite having the right data and infrastructure.
 

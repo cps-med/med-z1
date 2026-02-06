@@ -84,9 +84,13 @@ torchvision>=0.15.0
 torchaudio>=2.0.0
 
 # ML Utilities
-scikit-learn>=1.3.0  # Data preprocessing, metrics, train/test split
+scikit-learn>=1.3.0   # Data preprocessing, metrics, train/test split
 transformers>=4.30.0  # HuggingFace transformers (BioClinicalBERT)
 datasets>=2.14.0      # HuggingFace datasets library
+xgboost==3.1.3        # Gradient boosting (most powerful for tabular data)
+shap==0.50.5          # Model explainability (SHAP values)
+imbalanced-learn==0.14.1 
+ipywidgets==8.1.8     # Improves rendering via shap library
 
 # PostgreSQL async adapter for LangGraph checkpointer
 # Note: psycopg v3 (different from psycopg2-binary v2)
