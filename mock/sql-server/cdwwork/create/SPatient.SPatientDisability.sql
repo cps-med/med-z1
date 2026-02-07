@@ -17,7 +17,7 @@ CREATE TABLE SPatient.SPatientDisability
   Sta3n                      smallint      NOT NULL,
   ClaimFolderInstitutionSID  int           NULL,
   ServiceConnectedFlag       char(1)       NULL,
-  ServiceConnectedPercent    decimal(9,0)  NULL,
+  ServiceConnectedPercent    decimal(3,0)  NULL,
   AgentOrangeExposureCode    varchar(50)   NULL,
   IonizingRadiationCode      varchar(50)   NULL,
   POWStatusCode              varchar(50)   NULL,

@@ -60,6 +60,7 @@
 
 :r SPatient.SPatient.sql
 :r SPatient.SPatientAddress.sql
+:r SPatient.SPatientPhone.sql
 :r SPatient.SPatientDisability.sql
 :r SPatient.SPatientInsurance.sql
 :r SPatient.PatientRecordFlagAssignment.sql
