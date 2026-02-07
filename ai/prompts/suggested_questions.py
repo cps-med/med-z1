@@ -16,13 +16,13 @@ To modify questions: Edit the SUGGESTED_QUESTIONS list below.
 # These appear as clickable chips when the user opens /insight
 SUGGESTED_QUESTIONS = [
     "What are the key clinical risks for this patient?",
+    "What environmental exposures does this patient have?",
+    "What are the risks for a patient with Agent Orange exposure?",
     "Are there any drug-drug interaction concerns?",
     "Summarize this patient's recent clinical activity.",
     "What did recent clinical notes say about this patient?",
     "Has the patient seen cardiology?",
     "What imaging studies were done recently?",
     "What is the patient's name, age, and gender?",
-    "Is the patient a minor?",
-    "Is the patient over 50 years old?",
-    "What day of the week was January 1, 1970?"
+    "Is the patient a minor?"
 ]

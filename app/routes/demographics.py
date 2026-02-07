@@ -11,6 +11,7 @@ from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from app.db.patient import get_patient_demographics
+from app.db.military_history import get_patient_military_history, get_priority_group
 from app.utils.template_context import get_base_context
 import logging
 
@@ -31,7 +32,8 @@ async def get_patient_demographics_page(request: Request, icn: str):
     - Contact information (phone, address)
     - Insurance information
     - Marital status, religion
-    - Service connected percentage
+    - Service connected percentage with priority group
+    - Environmental exposures (Agent Orange, radiation, POW, etc.)
     - Deceased status and date (if applicable)
 
     Args:
@@ -53,12 +55,22 @@ async def get_patient_demographics_page(request: Request, icn: str):
         logger.warning(f"Patient not found for ICN: {icn}")
         raise HTTPException(status_code=404, detail="Patient not found")
 
+    # Get military history (if available)
+    military_history = get_patient_military_history(icn)
+
+    # Determine priority group based on service connected percentage
+    priority_group = None
+    if military_history and military_history.get('service_connected_percent') is not None:
+        priority_group = get_priority_group(military_history['service_connected_percent'])
+
     # Render full demographics page template
     return templates.TemplateResponse(
         "patient_demographics.html",
         get_base_context(
             request,
             patient=patient,
+            military_history=military_history,
+            priority_group=priority_group,
             active_page="demographics"
         )
     )

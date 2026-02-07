@@ -27,6 +27,7 @@ from app.db.vitals import get_recent_vitals
 from app.db.patient_allergies import get_patient_allergies
 from app.db.encounters import get_recent_encounters
 from app.db.notes import get_recent_notes_for_ai
+from app.db.military_history import get_patient_military_history
 
 logger = logging.getLogger(__name__)
 
@@ -95,10 +96,47 @@ class PatientContextBuilder:
         else:
             text += f"{age}-year-old {sex} veteran"
 
-        # Add service-connected percentage if available
-        sc_pct = demo.get('service_connected_percent')
-        if sc_pct is not None:
-            text += f", service-connected disability {int(sc_pct)}%"
+        # Add service-connected percentage and exposures if available
+        military_history = get_patient_military_history(self.icn)
+        if military_history:
+            sc_pct = military_history.get('service_connected_percent')
+            if sc_pct is not None:
+                text += f", service-connected disability {int(sc_pct)}%"
+
+                # Add priority context for high-priority veterans
+                if sc_pct >= 70:
+                    text += " (high priority care)"
+
+            # Add environmental exposures
+            exposures = []
+            if military_history.get('agent_orange_exposure') == 'Y':
+                location = military_history.get('agent_orange_location')
+                if location:
+                    exposures.append(f"Agent Orange ({location})")
+                else:
+                    exposures.append("Agent Orange")
+
+            if military_history.get('ionizing_radiation') == 'Y':
+                exposures.append("ionizing radiation")
+
+            if military_history.get('pow_status') == 'Y':
+                location = military_history.get('pow_location')
+                if location:
+                    exposures.append(f"Former POW ({location})")
+                else:
+                    exposures.append("Former POW")
+
+            if military_history.get('camp_lejeune_flag') == 'Y':
+                exposures.append("Camp Lejeune water contamination")
+
+            if military_history.get('sw_asia_exposure') == 'Y':
+                exposures.append("Gulf War service")
+
+            if military_history.get('shad_flag') == 'Y':
+                exposures.append("SHAD (shipboard hazard)")
+
+            if exposures:
+                text += f"\nEnvironmental exposures: {', '.join(exposures)}"
 
         # Add primary care station
         station_name = demo.get('primary_station_name')

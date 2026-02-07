@@ -1244,6 +1244,69 @@ input:focus-visible,
     color: #ffffff;
 }
 
+/* =================================================================
+   Environmental Exposure Badges (Military History)
+   ================================================================= */
+
+.exposure-badges {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 0.813rem;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.badge--danger {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fca5a5;
+}
+
+.badge--warning {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffc107;
+}
+
+.badge--info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #17a2b8;
+}
+
+.badge--secondary {
+    background-color: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+}
+
+.badge i {
+    font-size: 0.875rem;
+}
+
+/* Tooltip icon styling */
+.demo-tooltip {
+    cursor: help;
+    color: var(--color-gray-500);
+    margin-left: 4px;
+    font-size: 0.875rem;
+}
+
+.demo-tooltip:hover {
+    color: var(--color-primary);
+}
+
 /* Topbar flags badge (small notification badge) */
 #flags-badge {
     margin-left: 0.5rem;

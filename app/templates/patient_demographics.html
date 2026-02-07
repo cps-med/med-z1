@@ -123,15 +123,100 @@
             </h2>
             <div class="demo-grid">
                 <div class="demo-field">
-                    <span class="demo-field__label">Service Connected %</span>
+                    <span class="demo-field__label">
+                        Service Connected %
+                        <i class="fa-solid fa-circle-info demo-tooltip"
+                           title="Percentage of disability related to military service. Affects care priority and benefits eligibility."
+                           style="color: var(--color-gray-500); cursor: help; margin-left: 4px;">
+                        </i>
+                    </span>
                     <span class="demo-field__value">
-                        {% if patient.service_connected_percent is not none %}
-                            {{ patient.service_connected_percent }}%
+                        {% if military_history and military_history.service_connected_percent is not none %}
+                            {{ military_history.service_connected_percent|int }}%
+
+                            <!-- Priority Group Badge -->
+                            {% if priority_group and priority_group.group %}
+                            <span class="badge {{ priority_group.badge_class }}"
+                                  style="margin-left: 8px;"
+                                  title="{{ priority_group.description }}">
+                                {{ priority_group.label }}
+                            </span>
+                            {% endif %}
                         {% else %}
                             Not Available
                         {% endif %}
                     </span>
                 </div>
+
+                <!-- Environmental Exposures -->
+                {% if military_history %}
+                <div class="demo-field demo-field--full-width">
+                    <span class="demo-field__label">
+                        Environmental Exposures
+                        <i class="fa-solid fa-circle-info demo-tooltip"
+                           title="Known exposures during military service that may affect health. Important for screening and monitoring."
+                           style="color: var(--color-gray-500); cursor: help; margin-left: 4px;">
+                        </i>
+                    </span>
+                    <span class="demo-field__value">
+                        <div class="exposure-badges" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            {% if military_history.agent_orange_exposure == 'Y' %}
+                            <span class="badge badge--warning"
+                                  title="Agent Orange exposure ({{ military_history.agent_orange_location or 'Location unknown' }})">
+                                <i class="fa-solid fa-leaf"></i> Agent Orange
+                            </span>
+                            {% endif %}
+
+                            {% if military_history.ionizing_radiation == 'Y' %}
+                            <span class="badge badge--danger"
+                                  title="Ionizing radiation exposure - increased cancer risk, special monitoring required">
+                                <i class="fa-solid fa-radiation"></i> Radiation
+                            </span>
+                            {% endif %}
+
+                            {% if military_history.pow_status == 'Y' %}
+                            <span class="badge badge--danger"
+                                  title="Former Prisoner of War ({{ military_history.pow_location or 'Location unknown' }}) - special benefits and care">
+                                <i class="fa-solid fa-handcuffs"></i> Former POW
+                            </span>
+                            {% endif %}
+
+                            {% if military_history.camp_lejeune_flag == 'Y' %}
+                            <span class="badge badge--warning"
+                                  title="Camp Lejeune water contamination exposure (1953-1987) - linked to specific cancers">
+                                <i class="fa-solid fa-droplet"></i> Camp Lejeune
+                            </span>
+                            {% endif %}
+
+                            {% if military_history.sw_asia_exposure == 'Y' %}
+                            <span class="badge badge--info"
+                                  title="Gulf War / Southwest Asia service - potential burn pit exposure and Gulf War Illness">
+                                <i class="fa-solid fa-fire"></i> Gulf War
+                            </span>
+                            {% endif %}
+
+                            {% if military_history.shad_flag == 'Y' %}
+                            <span class="badge badge--info"
+                                  title="Shipboard Hazard and Defense exposure">
+                                <i class="fa-solid fa-ship"></i> SHAD
+                            </span>
+                            {% endif %}
+
+                            <!-- No exposures message -->
+                            {% if military_history.agent_orange_exposure != 'Y'
+                               and military_history.ionizing_radiation != 'Y'
+                               and military_history.pow_status != 'Y'
+                               and military_history.camp_lejeune_flag != 'Y'
+                               and military_history.sw_asia_exposure != 'Y'
+                               and military_history.shad_flag != 'Y' %}
+                            <span style="color: var(--color-gray-600); font-style: italic;">
+                                No documented exposures
+                            </span>
+                            {% endif %}
+                        </div>
+                    </span>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>

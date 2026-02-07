@@ -835,6 +835,7 @@ docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_enco
 docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_labs_table.sql
 docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_clinical_notes_table.sql
 docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_immunizations_table.sql
+docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_military_history_table.sql
 docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_reference_vaccine_table.sql
 ```
 
@@ -843,13 +844,14 @@ Verify tables were created:
 docker exec -it postgres16 psql -U postgres -d medz1 -c "\dt clinical.*"
 ```
 
-Expected output should list **12 tables** in the `clinical` schema:
+Expected output should list **13 tables** in the `clinical` schema:
 
 - patient_demographics, patient_vitals
 - patient_allergies, patient_allergy_reactions
 - patient_medications_outpatient, patient_medications_inpatient
 - patient_flags, patient_flag_history
 - patient_encounters, patient_labs, patient_clinical_notes, patient_immunizations
+- patient_military_history
 
 Additionally, verify the reference table was created:
 ```bash
@@ -863,7 +865,7 @@ Expected output should show **1 table** in the `reference` schema:
 
 Each clinical domain has a complete pipeline (Bronze → Silver → Gold → Load). Run pipelines in the order shown below to respect data dependencies.  
 
-**Important Note:** All of the clinical domain pipelines detailed below (1 through 10) can be run via a single shell script, as described later in this guide.
+**Important Note:** All of the clinical domain pipelines detailed below (1 through 11) can be run via a single shell script, as described later in this guide.
 
 All ETL scripts are run as Python modules from the project root:
 
@@ -893,7 +895,25 @@ python -m etl.gold_patient
 python -m etl.load_postgres_patient
 ```
 
-#### 2. Vitals Pipeline
+#### 2. Patient Military History Pipeline
+
+**Note:** This pipeline depends on Bronze patient data from Pipeline #1 (specifically `bronze_patient` and `bronze_patient_disability`). Ensure Demographics Pipeline Bronze extraction has completed first.
+
+```bash
+# Bronze: Already extracted in Demographics Pipeline (bronze_patient_disability)
+# No separate Bronze step needed
+
+# Silver: Transform and join with patient ICN
+python -m etl.silver_patient_military_history
+
+# Gold: Create query-optimized military history
+python -m etl.gold_patient_military_history
+
+# Load: Insert into PostgreSQL
+python -m etl.load_military_history
+```
+
+#### 3. Vitals Pipeline
 
 ```bash
 # Bronze: Extract vitals from SQL Server (CDWWork and CDWWork2)
@@ -910,7 +930,7 @@ python -m etl.gold_vitals
 python -m etl.load_vitals
 ```
 
-#### 3. Allergies Pipeline
+#### 4. Allergies Pipeline
 
 ```bash
 # Bronze: Extract allergies and related dimension data
@@ -930,7 +950,7 @@ python -m etl.gold_patient_allergies
 python -m etl.load_patient_allergies
 ```
 
-#### 4. Medications Pipeline
+#### 5. Medications Pipeline
 
 ```bash
 # Bronze: Extract medications from SQL Server
@@ -946,7 +966,7 @@ python -m etl.gold_patient_medications
 python -m etl.load_medications
 ```
 
-#### 5. Patient Flags Pipeline
+#### 6. Patient Flags Pipeline
 
 ```bash
 # Bronze: Extract patient flags
@@ -962,7 +982,7 @@ python -m etl.gold_patient_flags
 python -m etl.load_patient_flags
 ```
 
-#### 6. Encounters (Inpatient) Pipeline
+#### 7. Encounters (Inpatient) Pipeline
 
 ```bash
 # Bronze: Extract inpatient encounters
@@ -978,7 +998,7 @@ python -m etl.gold_inpatient
 python -m etl.load_encounters
 ```
 
-#### 7. Laboratory Results Pipeline
+#### 8. Laboratory Results Pipeline
 
 ```bash
 # Bronze: Extract lab results
@@ -994,7 +1014,7 @@ python -m etl.gold_labs
 python -m etl.load_labs
 ```
 
-#### 8. Clinical Notes Pipeline
+#### 9. Clinical Notes Pipeline
 ```bash
 # Bronze: Extract Clinical Notes
 python -m etl.bronze_clinical_notes_vista
@@ -1009,7 +1029,7 @@ python -m etl.gold_clinical_notes
 python -m etl.load_clinical_notes
 ```
 
-#### 9. Immunizations Pipeline
+#### 10. Immunizations Pipeline
 ```bash
 # Bronze: Extract Immunizations from CDWWork (VistA)
 python -m etl.bronze_immunizations
@@ -1027,7 +1047,7 @@ python -m etl.gold_immunizations
 python -m etl.load_immunizations
 ```
 
-#### 10. Drug-Drug Interaction (DDI) Reference Data Pipeline
+#### 11. Drug-Drug Interaction (DDI) Reference Data Pipeline
 
 The DDI pipeline provides reference data for the AI Clinical Insights feature. Unlike clinical domains, this pipeline does NOT load into PostgreSQL—the Gold Parquet is consumed directly by the AI service at runtime.
 
