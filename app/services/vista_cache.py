@@ -87,7 +87,7 @@ class VistaSessionCache:
         Args:
             request: FastAPI request object (contains session)
             patient_icn: Patient Integrated Care Number
-            domain: Clinical domain (vitals, allergies, demographics, encounters, medications)
+            domain: Clinical domain (vitals, allergies, demographics, encounters, medications, problems)
 
         Returns:
             Dict with cached data structure:
@@ -305,7 +305,7 @@ class VistaSessionCache:
         patient_cache = vista_cache.get(patient_icn, {})
 
         # Check all supported domains
-        supported_domains = ["vitals", "allergies", "demographics", "encounters", "medications"]
+        supported_domains = ["vitals", "allergies", "demographics", "encounters", "medications", "problems"]
         cache_info = {}
 
         for domain in supported_domains:

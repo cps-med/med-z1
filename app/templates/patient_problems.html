@@ -46,7 +46,19 @@
             <!-- VistA Refresh Controls (right-aligned) -->
             <div id="vista-refresh-controls" class="vista-controls">
                 <span class="data-freshness" id="freshness-message">
-                    Data current through: yesterday
+                    {% if vista_refreshed %}
+                        Data current through: {{ data_current_through }} (today)
+                        <span class="last-updated">Last updated: {{ last_updated }}</span>
+                    {% else %}
+                        Data current through: {{ data_current_through }}{% if data_freshness_label %} ({{ data_freshness_label }}){% endif %}
+                    {% endif %}
+
+                    {% if vista_cached %}
+                        <span class="badge badge--success" style="margin-left: 0.75rem;" title="Vista data cached from sites: {{ cache_sites|join(', ') }}">
+                            <i class="fa-solid fa-database"></i>
+                            Problems Cached (available to AI)
+                        </span>
+                    {% endif %}
                 </span>
 
                 <button

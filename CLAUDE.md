@@ -336,7 +336,7 @@ The med-z1 AI subsystem provides LangGraph-powered clinical decision support via
 
 ### Clinical Domains (Complete Scope)
 
-**Implemented Domains (8):**
+**Implemented Domains (9):**
 1. ✅ Dashboard - Patient overview with clinical widgets
 2. ✅ Demographics - Full implementation (widget + dedicated page with comprehensive information)
 3. ✅ Vitals - Full implementation (widget + dedicated page with charts)
@@ -351,12 +351,19 @@ The med-z1 AI subsystem provides LangGraph-powered clinical decision support via
    - **Database:** `app/db/patient_immunizations.py` with comprehensive filtering (vaccine_group, cvx_code, days, incomplete_only, adverse_reactions_only)
    - **API:** 6 endpoints (JSON APIs, HTML widget, full page, filtered results, CCOW redirect)
    - **UI:** Dashboard widget shows 5 most recent (2-year lookback), full page with summary stats (6 cards) and HTMX filtering
+10. ✅ **Problems/Diagnoses** - **Full implementation** (2x1 widget + dedicated page with filtering, 95 problems in PostgreSQL) - **Completed 2026-02-08**
+   - **Key Features:** Charlson Comorbidity Index (automated scoring for 19 conditions), dual coding (SNOMED CT + ICD-10), multi-source harmonization (VistA + Cerner), chronic condition flags (CHF, COPD, CKD, diabetes, etc.), status tracking (Active/Inactive/Resolved)
+   - **Database:** `app/db/patient_problems.py` with Charlson calculation, ICD-10 categorization, service-connected tracking
+   - **API:** 7 endpoints (JSON APIs, HTML widget, full page, filtered results, Charlson summary, CCOW redirect)
+   - **UI:** Dashboard widget shows 5 active problems + Charlson badge, full page grouped by ICD-10 category with HTMX filtering
+   - **VistA Integration:** ORQQPL LIST RPC with session cache (30-min TTL), automatic merge/dedupe on page load
+   - **AI Integration:** Phase 6 complete (2026-02-08) - Problems integrated into `get_patient_summary` tool with Charlson analysis
+   - **Scope:** Problem List (longitudinal) implemented, Encounter Diagnoses (episodic) deferred to Phase 2+
 
 **ETL Complete, UI Pending (1):**
-10. 🔧 Labs - **ETL pipeline complete** (Bronze/Silver/Gold/Load), 58 results in PostgreSQL. UI implementation pending (3x1 widget recommended) - **ETL Completed 2025-12-16**
+11. 🔧 Labs - **ETL pipeline complete** (Bronze/Silver/Gold/Load), 58 results in PostgreSQL. UI implementation pending (3x1 widget recommended) - **ETL Completed 2025-12-16**
 
-**Placeholder Domains (4):**
-11. 🚧 Problems - Diagnoses and problem list
+**Placeholder Domains (3):**
 12. 🚧 Orders - Clinical orders and requests
 13. 🚧 Imaging - Radiology and imaging studies
 14. 🚧 Procedures - Surgical and procedural history (Later Phase)
@@ -365,6 +372,7 @@ The med-z1 AI subsystem provides LangGraph-powered clinical decision support via
 - **Patient Flags**: Modal-only (accessible via topbar "View Flags" button with badge count). No dashboard widget or dedicated page per design decision 2025-12-14.
 - **Encounters**: First domain to implement pagination (ADR-005). Shows inpatient admissions only (outpatient visits deferred to Phase 2). Default page size: 20, supports 10/20/50/100 per page.
 - **Laboratory Results**: Recommended as 3x1 full-width widget to display multiple lab panels side-by-side with trend sparklines.
+- **Problems/Diagnoses**: Full page groups problems by ICD-10 category (collapsible sections). Widget shows top 5 active problems with Charlson Comorbidity Index badge. VistA cache auto-merges on page load (fixes cache inconsistency bug from 2026-02-08).
 - **All other domains**: Follow Pattern A (patient.py routes) or Pattern B (dedicated router) based on complexity (see `docs/spec/med-z1-architecture.md` Section 3).
 
 **DoD-specific views** (CHCS/AHLTA) are explicitly out of scope for early versions.

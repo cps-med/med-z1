@@ -396,39 +396,55 @@ async def patient_problems_page(
         if not patient:
             raise HTTPException(status_code=404, detail=f"Patient {icn} not found")
 
-        # Get grouped problems
-        if status and status != "All":
-            grouped = get_problems_grouped_by_category(icn, status=status)
+        # Get all problems from PostgreSQL (no filters yet - need all for potential merge)
+        all_problems = get_patient_problems(icn, status=None, category=None, service_connected_only=False)
+
+        # Check if we have cached Vista responses to merge with PG data
+        from app.services.vista_cache import VistaSessionCache
+        from app.services.realtime_overlay import merge_problems_data
+
+        problems_cache = VistaSessionCache.get_cached_data(request, icn, "problems")
+
+        if problems_cache and "vista_responses" in problems_cache:
+            # Merge PG data with cached Vista responses
+            logger.info(f"Merging PG data with cached Vista responses from sites: {problems_cache.get('sites')}")
+            all_problems, merge_stats = merge_problems_data(all_problems, problems_cache["vista_responses"], icn)
+            logger.info(f"Merged: {merge_stats['total_merged']} problems ({merge_stats['pg_count']} PG + {merge_stats['vista_count']} Vista)")
         else:
-            # Get all problems if "All" selected
-            all_problems = get_patient_problems(
-                icn,
-                status=None,
-                category=category,
-                service_connected_only=service_connected_only
-            )
-            # Group manually
-            grouped = {}
-            for p in all_problems:
-                cat = p.get("icd10_category") or "Other"
-                if cat not in grouped:
-                    grouped[cat] = []
-                grouped[cat].append(p)
+            logger.debug(f"No cached Vista data for {icn}/problems - using PostgreSQL only")
 
-        # Apply category filter if specified
+        # Apply filters AFTER merge
+        filtered_problems = all_problems
+
+        # Apply status filter
+        if status and status != "All":
+            filtered_problems = [p for p in filtered_problems if p.get("problem_status") == status]
+
+        # Apply category filter
         if category:
-            grouped = {category: grouped.get(category, [])}
+            filtered_problems = [p for p in filtered_problems if p.get("icd10_category") == category]
 
-        # Apply service-connected filter if needed
+        # Apply service-connected filter
         if service_connected_only:
-            for cat in grouped:
-                grouped[cat] = [p for p in grouped[cat] if p.get("service_connected")]
+            filtered_problems = [p for p in filtered_problems if p.get("service_connected")]
 
-        # Get summary statistics
-        summary = get_problems_summary(icn, limit=100)
-        charlson_score = summary.get("charlson_index", 0)
+        # Group by category
+        grouped = {}
+        for p in filtered_problems:
+            cat = p.get("icd10_category") or "Other"
+            if cat not in grouped:
+                grouped[cat] = []
+            grouped[cat].append(p)
 
-        # Determine risk level
+        # Calculate summary statistics from merged data (not just PostgreSQL)
+        # Use all_problems (merged) for accurate stats, not filtered_problems
+        total_active = sum(1 for p in all_problems if p.get("problem_status") == "Active")
+        total_chronic = sum(1 for p in all_problems if p.get("is_chronic"))
+
+        # Calculate Charlson score from merged data
+        charlson_score = sum(p.get("charlson_weight", 0) for p in all_problems if p.get("charlson_condition"))
+
+        # Determine risk level from Charlson score
         if charlson_score == 0:
             risk_level = "None"
             badge_class = "badge--success"
@@ -445,9 +461,31 @@ async def patient_problems_page(
             risk_level = "Very High"
             badge_class = "badge--danger"
 
-        # Get all unique categories for filter dropdown
-        all_problems = get_patient_problems(icn)
+        # Calculate chronic condition flags from merged data
+        has_chf = any("CHF" in (p.get("problem_text") or "") or "heart failure" in (p.get("problem_text") or "").lower() for p in all_problems if p.get("problem_status") == "Active")
+        has_copd = any("COPD" in (p.get("problem_text") or "") or p.get("icd10_code", "").startswith("J44") for p in all_problems if p.get("problem_status") == "Active")
+        has_ckd = any("CKD" in (p.get("problem_text") or "") or "chronic kidney" in (p.get("problem_text") or "").lower() for p in all_problems if p.get("problem_status") == "Active")
+        has_diabetes = any("diabetes" in (p.get("problem_text") or "").lower() or p.get("icd10_code", "").startswith(("E10", "E11")) for p in all_problems if p.get("problem_status") == "Active")
+        has_critical_conditions = has_chf or has_copd or has_ckd or has_diabetes
+
+        # Get all unique categories for filter dropdown (from merged data)
         all_categories = sorted(set(p.get("icd10_category") or "Other" for p in all_problems))
+
+        # Calculate data freshness based on VistA cache presence
+        from datetime import datetime, timedelta
+        if problems_cache:
+            # We have Vista data - current through today
+            now = datetime.now()
+            data_current_through = now.strftime("%b %d, %Y")
+            data_freshness_label = "today"
+        else:
+            # PostgreSQL only - current through yesterday
+            yesterday = datetime.now() - timedelta(days=1)
+            data_current_through = yesterday.strftime("%b %d, %Y")
+            data_freshness_label = "yesterday"
+
+        vista_cached = problems_cache is not None
+        cache_sites = problems_cache.get("sites", []) if problems_cache else []
 
         # Build context
         context = get_base_context(request)
@@ -460,18 +498,24 @@ async def patient_problems_page(
             "charlson_score": charlson_score,
             "risk_level": risk_level,
             "badge_class": badge_class,
-            "total_active": summary.get("total_active", 0),
-            "total_chronic": summary.get("total_chronic", 0),
-            "has_chf": summary.get("has_chf", False),
-            "has_copd": summary.get("has_copd", False),
-            "has_ckd": summary.get("has_ckd", False),
-            "has_diabetes": summary.get("has_diabetes", False),
-            "has_critical_conditions": summary.get("has_critical_conditions", False),
+            "total_active": total_active,
+            "total_chronic": total_chronic,
+            "has_chf": has_chf,
+            "has_copd": has_copd,
+            "has_ckd": has_ckd,
+            "has_diabetes": has_diabetes,
+            "has_critical_conditions": has_critical_conditions,
             # Filters
             "status_filter": status or "Active",
             "category_filter": category,
             "service_connected_filter": service_connected_only,
             "all_categories": all_categories,
+            # VistA cache metadata
+            "data_current_through": data_current_through,
+            "data_freshness_label": data_freshness_label,
+            "vista_refreshed": False,  # Only True after "Refresh VistA" button click
+            "vista_cached": vista_cached,
+            "cache_sites": cache_sites,
         })
 
         return templates.TemplateResponse(

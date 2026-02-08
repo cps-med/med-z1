@@ -77,10 +77,10 @@ FastAPI + HTMX UI - Patient-aware topbar with search
 | **Phase 9** | Immunizations Domain | 1 week | ✅ Complete (2026-01-14) |
 | **Phase 10** | AI Clinical Insights (Phases 1-6) | 3 weeks | ✅ Complete (2026-01-20) |
 | **Phase 11** | Military History & Environmental Exposures | 1 week | ✅ Complete (2026-02-07) |
-| **Phase 12** | Problems/Diagnoses Domain | 2-3 weeks | 🚧 In Progress |
+| **Phase 12** | Problems/Diagnoses Domain | 2-3 weeks | ✅ Complete (2026-02-08) |
 
 **Functional Patient-Aware UI: ✅ Delivered**
-**Clinical Domains Implemented: 10** (Demographics, Flags, Vitals, Allergies, Medications, Encounters, Clinical Notes, Immunizations, Military History, Labs (partial))
+**Clinical Domains Implemented: 11** (Demographics, Flags, Vitals, Allergies, Medications, Encounters, Clinical Notes, Immunizations, Military History, Problems, Labs (partial))
 **AI Features: ✅ Operational** (4 tools, conversation memory, environmental exposure awareness)
 **Vista RPC Broker: ✅ Operational** (4 domains with real-time data)
 
@@ -2196,26 +2196,27 @@ Test all workflows:
      - ✅ Sidebar link activated and functional
      - ⏸️ Charting: Chart.js sparklines deferred due to HTMX timing issues (see lab-results-design.md v1.1)
      - Future: Implement charting on full page (non-HTMX) or via HTMX event listeners
-4. 🚧 **Problems/Diagnoses** - **IN PROGRESS (Started 2026-02-07)** - Clinical context and problem list
+4. ✅ **Problems/Diagnoses** - **COMPLETE (2026-02-08)** - Clinical context and problem list
    - **Priority:** HIGH - Identified as #1 data gap for ML readmission prediction (+0.05-0.08 AUC improvement)
    - **Widget:** 2x1 - Top 5 active problems + Charlson Comorbidity Index badge
    - **Full Page:** Problem list grouped by ICD-10 category with status filtering
-   - **Scope:** Problem List (longitudinal) + Encounter Diagnoses (episodic) merged view
+   - **Scope:** Problem List (longitudinal) implementation complete - Encounter Diagnoses (episodic) deferred to Phase 2+
    - **Features:**
      - Dual coding (SNOMED CT + ICD-10-CM) from VistA and Cerner
      - Charlson Comorbidity Index pre-calculated in ETL (19 conditions)
      - VistA real-time overlay with "updated today" indicators
      - Chronic condition flags (CHF, COPD, diabetes, CKD, depression, PTSD)
      - Status tracking (Active/Inactive/Resolved) with lifetime history
-   - **AI Integration:** New `assess_disease_burden` tool for comorbidity analysis
+   - **AI Integration:** Problems integrated into `get_patient_summary` tool with Charlson scoring
    - **Implementation Status:**
-     - ✅ Design: Complete (see `docs/spec/problems-design.md`)
-     - 🚧 Mock Data: In progress (CDWWork + CDWWork2 schemas)
-     - ⏳ ETL Pipeline: Pending
-     - ⏳ PostgreSQL Schema: Pending
-     - ⏳ VistA RPC Integration: Pending
-     - ⏳ UI Implementation: Pending
-   - **Timeline:** 17 days (2-3 weeks)
+     - ✅ Design: Complete (see `docs/spec/problems-design.md` v1.3)
+     - ✅ Mock Data: Complete (CDWWork + CDWWork2 schemas, 95 problems for 4 patients)
+     - ✅ ETL Pipeline: Complete (Bronze/Silver/Gold with deduplication)
+     - ✅ PostgreSQL Schema: Complete (patient_problems table, Charlson calculation)
+     - ✅ VistA RPC Integration: Complete (ORQQPL LIST RPC, session cache, merge/dedupe)
+     - ✅ UI Implementation: Complete (2x1 widget + full page with filtering, VistA refresh)
+     - ✅ AI Integration: Complete (problems included in AI context, Charlson analysis)
+   - **Timeline:** 17 days (completed 2026-02-07 to 2026-02-08)
    - **See:** `docs/spec/problems-design.md`
 5. 🚧 **Orders** - Complex workflow domain
    - **Widget:** 1x1 or 3x1 (TBD) - Recent orders timeline

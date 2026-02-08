@@ -100,7 +100,7 @@ This document captures architectural decisions, patterns, and rationale for the 
 - Session-based caching (30-minute TTL) for performance
 - Simulated network latency (1-3 seconds per site) for realistic testing
 - Supports "Refresh VistA" UI pattern for on-demand real-time data retrieval
-- **Implemented RPCs (5):** ORWPT PTINQ (demographics), GMV LATEST VM (vitals), ORWCV ADMISSIONS (encounters), ORQQAL LIST (allergies), ORWPS COVER (medications)
+- **Implemented RPCs (6):** ORWPT PTINQ (demographics), GMV LATEST VM (vitals), ORWCV ADMISSIONS (encounters), ORQQAL LIST (allergies), ORWPS COVER (medications), ORQQPL LIST (problems)
 
 **AI/ML Tools (ai/):**
 - LangGraph-powered clinical decision support agents
@@ -108,7 +108,7 @@ This document captures architectural decisions, patterns, and rationale for the 
 - Accesses both PostgreSQL data (T-1+) and cached VistA data (T-0) for comprehensive analysis
 - **Implemented Tools (4):**
   - `check_ddi_risks` - Drug-drug interaction analysis
-  - `get_patient_summary` - Comprehensive patient overview (demographics, meds, vitals, allergies, encounters, notes)
+  - `get_patient_summary` - Comprehensive patient overview (demographics, meds, vitals, allergies, encounters, notes, problems with Charlson Index)
   - `analyze_vitals_trends` - Statistical vitals analysis with clinical interpretation
   - `get_clinical_notes_summary` - Query clinical notes with filtering
 - OpenAI GPT-4 Turbo backend with centralized prompt management
@@ -117,7 +117,7 @@ This document captures architectural decisions, patterns, and rationale for the 
 **PostgreSQL Serving Database:**
 - Fast, indexed queries for historical clinical data (T-1 and earlier)
 - Organized into schemas: `auth` (authentication), `clinical` (patient data)
-- Clinical tables: demographics, vitals, allergies, medications, flags, encounters, labs, clinical notes, immunizations
+- Clinical tables: demographics, vitals, allergies, medications, flags, encounters, labs, clinical notes, immunizations, problems
 - Loaded from Gold layer Parquet files via ETL pipeline
 - Supports complex filtering, sorting, and pagination
 - Used by Web UI and AI/ML Tools for data retrieval
@@ -238,12 +238,12 @@ page_router = APIRouter(tags=["vitals-pages"])
 | Vitals        | `vitals.py`       | B       | Yes        | Yes     | Complex filtering/charting needs full page   |
 | Medications   | `medications.py`  | B       | Yes        | Yes     | Full implementation with 2x1 widget          |
 | Encounters    | `encounters.py`   | B       | Yes        | Yes     | **Complete** - First domain with pagination  |
+| Notes         | `notes.py`        | B       | Yes        | Yes     | **Complete (2026-01-02)** - Text-heavy domain with filtering |
+| Immunizations | `immunizations.py`| B       | Yes        | Yes     | **Complete (2026-01-14)** - Multi-source harmonization |
+| Problems      | `problems.py`     | B       | Yes        | Yes     | **Complete (2026-02-08)** - Charlson Index, ICD-10 grouping |
 | Labs          | TBD               | B (rec) | TBD        | TBD     | **ETL Complete** - UI implementation pending |
-| Problems      | TBD               | A or B  | TBD        | TBD     | Planned - Pattern depends on complexity      |
 | Orders        | TBD               | B (rec) | TBD        | TBD     | Planned - Complex workflow domain            |
-| Notes         | TBD               | B (rec) | TBD        | TBD     | Planned - Text-heavy domain                  |
 | Imaging       | TBD               | B (rec) | TBD        | TBD     | Planned - May need external viewer           |
-| Immunizations | TBD               | A or B  | TBD        | TBD     | Later Phase - Pattern TBD                    |
 | Procedures    | TBD               | A or B  | TBD        | TBD     | Later Phase - Pattern TBD                    |
 
 **Important Note on Patient Flags (Design Decision 2025-12-14):**

@@ -22,6 +22,9 @@ SUGGESTED_QUESTIONS = [
     "Summarize this patient's recent clinical activity.",
     "What did recent clinical notes say about this patient?",
     "Has the patient seen cardiology?",
+    "What conditions does this patient have?",
+    "What's the Charlson score?",
+    "Is this a high-risk patient?",
     "What imaging studies were done recently?",
     "What is the patient's name, age, and gender?",
     "Is the patient a minor?"

@@ -28,6 +28,7 @@ from app.db.patient_allergies import get_patient_allergies
 from app.db.encounters import get_recent_encounters
 from app.db.notes import get_recent_notes_for_ai
 from app.db.military_history import get_patient_military_history
+from app.db.patient_problems import get_problems_summary, get_charlson_score
 
 logger = logging.getLogger(__name__)
 
@@ -425,6 +426,93 @@ class PatientContextBuilder:
 
         return text.strip()
 
+    def get_problems_summary(self) -> str:
+        """
+        Get active problems/diagnoses formatted as natural language text.
+
+        Shows active problems with ICD-10 codes, Charlson Comorbidity Index,
+        and critical condition flags (CHF, COPD, CKD, diabetes).
+
+        Returns:
+            Natural language problems summary
+
+        Example:
+            "Active Problems (12 total, Charlson Comorbidity Index: 7 - Very High Risk):
+             - I50.23: Acute on chronic systolic heart failure (Cardiovascular, onset: 2016-02-10)
+             - E11.22: Type 2 diabetes with diabetic chronic kidney disease (Endocrine, onset: 2014-01-05)
+             - J44.1: COPD with acute exacerbation (Respiratory, onset: 2018-03-15)
+
+             Critical Conditions: CHF, CKD, Diabetes
+             Chronic Conditions: 8 of 12 active problems are chronic
+             Service-Connected: 5 problems marked as service-connected"
+        """
+        summary = get_problems_summary(self.icn, limit=10)
+
+        if not summary or summary.get('total_active', 0) == 0:
+            return "No active problems on record"
+
+        total_active = summary.get('total_active', 0)
+        charlson = summary.get('charlson_index', 0)
+        problems = summary.get('problems', [])
+
+        # Determine Charlson risk level
+        if charlson == 0:
+            risk_level = "No Comorbidities"
+        elif charlson <= 2:
+            risk_level = "Low Risk"
+        elif charlson <= 4:
+            risk_level = "Moderate Risk"
+        elif charlson <= 6:
+            risk_level = "High Risk"
+        else:
+            risk_level = "Very High Risk"
+
+        # Header with totals
+        text = f"Active Problems ({total_active} total, Charlson Comorbidity Index: {charlson} - {risk_level}):\n"
+
+        # List top problems (up to 10)
+        for problem in problems[:10]:
+            icd10 = problem.get('icd10_code', 'Unknown')
+            description = problem.get('icd10_description') or problem.get('problem_text', 'Unknown condition')
+            category = problem.get('icd10_category', 'Other')
+            onset_date = problem.get('onset_date', 'unknown onset')
+            service_connected = " [SC]" if problem.get('service_connected') else ""
+
+            text += f"- {icd10}: {description} ({category}, onset: {onset_date}){service_connected}\n"
+
+        # Note if there are more problems
+        if total_active > 10:
+            text += f"... and {total_active - 10} more active problem{'s' if total_active - 10 != 1 else ''}\n"
+
+        text += "\n"
+
+        # Critical conditions summary
+        critical_conditions = []
+        if summary.get('has_chf'):
+            critical_conditions.append("CHF")
+        if summary.get('has_copd'):
+            critical_conditions.append("COPD")
+        if summary.get('has_ckd'):
+            critical_conditions.append("CKD")
+        if summary.get('has_diabetes'):
+            critical_conditions.append("Diabetes")
+
+        if critical_conditions:
+            text += f"Critical Conditions: {', '.join(critical_conditions)}\n"
+        else:
+            text += "Critical Conditions: None\n"
+
+        # Chronic conditions count
+        total_chronic = summary.get('total_chronic', 0)
+        text += f"Chronic Conditions: {total_chronic} of {total_active} active problems are chronic\n"
+
+        # Service-connected count
+        service_connected_count = sum(1 for p in problems if p.get('service_connected'))
+        if service_connected_count > 0:
+            text += f"Service-Connected: {service_connected_count} problem{'s' if service_connected_count != 1 else ''} marked as service-connected"
+
+        return text.strip()
+
     def build_comprehensive_summary(self) -> str:
         """
         Build comprehensive patient summary combining all clinical domains.
@@ -461,11 +549,15 @@ class PatientContextBuilder:
         vitals = self.get_vitals_summary()
         allergies = self.get_allergies_summary()
         encounters = self.get_encounters_summary()
-        notes = self.get_notes_summary()  # Phase 4: Add clinical notes
+        notes = self.get_notes_summary()  # Phase 4: Clinical notes
+        problems = self.get_problems_summary()  # Phase 6: Problems/diagnoses
 
         # Build multi-section summary
         summary = f"""PATIENT DEMOGRAPHICS
 {demographics}
+
+ACTIVE PROBLEMS / DIAGNOSES
+{problems}
 
 CURRENT MEDICATIONS
 {medications}
@@ -482,7 +574,7 @@ RECENT ENCOUNTERS (last 90 days)
 RECENT CLINICAL NOTES (last 90 days)
 {notes}
 
-Data sources: PostgreSQL (demographics, medications, vitals, allergies, encounters, clinical_notes)"""
+Data sources: PostgreSQL (demographics, problems, medications, vitals, allergies, encounters, clinical_notes)"""
 
         logger.info(f"Comprehensive summary built for patient {self.icn} ({len(summary)} characters)")
 
