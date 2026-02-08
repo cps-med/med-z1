@@ -1,0 +1,126 @@
+{
+  "site_sta3n": "630",
+  "site_name": "Palo Alto VA Medical Center",
+  "problems": [
+    {
+      "dfn": "630001",
+      "problem_ien": "630-123",
+      "problem_text": "Alzheimer disease",
+      "snomed_code": "26929004",
+      "icd10_code": "G30.9",
+      "problem_status": "Active",
+      "onset_date": "T-969",
+      "service_connected": false,
+      "updated_today": false,
+      "_note": "ICN100001 (DOOREE, ADAM) - Alzheimer's, ~2.7 years ago, different DFN at site 630"
+    },
+    {
+      "dfn": "630001",
+      "problem_ien": "630-456",
+      "problem_text": "Osteoarthritis",
+      "snomed_code": "239873007",
+      "icd10_code": "M19.90",
+      "problem_status": "Active",
+      "onset_date": "T-5480",
+      "service_connected": true,
+      "updated_today": false,
+      "_note": "ICN100001 (DOOREE, ADAM) - Osteoarthritis, service connected, ~15 years ago"
+    },
+    {
+      "dfn": "630001",
+      "problem_ien": "630-789",
+      "problem_text": "Coronary atherosclerosis",
+      "snomed_code": "53741008",
+      "icd10_code": "I25.10",
+      "problem_status": "Active",
+      "onset_date": "T-3041",
+      "service_connected": true,
+      "updated_today": false,
+      "_note": "ICN100001 (DOOREE, ADAM) - CAD, service connected, ~8.3 years ago"
+    },
+    {
+      "dfn": "630001",
+      "problem_ien": "630-890",
+      "problem_text": "Peripheral vascular disease",
+      "snomed_code": "400047006",
+      "icd10_code": "I73.9",
+      "problem_status": "Active",
+      "onset_date": "T-0",
+      "service_connected": true,
+      "updated_today": true,
+      "_note": "ICN100001 (DOOREE, ADAM) - PVD diagnosed TODAY (T-0), new vascular complication"
+    },
+    {
+      "dfn": "630002",
+      "problem_ien": "630-234",
+      "problem_text": "GERD without esophagitis",
+      "snomed_code": "235595009",
+      "icd10_code": "K21.9",
+      "problem_status": "Active",
+      "onset_date": "T-2557",
+      "service_connected": false,
+      "updated_today": false,
+      "_note": "ICN100002 (MIIFAA, BARRY) - GERD, ~7 years ago, different DFN at site 630"
+    },
+    {
+      "dfn": "630002",
+      "problem_ien": "630-567",
+      "problem_text": "Coronary atherosclerosis",
+      "snomed_code": "53741008",
+      "icd10_code": "I25.10",
+      "problem_status": "Active",
+      "onset_date": "T-562",
+      "service_connected": false,
+      "updated_today": false,
+      "_note": "ICN100002 (MIIFAA, BARRY) - CAD, ~1.5 years ago"
+    },
+    {
+      "dfn": "630002",
+      "problem_ien": "630-890",
+      "problem_text": "Peripheral neuropathy",
+      "snomed_code": "42658009",
+      "icd10_code": "G62.9",
+      "problem_status": "Active",
+      "onset_date": "T-0",
+      "service_connected": true,
+      "updated_today": true,
+      "_note": "ICN100002 (MIIFAA, BARRY) - Neuropathy diagnosed TODAY (T-0), possibly diabetes-related"
+    },
+    {
+      "dfn": "630010",
+      "problem_ien": "630-111",
+      "problem_text": "Dyslipidemia",
+      "snomed_code": "267036007",
+      "icd10_code": "E78.5",
+      "problem_status": "Active",
+      "onset_date": "T-5382",
+      "service_connected": false,
+      "updated_today": false,
+      "_note": "ICN100010 (AMINOR, ALEXANDER) - High cholesterol, ~14.7 years ago, different DFN at site 630"
+    },
+    {
+      "dfn": "630010",
+      "problem_ien": "630-222",
+      "problem_text": "Chronic pain syndrome",
+      "snomed_code": "82423001",
+      "icd10_code": "G89.29",
+      "problem_status": "Active",
+      "onset_date": "T-2190",
+      "service_connected": true,
+      "updated_today": false,
+      "_note": "ICN100010 (AMINOR, ALEXANDER) - Chronic pain, service connected, ~6 years ago"
+    },
+    {
+      "dfn": "630010",
+      "problem_ien": "630-333",
+      "problem_text": "Gulf War syndrome",
+      "snomed_code": "442688005",
+      "icd10_code": "U07.2",
+      "problem_status": "Active",
+      "onset_date": "T-0",
+      "service_connected": true,
+      "updated_today": true,
+      "_note": "ICN100010 (AMINOR, ALEXANDER) - Gulf War Illness updated TODAY (T-0), special exposure"
+    }
+  ]
+}

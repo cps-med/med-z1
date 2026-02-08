@@ -365,3 +365,55 @@ if (window.location.hostname === 'localhost' || window.location.hostname === '12
         console.error('HTMX Error:', e.detail);
     });
 }
+
+// ============================================
+// Problem Detail Modal
+// ============================================
+
+function openProblemDetail(problemId, icn) {
+    const modal = document.getElementById('problem-detail-modal');
+    const content = document.getElementById('problem-detail-content');
+
+    if (modal && content) {
+        // Show modal
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+
+        // Show loading spinner
+        content.innerHTML = `
+            <div class="loading-spinner">
+                <div class="spinner"></div>
+                <p class="text-muted">Loading problem details...</p>
+            </div>
+        `;
+
+        // Fetch problem detail content
+        const url = `/api/patient/${icn}/problems/${problemId}/detail`;
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.text();
+            })
+            .then(html => {
+                content.innerHTML = html;
+                console.log(`Problem ${problemId} details loaded successfully`);
+            })
+            .catch(err => {
+                console.error(`Failed to load problem ${problemId} details:`, err);
+                content.innerHTML = `
+                    <div class="alert alert--error">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        Failed to load problem details: ${err.message}
+                    </div>
+                `;
+            });
+
+        // Focus management
+        setTimeout(() => {
+            const firstInput = modal.querySelector('input, button');
+            if (firstInput) firstInput.focus();
+        }, 100);
+    }
+}

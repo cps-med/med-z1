@@ -1,7 +1,7 @@
 # med-z1 SQL Server Mock CDW Database Reference
 
-**Document Version:** v1.0
-**Last Updated:** 2026-01-29
+**Document Version:** v1.1
+**Last Updated:** 2026-02-07
 **Databases:** `CDWWork`, `CDWWork2`
 **SQL Server Version:** Microsoft SQL Server 2019
 
@@ -24,12 +24,14 @@
    - [Schema: Chem (Laboratory)](#schema-chem-laboratory)
    - [Schema: TIU (Clinical Notes)](#schema-tiu-clinical-notes)
    - [Schema: Immunization](#schema-immunization)
+   - [Schema: Dim (Problems/Diagnoses Reference)](#schema-dim-problemsdiagnoses-reference)
+   - [Schema: Outpat (Outpatient Problems)](#schema-outpat-outpatient-problems)
 5. [CDWWork2 Database (Cerner/Oracle Health)](#cdwwork2-database-cerneroracle-health)
    - [Schema: VeteranMill](#schema-veteranmill)
    - [Schema: VitalMill](#schema-vitalmill)
    - [Schema: ImmunizationMill](#schema-immunizationmill)
    - [Schema: AllergyMill](#schema-allergymill)
-   - [Schema: EncMill](#schema-encmill)
+   - [Schema: EncMill (Encounters and Problems)](#schema-encmill-encounters-and-problems)
    - [Schema: NDimMill](#schema-ndimmill)
 6. [Cross-Database Harmonization](#cross-database-harmonization)
 7. [Common Query Patterns](#common-query-patterns)
@@ -63,12 +65,12 @@ SQL Server (CDW Mock)
 
 ### CDWWork (VistA-based)
 
-**Total Tables:** ~51 tables across 10 schemas
+**Total Tables:** ~54 tables across 11 schemas
 
 | Schema | Purpose | Tables | Key Tables |
 |--------|---------|--------|------------|
-| `Dim` | Dimensions and reference data | ~20 | Location, Sta3n, PatientRecordFlag, TIUDocumentDefinition, VitalType, Allergen, LocalDrug, NationalDrug, LabTest, Vaccine |
-| `SPatient` | Patient demographics and administrative | 6 | SPatient, SPatientAddress, SPatientInsurance, SPatientDisability, PatientRecordFlagAssignment, PatientRecordFlagHistory |
+| `Dim` | Dimensions and reference data | ~22 | Location, Sta3n, PatientRecordFlag, TIUDocumentDefinition, VitalType, Allergen, LocalDrug, NationalDrug, LabTest, Vaccine, ICD10, CharlsonMapping |
+| `SPatient` | Patient demographics and administrative | 7 | SPatient, SPatientAddress, SPatientInsurance, SPatientDisability, SPatientMilitaryHistory, PatientRecordFlagAssignment, PatientRecordFlagHistory |
 | `SStaff` | Staff and providers | 2 | SStaff, RadiologyNuclearMedicineReport |
 | `Vital` | Vital signs | 2 | VitalSign, VitalSignQualifier |
 | `Allergy` | Patient allergies | 2 | PatientAllergy, PatientAllergyReaction |
@@ -78,10 +80,11 @@ SQL Server (CDW Mock)
 | `Chem` | Laboratory results | 1 | LabChem |
 | `TIU` | Clinical notes | 2 | TIUDocument_8925, TIUDocumentText |
 | `Immunization` | Immunizations | 1 | PatientImmunization |
+| `Outpat` | Outpatient problems/diagnoses | 1 | ProblemList |
 
 ### CDWWork2 (Cerner/Oracle Health-based)
 
-**Total Tables:** ~10 tables across 5 schemas
+**Total Tables:** ~11 tables across 5 schemas
 
 | Schema | Purpose | Tables | Key Tables |
 |--------|---------|--------|------------|
@@ -89,7 +92,7 @@ SQL Server (CDW Mock)
 | `VitalMill` | Vital signs | 1 | VitalResult |
 | `ImmunizationMill` | Immunizations | 2 | VaccineAdmin, VaccineCode |
 | `AllergyMill` | Allergies | 2 | PersonAllergy, AdverseReaction |
-| `EncMill` | Encounters | 1 | Encounter |
+| `EncMill` | Encounters and problems/diagnoses | 2 | Encounter, ProblemList |
 | `NDimMill` | Normalized dimensions | 1 | CodeValue |
 
 **Naming Convention Note:** CDWWork2 uses "Mill" suffix (e.g., VeteranMill, VitalMill) and different terminology (Person vs Patient, VitalResult vs VitalSign) to simulate Cerner's distinct data model.
@@ -295,6 +298,48 @@ SQL Server (CDW Mock)
 | `Comments` | NVARCHAR(MAX) | NULL | **SENSITIVE** - Narrative comments | `"Patient exhibits high-risk behavior..."` |
 
 **⚠️ Security Note:** The `Comments` column contains **sensitive clinical narrative text** and must be protected with appropriate access controls.
+
+---
+
+#### Table: `SPatient.SPatientMilitaryHistory`
+
+**Purpose:** Patient military service history for veteran-specific analytics and clinical decision support.
+
+**Primary Key:** `MilitaryHistorySID` (BIGINT, IDENTITY)
+
+**VistA Alignment:** File #2 subfile (MILITARY SERVICE DATA)
+
+##### Columns
+
+| Column Name | Data Type | Nullable | Description | Example Values |
+|-------------|-----------|----------|-------------|----------------|
+| `MilitaryHistorySID` | BIGINT | NOT NULL | **Surrogate key (primary key)** | `1`, `2`, `3` |
+| `PatientSID` | BIGINT | NOT NULL | FK to SPatient.SPatient | `1001`, `1002` |
+| `PatientICN` | VARCHAR(50) | NOT NULL | **Patient ICN for cross-database joins** | `"ICN100001"` |
+| `BranchOfService` | VARCHAR(100) | NULL | Military branch | `"Army"`, `"Navy"`, `"Air Force"`, `"Marines"`, `"Coast Guard"` |
+| `ServiceStartDate` | DATE | NULL | Start of military service | `1975-01-15` |
+| `ServiceEndDate` | DATE | NULL | End of military service | `1995-12-31` |
+| `DischargeType` | VARCHAR(50) | NULL | Type of discharge | `"Honorable"`, `"General"`, `"Medical"` |
+| `DeploymentLocation` | VARCHAR(200) | NULL | Deployment location(s) | `"Vietnam"`, `"Iraq"`, `"Afghanistan"` |
+| `CombatService` | BIT | NULL | 1 (TRUE) if patient saw combat | `1`, `0` |
+| `POWStatus` | BIT | NULL | 1 (TRUE) if prisoner of war | `1`, `0` |
+| `ServiceConnectedDisability` | BIT | NULL | 1 (TRUE) if service-connected disability | `1`, `0` |
+| `ServiceConnectedPercent` | INT | NULL | Service-connected disability % (0-100) | `70`, `100` |
+| `CreatedDate` | DATETIME | NULL | Record creation timestamp | `2024-01-01 00:00:00` |
+| `LastUpdatedDate` | DATETIME | NULL | Record last updated | `2025-12-30 15:00:00` |
+
+##### Indexes
+
+| Index Name | Columns | Type | Notes |
+|------------|---------|------|-------|
+| `PK_SPatientMilitaryHistory` | `MilitaryHistorySID` | Primary Key | Auto-created |
+| `UQ_MilitaryHistory_Patient` | `PatientSID` | Unique | One military history record per patient |
+| `IX_MilitaryHistory_ICN` | `PatientICN` | B-tree | **Cross-database queries** |
+| `IX_MilitaryHistory_Branch` | `BranchOfService` | B-tree | Branch-based filtering |
+| `IX_MilitaryHistory_Combat` | `CombatService` | B-tree | Combat veteran queries |
+| `IX_MilitaryHistory_ServiceConnected` | `ServiceConnectedDisability`, `ServiceConnectedPercent` | B-tree | Service-connected filtering |
+
+**Seed Data:** Contains 38 military history records (one per test patient) with diverse service backgrounds including Vietnam, Gulf War, Iraq, and Afghanistan eras.
 
 ---
 
@@ -691,6 +736,130 @@ See `etl/gold_patient_medications.py` (Step 3b) for the exact ETL logic.
 
 ---
 
+### Schema: Dim (Problems/Diagnoses Reference)
+
+#### Table: `Dim.ICD10`
+
+**Purpose:** ICD-10-CM diagnosis code reference table with Charlson Comorbidity Index mappings.
+
+**Primary Key:** `ICD10SID` (INT, IDENTITY)
+
+**VistA Alignment:** File #80 (ICD DIAGNOSIS)
+
+##### Columns
+
+| Column Name | Data Type | Nullable | Description | Example Values |
+|-------------|-----------|----------|-------------|----------------|
+| `ICD10SID` | INT | NOT NULL | **Surrogate key (primary key)** | `1`, `2`, `3` |
+| `ICD10Code` | VARCHAR(10) | NOT NULL | ICD-10-CM diagnosis code (unique) | `"I50.9"`, `"E11.9"`, `"J44.1"` |
+| `ICD10Description` | VARCHAR(500) | NOT NULL | Full ICD-10 description | `"Heart failure, unspecified"`, `"Type 2 diabetes mellitus without complications"` |
+| `ICD10Category` | VARCHAR(100) | NOT NULL | Category grouping for UI filtering | `"Cardiovascular"`, `"Endocrine"`, `"Respiratory"` |
+| `CharlsonCondition` | VARCHAR(100) | NULL | Charlson condition name (if applicable) | `"Congestive Heart Failure"`, `"Diabetes without Complications"` |
+| `IsChronicCondition` | CHAR(1) | NULL | 'Y' if chronic condition | `"Y"`, `"N"` |
+| `CreatedDate` | DATETIME | NULL | Record creation timestamp | `2024-01-01 00:00:00` |
+
+##### Indexes
+
+| Index Name | Columns | Type | Notes |
+|------------|---------|------|-------|
+| `PK_ICD10` | `ICD10SID` | Primary Key | Auto-created |
+| `UQ_ICD10_Code` | `ICD10Code` | Unique | Ensures no duplicate ICD-10 codes |
+| `IX_ICD10_Category` | `ICD10Category` | B-tree | Category filtering |
+| `IX_ICD10_Charlson` | `CharlsonCondition` | B-tree | Charlson Index lookups |
+
+**Seed Data:** Contains 50 common ICD-10 codes across cardiovascular, endocrine, respiratory, renal, mental health, gastrointestinal, and neurological categories.
+
+---
+
+#### Table: `Dim.CharlsonMapping`
+
+**Purpose:** Charlson Comorbidity Index reference table mapping ICD-10 codes to conditions with weights.
+
+**Primary Key:** `CharlsonMappingSID` (INT, IDENTITY)
+
+**Charlson Index:** A weighted scoring system (0-37+) that predicts 1-year mortality risk based on 19 comorbid conditions. Used for clinical decision support and risk stratification.
+
+##### Columns
+
+| Column Name | Data Type | Nullable | Description | Example Values |
+|-------------|-----------|----------|-------------|----------------|
+| `CharlsonMappingSID` | INT | NOT NULL | **Surrogate key (primary key)** | `1`, `2`, `3` |
+| `CharlsonCondition` | VARCHAR(100) | NOT NULL | Condition name (1 of 19 Charlson conditions) | `"Congestive Heart Failure"`, `"Diabetes with Complications"`, `"Moderate or Severe Renal Disease"` |
+| `CharlsonWeight` | INT | NOT NULL | Points assigned to this condition | `1`, `2`, `3`, `6` |
+| `ICD10Code` | VARCHAR(10) | NOT NULL | ICD-10 code that maps to this condition | `"I50.9"`, `"E11.22"`, `"N18.4"` |
+| `ICD10Description` | VARCHAR(500) | NULL | ICD-10 description | `"Heart failure, unspecified"`, `"Type 2 diabetes with CKD"` |
+| `CreatedDate` | DATETIME | NULL | Record creation timestamp | `2024-01-01 00:00:00` |
+
+##### Indexes
+
+| Index Name | Columns | Type | Notes |
+|------------|---------|------|-------|
+| `PK_CharlsonMapping` | `CharlsonMappingSID` | Primary Key | Auto-created |
+| `IX_CharlsonMapping_ICD10` | `ICD10Code` | B-tree | ICD-10 code lookups |
+| `IX_CharlsonMapping_Condition` | `CharlsonCondition`, `CharlsonWeight` | B-tree | Condition grouping |
+
+**Seed Data:** Contains 63 ICD-10 code mappings across the 19 Charlson conditions with weights ranging from 1 to 6 points.
+
+**Charlson Index Score Interpretation:**
+- **0:** No comorbidities
+- **1-2:** Low complexity
+- **3-4:** Moderate complexity
+- **5+:** High complexity (significantly increased mortality risk)
+
+---
+
+### Schema: Outpat (Outpatient Problems)
+
+#### Table: `Outpat.ProblemList`
+
+**Purpose:** VistA outpatient problem list with diagnoses, chronic conditions, and service-connected disabilities.
+
+**Primary Key:** `ProblemSID` (BIGINT, IDENTITY)
+
+**VistA Alignment:** File #9000011 (PROBLEM)
+
+##### Columns
+
+| Column Name | Data Type | Nullable | Description | Example Values |
+|-------------|-----------|----------|-------------|----------------|
+| `ProblemSID` | BIGINT | NOT NULL | **Surrogate key (primary key)** | `1001`, `1002`, `1003` |
+| `PatientSID` | BIGINT | NOT NULL | FK to SPatient.SPatient | `1001` |
+| `PatientICN` | VARCHAR(50) | NOT NULL | **Shared ICN for cross-database joins** | `"ICN100001"` |
+| `Sta3n` | SMALLINT | NOT NULL | VA facility/station | `508`, `200`, `630` |
+| `ProblemNumber` | VARCHAR(50) | NULL | Problem identifier | `"P1001-1"`, `"P1001-2"` |
+| `SNOMEDCode` | VARCHAR(50) | NULL | SNOMED CT concept code | `"84114007"`, `"44054006"` |
+| `SNOMEDDescription` | VARCHAR(255) | NULL | SNOMED CT description | `"Heart failure"`, `"Type 2 diabetes mellitus"` |
+| `ICD10Code` | VARCHAR(20) | NULL | ICD-10-CM diagnosis code | `"I50.9"`, `"E11.9"`, `"J44.1"` |
+| `ICD10Description` | VARCHAR(255) | NULL | ICD-10 description | `"Heart failure, unspecified"` |
+| `ProblemStatus` | VARCHAR(20) | NOT NULL | Problem status | `"ACTIVE"`, `"INACTIVE"`, `"RESOLVED"` |
+| `OnsetDate` | DATE | NULL | When problem first occurred | `2020-03-15` |
+| `RecordedDate` | DATE | NULL | When problem was documented | `2020-03-16` |
+| `LastModifiedDate` | DATE | NULL | Last update to problem | `2024-11-20` |
+| `ResolvedDate` | DATE | NULL | When problem was resolved | `2023-08-10` |
+| `ProviderSID` | INT | NULL | FK to SStaff.SStaff | `11007` |
+| `ProviderName` | VARCHAR(100) | NULL | Provider name | `"Wilson, Patricia MD"` |
+| `Clinic` | VARCHAR(100) | NULL | Clinic/hospital location | `"Cardiology"`, `"Primary Care"` |
+| `IsServiceConnected` | CHAR(1) | NULL | 'Y' if service-connected disability | `"Y"`, `"N"` |
+| `IsAcuteCondition` | CHAR(1) | NULL | 'Y' if acute condition | `"Y"`, `"N"` |
+| `IsChronicCondition` | CHAR(1) | NULL | 'Y' if chronic condition | `"Y"`, `"N"` |
+| `EnteredBy` | VARCHAR(100) | NULL | Name of person who entered record | `"Wilson, Patricia MD"` |
+| `EnteredDateTime` | DATETIME | NULL | Full timestamp of entry | `2020-03-16 14:30:00` |
+
+##### Indexes
+
+| Index Name | Columns | Type | Notes |
+|------------|---------|------|-------|
+| `PK_ProblemList` | `ProblemSID` | Primary Key | Auto-created |
+| `IX_ProblemList_Patient` | `PatientSID`, `ProblemStatus`, `OnsetDate DESC` | B-tree | Patient problem lookups |
+| `IX_ProblemList_ICN` | `PatientICN`, `ProblemStatus` | B-tree | **Cross-database queries** |
+| `IX_ProblemList_ICD10` | `ICD10Code` | B-tree | ICD-10 code filtering |
+| `IX_ProblemList_Status` | `ProblemStatus`, `OnsetDate DESC` | B-tree | Status filtering |
+| `IX_ProblemList_Sta3n` | `Sta3n`, `ProblemStatus` | B-tree | Facility-based queries |
+
+**Seed Data:** Contains 55 problem records across 7 test patients with diverse diagnoses including CHF, diabetes, COPD, CKD, PTSD, hypertension, and other chronic conditions.
+
+---
+
 ## CDWWork2 Database (Cerner/Oracle Health)
 
 **Purpose:** Simulates Cerner/Oracle Health-based data from community care sites and DoD integration points. This database uses different naming conventions and schemas to represent the distinct data model of non-VistA EHR systems.
@@ -865,6 +1034,62 @@ See `etl/gold_patient_medications.py` (Step 3b) for the exact ETL logic.
 
 ---
 
+#### Table: `EncMill.ProblemList`
+
+**Purpose:** Cerner outpatient problem list with diagnoses and chronic conditions.
+
+**Primary Key:** `DiagnosisSID` (BIGINT, IDENTITY)
+
+**Harmonizes With:** `CDWWork.Outpat.ProblemList`
+
+##### Columns
+
+| Column Name | Data Type | Nullable | Description | Example Values |
+|-------------|-----------|----------|-------------|----------------|
+| `DiagnosisSID` | BIGINT | NOT NULL | **Surrogate key (Cerner-specific)** | `2001`, `2002`, `2003` |
+| `PatientKey` | BIGINT | NOT NULL | FK to VeteranMill.SPerson (PersonSID) | `987654321` |
+| `PatientICN` | VARCHAR(50) | NOT NULL | **Denormalized ICN for performance** | `"ICN100001"` |
+| `FacilityCode` | VARCHAR(10) | NULL | Facility code | `"648"`, `"663"` |
+| `ProblemID` | VARCHAR(50) | NULL | Problem identifier | `"C1010-1"`, `"C1010-2"` |
+| `DiagnosisCode` | VARCHAR(20) | NULL | ICD-10-CM diagnosis code | `"I50.9"`, `"E11.9"`, `"J44.1"` |
+| `DiagnosisDescription` | VARCHAR(255) | NULL | ICD-10 description | `"Heart failure, unspecified"` |
+| `ClinicalTermCode` | VARCHAR(50) | NULL | SNOMED CT concept code | `"84114007"`, `"44054006"` |
+| `ClinicalTermDescription` | VARCHAR(255) | NULL | SNOMED CT description | `"Heart failure"`, `"Type 2 diabetes mellitus"` |
+| `StatusCode` | CHAR(1) | NOT NULL | Problem status code | `"A"` (Active), `"I"` (Inactive), `"R"` (Resolved) |
+| `OnsetDateTime` | DATETIME | NULL | When problem first occurred | `2020-03-15 00:00:00` |
+| `RecordDateTime` | DATETIME | NULL | When problem was documented | `2020-03-16 10:00:00` |
+| `LastUpdateDateTime` | DATETIME | NULL | Last update to problem | `2024-11-20 15:30:00` |
+| `ResolvedDateTime` | DATETIME | NULL | When problem was resolved | `2023-08-10 09:00:00` |
+| `ResponsibleProviderID` | VARCHAR(50) | NULL | Provider identifier | `"20003"` |
+| `ResponsibleProviderName` | VARCHAR(100) | NULL | Provider name | `"Thompson, Sarah MD"` |
+| `RecordingLocation` | VARCHAR(100) | NULL | Clinic/hospital location | `"Seattle VAMC Cardiology"` |
+| `ServiceConnectedFlag` | CHAR(1) | NULL | 'Y' if service-connected disability | `"Y"`, `"N"` |
+| `AcuteFlag` | CHAR(1) | NULL | 'Y' if acute condition | `"Y"`, `"N"` |
+| `ChronicFlag` | CHAR(1) | NULL | 'Y' if chronic condition | `"Y"`, `"N"` |
+| `CreatedByUserID` | VARCHAR(50) | NULL | User ID who created record | `"USER123"` |
+| `CreatedByUserName` | VARCHAR(100) | NULL | Name of user who created record | `"Thompson, Sarah MD"` |
+| `CreatedDateTime` | DATETIME | NULL | Full timestamp of creation | `2020-03-16 10:00:00` |
+
+##### Indexes
+
+| Index Name | Columns | Type | Notes |
+|------------|---------|------|-------|
+| `PK_ProblemList` | `DiagnosisSID` | Primary Key | Auto-created |
+| `IX_ProblemList_Patient` | `PatientKey`, `StatusCode`, `OnsetDateTime DESC` | B-tree | Patient problem lookups |
+| `IX_ProblemList_ICN` | `PatientICN`, `StatusCode` | B-tree | **Cross-database queries** |
+| `IX_ProblemList_DiagnosisCode` | `DiagnosisCode` | B-tree | ICD-10 code filtering |
+| `IX_ProblemList_Status` | `StatusCode`, `OnsetDateTime DESC` | B-tree | Status filtering |
+
+**Seed Data:** Contains 18 problem records across 4 test patients with diagnoses including heart disease, diabetes, kidney disease, COPD, asthma, and hypertension.
+
+**Key Differences from VistA:**
+- Uses `DiagnosisSID` instead of `ProblemSID`
+- Status codes are single characters (`A`, `I`, `R`) instead of full words
+- Uses `DateTime` fields instead of separate Date and Time columns
+- Denormalizes `PatientICN` for performance (VistA requires join through SPatient)
+
+---
+
 ### Schema: NDimMill
 
 #### Table: `NDimMill.CodeValue`
@@ -908,6 +1133,7 @@ See `etl/gold_patient_medications.py` (Step 3b) for the exact ETL logic.
 | `Vital.VitalSign` | `VitalMill.VitalResult` | `vitals_merged.parquet` | VitalSignSID/VitalResultSID → unique event ID, VitalTypeSID → standardized type |
 | `Immunization.PatientImmunization` | `ImmunizationMill.VaccineAdmin` | `immunizations_merged.parquet` | CVX code standardization, dose sequence parsing |
 | `Allergy.PatientAllergy` | `AllergyMill.PersonAllergy` | `allergies_merged.parquet` | AllergenSID → standardized allergen name |
+| `Outpat.ProblemList` | `EncMill.ProblemList` | `problems_harmonized.parquet` | ProblemSID/DiagnosisSID → problem_id, status code mapping (ACTIVE/A → Active) |
 | `Inpat.Inpatient` | `EncMill.Encounter` | (Future) | Encounter type filtering (inpatient only) |
 
 ### Field Name Harmonization Examples

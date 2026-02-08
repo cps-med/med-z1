@@ -60,5 +60,17 @@ GO
 CREATE SCHEMA Chem;
 GO
 
+-- Clinical notes (Text Integration Utilities)
+CREATE SCHEMA TIU;
+GO
+
+-- Immunizations
+CREATE SCHEMA Immunization;
+GO
+
+-- Outpatient problem list
+CREATE SCHEMA Outpat;
+GO
+
 PRINT 'All schemas created successfully.';
 GO

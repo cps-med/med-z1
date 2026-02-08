@@ -54,6 +54,10 @@
 -- Immunization dimensions
 :r Dim.Vaccine.sql
 
+-- Problems/Diagnoses dimensions
+:r Dim.ICD10.sql
+:r Dim.CharlsonMapping.sql
+
 -- =======================================================================
 -- PATIENT TABLES
 -- =======================================================================
@@ -111,3 +115,6 @@
 
 -- Immunizations
 :r Immunization.PatientImmunization.sql
+
+-- Problems/Diagnoses (Outpatient Problem List)
+:r Outpat.ProblemList.sql

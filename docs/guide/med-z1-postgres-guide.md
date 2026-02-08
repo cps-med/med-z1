@@ -1,7 +1,7 @@
 # med-z1 PostgreSQL Serving Database Reference
 
-**Document Version:** v1.4
-**Last Updated:** 2026-01-29
+**Document Version:** v1.5
+**Last Updated:** 2026-02-07
 **Database:** `medz1`
 **PostgreSQL Version:** 16+
 
@@ -25,6 +25,8 @@
    - [patient_labs](#table-clinicalpatient_labs)
    - [patient_clinical_notes](#table-clinicalpatient_clinical_notes)
    - [patient_immunizations](#table-clinicalpatient_immunizations)
+   - [patient_military_history](#table-clinicalpatient_military_history)
+   - [patient_problems](#table-clinicalpatient_problems)
 5. [Schema: `reference`](#schema-reference)
    - [vaccine](#table-referencevaccine)
 6. [Schema: `auth`](#schema-auth)
@@ -82,12 +84,12 @@ The med-z1 database is organized into four functional schemas:
 
 | Schema | Purpose | Tables |
 |--------|---------|--------|
-| `clinical` | Patient clinical data (demographics, vitals, medications, etc.) | 12 tables |
+| `clinical` | Patient clinical data (demographics, vitals, medications, etc.) | 14 tables |
 | `reference` | Reference data and lookup tables (CVX codes, etc.) | 1 table |
 | `auth` | User authentication and session management | 3 tables |
 | `public` | AI/ML infrastructure (LangGraph checkpoints for conversation memory) | 4 tables |
 
-**Total Tables:** 20
+**Total Tables:** 22
 
 **Note:** The AI checkpoint tables in the `public` schema are **auto-created** by LangGraph's `AsyncPostgresSaver.setup()` at application startup. No manual DDL execution is required.
 
@@ -1012,6 +1014,148 @@ See also: `app/db/medications.py:356` for the active medication count query impl
 
 - **Primary Key:** `immunization_id`
 - **Unique:** `immunization_sid`
+
+---
+
+### Table: `clinical.patient_military_history`
+
+**Purpose:** Patient military service history for veteran-specific analytics and clinical decision support.
+
+**Primary Key:** `military_history_id` (auto-increment)
+
+**Source:** Gold layer Parquet files (`military_history/*.parquet`)
+
+#### Columns
+
+| Column Name | Data Type | Nullable | Description | Example Values |
+|-------------|-----------|----------|-------------|----------------|
+| `military_history_id` | SERIAL | NOT NULL | Auto-increment primary key | `1`, `2`, `3` |
+| `patient_key` | VARCHAR(50) | NOT NULL | Patient ICN | `"ICN100001"` |
+| `patient_sid` | BIGINT | NULL | Source PatientSID from CDWWork | `123456789` |
+| `branch_of_service` | VARCHAR(100) | NULL | Military branch | `"Army"`, `"Navy"`, `"Air Force"`, `"Marines"`, `"Coast Guard"` |
+| `service_start_date` | DATE | NULL | Start of military service | `"1975-01-15"` |
+| `service_end_date` | DATE | NULL | End of military service | `"1995-12-31"` |
+| `discharge_type` | VARCHAR(50) | NULL | Type of discharge | `"Honorable"`, `"General"`, `"Medical"` |
+| `deployment_location` | VARCHAR(200) | NULL | Deployment location(s) | `"Vietnam"`, `"Iraq"`, `"Afghanistan"` |
+| `combat_service` | BOOLEAN | NULL | TRUE if patient saw combat | `true`, `false` |
+| `pow_status` | BOOLEAN | NULL | TRUE if patient was prisoner of war | `true`, `false` |
+| `service_connected_disability` | BOOLEAN | NULL | TRUE if patient has service-connected disability | `true`, `false` |
+| `service_connected_percent` | INTEGER | NULL | Service-connected disability percentage (0-100) | `70`, `100` |
+| `data_source` | VARCHAR(50) | NULL | Data source system | `"CDWWork"`, `"VistA"` |
+| `last_updated` | TIMESTAMP | NULL | Record last updated timestamp | `"2026-02-07 10:00:00"` |
+
+#### Indexes
+
+| Index Name | Columns | Type | Notes |
+|------------|---------|------|-------|
+| `idx_military_patient_key` | `patient_key` | B-tree | Primary query pattern |
+| `idx_military_branch` | `branch_of_service` | B-tree | Branch-based filtering |
+| `idx_military_combat` | `combat_service` | Partial | Combat veterans (WHERE combat_service = TRUE) |
+| `idx_military_service_connected` | `service_connected_disability`, `service_connected_percent` | B-tree | Service-connected filtering |
+
+#### Constraints
+
+- **Primary Key:** `military_history_id`
+- **Unique:** `patient_key` (one military history record per patient)
+
+---
+
+### Table: `clinical.patient_problems`
+
+**Purpose:** Patient problem list and diagnoses with Charlson Comorbidity Index and chronic condition flags for AI/ML clinical decision support.
+
+**Primary Key:** `problem_id` (auto-increment)
+
+**Source:** Gold layer Parquet files (`problems/*.parquet`)
+
+#### Columns
+
+| Column Name | Data Type | Nullable | Description | Example Values |
+|-------------|-----------|----------|-------------|----------------|
+| `problem_id` | SERIAL | NOT NULL | Auto-increment primary key | `1`, `2`, `3` |
+| `problem_sid` | BIGINT | NOT NULL | Source ProblemSID/DiagnosisSID from CDW | `123456789` |
+| `patient_sid` | BIGINT | NULL | Source PatientSID for joins | `987654321` |
+| `patient_icn` | VARCHAR(50) | NOT NULL | ICN (primary patient identifier) | `"ICN100001"` |
+| `patient_key` | VARCHAR(50) | NOT NULL | Same as ICN (for consistency) | `"ICN100001"` |
+| `problem_number` | VARCHAR(50) | NULL | Source system problem identifier | `"P1001-10"`, `"C1010-8"` |
+| `icd10_code` | VARCHAR(20) | NULL | ICD-10-CM diagnosis code | `"I50.9"`, `"E11.9"`, `"J44.1"` |
+| `icd10_description` | VARCHAR(255) | NULL | ICD-10 description | `"Heart failure, unspecified"` |
+| `icd10_category` | VARCHAR(100) | NULL | ICD-10 category grouping | `"Cardiovascular"`, `"Endocrine"`, `"Respiratory"` |
+| `snomed_code` | VARCHAR(50) | NULL | SNOMED CT concept code | `"84114007"`, `"44054006"` |
+| `snomed_description` | VARCHAR(255) | NULL | SNOMED CT description | `"Heart failure"`, `"Type 2 diabetes mellitus"` |
+| `diagnosis_description` | VARCHAR(255) | NULL | Primary diagnosis description (from source) | `"Congestive heart failure"` |
+| `problem_status` | VARCHAR(20) | NOT NULL | Problem status | `"Active"`, `"Inactive"`, `"Resolved"` |
+| `acute_condition` | BOOLEAN | NULL | TRUE if acute condition | `true`, `false` |
+| `chronic_condition` | BOOLEAN | NULL | TRUE if chronic condition | `true`, `false` |
+| `service_connected` | BOOLEAN | NULL | TRUE if service-connected disability | `true`, `false` |
+| `onset_date` | DATE | NULL | When problem first occurred | `"2020-03-15"` |
+| `recorded_date` | DATE | NULL | When problem was first documented | `"2020-03-16"` |
+| `last_modified_date` | DATE | NULL | Last update to problem | `"2024-11-20"` |
+| `resolved_date` | DATE | NULL | When problem was resolved | `"2023-08-10"` |
+| `entered_datetime` | TIMESTAMP | NULL | Full timestamp of entry | `"2020-03-16 14:30:00"` |
+| `provider_id` | VARCHAR(50) | NULL | Provider identifier | `"11007"` |
+| `provider_name` | VARCHAR(100) | NULL | Provider name | `"Wilson, Patricia MD"` |
+| `clinic_location` | VARCHAR(100) | NULL | Clinic/hospital location | `"Cardiology"`, `"Primary Care"` |
+| `facility_id` | VARCHAR(10) | NULL | Sta3n or FacilityCode | `"508"`, `"663"` |
+| `entered_by_name` | VARCHAR(100) | NULL | Name of person who entered record | `"Wilson, Patricia MD"` |
+| `source_ehr` | VARCHAR(20) | NOT NULL | Source EHR system | `"VistA"`, `"Cerner"` |
+| `source_system` | VARCHAR(20) | NOT NULL | Source database | `"CDWWork"`, `"CDWWork2"` |
+| `icd10_chronic_flag` | VARCHAR(1) | NULL | 'Y' if ICD-10 is marked chronic | `"Y"`, `"N"` |
+| `icd10_charlson_condition` | VARCHAR(100) | NULL | Charlson condition name (if applicable) | `"Congestive Heart Failure"`, `"Diabetes without Complications"` |
+| `charlson_index` | INTEGER | NULL | Total Charlson Comorbidity Index score (0-37+) | `0`, `7`, `12` |
+| `charlson_condition_count` | INTEGER | NULL | Number of unique Charlson conditions | `0`, `5`, `8` |
+| `total_problem_count` | INTEGER | NULL | Total problems for this patient | `22`, `19` |
+| `active_problem_count` | INTEGER | NULL | Active problems for this patient | `18`, `16` |
+| `inactive_problem_count` | INTEGER | NULL | Inactive problems for this patient | `2`, `0` |
+| `resolved_problem_count` | INTEGER | NULL | Resolved problems for this patient | `2`, `3` |
+| `chronic_problem_count` | INTEGER | NULL | Chronic problems for this patient | `18`, `15` |
+| `service_connected_count` | INTEGER | NULL | Service-connected problems for this patient | `10`, `8` |
+| `has_chf` | BOOLEAN | NULL | Patient has Congestive Heart Failure (I50.x) | `true`, `false` |
+| `has_cad` | BOOLEAN | NULL | Patient has Coronary Artery Disease (I25.x) | `true`, `false` |
+| `has_afib` | BOOLEAN | NULL | Patient has Atrial Fibrillation (I48.x) | `true`, `false` |
+| `has_hypertension` | BOOLEAN | NULL | Patient has Essential Hypertension (I10.x) | `true`, `false` |
+| `has_copd` | BOOLEAN | NULL | Patient has COPD (J44.x) | `true`, `false` |
+| `has_asthma` | BOOLEAN | NULL | Patient has Asthma (J45.x) | `true`, `false` |
+| `has_diabetes` | BOOLEAN | NULL | Patient has Type 2 Diabetes (E11.x) | `true`, `false` |
+| `has_hyperlipidemia` | BOOLEAN | NULL | Patient has Hyperlipidemia (E78.x) | `true`, `false` |
+| `has_ckd` | BOOLEAN | NULL | Patient has Chronic Kidney Disease (N18.x) | `true`, `false` |
+| `has_depression` | BOOLEAN | NULL | Patient has Depression (F32.x, F33.x) | `true`, `false` |
+| `has_ptsd` | BOOLEAN | NULL | Patient has PTSD (F43.10) | `true`, `false` |
+| `has_anxiety` | BOOLEAN | NULL | Patient has Anxiety (F41.x) | `true`, `false` |
+| `has_cancer` | BOOLEAN | NULL | Patient has Active malignancies (C*.x) | `true`, `false` |
+| `has_osteoarthritis` | BOOLEAN | NULL | Patient has Osteoarthritis (M15.x) | `true`, `false` |
+| `has_back_pain` | BOOLEAN | NULL | Patient has Chronic back pain (M54.x) | `true`, `false` |
+| `silver_load_datetime` | TIMESTAMP | NULL | When data was processed in Silver layer | `"2026-02-07 20:08:03"` |
+| `gold_load_datetime` | TIMESTAMP | NULL | When data was processed in Gold layer | `"2026-02-07 20:17:40"` |
+| `last_updated` | TIMESTAMP WITH TIME ZONE | NULL | Record last updated timestamp | `"2026-02-07 20:20:03+00"` |
+
+#### Indexes
+
+| Index Name | Columns | Type | Notes |
+|------------|---------|------|-------|
+| `idx_problems_patient_icn` | `patient_icn` | B-tree | Primary patient lookups |
+| `idx_problems_patient_key` | `patient_key` | B-tree | Patient key lookups |
+| `idx_problems_patient_active` | `patient_icn`, `problem_status`, `onset_date DESC` | Partial | Active problems (WHERE problem_status = 'Active') |
+| `idx_problems_status` | `problem_status`, `onset_date DESC` | B-tree | Status filtering |
+| `idx_problems_icd10` | `icd10_code` | Partial | ICD-10 code lookups (WHERE icd10_code IS NOT NULL) |
+| `idx_problems_snomed` | `snomed_code` | Partial | SNOMED code lookups (WHERE snomed_code IS NOT NULL) |
+| `idx_problems_category` | `icd10_category`, `problem_status` | B-tree | Category grouping for UI filtering |
+| `idx_problems_charlson` | `patient_icn`, `charlson_index DESC` | Partial | Charlson Index queries (WHERE charlson_index > 0) |
+| `idx_problems_chronic_flags` | `patient_icn` | Partial | Chronic condition flags (WHERE has_chf = TRUE OR has_diabetes = TRUE OR has_copd = TRUE OR has_ckd = TRUE) |
+| `idx_problems_service_connected` | `patient_icn`, `service_connected` | Partial | Service-connected problems (WHERE service_connected = TRUE) |
+| `idx_problems_onset_date` | `onset_date DESC` | Partial | Temporal queries (WHERE onset_date IS NOT NULL) |
+| `idx_problems_source` | `source_ehr`, `source_system` | B-tree | Source system tracking |
+
+#### Constraints
+
+- **Primary Key:** `problem_id`
+
+**Special Features:**
+- **Charlson Comorbidity Index:** Calculated score (0-37+) predicting 1-year mortality risk. Interpretation: 0 = No comorbidities, 1-2 = Low, 3-4 = Moderate, 5+ = High complexity.
+- **15 Chronic Condition Flags:** Denormalized boolean flags for fast AI/ML feature extraction and clinical decision support queries.
+- **Patient-Level Aggregations:** Denormalized counts (total_problem_count, active_problem_count, etc.) for performance optimization.
+- **Multi-Source Harmonization:** Combines VistA (CDWWork) and Cerner (CDWWork2) data with deduplication.
+- **Dual Coding:** Both ICD-10-CM and SNOMED CT codes for maximum interoperability.
 
 ---
 

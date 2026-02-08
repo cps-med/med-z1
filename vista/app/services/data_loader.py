@@ -452,3 +452,59 @@ class DataLoader:
         except Exception as e:
             logger.error(f"Error loading medications data: {e}")
             return None
+
+    def load_problems(self) -> Optional[Dict[str, Any]]:
+        """
+        Load problems data for this site from JSON file.
+
+        Supports both FileMan format and T-notation for date fields.
+        T-notation dates are automatically converted to today's equivalent FileMan format.
+
+        Returns:
+            Dictionary with problems data, or None if file not found
+
+        File location: vista/app/data/sites/{sta3n}/problems.json
+        """
+        try:
+            # Construct path to problems data file
+            # Assume structure: vista/app/data/sites/{sta3n}/problems.json
+            vista_root = Path(__file__).parent.parent
+            problems_path = vista_root / "data" / "sites" / self.site_sta3n / "problems.json"
+
+            if not problems_path.exists():
+                logger.warning(f"Problems data file not found: {problems_path}")
+                return None
+
+            with open(problems_path, 'r') as f:
+                problems_data = json.load(f)
+
+            # Convert T-notation dates to FileMan format
+            problems_list = problems_data.get("problems", [])
+            for problem in problems_list:
+                # Convert onset_date
+                if "onset_date" in problem:
+                    original = problem["onset_date"]
+                    converted = self.parse_t_notation_to_fileman(original)
+                    problem["onset_date"] = converted
+
+                # Convert entered_date (optional)
+                if "entered_date" in problem and problem["entered_date"]:
+                    original = problem["entered_date"]
+                    converted = self.parse_t_notation_to_fileman(original)
+                    problem["entered_date"] = converted
+
+                # Convert modified_date (optional)
+                if "modified_date" in problem and problem["modified_date"]:
+                    original = problem["modified_date"]
+                    converted = self.parse_t_notation_to_fileman(original)
+                    problem["modified_date"] = converted
+
+            logger.debug(f"Loaded problems data from {problems_path}")
+            return problems_data
+
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON in problems data file: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Error loading problems data: {e}")
+            return None

@@ -1,7 +1,7 @@
 # med-z1 Implementation Roadmap – Vertical Slice Strategy
 
-December 7, 2025 • Document version v1.2
-**Last Updated:** January 20, 2026
+December 7, 2025 • Document version v1.3
+**Last Updated:** February 7, 2026
 
 > **Related Documentation:**
 > - **Strategic Vision & Product Planning:** See `med-z1-plan.md` for product vision, user personas, core use cases, and UX strategy
@@ -76,10 +76,12 @@ FastAPI + HTMX UI - Patient-aware topbar with search
 | **Phase 8** | Clinical Notes Domain | 1 week | ✅ Complete (2026-01-02) |
 | **Phase 9** | Immunizations Domain | 1 week | ✅ Complete (2026-01-14) |
 | **Phase 10** | AI Clinical Insights (Phases 1-6) | 3 weeks | ✅ Complete (2026-01-20) |
+| **Phase 11** | Military History & Environmental Exposures | 1 week | ✅ Complete (2026-02-07) |
+| **Phase 12** | Problems/Diagnoses Domain | 2-3 weeks | 🚧 In Progress |
 
 **Functional Patient-Aware UI: ✅ Delivered**
-**Clinical Domains Implemented: 9** (Demographics, Flags, Vitals, Allergies, Medications, Encounters, Clinical Notes, Immunizations, Labs (partial))
-**AI Features: ✅ Operational** (4 tools, conversation memory)
+**Clinical Domains Implemented: 10** (Demographics, Flags, Vitals, Allergies, Medications, Encounters, Clinical Notes, Immunizations, Military History, Labs (partial))
+**AI Features: ✅ Operational** (4 tools, conversation memory, environmental exposure awareness)
 **Vista RPC Broker: ✅ Operational** (4 domains with real-time data)
 
 ---
@@ -2194,9 +2196,27 @@ Test all workflows:
      - ✅ Sidebar link activated and functional
      - ⏸️ Charting: Chart.js sparklines deferred due to HTMX timing issues (see lab-results-design.md v1.1)
      - Future: Implement charting on full page (non-HTMX) or via HTMX event listeners
-4. 🚧 **Problems/Diagnoses** - Clinical context and problem list
-   - **Widget:** 1x1 or 2x1 - Active problems
-   - **Full Page:** Problem list with onset dates, status, providers
+4. 🚧 **Problems/Diagnoses** - **IN PROGRESS (Started 2026-02-07)** - Clinical context and problem list
+   - **Priority:** HIGH - Identified as #1 data gap for ML readmission prediction (+0.05-0.08 AUC improvement)
+   - **Widget:** 2x1 - Top 5 active problems + Charlson Comorbidity Index badge
+   - **Full Page:** Problem list grouped by ICD-10 category with status filtering
+   - **Scope:** Problem List (longitudinal) + Encounter Diagnoses (episodic) merged view
+   - **Features:**
+     - Dual coding (SNOMED CT + ICD-10-CM) from VistA and Cerner
+     - Charlson Comorbidity Index pre-calculated in ETL (19 conditions)
+     - VistA real-time overlay with "updated today" indicators
+     - Chronic condition flags (CHF, COPD, diabetes, CKD, depression, PTSD)
+     - Status tracking (Active/Inactive/Resolved) with lifetime history
+   - **AI Integration:** New `assess_disease_burden` tool for comorbidity analysis
+   - **Implementation Status:**
+     - ✅ Design: Complete (see `docs/spec/problems-design.md`)
+     - 🚧 Mock Data: In progress (CDWWork + CDWWork2 schemas)
+     - ⏳ ETL Pipeline: Pending
+     - ⏳ PostgreSQL Schema: Pending
+     - ⏳ VistA RPC Integration: Pending
+     - ⏳ UI Implementation: Pending
+   - **Timeline:** 17 days (2-3 weeks)
+   - **See:** `docs/spec/problems-design.md`
 5. 🚧 **Orders** - Complex workflow domain
    - **Widget:** 1x1 or 3x1 (TBD) - Recent orders timeline
    - **Full Page:** Order history with status tracking
@@ -2510,6 +2530,125 @@ class RealtimeOverlayService:
    - **Recommendation:** After Encounters + Labs are complete (establishes broader domain coverage baseline)
 2. **Which domains get real-time support first?** All 4 Phase 1 domains or subset?
    - **Recommendation:** Start with Vitals + Medications (highest clinical value for T-0 data)
+
+---
+
+## 11.6 Phase 11: Military History & Environmental Exposures - ✅ COMPLETE (February 7, 2026)
+
+**Duration:** 1 week (2026-01-31 to 2026-02-07)
+
+**Goal:** Expand patient demographics to include VA-specific military history, service-connected disability ratings, and environmental exposure tracking (Agent Orange, Gulf War, POW, Camp Lejeune, ionizing radiation, SHAD).
+
+### Implementation Status
+
+**✅ Mock Data Enhancement (Day 1)**
+- Updated `SPatient.SpatientDisability` table with 30 realistic records
+- Proper distribution: 6 non-SC (20%), 10 low (33%), 7 moderate (23%), 5 high (17%), 1 T&P (3%)
+- Environmental exposures: 3 Agent Orange, 2 Radiation, 2 POW, 2 Camp Lejeune, 7 Gulf War
+- Fixed placeholder location values ('VIETNAM', 'KOREA' vs 'O', '6')
+- Added verification queries for data quality checks
+
+**✅ PostgreSQL Schema (Day 2)**
+- Created `clinical.patient_military_history` table with 15 columns
+- 5 filtered indexes for performance (exposure flags, high SC%)
+- Comprehensive column comments for documentation
+- Updated `docs/guide/developer-setup-guide.md` with table creation steps
+
+**✅ ETL Pipeline (Days 3-4)**
+- Confirmed Bronze layer already extracted needed fields
+- Created `etl/silver_patient_military_history.py` - Transform and join with ICN
+- Created `etl/gold_patient_military_history.py` - Create patient_key
+- Created `etl/load_military_history.py` - Load to PostgreSQL with verification
+- Updated `scripts/run_all_etl.sh` master script
+- All pipelines tested and operational
+
+**✅ Database Query Layer (Day 5)**
+- Created `app/db/military_history.py` with two functions:
+  - `get_patient_military_history(icn)` - Fetch military history
+  - `get_priority_group(service_connected_percent)` - Calculate VA priority group (1-8)
+- Priority group logic: Group 1 for 70%+ SC, Groups 2-8 for lower ratings
+
+**✅ Demographics UI Enhancement (Day 6)**
+- Updated `app/routes/demographics.py` to fetch and pass military history data
+- Enhanced `app/templates/patient_demographics.html` with:
+  - Service-connected percentage with priority group badges
+  - Environmental exposure badges with tooltips and icons
+  - Color-coded severity indicators (red for high priority, yellow for exposures)
+- Added CSS styles to `app/static/styles.css` for badges and tooltips
+
+**✅ AI Integration (Day 7)**
+- Updated `ai/services/patient_context.py` to include environmental exposures in demographics summary
+- Fixed AI system prompt bug in `ai/prompts/system_prompts.py`:
+  - Added environmental exposures to tool descriptions
+  - Added example interaction for exposure queries
+  - Added to Clinical Safety Priorities with health implications
+- Created test script `scripts/test_ai_military_context.py`
+- Verified AI correctly recognizes exposure queries on first question
+
+**✅ ML Learning Guide Update**
+- Updated `notebooks/readmission/readmission-ml-guide.md` with military history features
+- Added 7 new features (service_connected_pct, agent_orange_exposure, etc.)
+- Added interaction feature examples (exposure × condition)
+- Added VA-specific SHAP interpretation guidance
+- Expected impact: +0.05-0.08 AUC improvement for readmission prediction
+
+### Key Features
+
+1. **Service-Connected Disability Tracking**
+   - Percentage (0-100%) with VA priority group calculation
+   - High priority indicators (70%+ disability)
+   - Denormalized in both `patient_demographics` and `patient_military_history` for performance
+
+2. **Environmental Exposure Documentation**
+   - Agent Orange (with location: VIETNAM, etc.)
+   - Ionizing Radiation
+   - Former POW status (with location)
+   - Camp Lejeune water contamination
+   - Gulf War / Southwest Asia service
+   - SHAD (Shipboard Hazard and Defense)
+
+3. **UI Enhancements**
+   - Color-coded badges for exposures (yellow for Agent Orange, orange for radiation, etc.)
+   - Tooltips with health risk explanations
+   - Priority group badges with clinical significance
+
+4. **AI Awareness**
+   - Environmental exposures included in patient summaries
+   - Health risk implications in clinical safety priorities
+   - Proper handling of exposure queries from first question
+
+### Clinical Significance
+
+Environmental exposures drive:
+- **Agent Orange** → Diabetes, cancers (prostate, lung, multiple myeloma), neuropathy
+- **Ionizing Radiation** → Cancer monitoring (thyroid, leukemia)
+- **Former POW** → PTSD, complex trauma, chronic pain
+- **Camp Lejeune** → Contamination-related cancers (bladder, kidney, liver)
+- **Gulf War** → Burn pit exposure, respiratory conditions, chronic multisymptom illness
+- **SHAD** → Chemical/biological exposure research participant status
+
+### Architecture
+
+**Data Flow:**
+```
+CDWWork.SPatient.SPatientDisability (30 records)
+    ↓
+Bronze: bronze_patient_disability.py (already existed)
+    ↓
+Silver: silver_patient_military_history.py (join with ICN)
+    ↓
+Gold: gold_patient_military_history.py (patient_key)
+    ↓
+PostgreSQL: clinical.patient_military_history (30 records)
+    ↓
+API: app/db/military_history.py (query functions)
+    ↓
+UI: Demographics page with exposure badges
+    ↓
+AI: PatientContextBuilder includes exposures
+```
+
+**See:** `docs/spec/military-history-design.md` for complete implementation details.
 
 ---
 

@@ -41,7 +41,7 @@ from config import (
 )
 
 # Import routers
-from app.routes import patient, dashboard, vitals, medications, demographics, encounters, labs, auth, insight, notes, immunizations
+from app.routes import patient, dashboard, vitals, medications, demographics, encounters, labs, auth, insight, notes, immunizations, problems
 
 # Import middleware
 from app.middleware.auth import AuthMiddleware
@@ -214,6 +214,8 @@ app.include_router(notes.router)              # Clinical Notes API routes
 app.include_router(notes.page_router)         # Clinical Notes full page routes
 app.include_router(immunizations.router)      # Immunizations API routes
 app.include_router(immunizations.page_router) # Immunizations full page routes
+app.include_router(problems.router)           # Problems/Diagnoses API routes
+app.include_router(problems.page_router)      # Problems/Diagnoses full page routes
 app.include_router(insight.page_router)       # AI Insights full page routes
 
 # Configure logging for the entire application

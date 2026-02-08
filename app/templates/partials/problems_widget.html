@@ -1,0 +1,136 @@
+<!-- Problems/Diagnoses Widget Content -->
+<!-- Widget Header -->
+<div class="widget__header">
+    <div class="widget__title-group">
+        <i class="fa-solid fa-stethoscope widget__icon"></i>
+        <h3 class="widget__title">Problems/Diagnoses</h3>
+    </div>
+    {% if charlson_score > 0 %}
+        <span class="badge {{ badge_class }}">Charlson {{ charlson_score }}</span>
+    {% endif %}
+</div>
+
+<!-- Widget Body -->
+<div class="widget__body">
+    <div class="widget-problems">
+        {% if error %}
+            <p class="text-muted" style="padding: 1rem; text-align: center;">
+                <i class="fa-solid fa-circle-exclamation"></i> Error loading problems
+            </p>
+        {% elif not has_problems %}
+            <p class="text-muted" style="padding: 1rem; text-align: center;">No active problems recorded</p>
+        {% else %}
+            <!-- Summary Stats -->
+            <div class="problems-summary-widget">
+                <div class="problems-stat">
+                    <div class="problems-stat__value">{{ total_active }}</div>
+                    <div class="problems-stat__label">Active</div>
+                </div>
+                <div class="problems-stat-divider"></div>
+                <div class="problems-stat">
+                    <div class="problems-stat__value">{{ total_chronic }}</div>
+                    <div class="problems-stat__label">Chronic</div>
+                </div>
+                <div class="problems-stat-divider"></div>
+                <div class="problems-stat">
+                    <div class="problems-stat__value {{ 'text-danger' if charlson_score > 6 else ('text-warning' if charlson_score > 4 else 'text-success') }}">{{ charlson_score }}</div>
+                    <div class="problems-stat__label">Charlson</div>
+                </div>
+            </div>
+
+            <!-- Critical Conditions Indicators (if present) -->
+            {% if has_critical_conditions %}
+            <div class="critical-conditions-widget">
+                <div class="critical-conditions-widget__label">Critical Conditions:</div>
+                <div class="critical-conditions-widget__badges">
+                    {% if has_chf %}
+                        <span class="badge badge--danger badge--sm">CHF</span>
+                    {% endif %}
+                    {% if has_copd %}
+                        <span class="badge badge--danger badge--sm">COPD</span>
+                    {% endif %}
+                    {% if has_ckd %}
+                        <span class="badge badge--danger badge--sm">CKD</span>
+                    {% endif %}
+                    {% if has_diabetes %}
+                        <span class="badge badge--warning badge--sm">Diabetes</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Problem List (Top 8 Active Problems) -->
+            <div class="problems-list-widget">
+                {% for problem in problems %}
+                <div class="problem-item-widget">
+                    <div class="problem-item-widget__icon">
+                        {% if problem.icd10_category == 'Cardiovascular' %}
+                            <i class="fa-solid fa-heart-pulse {% if problem.charlson_condition %}text-danger{% else %}text-muted{% endif %}"></i>
+                        {% elif problem.icd10_category == 'Respiratory' %}
+                            <i class="fa-solid fa-lungs {% if problem.charlson_condition %}text-danger{% else %}text-muted{% endif %}"></i>
+                        {% elif problem.icd10_category == 'Endocrine' %}
+                            <i class="fa-solid fa-droplet {% if problem.charlson_condition %}text-danger{% else %}text-muted{% endif %}"></i>
+                        {% elif problem.icd10_category == 'Renal' %}
+                            <i class="fa-solid fa-pills {% if problem.charlson_condition %}text-danger{% else %}text-muted{% endif %}"></i>
+                        {% elif problem.icd10_category == 'Mental Health' %}
+                            <i class="fa-solid fa-brain {% if problem.charlson_condition %}text-warning{% else %}text-muted{% endif %}"></i>
+                        {% elif problem.icd10_category == 'Neurologic' %}
+                            <i class="fa-solid fa-head-side-virus {% if problem.charlson_condition %}text-warning{% else %}text-muted{% endif %}"></i>
+                        {% elif problem.icd10_category == 'Musculoskeletal' %}
+                            <i class="fa-solid fa-bone {% if problem.charlson_condition %}text-info{% else %}text-muted{% endif %}"></i>
+                        {% elif problem.icd10_category == 'Digestive' %}
+                            <i class="fa-solid fa-stomach {% if problem.charlson_condition %}text-warning{% else %}text-muted{% endif %}"></i>
+                        {% elif problem.icd10_category == 'Oncologic' %}
+                            <i class="fa-solid fa-radiation {% if problem.charlson_condition %}text-danger{% else %}text-muted{% endif %}"></i>
+                        {% else %}
+                            <i class="fa-solid fa-notes-medical text-muted"></i>
+                        {% endif %}
+                    </div>
+                    <div class="problem-item-widget__info">
+                        <div class="problem-item-widget__name">
+                            {{ problem.problem_text or problem.icd10_description }}
+                            {% if problem.service_connected %}
+                                <span class="badge badge--info badge--sm">SC</span>
+                            {% endif %}
+                            {% if problem.charlson_condition %}
+                                <span class="badge badge--warning badge--sm">Charlson</span>
+                            {% endif %}
+                        </div>
+                        <div class="problem-item-widget__meta">
+                            <span class="problem-item-widget__code">{{ problem.icd10_code }}</span>
+                            {% if problem.onset_date %}
+                                <span class="problem-item-widget__date">
+                                    • Onset: {{ problem.onset_date[:10] }}
+                                </span>
+                            {% endif %}
+                            {% if problem.icd10_category %}
+                                <span class="problem-item-widget__category">
+                                    • {{ problem.icd10_category }}
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+
+                {% if total_active > problems|length %}
+                <div class="problem-item-widget problem-item-widget--more">
+                    <i class="fa-solid fa-ellipsis"></i>
+                    {{ total_active - problems|length }} more problem{{ 's' if total_active - problems|length > 1 else '' }}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- View All Link -->
+            <div class="widget-action">
+                <a href="/patient/{{ icn }}/problems" class="btn btn--link btn--sm">
+                    <i class="fa-regular fa-arrow-up-right-from-square"></i>
+                    View All Problems
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Widget Footer (minimal spacing) -->
+<div class="widget__footer"></div>

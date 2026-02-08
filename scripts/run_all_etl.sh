@@ -118,6 +118,16 @@ python -m etl.silver_immunizations
 python -m etl.gold_immunizations
 python -m etl.load_immunizations
 
+# Problems/Diagnoses
+echo "══════════════════════════════════════════════════"
+echo ">>> Running Problems/Diagnoses pipeline..."
+echo "══════════════════════════════════════════════════"
+sleep 2
+python -m etl.bronze_problems
+python -m etl.silver_problems
+python -m etl.gold_problems
+python -m etl.load_problems
+
 # Drug-Drug Interaction Reference Data
 echo "══════════════════════════════════════════════════"
 echo ">>> Running DDI Reference Data pipeline..."

@@ -1,0 +1,138 @@
+{
+  "site_sta3n": "200",
+  "site_name": "Alexandria VA Medical Center",
+  "problems": [
+    {
+      "dfn": "100001",
+      "problem_ien": "200-123",
+      "problem_text": "Congestive heart failure",
+      "snomed_code": "42343007",
+      "icd10_code": "I50.23",
+      "problem_status": "Active",
+      "onset_date": "T-2920",
+      "service_connected": true,
+      "updated_today": false,
+      "_note": "ICN100001 (DOOREE, ADAM) - CHF, matches PostgreSQL data, updated ~8 years ago"
+    },
+    {
+      "dfn": "100001",
+      "problem_ien": "200-456",
+      "problem_text": "Acute exacerbation of COPD",
+      "snomed_code": "195951007",
+      "icd10_code": "J44.1",
+      "problem_status": "Active",
+      "onset_date": "T-0",
+      "service_connected": true,
+      "updated_today": true,
+      "_note": "ICN100001 (DOOREE, ADAM) - COPD exacerbation TODAY (T-0), demonstrates real-time Vista data"
+    },
+    {
+      "dfn": "100001",
+      "problem_ien": "200-789",
+      "problem_text": "Type 2 diabetes mellitus with CKD",
+      "snomed_code": "44054006",
+      "icd10_code": "E11.22",
+      "problem_status": "Active",
+      "onset_date": "T-5842",
+      "service_connected": true,
+      "updated_today": false,
+      "_note": "ICN100001 (DOOREE, ADAM) - Diabetes, long-standing condition (~16 years)"
+    },
+    {
+      "dfn": "100001",
+      "problem_ien": "200-888",
+      "problem_text": "Essential hypertension",
+      "snomed_code": "38341003",
+      "icd10_code": "I10",
+      "problem_status": "Active",
+      "onset_date": "T-7671",
+      "service_connected": false,
+      "updated_today": false,
+      "_note": "ICN100001 (DOOREE, ADAM) - Hypertension, very long-standing (~21 years)"
+    },
+    {
+      "dfn": "100002",
+      "problem_ien": "200-234",
+      "problem_text": "Essential hypertension",
+      "snomed_code": "38341003",
+      "icd10_code": "I10",
+      "problem_status": "Active",
+      "onset_date": "T-3652",
+      "service_connected": false,
+      "updated_today": false,
+      "_note": "ICN100002 (MIIFAA, BARRY) - Hypertension, established 10 years ago"
+    },
+    {
+      "dfn": "100002",
+      "problem_ien": "200-567",
+      "problem_text": "Type 2 diabetes mellitus without complications",
+      "snomed_code": "44054006",
+      "icd10_code": "E11.9",
+      "problem_status": "Active",
+      "onset_date": "T-2374",
+      "service_connected": false,
+      "updated_today": false,
+      "_note": "ICN100002 (MIIFAA, BARRY) - Diabetes, 6.5 years ago"
+    },
+    {
+      "dfn": "100002",
+      "problem_ien": "200-890",
+      "problem_text": "Obstructive sleep apnea",
+      "snomed_code": "78275009",
+      "icd10_code": "G47.33",
+      "problem_status": "Active",
+      "onset_date": "T-1779",
+      "service_connected": true,
+      "updated_today": false,
+      "_note": "ICN100002 (MIIFAA, BARRY) - Sleep apnea, service connected"
+    },
+    {
+      "dfn": "100002",
+      "problem_ien": "200-999",
+      "problem_text": "Chronic lower back pain",
+      "snomed_code": "90560007",
+      "icd10_code": "M54.5",
+      "problem_status": "Active",
+      "onset_date": "T-0",
+      "service_connected": true,
+      "updated_today": true,
+      "_note": "ICN100002 (MIIFAA, BARRY) - Back pain flare-up TODAY (T-0), demonstrates real-time update"
+    },
+    {
+      "dfn": "100010",
+      "problem_ien": "200-111",
+      "problem_text": "COPD, unspecified",
+      "snomed_code": "13645005",
+      "icd10_code": "J44.9",
+      "problem_status": "Active",
+      "onset_date": "T-5382",
+      "service_connected": true,
+      "updated_today": false,
+      "_note": "ICN100010 (AMINOR, ALEXANDER) - COPD, established ~14.7 years ago"
+    },
+    {
+      "dfn": "100010",
+      "problem_ien": "200-222",
+      "problem_text": "Chronic kidney disease, stage 4",
+      "snomed_code": "46177005",
+      "icd10_code": "N18.4",
+      "problem_status": "Active",
+      "onset_date": "T-2366",
+      "service_connected": false,
+      "updated_today": false,
+      "_note": "ICN100010 (AMINOR, ALEXANDER) - CKD stage 4, ~6.5 years ago"
+    },
+    {
+      "dfn": "100010",
+      "problem_ien": "200-333",
+      "problem_text": "Type 2 diabetes with polyneuropathy",
+      "snomed_code": "44054006",
+      "icd10_code": "E11.42",
+      "problem_status": "Active",
+      "onset_date": "T-0",
+      "service_connected": true,
+      "updated_today": true,
+      "_note": "ICN100010 (AMINOR, ALEXANDER) - Diabetes neuropathy updated TODAY (T-0), recent complication"
+    }
+  ]
+}

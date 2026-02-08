@@ -72,6 +72,9 @@ PRINT '';
 :r ImmunizationMill.VaccineCode.sql
 :r ImmunizationMill.VaccineAdmin.sql
 
+-- Problems/Diagnoses (Problem List)
+:r EncMill.ProblemList.sql
+
 PRINT '';
 PRINT '=======================================================================';
 PRINT 'CDWWork2 Database Creation Complete!';

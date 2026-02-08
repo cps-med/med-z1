@@ -836,6 +836,7 @@ docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_labs
 docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_clinical_notes_table.sql
 docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_immunizations_table.sql
 docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_military_history_table.sql
+docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_problems_table.sql
 docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_reference_vaccine_table.sql
 ```
 
@@ -844,14 +845,14 @@ Verify tables were created:
 docker exec -it postgres16 psql -U postgres -d medz1 -c "\dt clinical.*"
 ```
 
-Expected output should list **13 tables** in the `clinical` schema:
+Expected output should list **14 tables** in the `clinical` schema:
 
 - patient_demographics, patient_vitals
 - patient_allergies, patient_allergy_reactions
 - patient_medications_outpatient, patient_medications_inpatient
 - patient_flags, patient_flag_history
 - patient_encounters, patient_labs, patient_clinical_notes, patient_immunizations
-- patient_military_history
+- patient_military_history, patient_problems
 
 Additionally, verify the reference table was created:
 ```bash
@@ -865,7 +866,7 @@ Expected output should show **1 table** in the `reference` schema:
 
 Each clinical domain has a complete pipeline (Bronze → Silver → Gold → Load). Run pipelines in the order shown below to respect data dependencies.  
 
-**Important Note:** All of the clinical domain pipelines detailed below (1 through 11) can be run via a single shell script, as described later in this guide.
+**Important Note:** All of the clinical domain pipelines detailed below (1 through 12) can be run via a single shell script, as described later in this guide.
 
 All ETL scripts are run as Python modules from the project root:
 
@@ -1047,7 +1048,41 @@ python -m etl.gold_immunizations
 python -m etl.load_immunizations
 ```
 
-#### 11. Drug-Drug Interaction (DDI) Reference Data Pipeline
+#### 11. Problems/Diagnoses Pipeline
+
+**Note:** This pipeline includes Charlson Comorbidity Index calculation and chronic condition flags for AI/ML.
+
+```bash
+# Bronze: Extract problems from CDWWork (VistA) and CDWWork2 (Cerner)
+# Includes ICD-10 codes and Charlson mapping reference data
+python -m etl.bronze_problems
+
+# Silver: Harmonize VistA and Cerner schemas, deduplicate problems
+# Deduplication rule: Same ICN + Same ICD-10 Code + Same Onset Date
+python -m etl.silver_problems
+
+# Gold: Calculate Charlson Comorbidity Index and patient-level aggregations
+# Includes 15 chronic condition flags (CHF, diabetes, COPD, CKD, PTSD, etc.)
+python -m etl.gold_problems
+
+# Load: Insert into PostgreSQL
+python -m etl.load_problems
+```
+
+**Pipeline Features:**
+- **Dual Coding:** ICD-10 + SNOMED CT
+- **Multi-Source Harmonization:** VistA and Cerner problems unified
+- **Charlson Index:** Automatic calculation (0-37+ range, higher = more complex)
+- **Deduplication:** Removes duplicates across both EHR systems (VistA preferred)
+- **Chronic Condition Flags:** 15 boolean flags for AI/ML (has_chf, has_diabetes, etc.)
+- **Patient Aggregations:** Active problem counts, service-connected counts
+
+**Expected Results:**
+- ~59 unique problems (after deduplication from 73 raw records)
+- 7 unique patients with Charlson Index scores
+- Test patients: ICN100001 (Charlson ~7-8, high complexity), ICN100010 (Charlson ~4, moderate)
+
+#### 12. Drug-Drug Interaction (DDI) Reference Data Pipeline
 
 The DDI pipeline provides reference data for the AI Clinical Insights feature. Unlike clinical domains, this pipeline does NOT load into PostgreSQL—the Gold Parquet is consumed directly by the AI service at runtime.
 
@@ -1066,6 +1101,8 @@ python -m etl.silver_ddi
 # Gold: Create AI-optimized reference
 python -m etl.gold_ddi
 ```
+
+**Note:** This is a reference data pipeline, not a clinical domain pipeline. It does not load into PostgreSQL.
 
 ### Verify ETL Pipeline Results
 After running all pipelines, verify clinical domain data was successfully loaded into PostgreSQL.  

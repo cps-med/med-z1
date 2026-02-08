@@ -1,0 +1,255 @@
+<!-- Problem Detail Modal Content -->
+{% if error %}
+        <div class="alert alert--error">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            Error loading problem details: {{ error }}
+        </div>
+    {% elif not problem %}
+        <div class="alert alert--warning">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            Problem not found
+        </div>
+    {% else %}
+        <!-- Problem Header -->
+        <div class="problem-detail-header">
+            <div class="problem-detail-header__icon">
+                {% if problem.icd10_category == 'Cardiovascular' %}
+                    <i class="fa-solid fa-heart-pulse fa-2x text-danger"></i>
+                {% elif problem.icd10_category == 'Respiratory' %}
+                    <i class="fa-solid fa-lungs fa-2x text-info"></i>
+                {% elif problem.icd10_category == 'Endocrine' %}
+                    <i class="fa-solid fa-droplet fa-2x text-warning"></i>
+                {% elif problem.icd10_category == 'Renal' %}
+                    <i class="fa-solid fa-pills fa-2x text-primary"></i>
+                {% elif problem.icd10_category == 'Mental Health' %}
+                    <i class="fa-solid fa-brain fa-2x text-success"></i>
+                {% elif problem.icd10_category == 'Neurologic' %}
+                    <i class="fa-solid fa-head-side-virus fa-2x text-warning"></i>
+                {% elif problem.icd10_category == 'Musculoskeletal' %}
+                    <i class="fa-solid fa-bone fa-2x text-secondary"></i>
+                {% elif problem.icd10_category == 'Digestive' %}
+                    <i class="fa-solid fa-stomach fa-2x text-info"></i>
+                {% elif problem.icd10_category == 'Oncologic' %}
+                    <i class="fa-solid fa-radiation fa-2x text-danger"></i>
+                {% else %}
+                    <i class="fa-solid fa-notes-medical fa-2x text-muted"></i>
+                {% endif %}
+            </div>
+            <div class="problem-detail-header__info">
+                <h3 class="problem-detail-header__title">
+                    {{ problem.problem_text or problem.icd10_description }}
+                </h3>
+                <div class="problem-detail-header__badges">
+                    {% if problem.problem_status == 'Active' %}
+                        <span class="badge badge--success">{{ problem.problem_status }}</span>
+                    {% elif problem.problem_status == 'Inactive' %}
+                        <span class="badge badge--warning">{{ problem.problem_status }}</span>
+                    {% elif problem.problem_status == 'Resolved' %}
+                        <span class="badge badge--secondary">{{ problem.problem_status }}</span>
+                    {% endif %}
+
+                    {% if problem.service_connected %}
+                        <span class="badge badge--info">Service Connected</span>
+                    {% endif %}
+
+                    {% if problem.charlson_condition %}
+                        <span class="badge badge--warning">Charlson: {{ problem.charlson_condition }}</span>
+                    {% endif %}
+
+                    {% if problem.is_chronic %}
+                        <span class="badge badge--secondary">Chronic</span>
+                    {% endif %}
+
+                    {% if problem.is_acute %}
+                        <span class="badge badge--primary">Acute</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Problem Details Grid -->
+        <div class="problem-detail-grid">
+            <!-- Left Column: Clinical Information -->
+            <div class="problem-detail-section">
+                <h4 class="problem-detail-section__title">
+                    <i class="fa-solid fa-stethoscope"></i>
+                    Clinical Information
+                </h4>
+
+                <div class="problem-detail-field">
+                    <span class="problem-detail-field__label">ICD-10 Code:</span>
+                    <span class="problem-detail-field__value">
+                        <code>{{ problem.icd10_code }}</code>
+                    </span>
+                </div>
+
+                <div class="problem-detail-field">
+                    <span class="problem-detail-field__label">ICD-10 Description:</span>
+                    <span class="problem-detail-field__value">{{ problem.icd10_description }}</span>
+                </div>
+
+                {% if problem.icd10_category %}
+                <div class="problem-detail-field">
+                    <span class="problem-detail-field__label">Category:</span>
+                    <span class="problem-detail-field__value">{{ problem.icd10_category }}</span>
+                </div>
+                {% endif %}
+
+                {% if problem.snomed_code %}
+                <div class="problem-detail-field">
+                    <span class="problem-detail-field__label">SNOMED Code:</span>
+                    <span class="problem-detail-field__value">
+                        <code>{{ problem.snomed_code }}</code>
+                    </span>
+                </div>
+                {% endif %}
+
+                {% if problem.snomed_description %}
+                <div class="problem-detail-field">
+                    <span class="problem-detail-field__label">SNOMED Description:</span>
+                    <span class="problem-detail-field__value">{{ problem.snomed_description }}</span>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Right Column: Timeline & Metadata -->
+            <div class="problem-detail-section">
+                <h4 class="problem-detail-section__title">
+                    <i class="fa-solid fa-clock"></i>
+                    Timeline & Status
+                </h4>
+
+                <div class="problem-timeline">
+                    {% if problem.onset_date %}
+                    <div class="problem-timeline-item">
+                        <div class="problem-timeline-item__icon">
+                            <i class="fa-solid fa-circle-plus"></i>
+                        </div>
+                        <div class="problem-timeline-item__content">
+                            <div class="problem-timeline-item__label">Onset Date</div>
+                            <div class="problem-timeline-item__value">{{ problem.onset_date[:10] }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if problem.recorded_date %}
+                    <div class="problem-timeline-item">
+                        <div class="problem-timeline-item__icon">
+                            <i class="fa-solid fa-file-medical"></i>
+                        </div>
+                        <div class="problem-timeline-item__content">
+                            <div class="problem-timeline-item__label">Recorded Date</div>
+                            <div class="problem-timeline-item__value">{{ problem.recorded_date[:10] }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if problem.modified_date %}
+                    <div class="problem-timeline-item">
+                        <div class="problem-timeline-item__icon">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </div>
+                        <div class="problem-timeline-item__content">
+                            <div class="problem-timeline-item__label">Last Modified</div>
+                            <div class="problem-timeline-item__value">{{ problem.modified_date[:10] }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if problem.resolved_date %}
+                    <div class="problem-timeline-item">
+                        <div class="problem-timeline-item__icon">
+                            <i class="fa-solid fa-circle-check"></i>
+                        </div>
+                        <div class="problem-timeline-item__content">
+                            <div class="problem-timeline-item__label">Resolved Date</div>
+                            <div class="problem-timeline-item__value">{{ problem.resolved_date[:10] }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Provider & Location Information -->
+        {% if problem.provider_name or problem.clinic_location %}
+        <div class="problem-detail-section problem-detail-section--full">
+            <h4 class="problem-detail-section__title">
+                <i class="fa-solid fa-user-doctor"></i>
+                Provider & Location
+            </h4>
+
+            <div class="problem-detail-row">
+                {% if problem.provider_name %}
+                <div class="problem-detail-field">
+                    <span class="problem-detail-field__label">Provider:</span>
+                    <span class="problem-detail-field__value">{{ problem.provider_name }}</span>
+                </div>
+                {% endif %}
+
+                {% if problem.clinic_location %}
+                <div class="problem-detail-field">
+                    <span class="problem-detail-field__label">Clinic/Location:</span>
+                    <span class="problem-detail-field__value">{{ problem.clinic_location }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Data Source Information -->
+        <div class="problem-detail-section problem-detail-section--full">
+            <h4 class="problem-detail-section__title">
+                <i class="fa-solid fa-database"></i>
+                Data Source
+            </h4>
+
+            <div class="problem-detail-row">
+                {% if problem.source_ehr %}
+                <div class="problem-detail-field">
+                    <span class="problem-detail-field__label">EHR System:</span>
+                    <span class="problem-detail-field__value">{{ problem.source_ehr }}</span>
+                </div>
+                {% endif %}
+
+                {% if problem.source_system %}
+                <div class="problem-detail-field">
+                    <span class="problem-detail-field__label">Source System:</span>
+                    <span class="problem-detail-field__value">{{ problem.source_system }}</span>
+                </div>
+                {% endif %}
+
+                {% if problem.patient_key %}
+                <div class="problem-detail-field">
+                    <span class="problem-detail-field__label">Patient Key:</span>
+                    <span class="problem-detail-field__value">
+                        <code>{{ problem.patient_key }}</code>
+                    </span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Charlson Comorbidity Information -->
+        {% if problem.charlson_condition %}
+        <div class="problem-detail-section problem-detail-section--full problem-detail-section--highlight">
+            <h4 class="problem-detail-section__title">
+                <i class="fa-solid fa-chart-line"></i>
+                Charlson Comorbidity Index
+            </h4>
+
+            <div class="problem-detail-charlson">
+                <div class="problem-detail-charlson__info">
+                    <p>
+                        This condition is part of the <strong>Charlson Comorbidity Index</strong>,
+                        a validated tool used to predict mortality and healthcare resource utilization
+                        based on comorbid conditions.
+                    </p>
+                    <div class="problem-detail-charlson__category">
+                        <span class="badge badge--warning badge--lg">{{ problem.charlson_condition }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+{% endif %}

@@ -690,3 +690,210 @@ def merge_medications_data(
     )
 
     return merged, stats
+
+
+# -----------------------------------------------------------------------------
+# PROBLEMS DOMAIN - Real-time Merge/Dedupe (Added 2026-02-07)
+# -----------------------------------------------------------------------------
+
+def parse_vista_problems(vista_response: str, site_sta3n: str) -> List[Dict[str, Any]]:
+    """
+    Parse VistA ORQQPL LIST response into standardized problem records.
+
+    VistA format: Multi-line response, one problem per line
+    Each line: PROBLEM_IEN^PROBLEM_TEXT^ICD10_CODE^STATUS^ONSET_DATE^SERVICE_CONNECTED^SNOMED_CODE^UPDATED_TODAY
+
+    Args:
+        vista_response: Raw VistA RPC response string
+        site_sta3n: Site station number (e.g., "200", "500", "630")
+
+    Returns:
+        List of parsed problem dictionaries matching PostgreSQL schema
+    """
+    problems = []
+
+    if not vista_response or vista_response.startswith("-1^"):
+        # Error response or no problems
+        return problems
+
+    lines = vista_response.strip().split("\n")
+
+    for line in lines:
+        if not line or "^" not in line:
+            continue
+
+        parts = line.split("^")
+        if len(parts) != 8:
+            logger.warning(f"Invalid Vista problem format: {line}")
+            continue
+
+        problem_ien, problem_text, icd10_code, status, onset_date_fm, service_connected, snomed_code, updated_today = parts
+
+        # Parse FileMan date (date only, no time)
+        onset_dt = parse_fileman_date_only(onset_date_fm)
+
+        if not onset_dt:
+            logger.warning(f"Skipping problem with invalid onset date: {line}")
+            continue
+
+        # Convert flags to boolean
+        service_connected_bool = (service_connected == "1")
+        updated_today_bool = (updated_today == "1")
+
+        # Map status to PostgreSQL values (normalize casing)
+        status_mapped = status.capitalize()  # Active, Inactive, Resolved
+
+        # Construct problem record matching PostgreSQL schema
+        problem = {
+            "problem_ien": problem_ien,
+            "problem_text": problem_text,
+            "icd10_code": icd10_code,
+            "icd10_description": None,  # Not available in Vista response
+            "snomed_code": snomed_code,
+            "snomed_description": None,  # Not available in Vista response
+            "problem_status": status_mapped,
+            "onset_date": onset_dt.strftime("%Y-%m-%d"),
+            "service_connected": service_connected_bool,
+            "updated_today": updated_today_bool,
+            "source_site": site_sta3n,
+            "source": "vista",
+            "is_realtime": True,
+            "data_source": f"VistA Site {site_sta3n}",
+        }
+
+        problems.append(problem)
+
+    logger.debug(f"Parsed {len(problems)} problems from Vista site {site_sta3n}")
+    return problems
+
+
+def create_canonical_problem_key(problem: Dict[str, Any]) -> str:
+    """
+    Create canonical deduplication key for a problem.
+
+    Key components:
+    - icd10_code
+    - onset_date
+    - source_site (if available)
+
+    Format: {icd10_code}:{onset_date}:{site}
+    Example: "E11.9:2018-06-15:200"
+
+    Deduplication rules (from problems-design.md Section 5.5):
+    - Same ICN + Same ICD-10 Code + Same Onset Date = Duplicate (VistA preferred)
+
+    Args:
+        problem: Problem dictionary
+
+    Returns:
+        Canonical key string
+    """
+    # Get ICD-10 code (required)
+    icd10 = problem.get("icd10_code", "UNKNOWN")
+
+    # Get onset date (required)
+    onset = problem.get("onset_date", "UNKNOWN")
+
+    # Get site identifier (optional - helps distinguish multi-site problems)
+    site = problem.get("source_site")
+    if not site:
+        # For PostgreSQL data, try to extract from location_name or data_source
+        data_source = problem.get("data_source", "")
+        if "Site" in data_source:
+            try:
+                site = data_source.split("Site")[1].strip().split()[0]
+            except IndexError:
+                site = "UNKNOWN"
+        else:
+            site = "PG"
+
+    return f"{icd10}:{onset}:{site}"
+
+
+def merge_problems_data(
+    pg_problems: List[Dict[str, Any]],
+    vista_problems_by_site: Dict[str, str],
+    patient_icn: str
+) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+    """
+    Merge PostgreSQL problems (T-1 and earlier) with Vista problems (T-0, today).
+
+    Merge strategy:
+    1. Parse Vista responses from all sites
+    2. Deduplicate using canonical event keys: {icd10}:{onset_date}:{site}
+    3. Vista preferred for T-1+ conflicts (fresher data)
+    4. Add source metadata for site badges
+    5. Sort by onset_date descending (most recent first)
+
+    Args:
+        pg_problems: List of problems from PostgreSQL (historical data)
+        vista_problems_by_site: Dict mapping site sta3n to Vista RPC response
+            Example: {"200": "200-123^CHF^I50.23^Active^3230115^1^42343007^0\n...", ...}
+        patient_icn: Patient ICN for metadata
+
+    Returns:
+        Tuple of (merged_problems, stats)
+        - merged_problems: Unified list of problem dictionaries, sorted by date descending
+        - stats: Dictionary with merge statistics
+    """
+    logger.info(f"Merging problems for {patient_icn}: {len(pg_problems)} PG + {len(vista_problems_by_site)} Vista sites")
+
+    merged = []
+    seen_keys = set()
+    stats = {
+        "pg_count": len(pg_problems),
+        "vista_count": 0,
+        "vista_sites": list(vista_problems_by_site.keys()),
+        "duplicates_removed": 0,
+        "total_merged": 0,
+    }
+
+    # Parse all Vista responses
+    all_vista_problems = []
+    for site_sta3n, response in vista_problems_by_site.items():
+        site_problems = parse_vista_problems(response, site_sta3n)
+        for problem in site_problems:
+            problem["patient_key"] = patient_icn
+        all_vista_problems.extend(site_problems)
+        logger.debug(f"Parsed {len(site_problems)} problems from Vista site {site_sta3n}")
+
+    stats["vista_count"] = len(all_vista_problems)
+
+    # Add Vista problems first (preferred for T-1+ duplicates)
+    for problem in all_vista_problems:
+        key = create_canonical_problem_key(problem)
+        if key not in seen_keys:
+            merged.append(problem)
+            seen_keys.add(key)
+        else:
+            stats["duplicates_removed"] += 1
+            logger.debug(f"Skipped duplicate Vista problem: {key}")
+
+    # Add PostgreSQL problems (only if not already present)
+    for problem in pg_problems:
+        # PostgreSQL problems already have 'data_source' field from database
+        # Don't overwrite it - preserve CDWWork/CDWWork2 values
+        # Add tracking metadata for debugging (doesn't affect template rendering)
+        problem["source"] = "postgresql"
+        problem["source_site"] = None
+        problem["is_realtime"] = False
+
+        key = create_canonical_problem_key(problem)
+        if key not in seen_keys:
+            merged.append(problem)
+            seen_keys.add(key)
+        else:
+            stats["duplicates_removed"] += 1
+            logger.debug(f"Skipped duplicate PG problem (Vista preferred): {key}")
+
+    # Sort by onset_date descending (most recent first)
+    merged.sort(key=lambda p: p.get("onset_date") or "", reverse=True)
+
+    stats["total_merged"] = len(merged)
+
+    logger.info(
+        f"Merge complete: {stats['total_merged']} problems "
+        f"({stats['pg_count']} PG + {stats['vista_count']} Vista - {stats['duplicates_removed']} duplicates)"
+    )
+
+    return merged, stats

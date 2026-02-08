@@ -186,7 +186,14 @@ Research has identified many readmission risk factors. Your ML model will learn 
 
 **Social Determinants:**
 - Distance from hospital (harder to follow up)
-- Service-connected % (VA-specific: higher SC% = more engaged with system)
+- Service-connected % (VA-specific: higher SC% = more engaged with system, higher benefits access)
+
+**Military History & Environmental Exposures (VA-Specific):**
+- Agent Orange exposure (linked to diabetes, cardiovascular disease, multiple cancers → higher disease burden)
+- Gulf War service (burn pit exposure, Gulf War Illness → chronic respiratory/multi-symptom conditions)
+- Former POW status (PTSD, complex trauma → medication adherence issues, care engagement challenges)
+- Camp Lejeune water contamination (linked to specific cancers → higher readmission risk)
+- Ionizing radiation exposure (increased cancer risk → complications and readmissions)
 
 **Labs/Vitals:**
 - Abnormal discharge labs (Creatinine >1.5, Hgb <10)
@@ -349,6 +356,7 @@ Verify they work by importing each in a test notebook cell.
 **Database Schema You'll Query:**
 - `clinical.patient_encounters` - Hospital admissions (your target events)
 - `clinical.patient_demographics` - Age, sex, DOB
+- `clinical.patient_military_history` - Service-connected %, environmental exposures (VA-specific risk factors)
 - `clinical.patient_medications_outpatient` - Active meds (polypharmacy feature)
 - `clinical.patient_vitals` - BP, weight, temp (clinical instability features)
 - `clinical.patient_labs` - Creatinine, Hgb (abnormal lab features)
@@ -613,6 +621,15 @@ For Encounter 3 (predicting readmission from this discharge):
 - `los_very_long` - Binary (LOS >10 days = complex case)
 - `had_icu_stay` - Binary (was in ICU during admission)
 
+**7. Military History & Environmental Exposures (VA-Specific):**
+- `service_connected_pct` - Continuous (0-100%, higher = more engaged with VA system)
+- `is_high_priority` - Binary (SC% ≥70%, Priority Group 1)
+- `agent_orange_exposure` - Binary (linked to diabetes, CVD, cancers)
+- `former_pow` - Binary (PTSD, complex trauma, care adherence issues)
+- `gulf_war_service` - Binary (burn pit exposure, Gulf War Illness)
+- `camp_lejeune_exposure` - Binary (water contamination, cancer risk)
+- `ionizing_radiation_exposure` - Binary (increased cancer risk)
+
 ---
 
 ### 5.3 Feature Engineering Patterns
@@ -666,6 +683,35 @@ features['days_since_last_admit'] = days_since_last
 
 # Could also bin into categories:
 # 0-30 days (very recent), 31-90 days (recent), 91+ days (distant)
+```
+
+**E. Environmental Exposure Features (VA-Specific):**
+```python
+# Query military history table
+military_history = get_military_history(patient_key)
+
+# Binary exposure flags
+features['agent_orange_exposure'] = (
+    1 if military_history['agent_orange_exposure'] == 'Y' else 0
+)
+features['gulf_war_service'] = (
+    1 if military_history['sw_asia_exposure'] == 'Y' else 0
+)
+features['former_pow'] = (
+    1 if military_history['pow_status'] == 'Y' else 0
+)
+
+# Interaction features (exposure + condition = higher risk)
+features['agent_orange_with_diabetes'] = (
+    features['agent_orange_exposure'] * features['has_diabetes']
+)
+features['gulf_war_with_respiratory'] = (
+    features['gulf_war_service'] * (features['has_copd'] + features['has_asthma'])
+)
+
+# Service-connected percentage (engagement proxy)
+features['service_connected_pct'] = military_history['service_connected_percent']
+features['is_high_priority'] = 1 if features['service_connected_pct'] >= 70 else 0
 ```
 
 ---
@@ -792,6 +838,13 @@ Pseudocode:
 5. Count rows
 6. Return count
 ```
+
+**Learning Exercise 5.3 (VA-Specific):**
+For military history features, answer these questions:
+1. Why might Agent Orange exposure increase readmission risk? (Hint: Think about associated chronic conditions)
+2. How would you create an interaction feature between Gulf War service and respiratory conditions? Write the pseudocode.
+3. Which environmental exposure would you expect to have the strongest impact on readmission prediction? Why?
+4. If you have 1000 patients and 7% have Gulf War service (like your data), will this feature help the model? Or is the sample size too small?
 
 ---
 
@@ -1433,6 +1486,9 @@ shap.force_plot(
 **Clinical Use:**
 When a clinician sees "Patient X flagged as high-risk 42%", SHAP explains:
 > "High risk driven by 3 prior admissions (+12%), polypharmacy (+8%), and CHF (+6%). Consider care coordination to address medication management and ensure cardiology follow-up."
+
+**VA-Specific Example with Environmental Exposures:**
+> "High risk driven by Agent Orange exposure (+7%), diabetes (+6%), 2 prior admissions (+9%), and polypharmacy (+8%). Patient's exposure history may contribute to diabetes complexity. Consider endocrinology consult and diabetes self-management education."
 
 **Learning Exercise 8.1:**
 Generate SHAP values for your XGBoost model. Find the top 5 most important features globally. Then pick one high-risk patient (>40% predicted risk) and one low-risk patient (<10% predicted risk). Compare their SHAP force plots. What differs?

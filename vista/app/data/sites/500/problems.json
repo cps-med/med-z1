@@ -1,0 +1,126 @@
+{
+  "site_sta3n": "500",
+  "site_name": "Anchorage VA Medical Center",
+  "problems": [
+    {
+      "dfn": "500001",
+      "problem_ien": "500-123",
+      "problem_text": "Post-traumatic stress disorder",
+      "snomed_code": "47505003",
+      "icd10_code": "F43.10",
+      "problem_status": "Active",
+      "onset_date": "T-18993",
+      "service_connected": true,
+      "updated_today": false,
+      "_note": "ICN100001 (DOOREE, ADAM) - PTSD from Vietnam War era (~52 years ago), different DFN at site 500"
+    },
+    {
+      "dfn": "200001",
+      "problem_ien": "500-456",
+      "problem_text": "Chronic kidney disease, stage 5",
+      "snomed_code": "46177005",
+      "icd10_code": "N18.5",
+      "problem_status": "Active",
+      "onset_date": "T-1610",
+      "service_connected": false,
+      "updated_today": false,
+      "_note": "ICN100001 (DOOREE, ADAM) - End stage renal disease, ~4.4 years ago"
+    },
+    {
+      "dfn": "200001",
+      "problem_ien": "500-789",
+      "problem_text": "Atrial fibrillation",
+      "snomed_code": "49436004",
+      "icd10_code": "I48.91",
+      "problem_status": "Active",
+      "onset_date": "T-1904",
+      "service_connected": false,
+      "updated_today": false,
+      "_note": "ICN100001 (DOOREE, ADAM) - AFib, ~5.2 years ago"
+    },
+    {
+      "dfn": "200001",
+      "problem_ien": "500-890",
+      "problem_text": "Gastroesophageal reflux disease",
+      "snomed_code": "235595009",
+      "icd10_code": "K21.9",
+      "problem_status": "Active",
+      "onset_date": "T-0",
+      "service_connected": false,
+      "updated_today": true,
+      "_note": "ICN100001 (DOOREE, ADAM) - GERD updated TODAY (T-0), new diagnosis or update"
+    },
+    {
+      "dfn": "500002",
+      "problem_ien": "500-234",
+      "problem_text": "Post-traumatic stress disorder",
+      "snomed_code": "47505003",
+      "icd10_code": "F43.10",
+      "problem_status": "Active",
+      "onset_date": "T-5479",
+      "service_connected": true,
+      "updated_today": false,
+      "_note": "ICN100002 (MIIFAA, BARRY) - PTSD from Gulf War, ~15 years ago, different DFN at site 500"
+    },
+    {
+      "dfn": "500002",
+      "problem_ien": "500-567",
+      "problem_text": "Dyslipidemia",
+      "snomed_code": "267036007",
+      "icd10_code": "E78.5",
+      "problem_status": "Active",
+      "onset_date": "T-3287",
+      "service_connected": false,
+      "updated_today": false,
+      "_note": "ICN100002 (MIIFAA, BARRY) - High cholesterol, ~9 years ago"
+    },
+    {
+      "dfn": "500002",
+      "problem_ien": "500-890",
+      "problem_text": "Obesity",
+      "snomed_code": "414916001",
+      "icd10_code": "E66.9",
+      "problem_status": "Active",
+      "onset_date": "T-3652",
+      "service_connected": false,
+      "updated_today": false,
+      "_note": "ICN100002 (MIIFAA, BARRY) - Obesity, long-standing (~10 years)"
+    },
+    {
+      "dfn": "500010",
+      "problem_ien": "500-111",
+      "problem_text": "Essential hypertension",
+      "snomed_code": "38341003",
+      "icd10_code": "I10",
+      "problem_status": "Active",
+      "onset_date": "T-6205",
+      "service_connected": false,
+      "updated_today": false,
+      "_note": "ICN100010 (AMINOR, ALEXANDER) - Hypertension, ~17 years ago, different DFN at site 500"
+    },
+    {
+      "dfn": "500010",
+      "problem_ien": "500-222",
+      "problem_text": "Rheumatoid arthritis",
+      "snomed_code": "69896004",
+      "icd10_code": "M05.9",
+      "problem_status": "Active",
+      "onset_date": "T-3469",
+      "service_connected": true,
+      "updated_today": false,
+      "_note": "ICN100010 (AMINOR, ALEXANDER) - RA, service connected, ~9.5 years ago"
+    },
+    {
+      "dfn": "500010",
+      "problem_ien": "500-333",
+      "problem_text": "Chronic pain syndrome",
+      "snomed_code": "82423001",
+      "icd10_code": "G89.29",
+      "problem_status": "Active",
+      "onset_date": "T-0",
+      "service_connected": true,
+      "updated_today": true,
+      "_note": "ICN100010 (AMINOR, ALEXANDER) - Chronic pain updated TODAY (T-0), new or worsening condition"
+    }
+  ]
+}

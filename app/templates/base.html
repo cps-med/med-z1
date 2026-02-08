@@ -95,9 +95,9 @@
                     <i class="fa-solid fa-syringe fa-lg"></i>
                     <span class="sidebar__text">Immunizations</span>
                 </a>
-                <a href="#"
-                   class="sidebar__link sidebar__link--disabled"
-                   data-tooltip="Problems/Diagnoses (Coming Soon)">
+                <a href="/problems"
+                   class="sidebar__link {% if active_page == 'problems' %}sidebar__link--active{% endif %}"
+                   data-tooltip="Problems/Diagnoses">
                     <i class="fa-solid fa-stethoscope fa-lg"></i>
                     <span class="sidebar__text">Problems</span>
                 </a>
@@ -220,6 +220,7 @@
 <!-- Patient modals -->
 {% include "partials/patient_search_modal.html" %}
 {% include "partials/patient_flags_modal.html" %}
+{% include "partials/problem_detail_modal.html" %}
 
 </body>
 </html>

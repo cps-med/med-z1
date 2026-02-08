@@ -1,0 +1,293 @@
+{# Vista Refresh Area - returned by HTMX realtime endpoint #}
+<div id="vista-refresh-area"
+     hx-swap-oob="true:#vista-refresh-controls">
+    {# Out-of-band update for freshness message #}
+    <div id="vista-refresh-controls" class="vista-controls">
+        <span class="data-freshness" id="freshness-message">
+            Data current through: {{ data_current_through }} (today)
+            <span class="last-updated">Last updated: {{ last_updated }}</span>
+
+            {% if vista_cached %}
+                <span class="badge badge--success" style="margin-left: 0.75rem;" title="Vista data cached from sites: {{ cache_sites|join(', ') }}">
+                    <i class="fa-solid fa-database"></i>
+                    Vista Cached (available to AI)
+                </span>
+            {% endif %}
+        </span>
+
+        <button
+            type="button"
+            hx-get="/patient/{{ patient.icn }}/problems/realtime?status={{ status_filter }}&category={{ category_filter or '' }}&service_connected_only={{ service_connected_filter }}"
+            hx-target="#vista-refresh-area"
+            hx-swap="outerHTML"
+            hx-indicator="#vista-loading"
+            aria-label="Refresh data from VistA sites"
+            class="btn btn--secondary vista-refresh-btn">
+            <i class="fa-solid fa-rotate"></i> Refresh VistA
+        </button>
+
+        <div id="vista-loading" class="htmx-indicator">
+            <i class="fa-solid fa-spinner fa-spin"></i> Fetching data...
+        </div>
+    </div>
+</div>
+
+<div id="vista-refresh-area">
+
+<!-- Page Title Section -->
+<div class="page-header__title-group">
+    <h1 class="page-header__title">
+        Problems/Diagnoses
+    </h1>
+</div>
+
+<!-- Summary Stats Bar -->
+<div class="problems-summary-bar">
+    <div class="problem-stat-card">
+        <div class="problem-stat-card__value">{{ total_active }}</div>
+        <div class="problem-stat-card__label">Active Problems</div>
+    </div>
+    <div class="problem-stat-card">
+        <div class="problem-stat-card__value">{{ total_chronic }}</div>
+        <div class="problem-stat-card__label">Chronic Conditions</div>
+    </div>
+    <div class="problem-stat-card problem-stat-card--charlson">
+        <div class="problem-stat-card__value {{ 'text-danger' if charlson_score > 6 else ('text-warning' if charlson_score > 4 else 'text-success') }}">
+            {{ charlson_score }}
+        </div>
+        <div class="problem-stat-card__label">Charlson Index</div>
+    </div>
+    <div class="problem-stat-card problem-stat-card--risk">
+        <div class="problem-stat-card__value">
+            <span class="badge {{ badge_class }}">{{ risk_level }}</span>
+        </div>
+        <div class="problem-stat-card__label">Risk Level</div>
+    </div>
+    <div class="problem-stat-card">
+        <div class="problem-stat-card__value">{{ category_count }}</div>
+        <div class="problem-stat-card__label">Categories</div>
+    </div>
+    {% if has_critical_conditions %}
+    <div class="problem-stat-card problem-stat-card--critical">
+        <div class="problem-stat-card__value">
+            {% if has_chf %}<span class="badge badge--danger badge--sm">CHF</span>{% endif %}
+            {% if has_copd %}<span class="badge badge--danger badge--sm">COPD</span>{% endif %}
+            {% if has_ckd %}<span class="badge badge--danger badge--sm">CKD</span>{% endif %}
+            {% if has_diabetes %}<span class="badge badge--warning badge--sm">DM</span>{% endif %}
+        </div>
+        <div class="problem-stat-card__label">Critical Conditions</div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Filters and Controls -->
+<div class="problems-controls">
+    <!-- Filter Section (HTMX Form) -->
+    <form class="problems-filters"
+          hx-get="/patient/{{ patient.icn }}/problems"
+          hx-target="#problems-container"
+          hx-select="#problems-container"
+          hx-swap="outerHTML"
+          hx-push-url="true"
+          hx-trigger="change">
+
+        <!-- Status Filter -->
+        <div class="filter-group">
+            <label class="filter-group__label">
+                <i class="fa-solid fa-filter"></i>
+                Status:
+            </label>
+            <select name="status" class="filter-select">
+                <option value="Active" {% if status_filter == 'Active' %}selected{% endif %}>Active</option>
+                <option value="Inactive" {% if status_filter == 'Inactive' %}selected{% endif %}>Inactive</option>
+                <option value="Resolved" {% if status_filter == 'Resolved' %}selected{% endif %}>Resolved</option>
+                <option value="All" {% if status_filter == 'All' %}selected{% endif %}>All</option>
+            </select>
+        </div>
+
+        <!-- Category Filter -->
+        <div class="filter-group">
+            <label class="filter-group__label">
+                <i class="fa-solid fa-layer-group"></i>
+                Category:
+            </label>
+            <select name="category" class="filter-select">
+                <option value="" {% if not category_filter %}selected{% endif %}>All Categories</option>
+                {% for cat in all_categories %}
+                <option value="{{ cat }}" {% if category_filter == cat %}selected{% endif %}>{{ cat }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Service-Connected Filter -->
+        <div class="filter-group">
+            <label class="filter-group__label">
+                <i class="fa-solid fa-star"></i>
+                Service-Connected:
+            </label>
+            <select name="service_connected_only" class="filter-select">
+                <option value="false" {% if not service_connected_filter %}selected{% endif %}>All Problems</option>
+                <option value="true" {% if service_connected_filter %}selected{% endif %}>SC Only</option>
+            </select>
+        </div>
+    </form>
+</div>
+
+<!-- Problems Container (HTMX swap target) -->
+<div id="problems-container">
+    {% if total_problems == 0 %}
+        <!-- No Problems State -->
+        <div class="empty-state">
+            <div class="empty-state__icon">
+                <i class="fa-solid fa-stethoscope fa-3x"></i>
+            </div>
+            <h2 class="empty-state__title">No Problems Found</h2>
+            <p class="empty-state__message">
+                {% if status_filter != 'Active' or category_filter or service_connected_filter %}
+                    No problems match the current filters. Try adjusting your filters.
+                {% else %}
+                    No active problems recorded for this patient.
+                {% endif %}
+            </p>
+        </div>
+    {% else %}
+        <!-- Problems Grouped by Category -->
+        <div class="problems-grouped">
+            {% for category, problems in grouped_problems.items() | sort %}
+            <div class="problem-category-section">
+                <!-- Category Header (Collapsible) -->
+                <div class="problem-category-header" onclick="this.parentElement.classList.toggle('problem-category-section--collapsed')">
+                    <div class="problem-category-header__left">
+                        <!-- Category Icon -->
+                        <div class="problem-category-icon">
+                            {% if category == 'Cardiovascular' %}
+                                <i class="fa-solid fa-heart-pulse text-danger"></i>
+                            {% elif category == 'Respiratory' %}
+                                <i class="fa-solid fa-lungs text-info"></i>
+                            {% elif category == 'Endocrine' %}
+                                <i class="fa-solid fa-droplet text-warning"></i>
+                            {% elif category == 'Renal' %}
+                                <i class="fa-solid fa-pills text-primary"></i>
+                            {% elif category == 'Mental Health' %}
+                                <i class="fa-solid fa-brain text-success"></i>
+                            {% elif category == 'Neurologic' %}
+                                <i class="fa-solid fa-head-side-virus text-warning"></i>
+                            {% elif category == 'Musculoskeletal' %}
+                                <i class="fa-solid fa-bone text-secondary"></i>
+                            {% elif category == 'Digestive' %}
+                                <i class="fa-solid fa-stomach text-info"></i>
+                            {% elif category == 'Oncologic' %}
+                                <i class="fa-solid fa-radiation text-danger"></i>
+                            {% else %}
+                                <i class="fa-solid fa-notes-medical text-muted"></i>
+                            {% endif %}
+                        </div>
+                        <h2 class="problem-category-title">{{ category }}</h2>
+                        <span class="problem-category-count">{{ problems | length }}</span>
+                    </div>
+                    <div class="problem-category-header__right">
+                        <i class="fa-solid fa-chevron-down problem-category-chevron"></i>
+                    </div>
+                </div>
+
+                <!-- Category Problems List -->
+                <div class="problem-category-content">
+                    {% for problem in problems %}
+                    <div class="problem-item problem-item--clickable"
+                         onclick="openProblemDetail({{ problem.problem_id }}, '{{ icn }}')">
+                        <div class="problem-item__header">
+                            <div class="problem-item__title">
+                                {{ problem.problem_text or problem.icd10_description }}
+                            </div>
+                            <div class="problem-item__badges">
+                                {% if problem.service_connected %}
+                                    <span class="badge badge--info">SC</span>
+                                {% endif %}
+                                {% if problem.charlson_condition %}
+                                    <span class="badge badge--warning">Charlson</span>
+                                {% endif %}
+                                {% if problem.is_chronic %}
+                                    <span class="badge badge--secondary">Chronic</span>
+                                {% endif %}
+                                {% if problem.is_acute %}
+                                    <span class="badge badge--primary">Acute</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="problem-item__details">
+                            <div class="problem-item__detail-row">
+                                <div class="problem-item__detail-item">
+                                    <span class="problem-item__detail-label">ICD-10:</span>
+                                    <span class="problem-item__detail-value">{{ problem.icd10_code }}</span>
+                                </div>
+                                {% if problem.snomed_code %}
+                                <div class="problem-item__detail-item">
+                                    <span class="problem-item__detail-label">SNOMED:</span>
+                                    <span class="problem-item__detail-value">{{ problem.snomed_code }}</span>
+                                </div>
+                                {% endif %}
+                                <div class="problem-item__detail-item">
+                                    <span class="problem-item__detail-label">Status:</span>
+                                    <span class="problem-item__detail-value">
+                                        {% if problem.problem_status == 'Active' %}
+                                            <span class="badge badge--success badge--sm">{{ problem.problem_status }}</span>
+                                        {% elif problem.problem_status == 'Inactive' %}
+                                            <span class="badge badge--warning badge--sm">{{ problem.problem_status }}</span>
+                                        {% elif problem.problem_status == 'Resolved' %}
+                                            <span class="badge badge--secondary badge--sm">{{ problem.problem_status }}</span>
+                                        {% else %}
+                                            {{ problem.problem_status }}
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="problem-item__detail-row">
+                                {% if problem.onset_date %}
+                                <div class="problem-item__detail-item">
+                                    <span class="problem-item__detail-label">Onset:</span>
+                                    <span class="problem-item__detail-value">{{ problem.onset_date[:10] }}</span>
+                                </div>
+                                {% endif %}
+                                {% if problem.recorded_date %}
+                                <div class="problem-item__detail-item">
+                                    <span class="problem-item__detail-label">Recorded:</span>
+                                    <span class="problem-item__detail-value">{{ problem.recorded_date[:10] }}</span>
+                                </div>
+                                {% endif %}
+                                {% if problem.resolved_date %}
+                                <div class="problem-item__detail-item">
+                                    <span class="problem-item__detail-label">Resolved:</span>
+                                    <span class="problem-item__detail-value">{{ problem.resolved_date[:10] }}</span>
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            {% if problem.provider_name or problem.clinic_location %}
+                            <div class="problem-item__detail-row">
+                                {% if problem.provider_name %}
+                                <div class="problem-item__detail-item">
+                                    <span class="problem-item__detail-label">Provider:</span>
+                                    <span class="problem-item__detail-value">{{ problem.provider_name }}</span>
+                                </div>
+                                {% endif %}
+                                {% if problem.clinic_location %}
+                                <div class="problem-item__detail-item">
+                                    <span class="problem-item__detail-label">Location:</span>
+                                    <span class="problem-item__detail-value">{{ problem.clinic_location }}</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+
+</div> {# End vista-refresh-area #}

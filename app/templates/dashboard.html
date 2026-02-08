@@ -101,13 +101,15 @@
                 </div>
             </div>
 
-            <!-- Problems/Diagnoses Widget (1x1 - Standard) - Placeholder -->
-            {{ placeholder_widget(
-                size='1x1',
-                icon='fa-solid fa-stethoscope',
-                title='Problems/Diagnoses',
-                description='Active and historical diagnoses'
-            ) }}
+            <!-- Problems/Diagnoses Widget (2x1 - Wide) -->
+            <div class="widget widget--2x1"
+                 hx-get="/api/patient/dashboard/widget/problems/{{ patient.icn }}"
+                 hx-trigger="load"
+                 hx-swap="innerHTML">
+                <div class="widget__loading">
+                    <div class="widget__spinner"></div>
+                </div>
+            </div>
 
             <!-- Orders Widget (1x1 - Standard) - Placeholder -->
             {{ placeholder_widget(

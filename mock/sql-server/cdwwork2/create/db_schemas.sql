@@ -47,12 +47,17 @@ GO
 CREATE SCHEMA AllergyMill;
 GO
 
+-- Immunizations (vaccines and administration)
+CREATE SCHEMA ImmunizationMill;
+GO
+
 PRINT 'All Oracle Health (Cerner) schemas created successfully.';
 PRINT '';
-PRINT 'Phase 1 Implementation Focus:';
+PRINT 'Implemented Schemas:';
 PRINT '  - NDimMill: Consolidated code sets (vitals, allergies, units, reactions)';
-PRINT '  - VeteranMill: Patient demographics for 2 demo patients';
-PRINT '  - EncMill: Encounters for Portland (648) and Seattle (663)';
+PRINT '  - VeteranMill: Patient demographics';
+PRINT '  - EncMill: Encounters and problem list';
 PRINT '  - VitalMill: Vital signs results';
 PRINT '  - AllergyMill: Allergy and reaction data';
+PRINT '  - ImmunizationMill: Vaccine codes and administration records';
 GO
