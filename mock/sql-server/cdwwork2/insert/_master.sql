@@ -71,13 +71,29 @@ PRINT '';
 
 PRINT '';
 PRINT '=======================================================================';
+PRINT 'STEP 7: Populating Thompson Siblings Test Patients (Simplified Schema)';
+PRINT '=======================================================================';
+PRINT '';
+PRINT 'NOTE: Thompson siblings use simplified CDWWork2 schema for continuation care';
+PRINT '      at Walla Walla VAMC (FacilityCode 687) during 2025-2026.';
+PRINT '      These patients demonstrate cross-system harmonization (VistA + Cerner).';
+PRINT '';
+
+:r Thompson-Bailey.sql
+:r Thompson-Alananah.sql
+:r Thompson-Joe.sql
+
+PRINT '';
+PRINT '=======================================================================';
 PRINT 'CDWWork2 Data Population Complete!';
 PRINT '=======================================================================';
 PRINT '';
 PRINT 'Summary:';
 PRINT '  - Code Sets: VITAL_TYPE, UNIT, ALLERGEN, REACTION, SEVERITY (48 codes)';
-PRINT '  - Patients: 2 (Adam Dooree at Portland, Alexander Aminor at Seattle)';
-PRINT '  - Encounters: 16 total (8 per patient)';
+PRINT '  - Patients: 5 total';
+PRINT '    * 2 Cerner demo patients (Adam Dooree, Alexander Aminor)';
+PRINT '    * 3 Thompson siblings (Bailey, Alananah, Joe) - Cross-system test patients';
+PRINT '  - Encounters: 16 total (8 per demo patient)';
 PRINT '  - Vitals: 22 total (12 for Adam, 10 for Alexander)';
 PRINT '  - Vaccine Codes: 15 total (COVID, Flu, Tdap, Shingrix, Hep A/B, HPV, pediatric)';
 PRINT '  - Immunizations: 40 total (17 for Adam, 23 for Alexander)';

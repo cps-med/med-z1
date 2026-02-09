@@ -331,7 +331,8 @@ def transform_cdwwork_immunizations(minio_client, patient_icn_lookup):
     logger.info("Step 8: Mapping to Silver schema...")
 
     df_silver = df.select([
-        pl.col("PatientImmunizationSID").alias("immunization_sid"),
+        # Prefix with 'V-' for VistA to ensure global uniqueness across source systems
+        pl.concat_str([pl.lit("V-"), pl.col("PatientImmunizationSID").cast(pl.Utf8)]).alias("immunization_sid"),
         pl.col("PatientSID").alias("patient_sid"),
         pl.col("patient_icn"),
         pl.col("cvx_code"),
@@ -517,7 +518,8 @@ def transform_cdwwork2_immunizations(minio_client):
     logger.info("Step 8: Mapping to Silver schema...")
 
     df_silver = df.select([
-        pl.col("VaccineAdminSID").alias("immunization_sid"),
+        # Prefix with 'C-' for Cerner to ensure global uniqueness across source systems
+        pl.concat_str([pl.lit("C-"), pl.col("VaccineAdminSID").cast(pl.Utf8)]).alias("immunization_sid"),
         pl.col("PersonSID").alias("patient_sid"),
         pl.col("PatientICN").alias("patient_icn"),
         pl.col("cvx_code"),

@@ -1,0 +1,723 @@
+-- =====================================================
+-- Thompson Twins Test Patient Data
+-- Patient: Joe Michael Thompson (Male)
+-- ICN: ICN200003
+-- Database: CDWWork (Bay Pines VA, 2010-2025)
+-- =====================================================
+--
+-- Patient Profile:
+-- - Name: Joe Michael Thompson
+-- - Gender: Male
+-- - DOB: 05/10/1970 (Age 55, younger brother of Bailey & Alananah)
+-- - ICN: ICN200003
+-- - PatientSID: 2003 (manually assigned)
+-- - Sta3n: 516 (Bay Pines VA Medical Center, Florida)
+-- - Service Connection: 10% (Tinnitus 10%)
+-- - Veterans Era: Gulf War Era (1992-2012, Air Force)
+--
+-- Clinical Summary:
+-- - Healthy Gulf War era Air Force veteran (non-combat role), minimal chronic conditions
+-- - Well-controlled hypertension, hyperlipidemia, tinnitus
+-- - No substance use disorders, no psychiatric diagnoses, no PTSD
+-- - Excellent preventive care, strong family support, married 25+ years
+-- - Minimal hospitalizations (2010-2025): routine procedures only
+-- - Relocated from Florida to Washington State (02/2025) with siblings Bailey & Alananah
+--
+-- Data Sections:
+-- 1. Demographics (SPatient.SPatient)
+-- 2. Addresses (SPatient.SPatientAddress) - 2 addresses (FL + WA)
+-- 3. Phone Numbers (SPatient.SPatientPhone) - 4 numbers (2 FL + 2 WA)
+-- 4. Insurance (SPatient.SPatientInsurance)
+-- 5. Disabilities (SPatient.SPatientDisability)
+-- 6. Vitals (Vital.VitalSign)
+-- 7. Patient Flags (NONE)
+-- 8. Allergies (1 allergy: Penicillin)
+-- 9. Medications (RxOut.RxOutpat) - RxOutpatSID 8086-8093 (8 total: 5 active, 3 historical)
+-- 10. Encounters (Inpat.Inpatient) - 4 admissions
+-- 11. Clinical Notes (abbreviated)
+-- 12. Immunizations (Immunization.PatientImmunization)
+-- 13. Problems (Outpat.ProblemList) - 6 problems
+-- 14. Laboratory Results (Chem.LabChem)
+--
+-- Script Execution:
+-- This script is designed to be run via sqlcmd or SQL Server Management Studio
+-- after dimension tables have been populated.
+-- =====================================================
+
+USE CDWWork;
+GO
+
+-- =====================================================
+-- Section 1: SPatient.SPatient - Core Demographics
+-- =====================================================
+
+PRINT 'Inserting core demographics for Joe Thompson...';
+
+INSERT INTO SPatient.SPatient
+(PatientSID, PatientIEN, Sta3n, PatientName, PatientICN,
+ BirthDateTime, DeathDateTime, Gender, MaritalStatus, Race, Ethnicity,
+ SSN, SSNPseudo, EmploymentStatus, Religion,
+ ServiceConnectedPercent, CombatVeteranFlag, VeteranYN,
+ PeriodOfServiceSID, PeriodOfServiceName,
+ EnrollmentDateTime, EnrollmentStatus, EnrollmentPriority,
+ PreferredFacilitySID, PreferredFacilityName,
+ DateOfDeath, CauseOfDeath, Sta3n)
+VALUES
+(2003, 'PtIEN2003', 516, 'Joe Michael Thompson', 'ICN200003',
+ '1970-05-10', NULL, 'M', 'MARRIED', 'WHITE', 'NOT HISPANIC OR LATINO',
+ '123-45-6791', 'PSEUDO6791', 'RETIRED', 'CATHOLIC',
+ 10, 'Y', 'Y',
+ (SELECT PeriodOfServiceSID FROM Dim.PeriodOfService WHERE PeriodOfServiceName = 'GULF WAR'),
+ 'GULF WAR',
+ '2012-06-15', 'ENROLLED', 'GROUP 7',
+ 516, 'BAY PINES VA MEDICAL CENTER',
+ NULL, NULL, 516);
+
+GO
+PRINT 'Completed: Core demographics inserted for Joe Thompson.';
+GO
+
+-- =====================================================
+-- Section 2: SPatient.SPatientAddress - Home Addresses
+-- =====================================================
+
+PRINT 'Inserting addresses for Joe Thompson...';
+
+INSERT INTO SPatient.SPatientAddress
+(
+    SPatientAddressSID,
+    PatientSID,
+    PatientIEN,
+    Sta3n,
+    OrdinalNumber,
+    AddressType,
+    StreetAddress1,
+    StreetAddress2,
+    StreetAddress3,
+    City,
+    County,
+    [State],
+    StateSID,
+    Zip,
+    Zip4,
+    PostalCode,
+    Country,
+    CountrySID,
+    EmploymentStatus
+)
+VALUES
+-- FL address (2010-2025)
+(NULL, 2003, 'PERMANENT',
+ '3690 Sunshine Parkway', NULL, NULL, 'St. Petersburg', 'FL',
+ (SELECT StateSID FROM Dim.State WHERE StateAbbreviation = 'FL'),
+ '33702', '33702', 'Pinellas', 'USA',
+ (SELECT CountrySID FROM Dim.Country WHERE CountryName = 'UNITED STATES'),
+ -82.6450, 27.7800,
+ '2010-06-15', NULL, '2010-06-15', NULL, 516),
+-- WA address (2025-present)
+(NULL, 2003, 'PERMANENT',
+ '5682 Mill Creek Road', NULL, NULL, 'Walla Walla', 'WA',
+ (SELECT StateSID FROM Dim.State WHERE StateAbbreviation = 'WA'),
+ '99362', '99362', 'Walla Walla', 'USA',
+ (SELECT CountrySID FROM Dim.Country WHERE CountryName = 'UNITED STATES'),
+ -118.3434, 46.0650,
+ '2025-02-01', NULL, '2025-02-01', NULL, 516);
+
+GO
+PRINT 'Completed: 2 addresses inserted for Joe Thompson (FL + WA).';
+GO
+
+-- =====================================================
+-- Section 3: SPatient.SPatientPhone - Phone Numbers
+-- =====================================================
+
+PRINT 'Inserting phone numbers for Joe Thompson...';
+
+INSERT INTO SPatient.SPatientPhone
+(
+    SPatientPhoneSID,
+    PatientSID,
+    PatientIEN,
+    Sta3n,
+    OrdinalNumber,
+    PhoneType,
+    PhoneNumber,
+    PhoneVistaErrorDate,
+    LastUpdated
+)
+VALUES
+-- FL home phone (2010-2025)
+(NULL, 2003, 'HOME', '(727) 555-2003', 'PSEUDO2003',
+ '727', '2010-06-15', NULL, '2010-06-15', NULL, 516),
+-- FL cell phone (2015-2025)
+(NULL, 2003, 'CELL', '(727) 555-2103', 'PSEUDO2103',
+ '727', '2015-01-10', NULL, '2015-01-10', NULL, 516),
+-- WA home phone (2025-present)
+(NULL, 2003, 'HOME', '(509) 555-2003', 'PSEUDO5092003',
+ '509', '2025-02-01', NULL, '2025-02-01', NULL, 516),
+-- WA cell phone (2025-present)
+(NULL, 2003, 'CELL', '(509) 555-2103', 'PSEUDO5092103',
+ '509', '2025-02-01', NULL, '2025-02-01', NULL, 516);
+
+GO
+PRINT 'Completed: 4 phone numbers inserted for Joe Thompson (2 FL + 2 WA).';
+GO
+
+-- =====================================================
+-- Section 4: SPatient.SPatientInsurance - Insurance Coverage
+-- =====================================================
+
+PRINT 'Inserting insurance records for Joe Thompson...';
+
+INSERT INTO SPatient.SPatientInsurance
+(
+    SPatientInsuranceSID,
+    PatientSID,
+    PatientIEN,
+    SPatientInsuranceIEN,
+    Sta3n,
+    InsuranceCompanySID,
+    EmploymentStatus,
+    RetirementDate,
+    PolicyEffectiveDate
+)
+VALUES
+-- VA Insurance (Primary)
+(NULL, 'Ins2003001', 516, 2003, 'PtIEN2003',
+ (SELECT InsuranceCompanySID FROM Dim.InsuranceCompany WHERE InsuranceCompanyName = 'DEPARTMENT OF VETERANS AFFAIRS' AND Sta3n=516),
+ 'DEPARTMENT OF VETERANS AFFAIRS', 'VA-ICN200003', 'VA-GROUP3',
+ '2010-06-15', NULL, 'JOE MICHAEL THOMPSON', 'SELF',
+ 50.00, 'GOVERNMENT', 'VA HEALTH BENEFITS - PRIORITY GROUP 3', 516),
+-- Medicare (Secondary)
+(NULL, 'Ins2003002', 516, 2003, 'PtIEN2003',
+ (SELECT InsuranceCompanySID FROM Dim.InsuranceCompany WHERE InsuranceCompanyName = 'MEDICARE' AND Sta3n=516),
+ 'MEDICARE', 'MEDICARE-ICN200003', 'MEDICARE-PART-B',
+ '2015-12-01', NULL, 'JOE MICHAEL THOMPSON', 'SELF',
+ NULL, 'GOVERNMENT', 'MEDICARE PART A+B', 516);
+
+GO
+PRINT 'Completed: 2 insurance records inserted for Joe Thompson.';
+GO
+
+-- =====================================================
+-- Section 5: SPatient.SPatientDisability - Service-Connected Disabilities
+-- =====================================================
+
+PRINT 'Inserting service-connected disabilities for Joe Thompson...';
+
+INSERT INTO SPatient.SPatientDisability
+(
+    SPatientDisabilitySID,
+    PatientSID,
+    PatientIEN,
+    Sta3n,
+    ClaimFolderInstitutionSID,
+    ServiceConnectedFlag,
+    ServiceConnectedPercent,
+    AgentOrangeExposureCode,
+    IonizingRadiationCode,
+    POWStatusCode,
+    SHADFlag,
+    AgentOrangeLocation,
+    POWLocation,
+    SWAsiaCode,
+    CampLejeuneFlag
+)
+VALUES
+-- Tinnitus (10%)
+(NULL, 'Dis2003001', 516, 2003, 'PtIEN2003',
+ 'TINNITUS, BILATERAL', 10, 'Y',
+ '2012-06-15', NULL, 516);
+
+GO
+PRINT 'Completed: 1 service-connected disability inserted for Joe Thompson.';
+PRINT 'Total Service Connection: 10% (Tinnitus 10%)';
+GO
+
+-- =====================================================
+-- Section 6: Vital.VitalSign - Vital Signs
+-- =====================================================
+-- Representative vitals showing healthy aging veteran
+
+PRINT 'Inserting vital signs for Joe Thompson...';
+
+-- Baseline vitals (2010-06-16)
+INSERT INTO Vital.VitalSign
+(
+    VitalSignSID,
+    PatientSID,
+    VitalTypeSID,
+    VitalSignTakenDateTime,
+    VitalSignEnteredDateTime,
+    ResultValue,
+    NumericValue,
+    Systolic,
+    Diastolic,
+    MetricValue,
+    LocationSID,
+    EnteredByStaffSID,
+    IsInvalid,
+    EnteredInError,
+    Sta3n
+)
+VALUES
+(NULL, 'Vital2003001', 516, 2003, 'PtIEN2003',
+ 5, 'PULSE', '2010-06-16 10:00:00',
+ 72.0, NULL, NULL, '72',
+ (SELECT LocationSID FROM Dim.Location WHERE Sta3n=516 AND LocationName='Primary Care Clinic A' AND LocationType='Outpatient'), 516),
+(NULL, 'Vital2003002', 516, 2003, 'PtIEN2003',
+ 6, 'WEIGHT', '2010-06-16 10:05:00',
+ 185.0, NULL, NULL, '185',
+ (SELECT LocationSID FROM Dim.Location WHERE Sta3n=516 AND LocationName='Primary Care Clinic A' AND LocationType='Outpatient'), 516),
+(NULL, 'Vital2003003', 516, 2003, 'PtIEN2003',
+ 8, 'BLOOD PRESSURE', '2010-06-16 10:10:00',
+ NULL, 138, 86, '138/86',
+ (SELECT LocationSID FROM Dim.Location WHERE Sta3n=516 AND LocationName='Primary Care Clinic A' AND LocationType='Outpatient'), 516),
+(NULL, 'Vital2003004', 516, 2003, 'PtIEN2003',
+ 22, 'PAIN', '2010-06-16 10:15:00',
+ 3.0, NULL, NULL, '3',
+ (SELECT LocationSID FROM Dim.Location WHERE Sta3n=516 AND LocationName='Primary Care Clinic A' AND LocationType='Outpatient'), 516);
+
+-- Most recent vitals (2025-04-16)
+INSERT INTO Vital.VitalSign
+(
+    VitalSignSID,
+    PatientSID,
+    VitalTypeSID,
+    VitalSignTakenDateTime,
+    VitalSignEnteredDateTime,
+    ResultValue,
+    NumericValue,
+    Systolic,
+    Diastolic,
+    MetricValue,
+    LocationSID,
+    EnteredByStaffSID,
+    IsInvalid,
+    EnteredInError,
+    Sta3n
+)
+VALUES
+(NULL, 'Vital2003005', 516, 2003, 'PtIEN2003',
+ 5, 'PULSE', '2025-04-16 10:00:00',
+ 68.0, NULL, NULL, '68',
+ (SELECT LocationSID FROM Dim.Location WHERE Sta3n=516 AND LocationName='Primary Care Clinic A' AND LocationType='Outpatient'), 516),
+(NULL, 'Vital2003006', 516, 2003, 'PtIEN2003',
+ 6, 'WEIGHT', '2025-04-16 10:05:00',
+ 190.0, NULL, NULL, '190',
+ (SELECT LocationSID FROM Dim.Location WHERE Sta3n=516 AND LocationName='Primary Care Clinic A' AND LocationType='Outpatient'), 516),
+(NULL, 'Vital2003007', 516, 2003, 'PtIEN2003',
+ 8, 'BLOOD PRESSURE', '2025-04-16 10:10:00',
+ NULL, 130, 82, '130/82',
+ (SELECT LocationSID FROM Dim.Location WHERE Sta3n=516 AND LocationName='Primary Care Clinic A' AND LocationType='Outpatient'), 516),
+(NULL, 'Vital2003008', 516, 2003, 'PtIEN2003',
+ 22, 'PAIN', '2025-04-16 10:15:00',
+ 2.0, NULL, NULL, '2',
+ (SELECT LocationSID FROM Dim.Location WHERE Sta3n=516 AND LocationName='Primary Care Clinic A' AND LocationType='Outpatient'), 516);
+
+GO
+PRINT 'Completed: 8 representative vital signs for Joe Thompson.';
+GO
+
+-- =====================================================
+-- Section 7: Patient Flags (NONE)
+-- =====================================================
+
+PRINT 'No Patient Record Flags for Joe Thompson (healthy, stable patient).';
+GO
+
+-- =====================================================
+-- Section 8: Allergies
+-- =====================================================
+
+PRINT 'Inserting allergy for Joe Thompson...';
+
+-- Allergy: Penicillin (Rash)
+INSERT INTO Allergy.PatientAllergy
+(
+    PatientAllergySID,
+    PatientSID,
+    AllergenSID,
+    AllergySeveritySID,
+    LocalAllergenName,
+    OriginationDateTime,
+    ObservedDateTime,
+    OriginatingSiteSta3n,
+    Comment,
+    HistoricalOrObserved,
+    IsActive,
+    VerificationStatus,
+    Sta3n
+)
+VALUES
+(NULL, 'Allergy2003001', 516, 2003, 'PtIEN2003',
+ (SELECT AllergenSID FROM Dim.Allergen WHERE AllergenName = 'PENICILLIN' AND Sta3n=516),
+ 'DRUG', 'PENICILLIN',
+ (SELECT AllergySeveritySID FROM Dim.AllergySeverity WHERE SeverityName = 'MILD' AND Sta3n=516),
+ 'MILD',
+ '1975-08-10', '2010-06-15', 'DR. ROBERT CHEN',
+ 'MILD RASH WITH PENICILLIN IN 1975', 516);
+
+INSERT INTO Allergy.PatientAllergyReaction
+(
+    PatientAllergyReactionSID,
+    PatientAllergySID,
+    ReactionSID
+)
+VALUES
+(NULL, 'Allergy2003001', 516,
+ (SELECT PatientAllergySID FROM Allergy.PatientAllergy WHERE PatientAllergyIEN = 'Allergy2003001' AND Sta3n=516),
+ (SELECT ReactionSID FROM Dim.Reaction WHERE ReactionName = 'RASH' AND Sta3n=516),
+ 'RASH',
+ (SELECT AllergySeveritySID FROM Dim.AllergySeverity WHERE SeverityName = 'MILD' AND Sta3n=516),
+ 'MILD',
+ '1975-08-10', 'MILD GENERALIZED RASH, RESOLVED WITH DISCONTINUATION', 516);
+
+GO
+PRINT 'Completed: 1 allergy with reaction inserted for Joe Thompson.';
+GO
+
+-- =====================================================
+-- Section 9: RxOut.RxOutpat - Medications
+-- =====================================================
+-- 8 medications total: 5 active, 3 historical
+-- RxOutpatSID range: 8086-8093
+
+PRINT 'Inserting medications for Joe Thompson...';
+
+-- ACTIVE MEDICATIONS (5)
+INSERT INTO RxOut.RxOutpat
+(
+    RxOutpatSID,
+    RxOutpatIEN,
+    Sta3n,
+    PatientSID,
+    PatientIEN,
+    LocalDrugSID,
+    LocalDrugIEN,
+    NationalDrugSID,
+    DrugNameWithoutDose,
+    DrugNameWithDose,
+    PrescriptionNumber,
+    IssueDateTime,
+    IssueVistaErrorDate,
+    IssueDateTimeTransformSID,
+    ProviderSID,
+    ProviderIEN,
+    OrderingProviderSID,
+    OrderingProviderIEN,
+    EnteredByStaffSID,
+    EnteredByStaffIEN,
+    PharmacySID,
+    PharmacyIEN,
+    PharmacyName,
+    RxStatus,
+    RxType,
+    Quantity,
+    DaysSupply,
+    RefillsAllowed,
+    RefillsRemaining,
+    MaxRefills,
+    UnitDose,
+    ExpirationDateTime,
+    ExpirationVistaErrorDate,
+    ExpirationDateTimeTransformSID,
+    DiscontinuedDateTime,
+    DiscontinuedVistaErrorDate,
+    DiscontinuedDateTimeTransformSID,
+    DiscontinueReason,
+    DiscontinuedByStaffSID,
+    LoginDateTime,
+    LoginVistaErrorDate,
+    LoginDateTimeTransformSID,
+    ClinicSID,
+    ClinicIEN,
+    ClinicName,
+    DEASchedule,
+    ControlledSubstanceFlag,
+    CMOPIndicator,
+    MailIndicator
+)
+VALUES
+-- Active Med 1: Lisinopril 20mg (HTN)
+(8086, 'RxIEN8086', 516, 2003, 'PtIEN2003',
+ (SELECT TOP 1 LocalDrugSID FROM Dim.LocalDrug WHERE LocalDrugNameWithDose LIKE '%LISINOPRIL%20MG%' AND Sta3n=516),
+ 'LISINOPRIL', 'LISINOPRIL 20MG TAB', '2012-06-15', 'ACTIVE', 90, 90, 5, 11,
+ 1002, 'DR. ROBERT CHEN', 516),
+-- Active Med 2: Atorvastatin 40mg (Hyperlipidemia)
+(8087, 'RxIEN8087', 516, 2003, 'PtIEN2003',
+ (SELECT TOP 1 LocalDrugSID FROM Dim.LocalDrug WHERE LocalDrugNameWithDose LIKE '%ATORVASTATIN%40MG%' AND Sta3n=516),
+ 'ATORVASTATIN', 'ATORVASTATIN 40MG TAB', '2015-09-15', 'ACTIVE', 90, 90, 6, 11,
+ 1002, 'DR. ROBERT CHEN', 516),
+-- Active Med 3: Tamsulosin 0.4mg (BPH)
+(8088, 'RxIEN8088', 516, 2003, 'PtIEN2003',
+ (SELECT TOP 1 LocalDrugSID FROM Dim.LocalDrug WHERE LocalDrugNameWithDose LIKE '%TAMSULOSIN%0.4MG%' AND Sta3n=516),
+ 'TAMSULOSIN', 'TAMSULOSIN 0.4MG CAP', '2016-03-15', 'ACTIVE', 90, 90, 4, 11,
+ 1012, 'DR. JAMES WILSON', 516),
+-- Active Med 4: Aspirin 81mg (CVD prophylaxis)
+(8089, 'RxIEN8089', 516, 2003, 'PtIEN2003',
+ (SELECT TOP 1 LocalDrugSID FROM Dim.LocalDrug WHERE LocalDrugNameWithDose LIKE '%ASPIRIN%81MG%' AND Sta3n=516),
+ 'ASPIRIN', 'ASPIRIN 81MG EC TAB', '2015-09-15', 'ACTIVE', 90, 90, 8, 11,
+ 1002, 'DR. ROBERT CHEN', 516),
+-- Active Med 5: Multivitamin
+(8090, 'RxIEN8090', 516, 2003, 'PtIEN2003',
+ (SELECT TOP 1 LocalDrugSID FROM Dim.LocalDrug WHERE LocalDrugNameWithDose LIKE '%MULTIVITAMIN%' AND Sta3n=516),
+ 'MULTIVITAMIN', 'MULTIVITAMIN TAB', '2010-09-15', 'ACTIVE', 90, 90, 9, 11,
+ 1002, 'DR. ROBERT CHEN', 516);
+
+-- HISTORICAL MEDICATIONS (3)
+INSERT INTO RxOut.RxOutpat
+(
+    RxOutpatSID,
+    RxOutpatIEN,
+    Sta3n,
+    PatientSID,
+    PatientIEN,
+    LocalDrugSID,
+    LocalDrugIEN,
+    NationalDrugSID,
+    DrugNameWithoutDose,
+    DrugNameWithDose,
+    PrescriptionNumber,
+    IssueDateTime,
+    IssueVistaErrorDate,
+    IssueDateTimeTransformSID,
+    ProviderSID,
+    ProviderIEN,
+    OrderingProviderSID,
+    OrderingProviderIEN,
+    EnteredByStaffSID,
+    EnteredByStaffIEN,
+    PharmacySID,
+    PharmacyIEN,
+    PharmacyName,
+    RxStatus,
+    RxType,
+    Quantity,
+    DaysSupply,
+    RefillsAllowed,
+    RefillsRemaining,
+    MaxRefills,
+    UnitDose,
+    ExpirationDateTime,
+    ExpirationVistaErrorDate,
+    ExpirationDateTimeTransformSID,
+    DiscontinuedDateTime,
+    DiscontinuedVistaErrorDate,
+    DiscontinuedDateTimeTransformSID,
+    DiscontinueReason,
+    DiscontinuedByStaffSID,
+    LoginDateTime,
+    LoginVistaErrorDate,
+    LoginDateTimeTransformSID,
+    ClinicSID,
+    ClinicIEN,
+    ClinicName,
+    DEASchedule,
+    ControlledSubstanceFlag,
+    CMOPIndicator,
+    MailIndicator
+)
+VALUES
+-- Hydrocodone post-knee replacement
+(8091, 'RxIEN8091', 516, 2003, 'PtIEN2003',
+ (SELECT TOP 1 LocalDrugSID FROM Dim.LocalDrug WHERE LocalDrugNameWithDose LIKE '%HYDROCODONE%ACETAMINOPHEN%5MG%325MG%' AND Sta3n=516),
+ 'HYDROCODONE/ACETAMINOPHEN', 'HYDROCODONE 5MG/ACETAMINOPHEN 325MG TAB', '2018-06-20', 'DISCONTINUED', 30, 7, 0, 0,
+ 1013, 'DR. ANTHONY MARTINEZ', 516),
+-- Oxycodone post-TURP
+(8092, 'RxIEN8092', 516, 2003, 'PtIEN2003',
+ (SELECT TOP 1 LocalDrugSID FROM Dim.LocalDrug WHERE LocalDrugNameWithDose LIKE '%OXYCODONE%5MG%' AND Sta3n=516),
+ 'OXYCODONE', 'OXYCODONE 5MG TAB', '2020-08-15', 'DISCONTINUED', 20, 5, 0, 0,
+ 1012, 'DR. JAMES WILSON', 516),
+-- Ciprofloxacin (UTI treatment)
+(8093, 'RxIEN8093', 516, 2003, 'PtIEN2003',
+ (SELECT TOP 1 LocalDrugSID FROM Dim.LocalDrug WHERE LocalDrugNameWithDose LIKE '%CIPROFLOXACIN%500MG%' AND Sta3n=516),
+ 'CIPROFLOXACIN', 'CIPROFLOXACIN 500MG TAB', '2022-10-15', 'DISCONTINUED', 14, 7, 0, 0,
+ 1012, 'DR. JAMES WILSON', 516);
+
+GO
+PRINT 'Completed: 8 medications inserted for Joe Thompson (5 active, 3 historical).';
+GO
+
+-- =====================================================
+-- Section 10: Inpat.Inpatient - Inpatient Encounters
+-- =====================================================
+-- 4 inpatient admissions (2010-2025)
+
+PRINT 'Inserting inpatient encounters for Joe Thompson...';
+
+INSERT INTO Inpat.Inpatient
+(PatientSID, AdmitDateTime, AdmitLocationSID, AdmittingProviderSID, AdmitDiagnosisICD10,
+ DischargeDateTime, DischargeDateSID, DischargeWardLocationSID, DischargeDiagnosisICD10,
+ DischargeDiagnosis, DischargeDisposition, LengthOfStay, EncounterStatus, Sta3n)
+ PrimaryDiagnosisICD10, SecondaryDiagnosisICD10, DRG, LengthOfStay)
+VALUES
+-- Encounter 1: Left total knee arthroplasty (2018-06-18 to 2018-06-21)
+(NULL, 'InptIEN2003001', 516, 2003, 'PtIEN2003', '2018-06-18 07:00:00', '2018-06-21 11:00:00',
+ (SELECT LocationSID FROM Dim.Location WHERE Sta3n=516 AND LocationName='Surgical Ward' AND LocationType='Inpatient'),
+ (SELECT LocationSID FROM Dim.Location WHERE Sta3n=516 AND LocationName='Surgical Ward' AND LocationType='Inpatient'),
+ 'TO SKILLED NURSING FACILITY',
+ 'M17.12', 'Z96.652', '469', 3),
+-- Encounter 2: TURP for BPH (2020-08-12 to 2020-08-14)
+(NULL, 'InptIEN2003002', 516, 2003, 'PtIEN2003', '2020-08-12 07:00:00', '2020-08-14 10:00:00',
+ (SELECT LocationSID FROM Dim.Location WHERE Sta3n=516 AND LocationName='Surgical Ward' AND LocationType='Inpatient'),
+ (SELECT LocationSID FROM Dim.Location WHERE Sta3n=516 AND LocationName='Surgical Ward' AND LocationType='Inpatient'),
+ 'TO HOME/SELF CARE',
+ 'N40.1', NULL, '713', 2),
+-- Encounter 3: Colonoscopy with polypectomy (2022-04-15 observation)
+(NULL, 'InptIEN2003003', 516, 2003, 'PtIEN2003', '2022-04-15 08:00:00', '2022-04-15 16:00:00',
+ (SELECT LocationSID FROM Dim.Location WHERE Sta3n=516 AND LocationName='Endoscopy Suite' AND LocationType='Outpatient'),
+ (SELECT LocationSID FROM Dim.Location WHERE Sta3n=516 AND LocationName='Endoscopy Suite' AND LocationType='Outpatient'),
+ 'TO HOME/SELF CARE',
+ 'K63.5', 'Z12.11', '392', 0),
+-- Encounter 4: Cataract surgery right eye (2024-09-10 outpatient)
+(NULL, 'InptIEN2003004', 516, 2003, 'PtIEN2003', '2024-09-10 09:00:00', '2024-09-10 12:00:00',
+ (SELECT LocationSID FROM Dim.Location WHERE Sta3n=516 AND LocationName='Surgical Ward' AND LocationType='Inpatient'),
+ (SELECT LocationSID FROM Dim.Location WHERE Sta3n=516 AND LocationName='Surgical Ward' AND LocationType='Inpatient'),
+ 'TO HOME/SELF CARE',
+ 'H25.11', NULL, '117', 0);
+
+GO
+PRINT 'Completed: 4 inpatient encounters for Joe Thompson.';
+GO
+
+-- =====================================================
+-- Section 11: Clinical Notes (Abbreviated)
+-- =====================================================
+PRINT 'Clinical notes: Routine primary care, surgical notes. Pattern same as siblings.';
+GO
+
+-- =====================================================
+-- Section 12: Immunizations (Abbreviated)
+-- =====================================================
+PRINT 'Immunizations: Childhood vaccines, annual flu (2010-2024), COVID-19 series, Pneumococcal, Shingrix.';
+GO
+
+-- =====================================================
+-- Section 13: Problems/Diagnoses
+-- =====================================================
+-- 6 problems, Charlson Index = 0 (healthy aging)
+
+PRINT 'Inserting problems for Joe Thompson...';
+
+INSERT INTO Outpat.ProblemList
+(
+    PatientSID,
+    PatientICN,
+    Sta3n,
+    ProblemNumber,
+    SNOMEDCode,
+    SNOMEDDescription,
+    ICD10Code,
+    ICD10Description,
+    ProblemStatus,
+    OnsetDate,
+    RecordedDate,
+    LastModifiedDate,
+    ResolvedDate,
+    ProviderSID,
+    ProviderName,
+    Clinic,
+    IsServiceConnected,
+    IsAcuteCondition,
+    IsChronicCondition,
+    EnteredBy,
+    EnteredDateTime
+)
+VALUES
+-- Problem 1: Hypertension (ACTIVE)
+(NULL, 'Prob2003001', 516, 2003, 'PtIEN2003',
+ '1', 'Prov1002', 'DR. ROBERT CHEN', 'Prov1002', 'DR. ROBERT CHEN',
+ '2012-06-15', '2012-06-15', '2011-09-01', NULL,
+ 'ACTIVE', 'I10', 'ESSENTIAL (PRIMARY) HYPERTENSION', '59621000', 'ESSENTIAL HYPERTENSION',
+ 'HYPERTENSION, WELL-CONTROLLED ON LISINOPRIL 20MG. BP AVERAGES 128-135/80-85.', 'N', NULL,
+ 'Y', 516),
+-- Problem 2: Hyperlipidemia (ACTIVE)
+(NULL, 'Prob2003002', 516, 2003, 'PtIEN2003',
+ '2', 'Prov1002', 'DR. ROBERT CHEN', 'Prov1002', 'DR. ROBERT CHEN',
+ '2015-09-15', '2015-09-15', '2013-06-01', NULL,
+ 'ACTIVE', 'E78.5', 'HYPERLIPIDEMIA, UNSPECIFIED', '55822004', 'HYPERLIPIDEMIA',
+ 'HYPERLIPIDEMIA. ON ATORVASTATIN 40MG. LDL AT GOAL (<100).', 'N', NULL,
+ 'Y', 516),
+-- Problem 3: Benign prostatic hyperplasia (ACTIVE)
+(NULL, 'Prob2003003', 516, 2003, 'PtIEN2003',
+ '3', 'Prov1012', 'DR. JAMES WILSON', 'Prov1012', 'DR. JAMES WILSON',
+ '2016-03-15', '2016-03-15', '2015-11-01', NULL,
+ 'ACTIVE', 'N40.1', 'BENIGN PROSTATIC HYPERPLASIA WITH LOWER URINARY TRACT SYMPTOMS', '266569009', 'BPH',
+ 'BPH WITH LUTS. S/P TURP 08/2020. ON TAMSULOSIN 0.4MG. SYMPTOMS IMPROVED.', 'N', NULL,
+ 'Y', 516),
+-- Problem 4: Tinnitus (ACTIVE, Service-Connected 10%)
+(NULL, 'Prob2003004', 516, 2003, 'PtIEN2003',
+ '4', 'Prov1002', 'DR. ROBERT CHEN', 'Prov1002', 'DR. ROBERT CHEN',
+ '2012-06-15', '2012-06-15', '2005-01-01', NULL,
+ 'ACTIVE', 'H93.13', 'TINNITUS, BILATERAL', '60862001', 'TINNITUS',
+ 'BILATERAL TINNITUS SECONDARY TO AIRCRAFT NOISE EXPOSURE (AIR FORCE). CONSTANT RINGING BOTH EARS.', 'Y', 10,
+ 'Y', 516),
+-- Problem 5: Penicillin allergy (ACTIVE)
+(NULL, 'Prob2003005', 516, 2003, 'PtIEN2003',
+ '5', 'Prov1002', 'DR. ROBERT CHEN', 'Prov1002', 'DR. ROBERT CHEN',
+ '2012-06-15', '2012-06-15', '1995-08-10', NULL,
+ 'ACTIVE', 'Z88.0', 'ALLERGY STATUS TO PENICILLIN', '91936005', 'ALLERGY TO PENICILLIN',
+ 'PENICILLIN ALLERGY. HISTORY OF MILD RASH IN 1995.', 'N', NULL,
+ 'N', 516);
+
+GO
+PRINT 'Completed: 5 problems for Joe Thompson.';
+PRINT 'Charlson Comorbidity Index: 0 (healthy middle-aged veteran)';
+GO
+
+-- =====================================================
+-- Section 14: Laboratory Results (Abbreviated)
+-- =====================================================
+
+PRINT 'Inserting laboratory results for Joe Thompson...';
+
+-- Baseline labs (2010-09-15)
+INSERT INTO Chem.LabChem
+(LabChemSID, LabChemIEN, Sta3n, PatientSID, PatientIEN,
+ LabTestSID, LabTestName, SpecimenTakenDateTime, ResultDateTime,
+ LabChemResultValue, LabChemResultNumericValue, Units, ReferenceRange,
+ AbnormalFlag, OrderingSID, OrderingProviderName, LocationSID, Sta3n)
+VALUES
+(NULL, 'Lab2003001', 516, 2003, 'PtIEN2003',
+ (SELECT LabTestSID FROM Dim.LabTest WHERE LabTestName = 'GLUCOSE' AND Sta3n=516),
+ 'GLUCOSE', '2010-09-15 08:00:00', '2010-09-15 10:00:00',
+ '95', 95.0, 'mg/dL', '70-100', '', 1002, 'DR. ROBERT CHEN',
+ (SELECT LocationSID FROM Dim.Location WHERE Sta3n=516 AND LocationName='Laboratory' AND LocationType='Laboratory'), 516),
+(NULL, 'Lab2003002', 516, 2003, 'PtIEN2003',
+ (SELECT LabTestSID FROM Dim.LabTest WHERE LabTestName = 'CREATININE' AND Sta3n=516),
+ 'CREATININE', '2010-09-15 08:00:00', '2010-09-15 10:00:00',
+ '1.1', 1.1, 'mg/dL', '0.7-1.3', '', 1002, 'DR. ROBERT CHEN',
+ (SELECT LocationSID FROM Dim.Location WHERE Sta3n=516 AND LocationName='Laboratory' AND LocationType='Laboratory'), 516);
+
+-- PSA monitoring (BPH/prostate cancer screening)
+INSERT INTO Chem.LabChem
+(LabChemSID, LabChemIEN, Sta3n, PatientSID, PatientIEN,
+ LabTestSID, LabTestName, SpecimenTakenDateTime, ResultDateTime,
+ LabChemResultValue, LabChemResultNumericValue, Units, ReferenceRange,
+ AbnormalFlag, OrderingSID, OrderingProviderName, LocationSID, Sta3n)
+VALUES
+(NULL, 'Lab2003003', 516, 2003, 'PtIEN2003',
+ (SELECT LabTestSID FROM Dim.LabTest WHERE LabTestName = 'PSA' AND Sta3n=516),
+ 'PSA', '2025-02-01 08:00:00', '2025-02-01 10:00:00',
+ '2.1', 2.1, 'ng/mL', '<4.0', '', 1012, 'DR. JAMES WILSON',
+ (SELECT LocationSID FROM Dim.Location WHERE Sta3n=516 AND LocationName='Laboratory' AND LocationType='Laboratory'), 516);
+
+GO
+PRINT 'Completed: 3 representative lab results for Joe Thompson.';
+GO
+
+-- =====================================================
+-- END OF JOE THOMPSON DATA INSERT SCRIPT
+-- =====================================================
+
+PRINT '========================================';
+PRINT 'JOE THOMPSON DATA INSERTION COMPLETE';
+PRINT '========================================';
+PRINT 'Patient: Joe Michael Thompson (Male, DOB 05/10/1970, Age 55)';
+PRINT 'ICN: ICN200003';
+PRINT 'Service Connection: 10% (Tinnitus 10%)';
+PRINT 'Clinical Profile: Healthy middle-aged Air Force veteran (Gulf War era), minimal chronic conditions';
+PRINT 'Total Sections: 14 (Demographics through Laboratory Results)';
+PRINT '========================================';
+GO

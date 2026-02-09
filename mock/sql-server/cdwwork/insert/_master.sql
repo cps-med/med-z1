@@ -113,3 +113,13 @@
 -- Problems/Diagnoses (Outpatient Problem List)
 :r Outpat.ProblemList.sql
 
+-- =======================================================================
+-- TEST PATIENTS (Thompson Siblings)
+-- =======================================================================
+-- Three comprehensive test patients demonstrating cross-system data harmonization
+-- and varying clinical complexity levels (Charlson: 5, 2, 0)
+
+:r Thompson-Bailey.sql
+-- :r Thompson-Alananah.sql
+-- :r Thompson-Joe.sql
+

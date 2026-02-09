@@ -1,0 +1,2239 @@
+═══════════════════════════
+  Starting ETL pipelines...
+═══════════════════════════
+══════════════════════════════════════════════════
+>>> Running Patient Demographics pipeline...
+══════════════════════════════════════════════════
+2026-02-09 09:55:10,055 - __main__ - INFO - Starting Bronze patient extraction
+2026-02-09 09:55:10,096 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:10,097 - __main__ - INFO - minio_client created
+2026-02-09 09:55:10,097 - __main__ - INFO - Created DB connection string: mssql+pyodbc://sa:AllieD-1993-2025-z1@127.0.0.1,1433/CDWWork?driver=ODBC Driver 18 for SQL Server&TrustServerCertificate=yes
+2026-02-09 09:55:10,175 - __main__ - INFO - Extracted 39 patients from CDWWork
+2026-02-09 09:55:10,184 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/bronze/cdwwork/patient/patient_raw.parquet (39 rows)
+2026-02-09 09:55:10,184 - __main__ - INFO - Bronze extraction complete: 39 patients written to s3://med-z1/bronze/cdwwork/patient/patient_raw.parquet
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+2026-02-09 09:55:10,374 - __main__ - INFO - Starting Bronze patient address extraction
+2026-02-09 09:55:10,415 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:10,415 - __main__ - INFO - minio_client created
+2026-02-09 09:55:10,415 - __main__ - INFO - Created DB connection string: mssql+pyodbc://sa:AllieD-1993-2025-z1@127.0.0.1,1433/CDWWork?driver=ODBC Driver 18 for SQL Server&TrustServerCertificate=yes
+2026-02-09 09:55:10,488 - __main__ - INFO - Extracted 45 patient addresses from CDWWork
+2026-02-09 09:55:10,501 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/bronze/cdwwork/patient_address/patient_address_raw.parquet (45 rows)
+2026-02-09 09:55:10,501 - __main__ - INFO - Bronze extraction complete: 45 patient addresses written to s3://med-z1/bronze/cdwwork/patient_address/patient_address_raw.parquet
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+2026-02-09 09:55:10,691 - __main__ - INFO - Starting Bronze patient phone extraction
+2026-02-09 09:55:10,731 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:10,731 - __main__ - INFO - minio_client created
+2026-02-09 09:55:10,731 - __main__ - INFO - Created DB connection string: mssql+pyodbc://sa:AllieD-1993-2025-z1@127.0.0.1,1433/CDWWork?driver=ODBC Driver 18 for SQL Server&TrustServerCertificate=yes
+2026-02-09 09:55:10,806 - __main__ - INFO - Extracted 19 patient phone records from CDWWork
+2026-02-09 09:55:10,819 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/bronze/cdwwork/patient_phone/patient_phone_raw.parquet (19 rows)
+2026-02-09 09:55:10,819 - __main__ - INFO - Bronze extraction complete: 19 patient phone numbers written to s3://med-z1/bronze/cdwwork/patient_phone/patient_phone_raw.parquet
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+2026-02-09 09:55:11,012 - __main__ - INFO - Starting Bronze patient disability extraction
+2026-02-09 09:55:11,053 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:11,053 - __main__ - INFO - minio_client created
+2026-02-09 09:55:11,054 - __main__ - INFO - Created DB connection string: mssql+pyodbc://sa:AllieD-1993-2025-z1@127.0.0.1,1433/CDWWork?driver=ODBC Driver 18 for SQL Server&TrustServerCertificate=yes
+2026-02-09 09:55:11,127 - __main__ - INFO - Extracted 35 patient disability records from CDWWork
+2026-02-09 09:55:11,140 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/bronze/cdwwork/patient_disability/patient_disability_raw.parquet (35 rows)
+2026-02-09 09:55:11,140 - __main__ - INFO - Bronze extraction complete: 35 patient disability records written to s3://med-z1/bronze/cdwwork/patient_disability/patient_disability_raw.parquet
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+2026-02-09 09:55:11,331 - __main__ - INFO - Starting Bronze patient insurance extraction
+2026-02-09 09:55:11,372 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:11,372 - __main__ - INFO - minio_client created
+2026-02-09 09:55:11,372 - __main__ - INFO - Created DB connection string: mssql+pyodbc://sa:AllieD-1993-2025-z1@127.0.0.1,1433/CDWWork?driver=ODBC Driver 18 for SQL Server&TrustServerCertificate=yes
+2026-02-09 09:55:11,449 - __main__ - INFO - Extracted 37 patient insurance records from CDWWork
+2026-02-09 09:55:11,461 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/bronze/cdwwork/patient_insurance/patient_insurance_raw.parquet (37 rows)
+2026-02-09 09:55:11,461 - __main__ - INFO - Bronze extraction complete: 37 patient insurance records written to s3://med-z1/bronze/cdwwork/patient_insurance/patient_insurance_raw.parquet
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+2026-02-09 09:55:11,673 - __main__ - INFO - Starting Bronze insurance company dimension extraction
+2026-02-09 09:55:11,714 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:11,714 - __main__ - INFO - minio_client created
+2026-02-09 09:55:11,714 - __main__ - INFO - Created DB connection string: mssql+pyodbc://sa:AllieD-1993-2025-z1@127.0.0.1,1433/CDWWork?driver=ODBC Driver 18 for SQL Server&TrustServerCertificate=yes
+2026-02-09 09:55:11,789 - __main__ - INFO - Extracted 17 insurance companies from CDWWork
+2026-02-09 09:55:11,802 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/bronze/cdwwork/insurance_company_dim/insurance_company_dim_raw.parquet (17 rows)
+2026-02-09 09:55:11,802 - __main__ - INFO - Bronze extraction complete: 17 insurance companies written to s3://med-z1/bronze/cdwwork/insurance_company_dim/insurance_company_dim_raw.parquet
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+2026-02-09 09:55:11,950 - __main__ - INFO - Starting Silver patient transformation
+2026-02-09 09:55:11,999 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:12,006 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/bronze/cdwwork/patient/patient_raw.parquet (39 rows)
+2026-02-09 09:55:12,006 - __main__ - INFO - Bronze patient data read: 39 records
+2026-02-09 09:55:12,008 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/bronze/cdwwork/patient_address/patient_address_raw.parquet (45 rows)
+2026-02-09 09:55:12,008 - __main__ - INFO - Bronze patient address data read: 45 records
+2026-02-09 09:55:12,010 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/bronze/cdwwork/patient_insurance/patient_insurance_raw.parquet (37 rows)
+2026-02-09 09:55:12,010 - __main__ - INFO - Bronze patient insurance data read: 37 records
+2026-02-09 09:55:12,011 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/bronze/cdwwork/insurance_company_dim/insurance_company_dim_raw.parquet (17 rows)
+2026-02-09 09:55:12,011 - __main__ - INFO - Bronze insurance company dimension data read: 17 records
+2026-02-09 09:55:12,013 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/bronze/cdwwork/patient_disability/patient_disability_raw.parquet (35 rows)
+2026-02-09 09:55:12,013 - __main__ - INFO - Bronze patient disability data read: 35 records
+2026-02-09 09:55:12,015 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/bronze/cdwwork/patient_phone/patient_phone_raw.parquet (19 rows)
+2026-02-09 09:55:12,015 - __main__ - INFO - Bronze patient phone data read: 19 records
+2026-02-09 09:55:12,016 - __main__ - INFO - Selected 39 primary addresses (after deduplication)
+2026-02-09 09:55:12,017 - __main__ - INFO - Selected 36 primary insurance records
+2026-02-09 09:55:12,017 - __main__ - INFO - Joined insurance company names to insurance records
+2026-02-09 09:55:12,017 - __main__ - INFO - Selected 32 service connected records
+2026-02-09 09:55:12,018 - __main__ - INFO - Selected 13 primary phone records
+2026-02-09 09:55:12,018 - __main__ - INFO - Joined primary addresses to patient records
+2026-02-09 09:55:12,018 - __main__ - INFO - Joined primary insurance to patient records
+2026-02-09 09:55:12,018 - __main__ - INFO - Joined service connected data to patient records
+2026-02-09 09:55:12,018 - __main__ - INFO - Joined primary phone to patient records
+2026-02-09 09:55:12,024 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/silver/patient/patient_cleaned.parquet (39 rows)
+2026-02-09 09:55:12,024 - __main__ - INFO - Silver Parquet file written to MinIO
+2026-02-09 09:55:12,024 - __main__ - INFO - Silver transformation complete: 39 patients written to s3://med-z1/silver/patient/patient_cleaned.parquet
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+2026-02-09 09:55:12,150 - __main__ - INFO - Starting Gold patient demographics creation
+2026-02-09 09:55:12,197 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:12,207 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/silver/patient/patient_cleaned.parquet (39 rows)
+2026-02-09 09:55:12,216 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/gold/patient_demographics/patient_demographics.parquet (39 rows)
+2026-02-09 09:55:12,216 - __main__ - INFO - Gold creation complete: 39 patients written to s3://med-z1/gold/patient_demographics/patient_demographics.parquet
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+2026-02-09 09:55:12,392 - __main__ - INFO - Loading patient demographics to PostgreSQL...
+2026-02-09 09:55:12,433 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:12,442 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/gold/patient_demographics/patient_demographics.parquet (39 rows)
+2026-02-09 09:55:12,442 - __main__ - INFO - Read 39 patient records from Gold layer
+2026-02-09 09:55:12,697 - __main__ - INFO - Loaded 39 patients to PostgreSQL
+2026-02-09 09:55:12,698 - __main__ - INFO - Verification: 39 rows in patient_demographics table
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+══════════════════════════════════════════════════
+>>> Running Patient Military History pipeline...
+══════════════════════════════════════════════════
+2026-02-09 09:55:14,895 - __main__ - INFO - Starting Silver patient military history transformation
+2026-02-09 09:55:14,940 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:14,949 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/bronze/cdwwork/patient/patient_raw.parquet (39 rows)
+2026-02-09 09:55:14,949 - __main__ - INFO - Bronze patient data read: 39 records
+2026-02-09 09:55:14,951 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/bronze/cdwwork/patient_disability/patient_disability_raw.parquet (35 rows)
+2026-02-09 09:55:14,951 - __main__ - INFO - Bronze patient disability data read: 35 records
+2026-02-09 09:55:14,952 - __main__ - INFO - After deduplication: 32 military history records
+2026-02-09 09:55:14,952 - __main__ - INFO - After ICN join: 29 military history records
+2026-02-09 09:55:14,960 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/silver/patient_military_history/military_history_cleaned.parquet (29 rows)
+2026-02-09 09:55:14,960 - __main__ - INFO - Silver Parquet file written to MinIO
+2026-02-09 09:55:14,960 - __main__ - INFO - Silver transformation complete: 29 military history records written to s3://med-z1/silver/patient_military_history/military_history_cleaned.parquet
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+2026-02-09 09:55:15,083 - __main__ - INFO - Starting Gold patient military history creation
+2026-02-09 09:55:15,129 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:15,137 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/silver/patient_military_history/military_history_cleaned.parquet (29 rows)
+2026-02-09 09:55:15,137 - __main__ - INFO - Silver military history data read: 29 records
+2026-02-09 09:55:15,145 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/gold/patient_military_history/military_history.parquet (29 rows)
+2026-02-09 09:55:15,145 - __main__ - INFO - Gold creation complete: 29 military history records written to s3://med-z1/gold/patient_military_history/military_history.parquet
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+2026-02-09 09:55:15,325 - __main__ - INFO - Loading patient military history to PostgreSQL...
+2026-02-09 09:55:15,368 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:15,377 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/gold/patient_military_history/military_history.parquet (29 rows)
+2026-02-09 09:55:15,377 - __main__ - INFO - Read 29 military history records from Gold layer
+2026-02-09 09:55:15,624 - __main__ - INFO - Loaded 29 military history records to PostgreSQL
+2026-02-09 09:55:15,625 - __main__ - INFO - Verification: 29 rows in patient_military_history table
+2026-02-09 09:55:15,625 - __main__ - INFO - Summary: 25 service connected, 3 Agent Orange, 2 POW, 7 Gulf War, 3 Camp Lejeune
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+══════════════════════════════════════════════════
+>>> Running Vitals pipeline...
+══════════════════════════════════════════════════
+2026-02-09 09:55:17,864 - __main__ - INFO - ============================================================
+2026-02-09 09:55:17,864 - __main__ - INFO - Starting Bronze extraction for all Vitals tables
+2026-02-09 09:55:17,864 - __main__ - INFO - ============================================================
+2026-02-09 09:55:17,864 - __main__ - INFO - Starting Bronze extraction: Dim.VitalType
+2026-02-09 09:55:17,902 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:17,977 - __main__ - INFO - Extracted 10 vital types from CDWWork
+2026-02-09 09:55:17,989 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/bronze/cdwwork/vital_type_dim/vital_type_dim_raw.parquet (10 rows)
+2026-02-09 09:55:17,990 - __main__ - INFO - Bronze extraction complete: 10 vital types written to s3://med-z1/bronze/cdwwork/vital_type_dim/vital_type_dim_raw.parquet
+2026-02-09 09:55:17,990 - __main__ - INFO - Starting Bronze extraction: Vital.VitalSign
+2026-02-09 09:55:17,991 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:18,074 - __main__ - INFO - Extracted 8288 vital signs from CDWWork
+2026-02-09 09:55:18,084 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/bronze/cdwwork/vital_sign/vital_sign_raw.parquet (8288 rows)
+2026-02-09 09:55:18,084 - __main__ - INFO - Bronze extraction complete: 8288 vital signs written to s3://med-z1/bronze/cdwwork/vital_sign/vital_sign_raw.parquet
+2026-02-09 09:55:18,084 - __main__ - INFO - Starting Bronze extraction: Dim.VitalQualifier
+2026-02-09 09:55:18,086 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:18,091 - __main__ - INFO - Extracted 16 vital qualifiers from CDWWork
+2026-02-09 09:55:18,096 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/bronze/cdwwork/vital_qualifier_dim/vital_qualifier_dim_raw.parquet (16 rows)
+2026-02-09 09:55:18,096 - __main__ - INFO - Bronze extraction complete: 16 vital qualifiers written to s3://med-z1/bronze/cdwwork/vital_qualifier_dim/vital_qualifier_dim_raw.parquet
+2026-02-09 09:55:18,096 - __main__ - INFO - Starting Bronze extraction: Vital.VitalSignQualifier
+2026-02-09 09:55:18,098 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:18,120 - __main__ - INFO - Extracted 4576 vital sign qualifiers from CDWWork
+2026-02-09 09:55:18,126 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/bronze/cdwwork/vital_sign_qualifier/vital_sign_qualifier_raw.parquet (4576 rows)
+2026-02-09 09:55:18,126 - __main__ - INFO - Bronze extraction complete: 4576 vital sign qualifiers written to s3://med-z1/bronze/cdwwork/vital_sign_qualifier/vital_sign_qualifier_raw.parquet
+2026-02-09 09:55:18,126 - __main__ - INFO - ============================================================
+2026-02-09 09:55:18,126 - __main__ - INFO - Bronze extraction complete for all Vitals tables
+2026-02-09 09:55:18,126 - __main__ - INFO -   - Vital Types: 10 rows
+2026-02-09 09:55:18,126 - __main__ - INFO -   - Vital Signs: 8288 rows
+2026-02-09 09:55:18,126 - __main__ - INFO -   - Vital Qualifiers: 16 rows
+2026-02-09 09:55:18,126 - __main__ - INFO -   - Vital Sign Qualifiers: 4576 rows
+2026-02-09 09:55:18,126 - __main__ - INFO - ============================================================
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+2026-02-09 09:55:18,319 - __main__ - INFO - ============================================================
+2026-02-09 09:55:18,319 - __main__ - INFO - Starting Bronze extraction for CDWWork2 Vitals tables
+2026-02-09 09:55:18,319 - __main__ - INFO - ============================================================
+2026-02-09 09:55:18,319 - __main__ - INFO - Starting Bronze extraction: VitalMill.VitalResult
+2026-02-09 09:55:18,359 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:18,435 - __main__ - INFO - Extracted 22 vital results from CDWWork2
+2026-02-09 09:55:18,447 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/bronze/cdwwork2/vital_result/vital_result_raw.parquet (22 rows)
+2026-02-09 09:55:18,447 - __main__ - INFO - Bronze extraction complete: 22 vital results written to s3://med-z1/bronze/cdwwork2/vital_result/vital_result_raw.parquet
+2026-02-09 09:55:18,447 - __main__ - INFO - Starting Bronze extraction: NDimMill.CodeValue
+2026-02-09 09:55:18,449 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:18,468 - __main__ - INFO - Extracted 18 code values from CDWWork2
+2026-02-09 09:55:18,475 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/bronze/cdwwork2/code_value/code_value_raw.parquet (18 rows)
+2026-02-09 09:55:18,475 - __main__ - INFO - Bronze extraction complete: 18 code values written to s3://med-z1/bronze/cdwwork2/code_value/code_value_raw.parquet
+2026-02-09 09:55:18,475 - __main__ - INFO - ============================================================
+2026-02-09 09:55:18,475 - __main__ - INFO - Bronze extraction complete for CDWWork2 Vitals tables
+2026-02-09 09:55:18,475 - __main__ - INFO -   - Vital Results: 22 rows
+2026-02-09 09:55:18,475 - __main__ - INFO -   - Code Values: 18 rows
+2026-02-09 09:55:18,475 - __main__ - INFO - ============================================================
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+2026-02-09 09:55:18,667 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:18,667 - __main__ - INFO - Starting Silver vitals transformation (CDWWork + CDWWork2)
+2026-02-09 09:55:18,667 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:18,708 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:18,708 - __main__ - INFO - Loading Sta3n lookup table from CDWWork
+2026-02-09 09:55:18,783 - __main__ - INFO - Loaded 21 active stations for lookup
+2026-02-09 09:55:18,783 - __main__ - INFO - Loading PatientICN lookup table from CDWWork
+2026-02-09 09:55:18,808 - __main__ - INFO - Loaded 39 PatientSID->ICN mappings
+2026-02-09 09:55:18,808 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:18,808 - __main__ - INFO - Transforming CDWWork (VistA) vitals...
+2026-02-09 09:55:18,808 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:18,808 - __main__ - INFO - Step 1: Loading CDWWork Bronze files...
+2026-02-09 09:55:18,813 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/bronze/cdwwork/vital_type_dim/vital_type_dim_raw.parquet (10 rows)
+2026-02-09 09:55:18,814 - __main__ - INFO -   - Loaded 10 vital types
+2026-02-09 09:55:18,816 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/bronze/cdwwork/vital_sign/vital_sign_raw.parquet (8288 rows)
+2026-02-09 09:55:18,816 - __main__ - INFO -   - Loaded 8288 vital signs
+2026-02-09 09:55:18,818 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/bronze/cdwwork/vital_qualifier_dim/vital_qualifier_dim_raw.parquet (16 rows)
+2026-02-09 09:55:18,818 - __main__ - INFO -   - Loaded 16 vital qualifiers
+2026-02-09 09:55:18,820 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/bronze/cdwwork/vital_sign_qualifier/vital_sign_qualifier_raw.parquet (4576 rows)
+2026-02-09 09:55:18,820 - __main__ - INFO -   - Loaded 4576 vital sign qualifiers
+2026-02-09 09:55:18,820 - __main__ - INFO - Step 2: Resolving PatientICN...
+2026-02-09 09:55:18,821 - __main__ - INFO -   - Resolved PatientICN for 6156 vitals
+2026-02-09 09:55:18,821 - __main__ - INFO - Step 3: Joining VitalSign with VitalType...
+2026-02-09 09:55:18,822 - __main__ - INFO -   - Joined vital types: 8288 records
+2026-02-09 09:55:18,822 - __main__ - INFO - Step 4: Aggregating qualifiers...
+2026-02-09 09:55:18,823 - __main__ - INFO -   - Aggregated qualifiers for 3225 vital signs
+2026-02-09 09:55:18,823 - __main__ - INFO - Step 5: Joining qualifiers to vitals...
+2026-02-09 09:55:18,824 - __main__ - INFO - Step 6: Resolving Sta3n lookups...
+2026-02-09 09:55:18,824 - __main__ - INFO - Step 7: Transforming to common schema...
+2026-02-09 09:55:18,825 - __main__ - INFO - Step 8: Selecting final columns...
+2026-02-09 09:55:18,825 - __main__ - INFO - CDWWork transformation complete: 8288 vitals
+2026-02-09 09:55:18,825 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:18,825 - __main__ - INFO - Transforming CDWWork2 (Oracle Health) vitals...
+2026-02-09 09:55:18,825 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:18,825 - __main__ - INFO - Step 1: Loading CDWWork2 Bronze files...
+2026-02-09 09:55:18,827 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/bronze/cdwwork2/vital_result/vital_result_raw.parquet (22 rows)
+2026-02-09 09:55:18,827 - __main__ - INFO -   - Loaded 22 vital results
+2026-02-09 09:55:18,828 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/bronze/cdwwork2/code_value/code_value_raw.parquet (18 rows)
+2026-02-09 09:55:18,828 - __main__ - INFO -   - Loaded 18 code values
+2026-02-09 09:55:18,828 - __main__ - INFO - Step 2: Resolving Sta3n lookups...
+2026-02-09 09:55:18,828 - __main__ - INFO - Step 3: Transforming to common schema...
+2026-02-09 09:55:18,829 - __main__ - INFO - Step 4: Selecting final columns...
+2026-02-09 09:55:18,829 - __main__ - INFO - CDWWork2 transformation complete: 22 vitals
+2026-02-09 09:55:18,829 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:18,829 - __main__ - INFO - Merging CDWWork and CDWWork2 vitals...
+2026-02-09 09:55:18,829 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:18,829 - __main__ - INFO -   - Total vitals after merge: 8310
+2026-02-09 09:55:18,829 - __main__ - INFO -     - CDWWork: 8288
+2026-02-09 09:55:18,829 - __main__ - INFO -     - CDWWork2: 22
+/Users/chuck/swdev/med/med-z1/etl/silver_vitals.py:495: DeprecationWarning: `pl.count()` is deprecated. Please use `pl.len()` instead.
+  pl.count().alias("count")
+2026-02-09 09:55:18,831 - __main__ - INFO - No duplicate vitals found (expected for mock data)
+2026-02-09 09:55:18,831 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:18,831 - __main__ - INFO - Writing to Silver layer...
+2026-02-09 09:55:18,831 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:18,837 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/silver/vitals/vitals_merged.parquet (8310 rows)
+2026-02-09 09:55:18,837 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:18,837 - __main__ - INFO - Silver transformation complete: 8310 vitals written to
+2026-02-09 09:55:18,837 - __main__ - INFO -   s3://med-z1/silver/vitals/vitals_merged.parquet
+2026-02-09 09:55:18,837 - __main__ - INFO -   - CDWWork (VistA): 8288 vitals
+2026-02-09 09:55:18,837 - __main__ - INFO -   - CDWWork2 (Oracle Health): 22 vitals
+2026-02-09 09:55:18,837 - __main__ - INFO - ======================================================================
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+2026-02-09 09:55:19,028 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:19,028 - __main__ - INFO - Starting Gold vitals transformation
+2026-02-09 09:55:19,028 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:19,069 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:19,069 - __main__ - INFO - Step 1: Loading Silver vitals...
+2026-02-09 09:55:19,080 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/silver/vitals/vitals_merged.parquet (8310 rows)
+2026-02-09 09:55:19,080 - __main__ - INFO -   - Loaded 8310 vitals from Silver layer
+2026-02-09 09:55:19,081 - __main__ - INFO -   - Data sources: [{'data_source': 'CDWWork2', 'count': 22}, {'data_source': 'CDWWork', 'count': 8288}]
+2026-02-09 09:55:19,081 - __main__ - INFO - Step 2: Ensuring patient_icn is populated...
+2026-02-09 09:55:19,082 - __main__ - INFO -   - 2132 vitals need patient_icn generated from patient_sid
+2026-02-09 09:55:19,082 - __main__ - INFO -   - Vitals with ICN: 8310/8310
+2026-02-09 09:55:19,082 - __main__ - INFO - Step 3: Generating vital_abbr for CDWWork2 vitals...
+2026-02-09 09:55:19,085 - __main__ - INFO -   - Generated abbreviations for 22 CDWWork2 vitals
+2026-02-09 09:55:19,085 - __main__ - INFO - Step 4: Calculating abnormal flags...
+2026-02-09 09:55:19,086 - __main__ - INFO -   - Calculated abnormal flags: 1492 abnormal vitals found
+2026-02-09 09:55:19,086 - __main__ - INFO - Step 5: Calculating BMI...
+2026-02-09 09:55:19,086 - __main__ - INFO - Calculating BMI for patients with height and weight data...
+2026-02-09 09:55:19,088 - __main__ - INFO - Calculated 756 BMI values
+2026-02-09 09:55:19,089 - __main__ - INFO -   - Added 756 calculated BMI vitals
+2026-02-09 09:55:19,089 - __main__ - INFO - Step 6: Creating patient_key...
+2026-02-09 09:55:19,089 - __main__ - INFO - Step 7: Selecting final columns...
+2026-02-09 09:55:19,089 - __main__ - INFO - Step 8: Writing to Gold layer...
+2026-02-09 09:55:19,103 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/gold/vitals/vitals_final.parquet (9066 rows)
+2026-02-09 09:55:19,103 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:19,103 - __main__ - INFO - Gold transformation complete: 9066 vitals written to
+2026-02-09 09:55:19,103 - __main__ - INFO -   s3://med-z1/gold/vitals/vitals_final.parquet
+2026-02-09 09:55:19,103 - __main__ - INFO -   - 1492 abnormal vitals flagged
+2026-02-09 09:55:19,103 - __main__ - INFO -   - 756 BMI calculations added
+2026-02-09 09:55:19,103 - __main__ - INFO - ======================================================================
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+2026-02-09 09:55:19,305 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:19,305 - __main__ - INFO - Starting PostgreSQL load for vitals
+2026-02-09 09:55:19,305 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:19,347 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:19,347 - __main__ - INFO - Step 1: Loading Gold vitals...
+2026-02-09 09:55:19,356 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/gold/vitals/vitals_final.parquet (9066 rows)
+2026-02-09 09:55:19,356 - __main__ - INFO -   - Loaded 9066 vitals from Gold layer
+2026-02-09 09:55:19,356 - __main__ - INFO - Step 2: Transforming to match PostgreSQL schema...
+2026-02-09 09:55:19,356 - __main__ - INFO -   - Offsetting CDWWork2 vital_record_ids to avoid collisions...
+2026-02-09 09:55:19,357 - __main__ - INFO -   - Max real vital_record_id after offsetting: 10004022
+2026-02-09 09:55:19,364 - __main__ - INFO -   - Prepared 9066 vitals for PostgreSQL (including 758 BMI records)
+2026-02-09 09:55:19,364 - __main__ - INFO - Step 3: Connecting to PostgreSQL...
+2026-02-09 09:55:19,379 - __main__ - INFO - Step 4: Truncating existing patient_vitals table...
+2026-02-09 09:55:19,407 - __main__ - INFO -   - Table truncated
+2026-02-09 09:55:19,407 - __main__ - INFO - Step 5: Loading data into PostgreSQL...
+2026-02-09 09:55:20,705 - __main__ - INFO -   - Loaded 9066 vitals into patient_vitals table
+2026-02-09 09:55:20,705 - __main__ - INFO - Step 6: Verifying data...
+2026-02-09 09:55:20,707 - __main__ - INFO -   - Verified: 9066 rows in patient_vitals table
+2026-02-09 09:55:20,707 - __main__ - INFO -   - Sample records:
+2026-02-09 09:55:20,707 - __main__ - INFO -     ('ICN106814', 'BLOOD PRESSURE', '116/77', 'NORMAL', datetime.datetime(2024, 6, 30, 19, 36, 56, 162000))
+2026-02-09 09:55:20,707 - __main__ - INFO -     ('ICN106820', 'BLOOD PRESSURE', '141/86', 'HIGH', datetime.datetime(2024, 7, 13, 6, 31, 28, 890000))
+2026-02-09 09:55:20,707 - __main__ - INFO -     ('ICN105868', 'BLOOD PRESSURE', '147/87', 'HIGH', datetime.datetime(2024, 7, 21, 19, 36, 56, 161000))
+2026-02-09 09:55:20,707 - __main__ - INFO -     ('ICN107317', 'BLOOD PRESSURE', '131/77', 'NORMAL', datetime.datetime(2024, 7, 22, 19, 36, 56, 163000))
+2026-02-09 09:55:20,707 - __main__ - INFO -     ('ICN105872', 'BLOOD PRESSURE', '131/75', 'NORMAL', datetime.datetime(2024, 8, 1, 13, 44, 16, 978000))
+2026-02-09 09:55:20,707 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:20,707 - __main__ - INFO - PostgreSQL load complete: 9066 vitals loaded
+2026-02-09 09:55:20,707 - __main__ - INFO - ======================================================================
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+══════════════════════════════════════════════════
+>>> Running Allergies pipeline...
+══════════════════════════════════════════════════
+2026-02-09 09:55:22,952 - INFO - Starting Bronze ETL: Dim.Allergen extraction
+2026-02-09 09:55:22,952 - INFO - Starting Bronze allergen extraction
+2026-02-09 09:55:22,990 - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:22,990 - INFO - MinIO client created
+2026-02-09 09:55:22,990 - INFO - Created DB connection string
+2026-02-09 09:55:23,068 - INFO - Extracted 34 allergens from CDWWork Dim.Allergen
+2026-02-09 09:55:23,080 - INFO - Written Parquet file: s3://med-z1/bronze/cdwwork/allergen/allergen_raw.parquet (34 rows)
+2026-02-09 09:55:23,080 - INFO - Bronze extraction complete: 34 allergens written to s3://med-z1/bronze/cdwwork/allergen/allergen_raw.parquet
+2026-02-09 09:55:23,080 - INFO - Bronze ETL: Dim.Allergen extraction complete
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+2026-02-09 09:55:23,278 - INFO - Starting Bronze ETL: Dim.Reaction extraction
+2026-02-09 09:55:23,278 - INFO - Starting Bronze reaction extraction
+2026-02-09 09:55:23,318 - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:23,318 - INFO - MinIO client created
+2026-02-09 09:55:23,318 - INFO - Created DB connection string
+2026-02-09 09:55:23,394 - INFO - Extracted 47 reactions from CDWWork Dim.Reaction
+2026-02-09 09:55:23,406 - INFO - Written Parquet file: s3://med-z1/bronze/cdwwork/reaction/reaction_raw.parquet (47 rows)
+2026-02-09 09:55:23,406 - INFO - Bronze extraction complete: 47 reactions written to s3://med-z1/bronze/cdwwork/reaction/reaction_raw.parquet
+2026-02-09 09:55:23,406 - INFO - Bronze ETL: Dim.Reaction extraction complete
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+2026-02-09 09:55:23,599 - INFO - Starting Bronze ETL: Dim.AllergySeverity extraction
+2026-02-09 09:55:23,599 - INFO - Starting Bronze allergy severity extraction
+2026-02-09 09:55:23,640 - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:23,640 - INFO - MinIO client created
+2026-02-09 09:55:23,640 - INFO - Created DB connection string
+2026-02-09 09:55:23,717 - INFO - Extracted 3 severity levels from CDWWork Dim.AllergySeverity
+2026-02-09 09:55:23,731 - INFO - Written Parquet file: s3://med-z1/bronze/cdwwork/allergy_severity/allergy_severity_raw.parquet (3 rows)
+2026-02-09 09:55:23,731 - INFO - Bronze extraction complete: 3 severity levels written to s3://med-z1/bronze/cdwwork/allergy_severity/allergy_severity_raw.parquet
+2026-02-09 09:55:23,731 - INFO - Bronze ETL: Dim.AllergySeverity extraction complete
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+2026-02-09 09:55:23,923 - INFO - Starting Bronze ETL: Allergy.PatientAllergy extraction
+2026-02-09 09:55:23,923 - INFO - Starting Bronze patient allergy extraction
+2026-02-09 09:55:23,965 - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:23,965 - INFO - MinIO client created
+2026-02-09 09:55:23,965 - INFO - Created DB connection string
+2026-02-09 09:55:24,038 - INFO - Extracted 120 patient allergies from CDWWork Allergy.PatientAllergy
+2026-02-09 09:55:24,049 - INFO - Written Parquet file: s3://med-z1/bronze/cdwwork/patient_allergy/patient_allergy_raw.parquet (120 rows)
+2026-02-09 09:55:24,049 - INFO - Bronze extraction complete: 120 patient allergies written to s3://med-z1/bronze/cdwwork/patient_allergy/patient_allergy_raw.parquet
+2026-02-09 09:55:24,049 - INFO - Bronze ETL: Allergy.PatientAllergy extraction complete
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+2026-02-09 09:55:24,243 - INFO - Starting Bronze ETL: Allergy.PatientAllergyReaction extraction
+2026-02-09 09:55:24,243 - INFO - Starting Bronze patient allergy reaction extraction
+2026-02-09 09:55:24,285 - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:24,285 - INFO - MinIO client created
+2026-02-09 09:55:24,285 - INFO - Created DB connection string
+2026-02-09 09:55:24,361 - INFO - Extracted 201 patient allergy reactions from CDWWork Allergy.PatientAllergyReaction
+2026-02-09 09:55:24,373 - INFO - Written Parquet file: s3://med-z1/bronze/cdwwork/patient_allergy_reaction/patient_allergy_reaction_raw.parquet (201 rows)
+2026-02-09 09:55:24,373 - INFO - Bronze extraction complete: 201 patient allergy reactions written to s3://med-z1/bronze/cdwwork/patient_allergy_reaction/patient_allergy_reaction_raw.parquet
+2026-02-09 09:55:24,373 - INFO - Bronze ETL: Allergy.PatientAllergyReaction extraction complete
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+2026-02-09 09:55:24,517 - INFO - Starting Silver ETL: Patient Allergies
+2026-02-09 09:55:24,518 - INFO - Starting Silver patient allergies transformation
+2026-02-09 09:55:24,564 - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:24,573 - INFO - Read Parquet file: s3://med-z1/bronze/cdwwork/allergen/allergen_raw.parquet (34 rows)
+2026-02-09 09:55:24,573 - INFO - Bronze allergen data read: 34 records
+2026-02-09 09:55:24,576 - INFO - Read Parquet file: s3://med-z1/bronze/cdwwork/reaction/reaction_raw.parquet (47 rows)
+2026-02-09 09:55:24,576 - INFO - Bronze reaction data read: 47 records
+2026-02-09 09:55:24,578 - INFO - Read Parquet file: s3://med-z1/bronze/cdwwork/allergy_severity/allergy_severity_raw.parquet (3 rows)
+2026-02-09 09:55:24,578 - INFO - Bronze allergy severity data read: 3 records
+2026-02-09 09:55:24,581 - INFO - Read Parquet file: s3://med-z1/bronze/cdwwork/patient_allergy/patient_allergy_raw.parquet (120 rows)
+2026-02-09 09:55:24,581 - INFO - Bronze patient allergy data read: 120 records
+2026-02-09 09:55:24,583 - INFO - Read Parquet file: s3://med-z1/bronze/cdwwork/patient_allergy_reaction/patient_allergy_reaction_raw.parquet (201 rows)
+2026-02-09 09:55:24,583 - INFO - Bronze patient allergy reaction data read: 201 records
+2026-02-09 09:55:24,584 - INFO - Aggregated reactions for 120 allergies
+2026-02-09 09:55:24,584 - INFO - Joined allergen dimension to patient allergies
+2026-02-09 09:55:24,585 - INFO - Joined severity dimension to patient allergies
+2026-02-09 09:55:24,585 - INFO - Joined aggregated reactions to patient allergies
+2026-02-09 09:55:24,585 - INFO - Silver transformation complete: 120 allergy records
+2026-02-09 09:55:24,594 - INFO - Written Parquet file: s3://med-z1/silver/patient_allergies/patient_allergies_cleaned.parquet (120 rows)
+2026-02-09 09:55:24,594 - INFO - Silver patient allergies written to s3://med-z1/silver/patient_allergies/patient_allergies_cleaned.parquet
+2026-02-09 09:55:24,594 - INFO - Total allergies: 120
+2026-02-09 09:55:24,594 - INFO - Drug allergies: 69
+2026-02-09 09:55:24,594 - INFO - Food allergies: 37
+2026-02-09 09:55:24,595 - INFO - Environmental allergies: 14
+2026-02-09 09:55:24,595 - INFO - Silver ETL: Patient Allergies complete
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+2026-02-09 09:55:24,720 - __main__ - INFO - Starting Gold ETL: Patient Allergies
+2026-02-09 09:55:24,720 - __main__ - INFO - Starting Gold patient allergies creation
+2026-02-09 09:55:24,769 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:24,777 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/silver/patient_allergies/patient_allergies_cleaned.parquet (120 rows)
+2026-02-09 09:55:24,777 - __main__ - INFO - Read 120 allergy records from Silver layer
+2026-02-09 09:55:24,780 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/gold/patient_demographics/patient_demographics.parquet (39 rows)
+2026-02-09 09:55:24,780 - __main__ - INFO - Read 39 patient records from Gold patient demographics
+2026-02-09 09:55:24,780 - __main__ - INFO - Joined allergies with patient demographics: 97 records
+2026-02-09 09:55:24,782 - __main__ - INFO - Sorted allergies: drug first, severity desc, date desc
+2026-02-09 09:55:24,790 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/gold/patient_allergies/patient_allergies.parquet (97 rows)
+2026-02-09 09:55:24,790 - __main__ - INFO - Gold creation complete: 97 allergies written to s3://med-z1/gold/patient_allergies/patient_allergies.parquet
+2026-02-09 09:55:24,791 - __main__ - INFO - Summary: 97 total allergies
+2026-02-09 09:55:24,791 - __main__ - INFO -   - Drug: 56
+2026-02-09 09:55:24,791 - __main__ - INFO -   - Food: 30
+2026-02-09 09:55:24,791 - __main__ - INFO -   - Environmental: 11
+2026-02-09 09:55:24,791 - __main__ - INFO -   - Severe: 17
+2026-02-09 09:55:24,791 - __main__ - INFO - Gold ETL: Patient Allergies complete
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+2026-02-09 09:55:25,140 - __main__ - INFO - Loading patient allergies to PostgreSQL...
+2026-02-09 09:55:25,179 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:25,187 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/gold/patient_allergies/patient_allergies.parquet (97 rows)
+2026-02-09 09:55:25,187 - __main__ - INFO - Read 97 allergy records from Gold layer
+2026-02-09 09:55:25,205 - __main__ - INFO - Writing to patient_allergies table...
+2026-02-09 09:55:25,281 - __main__ - INFO - Loaded 97 allergies to PostgreSQL patient_allergies table
+2026-02-09 09:55:25,282 - __main__ - INFO - Verification: 97 rows in patient_allergies table
+2026-02-09 09:55:25,283 - __main__ - INFO - Allergy type distribution:
+2026-02-09 09:55:25,283 - __main__ - INFO -   - DRUG: 56
+2026-02-09 09:55:25,283 - __main__ - INFO -   - FOOD: 30
+2026-02-09 09:55:25,283 - __main__ - INFO -   - ENVIRONMENTAL: 11
+2026-02-09 09:55:25,283 - __main__ - INFO - Severity distribution:
+2026-02-09 09:55:25,283 - __main__ - INFO -   - MODERATE: 50
+2026-02-09 09:55:25,283 - __main__ - INFO -   - MILD: 30
+2026-02-09 09:55:25,283 - __main__ - INFO -   - SEVERE: 17
+2026-02-09 09:55:25,283 - __main__ - INFO - Loading patient_allergy_reactions table (normalized reactions)...
+2026-02-09 09:55:25,303 - __main__ - INFO - Loaded 173 reaction records to patient_allergy_reactions table
+2026-02-09 09:55:25,304 - __main__ - INFO - Verification: 173 rows in patient_allergy_reactions table
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+══════════════════════════════════════════════════
+>>> Running Medications pipeline...
+══════════════════════════════════════════════════
+2026-02-09 09:55:27,546 - __main__ - INFO - ============================================================
+2026-02-09 09:55:27,546 - __main__ - INFO - Starting Bronze extraction for all Medications tables
+2026-02-09 09:55:27,546 - __main__ - INFO - ============================================================
+2026-02-09 09:55:27,546 - __main__ - INFO - Starting Bronze extraction: Dim.LocalDrug
+2026-02-09 09:55:27,587 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:27,664 - __main__ - INFO - Extracted 101 local drugs from CDWWork
+2026-02-09 09:55:27,677 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/bronze/cdwwork/local_drug_dim/local_drug_dim_raw.parquet (101 rows)
+2026-02-09 09:55:27,677 - __main__ - INFO - Bronze extraction complete: 101 local drugs written to s3://med-z1/bronze/cdwwork/local_drug_dim/local_drug_dim_raw.parquet
+2026-02-09 09:55:27,678 - __main__ - INFO - Starting Bronze extraction: Dim.NationalDrug
+2026-02-09 09:55:27,679 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:27,702 - __main__ - INFO - Extracted 40 national drugs from CDWWork
+2026-02-09 09:55:27,709 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/bronze/cdwwork/national_drug_dim/national_drug_dim_raw.parquet (40 rows)
+2026-02-09 09:55:27,709 - __main__ - INFO - Bronze extraction complete: 40 national drugs written to s3://med-z1/bronze/cdwwork/national_drug_dim/national_drug_dim_raw.parquet
+2026-02-09 09:55:27,709 - __main__ - INFO - Starting Bronze extraction: RxOut.RxOutpat
+2026-02-09 09:55:27,711 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:27,733 - __main__ - INFO - Extracted 153 outpatient prescriptions from CDWWork
+2026-02-09 09:55:27,739 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/bronze/cdwwork/rxout_rxoutpat/rxout_rxoutpat_raw.parquet (153 rows)
+2026-02-09 09:55:27,739 - __main__ - INFO - Bronze extraction complete: 153 outpatient prescriptions written to s3://med-z1/bronze/cdwwork/rxout_rxoutpat/rxout_rxoutpat_raw.parquet
+2026-02-09 09:55:27,739 - __main__ - INFO - Starting Bronze extraction: RxOut.RxOutpatFill
+2026-02-09 09:55:27,742 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:27,747 - __main__ - INFO - Extracted 41 prescription fills from CDWWork
+2026-02-09 09:55:27,753 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/bronze/cdwwork/rxout_rxoutpatfill/rxout_rxoutpatfill_raw.parquet (41 rows)
+2026-02-09 09:55:27,753 - __main__ - INFO - Bronze extraction complete: 41 prescription fills written to s3://med-z1/bronze/cdwwork/rxout_rxoutpatfill/rxout_rxoutpatfill_raw.parquet
+2026-02-09 09:55:27,753 - __main__ - INFO - Starting Bronze extraction: RxOut.RxOutpatSig
+2026-02-09 09:55:27,755 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:27,760 - __main__ - INFO - Extracted 20 sig records from CDWWork
+2026-02-09 09:55:27,765 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/bronze/cdwwork/rxout_rxoutpatsig/rxout_rxoutpatsig_raw.parquet (20 rows)
+2026-02-09 09:55:27,765 - __main__ - INFO - Bronze extraction complete: 20 sig records written to s3://med-z1/bronze/cdwwork/rxout_rxoutpatsig/rxout_rxoutpatsig_raw.parquet
+2026-02-09 09:55:27,765 - __main__ - INFO - Starting Bronze extraction: BCMA.BCMAMedicationLog
+2026-02-09 09:55:27,767 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:27,773 - __main__ - INFO - Extracted 58 medication administration events from CDWWork
+2026-02-09 09:55:27,779 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/bronze/cdwwork/bcma_medicationlog/bcma_medicationlog_raw.parquet (58 rows)
+2026-02-09 09:55:27,779 - __main__ - INFO - Bronze extraction complete: 58 medication administration events written to s3://med-z1/bronze/cdwwork/bcma_medicationlog/bcma_medicationlog_raw.parquet
+2026-02-09 09:55:27,779 - __main__ - INFO - ============================================================
+2026-02-09 09:55:27,779 - __main__ - INFO - Bronze extraction complete for all Medications tables
+2026-02-09 09:55:27,779 - __main__ - INFO -   - Local Drugs: 101 rows
+2026-02-09 09:55:27,779 - __main__ - INFO -   - National Drugs: 40 rows
+2026-02-09 09:55:27,779 - __main__ - INFO -   - Outpatient Prescriptions: 153 rows
+2026-02-09 09:55:27,779 - __main__ - INFO -   - Prescription Fills: 41 rows
+2026-02-09 09:55:27,779 - __main__ - INFO -   - Sig Records: 20 rows
+2026-02-09 09:55:27,779 - __main__ - INFO -   - BCMA Medication Log: 58 rows
+2026-02-09 09:55:27,779 - __main__ - INFO - ============================================================
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+2026-02-09 09:55:27,972 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:27,972 - __main__ - INFO - Starting Silver transformation for all Medications
+2026-02-09 09:55:27,972 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:27,972 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:27,972 - __main__ - INFO - Starting Silver RxOut transformation
+2026-02-09 09:55:27,972 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:28,013 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:28,013 - __main__ - INFO - Step 1: Loading Bronze Parquet files...
+2026-02-09 09:55:28,023 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/bronze/cdwwork/local_drug_dim/local_drug_dim_raw.parquet (101 rows)
+2026-02-09 09:55:28,023 - __main__ - INFO -   - Loaded 101 local drugs
+2026-02-09 09:55:28,025 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/bronze/cdwwork/national_drug_dim/national_drug_dim_raw.parquet (40 rows)
+2026-02-09 09:55:28,025 - __main__ - INFO -   - Loaded 40 national drugs
+2026-02-09 09:55:28,028 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/bronze/cdwwork/rxout_rxoutpat/rxout_rxoutpat_raw.parquet (153 rows)
+2026-02-09 09:55:28,028 - __main__ - INFO -   - Loaded 153 outpatient prescriptions
+2026-02-09 09:55:28,030 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/bronze/cdwwork/rxout_rxoutpatfill/rxout_rxoutpatfill_raw.parquet (41 rows)
+2026-02-09 09:55:28,030 - __main__ - INFO -   - Loaded 41 prescription fills
+2026-02-09 09:55:28,032 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/bronze/cdwwork/rxout_rxoutpatsig/rxout_rxoutpatsig_raw.parquet (20 rows)
+2026-02-09 09:55:28,032 - __main__ - INFO -   - Loaded 20 sig records
+2026-02-09 09:55:28,032 - __main__ - INFO - Loading Sta3n lookup table from CDWWork
+2026-02-09 09:55:28,108 - __main__ - INFO - Loaded 21 active stations for lookup
+2026-02-09 09:55:28,108 - __main__ - INFO - Loading Staff lookup table from CDWWork
+2026-02-09 09:55:28,129 - __main__ - INFO - Loaded 6 staff records for lookup
+2026-02-09 09:55:28,129 - __main__ - INFO - Loading Patient lookup table from Bronze layer
+2026-02-09 09:55:28,131 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:28,134 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/bronze/cdwwork/patient/patient_raw.parquet (39 rows)
+2026-02-09 09:55:28,134 - __main__ - INFO - Loaded 39 patient records for ICN lookup from Bronze Parquet
+2026-02-09 09:55:28,135 - __main__ - INFO - Step 2: Joining with patient demographics to get PatientICN...
+2026-02-09 09:55:28,136 - __main__ - INFO -   - All 153 prescriptions have PatientICN mapping
+2026-02-09 09:55:28,136 - __main__ - INFO - Step 3: Determining latest fill per prescription...
+2026-02-09 09:55:28,136 - __main__ - INFO -   - Found latest fill for 30 prescriptions
+2026-02-09 09:55:28,136 - __main__ - INFO - Step 4: Joining prescriptions with latest fills...
+2026-02-09 09:55:28,136 - __main__ - INFO -   - Joined 153 prescriptions with fill data
+2026-02-09 09:55:28,137 - __main__ - INFO - Step 4.5: Joining with sig data (medication directions)...
+2026-02-09 09:55:28,137 - __main__ - INFO -   - Matched sig data for 20/153 prescriptions
+2026-02-09 09:55:28,137 - __main__ - INFO - Step 5: Resolving LocalDrug lookups...
+2026-02-09 09:55:28,138 - __main__ - INFO -   - Resolved local drug names for 153 prescriptions
+2026-02-09 09:55:28,138 - __main__ - INFO - Step 6: Resolving NationalDrug lookups...
+2026-02-09 09:55:28,138 - __main__ - INFO -   - Resolved national drug names for 153 prescriptions
+2026-02-09 09:55:28,138 - __main__ - INFO - Step 7: Resolving Sta3n lookups...
+2026-02-09 09:55:28,138 - __main__ - INFO - Step 8: Resolving provider lookups...
+2026-02-09 09:55:28,139 - __main__ - INFO - Step 9: Calculating rx_status_computed...
+2026-02-09 09:55:28,139 - __main__ - INFO - Step 10: Cleaning and standardizing fields...
+2026-02-09 09:55:28,139 - __main__ - INFO - Step 11: Selecting final columns...
+2026-02-09 09:55:28,139 - __main__ - INFO - Step 12: Writing to Silver layer...
+2026-02-09 09:55:28,146 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/silver/medications/medications_rxout_cleaned.parquet (153 rows)
+2026-02-09 09:55:28,146 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:28,146 - __main__ - INFO - Silver RxOut transformation complete: 153 prescriptions written to
+2026-02-09 09:55:28,146 - __main__ - INFO -   s3://med-z1/silver/medications/medications_rxout_cleaned.parquet
+2026-02-09 09:55:28,146 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:28,146 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:28,146 - __main__ - INFO - Starting Silver BCMA transformation
+2026-02-09 09:55:28,146 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:28,148 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:28,148 - __main__ - INFO - Step 1: Loading Bronze Parquet files...
+2026-02-09 09:55:28,150 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/bronze/cdwwork/local_drug_dim/local_drug_dim_raw.parquet (101 rows)
+2026-02-09 09:55:28,150 - __main__ - INFO -   - Loaded 101 local drugs
+2026-02-09 09:55:28,152 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/bronze/cdwwork/national_drug_dim/national_drug_dim_raw.parquet (40 rows)
+2026-02-09 09:55:28,152 - __main__ - INFO -   - Loaded 40 national drugs
+2026-02-09 09:55:28,153 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/bronze/cdwwork/bcma_medicationlog/bcma_medicationlog_raw.parquet (58 rows)
+2026-02-09 09:55:28,153 - __main__ - INFO -   - Loaded 58 BCMA medication log entries
+2026-02-09 09:55:28,153 - __main__ - INFO - Loading Sta3n lookup table from CDWWork
+2026-02-09 09:55:28,171 - __main__ - INFO - Loaded 21 active stations for lookup
+2026-02-09 09:55:28,171 - __main__ - INFO - Loading Staff lookup table from CDWWork
+2026-02-09 09:55:28,190 - __main__ - INFO - Loaded 6 staff records for lookup
+2026-02-09 09:55:28,190 - __main__ - INFO - Loading Patient lookup table from Bronze layer
+2026-02-09 09:55:28,192 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:28,195 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/bronze/cdwwork/patient/patient_raw.parquet (39 rows)
+2026-02-09 09:55:28,196 - __main__ - INFO - Loaded 39 patient records for ICN lookup from Bronze Parquet
+2026-02-09 09:55:28,196 - __main__ - INFO - Step 2: Joining with patient demographics to get PatientICN...
+2026-02-09 09:55:28,197 - __main__ - INFO -   - All 58 administrations have PatientICN mapping
+2026-02-09 09:55:28,197 - __main__ - INFO - Step 3: Resolving LocalDrug lookups...
+2026-02-09 09:55:28,197 - __main__ - INFO -   - Resolved local drug names for 58 administration events
+2026-02-09 09:55:28,197 - __main__ - INFO - Step 4: Resolving NationalDrug lookups...
+2026-02-09 09:55:28,197 - __main__ - INFO -   - Resolved national drug names for 58 administration events
+2026-02-09 09:55:28,197 - __main__ - INFO - Step 5: Resolving Sta3n lookups...
+2026-02-09 09:55:28,198 - __main__ - INFO - Step 6: Resolving staff lookups...
+2026-02-09 09:55:28,198 - __main__ - INFO - Step 7: Calculating computed fields...
+2026-02-09 09:55:28,198 - __main__ - INFO - Step 8: Cleaning and standardizing fields...
+2026-02-09 09:55:28,198 - __main__ - INFO - Step 9: Selecting final columns...
+2026-02-09 09:55:28,199 - __main__ - INFO - Step 10: Writing to Silver layer...
+2026-02-09 09:55:28,204 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/silver/medications/medications_bcma_cleaned.parquet (58 rows)
+2026-02-09 09:55:28,204 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:28,204 - __main__ - INFO - Silver BCMA transformation complete: 58 administration events written to
+2026-02-09 09:55:28,204 - __main__ - INFO -   s3://med-z1/silver/medications/medications_bcma_cleaned.parquet
+2026-02-09 09:55:28,204 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:28,204 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:28,204 - __main__ - INFO - Silver transformation complete for all Medications
+2026-02-09 09:55:28,204 - __main__ - INFO -   - RxOut (Outpatient): 153 prescriptions
+2026-02-09 09:55:28,204 - __main__ - INFO -   - BCMA (Inpatient): 58 administration events
+2026-02-09 09:55:28,204 - __main__ - INFO - ======================================================================
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+2026-02-09 09:55:28,351 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:28,351 - __main__ - INFO - Starting Gold transformation for all Medications
+2026-02-09 09:55:28,351 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:28,351 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:28,351 - __main__ - INFO - Starting Gold RxOut transformation
+2026-02-09 09:55:28,351 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:28,397 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:28,397 - __main__ - INFO - Step 1: Loading Silver RxOut...
+2026-02-09 09:55:28,407 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/silver/medications/medications_rxout_cleaned.parquet (153 rows)
+2026-02-09 09:55:28,407 - __main__ - INFO -   - Loaded 153 prescriptions from Silver layer
+2026-02-09 09:55:28,407 - __main__ - INFO - Step 2: Validating patient ICN from Silver layer...
+2026-02-09 09:55:28,408 - __main__ - INFO -   - All 153 prescriptions have PatientICN
+2026-02-09 09:55:28,408 - __main__ - INFO - Step 3: Calculating is_active flag...
+2026-02-09 09:55:28,409 - __main__ - INFO -   - 13 active prescriptions out of 153
+2026-02-09 09:55:28,409 - __main__ - INFO - Step 3b: Updating rx_status_computed to reflect expiration/discontinuation...
+2026-02-09 09:55:28,409 - __main__ - INFO -   - Status distribution after update:
+2026-02-09 09:55:28,409 - __main__ - INFO -     DISCONTINUED: 27
+2026-02-09 09:55:28,409 - __main__ - INFO -     ACTIVE: 13
+2026-02-09 09:55:28,409 - __main__ - INFO -     EXPIRED: 113
+2026-02-09 09:55:28,409 - __main__ - INFO - Step 4: Calculating days_until_expiration...
+2026-02-09 09:55:28,409 - __main__ - INFO - Step 5: Ensuring is_controlled_substance is boolean...
+2026-02-09 09:55:28,410 - __main__ - INFO -   - 9 controlled substance prescriptions
+2026-02-09 09:55:28,410 - __main__ - INFO - Step 6: Sorting by issue_datetime...
+2026-02-09 09:55:28,410 - __main__ - INFO - Step 7: Selecting final columns...
+2026-02-09 09:55:28,410 - __main__ - INFO - Step 8: Writing to Gold layer...
+2026-02-09 09:55:28,421 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/gold/medications/medications_rxout_final.parquet (153 rows)
+2026-02-09 09:55:28,421 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:28,421 - __main__ - INFO - Gold RxOut transformation complete: 153 prescriptions written to
+2026-02-09 09:55:28,421 - __main__ - INFO -   s3://med-z1/gold/medications/medications_rxout_final.parquet
+2026-02-09 09:55:28,421 - __main__ - INFO -   - 13 active prescriptions
+2026-02-09 09:55:28,421 - __main__ - INFO -   - 9 controlled substance prescriptions
+2026-02-09 09:55:28,421 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:28,421 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:28,421 - __main__ - INFO - Starting Gold BCMA transformation
+2026-02-09 09:55:28,421 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:28,423 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:28,423 - __main__ - INFO - Step 1: Loading Silver BCMA...
+2026-02-09 09:55:28,427 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/silver/medications/medications_bcma_cleaned.parquet (58 rows)
+2026-02-09 09:55:28,427 - __main__ - INFO -   - Loaded 58 administration events from Silver layer
+2026-02-09 09:55:28,427 - __main__ - INFO - Step 2: Validating patient ICN from Silver layer...
+2026-02-09 09:55:28,428 - __main__ - INFO -   - All 58 administrations have PatientICN
+2026-02-09 09:55:28,428 - __main__ - INFO - Step 3: Calculating administration_variance flag...
+2026-02-09 09:55:28,428 - __main__ - INFO -   - 11 administration events with variances
+2026-02-09 09:55:28,428 - __main__ - INFO - Step 4: Calculating is_iv_medication flag...
+2026-02-09 09:55:28,429 - __main__ - INFO -   - 4 IV medication administrations
+2026-02-09 09:55:28,429 - __main__ - INFO - Step 5: Ensuring is_controlled_substance is boolean...
+2026-02-09 09:55:28,429 - __main__ - INFO -   - 7 controlled substance administrations
+2026-02-09 09:55:28,429 - __main__ - INFO - Step 6: Sorting by action_datetime...
+2026-02-09 09:55:28,430 - __main__ - INFO - Step 7: Selecting final columns...
+2026-02-09 09:55:28,430 - __main__ - INFO - Step 8: Writing to Gold layer...
+2026-02-09 09:55:28,435 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/gold/medications/medications_bcma_final.parquet (58 rows)
+2026-02-09 09:55:28,435 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:28,435 - __main__ - INFO - Gold BCMA transformation complete: 58 administration events written to
+2026-02-09 09:55:28,435 - __main__ - INFO -   s3://med-z1/gold/medications/medications_bcma_final.parquet
+2026-02-09 09:55:28,435 - __main__ - INFO -   - 11 administrations with variances
+2026-02-09 09:55:28,435 - __main__ - INFO -   - 4 IV medication administrations
+2026-02-09 09:55:28,435 - __main__ - INFO -   - 7 controlled substance administrations
+2026-02-09 09:55:28,435 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:28,435 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:28,435 - __main__ - INFO - Gold transformation complete for all Medications
+2026-02-09 09:55:28,435 - __main__ - INFO -   - RxOut (Outpatient): 153 prescriptions
+2026-02-09 09:55:28,435 - __main__ - INFO -   - BCMA (Inpatient): 58 administration events
+2026-02-09 09:55:28,435 - __main__ - INFO - ======================================================================
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+2026-02-09 09:55:28,608 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:28,608 - __main__ - INFO - Starting PostgreSQL load for all Medications
+2026-02-09 09:55:28,608 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:28,608 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:28,608 - __main__ - INFO - Starting PostgreSQL load for outpatient medications
+2026-02-09 09:55:28,608 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:28,649 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:28,649 - __main__ - INFO - Step 1: Loading Gold RxOut...
+2026-02-09 09:55:28,658 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/gold/medications/medications_rxout_final.parquet (153 rows)
+2026-02-09 09:55:28,659 - __main__ - INFO -   - Loaded 153 prescriptions from Gold layer
+2026-02-09 09:55:28,659 - __main__ - INFO - Step 2: Transforming to match PostgreSQL schema...
+2026-02-09 09:55:28,659 - __main__ - INFO -   - Prepared 153 prescriptions for PostgreSQL
+2026-02-09 09:55:28,659 - __main__ - INFO - Step 3: Connecting to PostgreSQL...
+2026-02-09 09:55:28,674 - __main__ - INFO - Step 4: Truncating existing patient_medications_outpatient table...
+2026-02-09 09:55:28,702 - __main__ - INFO -   - Table truncated
+2026-02-09 09:55:28,702 - __main__ - INFO - Step 5: Loading data into PostgreSQL...
+2026-02-09 09:55:28,938 - __main__ - INFO -   - Loaded 153 prescriptions into patient_medications_outpatient table
+2026-02-09 09:55:28,938 - __main__ - INFO - Step 6: Verifying data...
+2026-02-09 09:55:28,939 - __main__ - INFO -   - Verified: 153 rows in patient_medications_outpatient table
+2026-02-09 09:55:28,939 - __main__ - INFO -   - Sample records:
+2026-02-09 09:55:28,939 - __main__ - INFO -     ('ICN100011', 'ATORVASTATIN CALCIUM 40MG TAB', 'ACTIVE', False, datetime.datetime(2026, 1, 30, 14, 40, 45, 450000))
+2026-02-09 09:55:28,939 - __main__ - INFO -     ('ICN100011', 'LEVOTHYROXINE SODIUM 100MCG TAB', 'ACTIVE', False, datetime.datetime(2026, 1, 30, 14, 40, 45, 450000))
+2026-02-09 09:55:28,939 - __main__ - INFO -     ('ICN100015', 'SERTRALINE HCL 100MG TAB', 'ACTIVE', False, datetime.datetime(2026, 1, 30, 14, 40, 45, 450000))
+2026-02-09 09:55:28,939 - __main__ - INFO -     ('ICN100015', 'ASPIRIN 81MG TAB EC', 'ACTIVE', False, datetime.datetime(2026, 1, 30, 14, 40, 45, 450000))
+2026-02-09 09:55:28,939 - __main__ - INFO -     ('ICN100011', 'METFORMIN HCL 1000MG TAB', 'ACTIVE', False, datetime.datetime(2026, 1, 30, 14, 40, 45, 450000))
+2026-02-09 09:55:28,939 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:28,940 - __main__ - INFO - PostgreSQL load complete: 153 outpatient prescriptions loaded
+2026-02-09 09:55:28,940 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:28,940 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:28,940 - __main__ - INFO - Starting PostgreSQL load for inpatient medications
+2026-02-09 09:55:28,940 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:28,942 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:28,942 - __main__ - INFO - Step 1: Loading Gold BCMA...
+2026-02-09 09:55:28,945 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/gold/medications/medications_bcma_final.parquet (58 rows)
+2026-02-09 09:55:28,945 - __main__ - INFO -   - Loaded 58 administration events from Gold layer
+2026-02-09 09:55:28,945 - __main__ - INFO - Step 2: Transforming to match PostgreSQL schema...
+2026-02-09 09:55:28,946 - __main__ - INFO -   - Prepared 58 administration events for PostgreSQL
+2026-02-09 09:55:28,946 - __main__ - INFO - Step 3: Connecting to PostgreSQL...
+2026-02-09 09:55:28,946 - __main__ - INFO - Step 4: Truncating existing patient_medications_inpatient table...
+2026-02-09 09:55:28,960 - __main__ - INFO -   - Table truncated
+2026-02-09 09:55:28,960 - __main__ - INFO - Step 5: Loading data into PostgreSQL...
+2026-02-09 09:55:28,979 - __main__ - INFO -   - Loaded 58 administration events into patient_medications_inpatient table
+2026-02-09 09:55:28,979 - __main__ - INFO - Step 6: Verifying data...
+2026-02-09 09:55:28,980 - __main__ - INFO -   - Verified: 58 rows in patient_medications_inpatient table
+2026-02-09 09:55:28,980 - __main__ - INFO -   - Sample records:
+2026-02-09 09:55:28,980 - __main__ - INFO -     ('ICN100015', 'LISINOPRIL 20MG TAB', 'GIVEN', False, datetime.datetime(2025, 5, 16, 12, 30))
+2026-02-09 09:55:28,980 - __main__ - INFO -     ('ICN100015', 'LISINOPRIL 20MG TAB', 'GIVEN', False, datetime.datetime(2025, 5, 16, 8, 20))
+2026-02-09 09:55:28,980 - __main__ - INFO -     ('ICN100015', 'LOSARTAN POTASSIUM 50MG TAB', 'GIVEN', False, datetime.datetime(2025, 5, 16, 8, 10))
+2026-02-09 09:55:28,980 - __main__ - INFO -     ('ICN100015', 'LISINOPRIL 10MG TAB', 'GIVEN', False, datetime.datetime(2025, 5, 15, 17, 5))
+2026-02-09 09:55:28,980 - __main__ - INFO -     ('1022V789012', 'AZITHROMYCIN 250MG TAB', 'GIVEN', False, datetime.datetime(2025, 4, 12, 8, 0))
+2026-02-09 09:55:28,980 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:28,980 - __main__ - INFO - PostgreSQL load complete: 58 inpatient administrations loaded
+2026-02-09 09:55:28,980 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:28,981 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:28,981 - __main__ - INFO - PostgreSQL load complete for all Medications
+2026-02-09 09:55:28,981 - __main__ - INFO -   - Outpatient prescriptions: 153
+2026-02-09 09:55:28,981 - __main__ - INFO -   - Inpatient administrations: 58
+2026-02-09 09:55:28,981 - __main__ - INFO -   - Total: 211
+2026-02-09 09:55:28,981 - __main__ - INFO - ======================================================================
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+══════════════════════════════════════════════════
+>>> Running Patient Flags pipeline...
+══════════════════════════════════════════════════
+2026-02-09 09:55:31,220 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:31,220 - __main__ - INFO - Starting Bronze Patient Flags Extraction
+2026-02-09 09:55:31,220 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:31,220 - __main__ - INFO - Starting Bronze extraction: Dim.PatientRecordFlag
+2026-02-09 09:55:31,258 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:31,333 - __main__ - INFO - Extracted 13 flag definitions from CDWWork
+2026-02-09 09:55:31,346 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/bronze/cdwwork/patient_record_flag_dim/patient_record_flag_dim_raw.parquet (13 rows)
+2026-02-09 09:55:31,346 - __main__ - INFO - Bronze extraction complete: 13 flag definitions written to s3://med-z1/bronze/cdwwork/patient_record_flag_dim/patient_record_flag_dim_raw.parquet
+2026-02-09 09:55:31,347 - __main__ - INFO - Starting Bronze extraction: SPatient.PatientRecordFlagAssignment
+2026-02-09 09:55:31,348 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:31,369 - __main__ - INFO - Extracted 22 flag assignments from CDWWork
+2026-02-09 09:55:31,375 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/bronze/cdwwork/patient_record_flag_assignment/patient_record_flag_assignment_raw.parquet (22 rows)
+2026-02-09 09:55:31,375 - __main__ - INFO - Bronze extraction complete: 22 flag assignments written to s3://med-z1/bronze/cdwwork/patient_record_flag_assignment/patient_record_flag_assignment_raw.parquet
+2026-02-09 09:55:31,375 - __main__ - INFO - Starting Bronze extraction: SPatient.PatientRecordFlagHistory
+2026-02-09 09:55:31,377 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:31,398 - __main__ - INFO - Extracted 29 flag history records from CDWWork
+2026-02-09 09:55:31,404 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/bronze/cdwwork/patient_record_flag_history/patient_record_flag_history_raw.parquet (29 rows)
+2026-02-09 09:55:31,404 - __main__ - INFO - Bronze extraction complete: 29 flag history records written to s3://med-z1/bronze/cdwwork/patient_record_flag_history/patient_record_flag_history_raw.parquet
+2026-02-09 09:55:31,404 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:31,404 - __main__ - INFO - Bronze Patient Flags Extraction Complete
+2026-02-09 09:55:31,404 - __main__ - INFO -   - Flag Definitions: 13 records
+2026-02-09 09:55:31,404 - __main__ - INFO -   - Flag Assignments: 22 records
+2026-02-09 09:55:31,404 - __main__ - INFO -   - Flag History: 29 records
+2026-02-09 09:55:31,404 - __main__ - INFO - ======================================================================
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+2026-02-09 09:55:31,596 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:31,596 - __main__ - INFO - Starting Silver Patient Flags Transformation
+2026-02-09 09:55:31,596 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:31,636 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:31,636 - __main__ - INFO - Loading Sta3n lookup table from CDWWork
+2026-02-09 09:55:31,711 - __main__ - INFO - Loaded 21 active stations for lookup
+2026-02-09 09:55:31,711 - __main__ - INFO - Starting Silver transformation: PatientRecordFlag dimension
+2026-02-09 09:55:31,718 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/bronze/cdwwork/patient_record_flag_dim/patient_record_flag_dim_raw.parquet (13 rows)
+2026-02-09 09:55:31,718 - __main__ - INFO - Read 13 flag definitions from Bronze
+2026-02-09 09:55:31,728 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/silver/patient_record_flag_dim/patient_record_flag_dim_cleaned.parquet (13 rows)
+2026-02-09 09:55:31,728 - __main__ - INFO - Silver transformation complete: 13 flag definitions
+2026-02-09 09:55:31,728 - __main__ - INFO - Starting Silver transformation: PatientRecordFlagAssignment
+2026-02-09 09:55:31,730 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/bronze/cdwwork/patient_record_flag_assignment/patient_record_flag_assignment_raw.parquet (22 rows)
+2026-02-09 09:55:31,730 - __main__ - INFO - Read 22 flag assignments from Bronze
+2026-02-09 09:55:31,736 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/silver/patient_record_flag_assignment/patient_record_flag_assignment_cleaned.parquet (22 rows)
+2026-02-09 09:55:31,736 - __main__ - INFO - Silver transformation complete: 22 flag assignments
+2026-02-09 09:55:31,736 - __main__ - INFO - Starting Silver transformation: PatientRecordFlagHistory
+2026-02-09 09:55:31,737 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/bronze/cdwwork/patient_record_flag_history/patient_record_flag_history_raw.parquet (29 rows)
+2026-02-09 09:55:31,737 - __main__ - INFO - Read 29 flag history records from Bronze
+2026-02-09 09:55:31,742 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/silver/patient_record_flag_history/patient_record_flag_history_cleaned.parquet (29 rows)
+2026-02-09 09:55:31,742 - __main__ - INFO - Silver transformation complete: 29 flag history records
+2026-02-09 09:55:31,742 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:31,742 - __main__ - INFO - Silver Patient Flags Transformation Complete
+2026-02-09 09:55:31,742 - __main__ - INFO -   - Flag Definitions: 13 records
+2026-02-09 09:55:31,742 - __main__ - INFO -   - Flag Assignments: 22 records
+2026-02-09 09:55:31,742 - __main__ - INFO -   - Flag History: 29 records
+2026-02-09 09:55:31,742 - __main__ - INFO - ======================================================================
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+2026-02-09 09:55:31,886 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:31,886 - __main__ - INFO - Starting Gold Patient Flags Creation
+2026-02-09 09:55:31,886 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:31,933 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:31,933 - __main__ - INFO - Reading Silver Parquet files...
+2026-02-09 09:55:31,943 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/silver/patient_record_flag_assignment/patient_record_flag_assignment_cleaned.parquet (22 rows)
+2026-02-09 09:55:31,943 - __main__ - INFO - Read 22 assignments from Silver
+2026-02-09 09:55:31,945 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/silver/patient_record_flag_dim/patient_record_flag_dim_cleaned.parquet (13 rows)
+2026-02-09 09:55:31,945 - __main__ - INFO - Read 13 flag definitions from Silver
+2026-02-09 09:55:31,948 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/silver/patient_record_flag_history/patient_record_flag_history_cleaned.parquet (29 rows)
+2026-02-09 09:55:31,948 - __main__ - INFO - Read 29 history records from Silver
+2026-02-09 09:55:31,951 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/gold/patient_demographics/patient_demographics.parquet (39 rows)
+2026-02-09 09:55:31,951 - __main__ - INFO - Read 39 patients from Gold demographics
+2026-02-09 09:55:31,951 - __main__ - INFO - Getting most recent history for each assignment...
+2026-02-09 09:55:31,951 - __main__ - INFO - Extracted 13 latest history records
+2026-02-09 09:55:31,951 - __main__ - INFO - Joining assignments with latest history...
+2026-02-09 09:55:31,952 - __main__ - INFO - Calculating review status...
+2026-02-09 09:55:31,952 - __main__ - INFO - Mapping PatientSID to patient_key (ICN)...
+2026-02-09 09:55:31,952 - __main__ - INFO - Sample patient_sid from flags: [1001, 1002, 1003, 1005, 1007]
+2026-02-09 09:55:31,952 - __main__ - INFO - Sample patient_sid from demographics: [1001, 1002, 1003, 1004, 1005]
+2026-02-09 09:55:31,953 - __main__ - INFO - Total unique patient_sid in flags: 20
+2026-02-09 09:55:31,953 - __main__ - INFO - Total unique patient_sid in demographics: 39
+2026-02-09 09:55:31,953 - __main__ - INFO - Mapped 19 assignments to patient_key
+2026-02-09 09:55:31,953 - __main__ - INFO - Creating final Gold schema...
+2026-02-09 09:55:31,960 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/gold/patient_flags/patient_flags.parquet (19 rows)
+2026-02-09 09:55:31,960 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:31,960 - __main__ - INFO - Gold Patient Flags Creation Complete
+2026-02-09 09:55:31,960 - __main__ - INFO -   - Total flags: 19 records
+2026-02-09 09:55:31,961 - __main__ - INFO -   - Active flags: 13
+2026-02-09 09:55:31,961 - __main__ - INFO -   - Output: s3://med-z1/gold/patient_flags/patient_flags.parquet
+2026-02-09 09:55:31,961 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:31,961 - __main__ - INFO - Review Status Distribution:
+2026-02-09 09:55:31,962 - __main__ - INFO -   - N/A: 6
+2026-02-09 09:55:31,962 - __main__ - INFO -   - OVERDUE: 13
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+2026-02-09 09:55:32,133 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:32,133 - __main__ - INFO - Loading Patient Flags to PostgreSQL
+2026-02-09 09:55:32,133 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:32,174 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:32,174 - __main__ - INFO - Reading Gold patient_flags Parquet...
+2026-02-09 09:55:32,183 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/gold/patient_flags/patient_flags.parquet (19 rows)
+2026-02-09 09:55:32,183 - __main__ - INFO - Read 19 flag records from Gold layer
+2026-02-09 09:55:32,367 - __main__ - INFO - Loading patient_flags table...
+2026-02-09 09:55:32,390 - __main__ - INFO - Inserting 19 records into staging table...
+2026-02-09 09:55:32,402 - __main__ - INFO - Performing upsert into patient_flags...
+2026-02-09 09:55:32,403 - __main__ - INFO - Upsert complete
+2026-02-09 09:55:32,403 - __main__ - INFO - Reading Silver patient_flag_history Parquet...
+2026-02-09 09:55:32,406 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/silver/patient_record_flag_history/patient_record_flag_history_cleaned.parquet (29 rows)
+2026-02-09 09:55:32,406 - __main__ - INFO - Read 29 history records from Silver layer
+2026-02-09 09:55:32,407 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/silver/patient_record_flag_assignment/patient_record_flag_assignment_cleaned.parquet (22 rows)
+2026-02-09 09:55:32,409 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/gold/patient_demographics/patient_demographics.parquet (39 rows)
+2026-02-09 09:55:32,411 - __main__ - INFO - Loading patient_flag_history table...
+2026-02-09 09:55:32,413 - __main__ - INFO - Inserting 26 history records into staging table...
+2026-02-09 09:55:32,418 - __main__ - INFO - Performing upsert into patient_flag_history...
+2026-02-09 09:55:32,420 - __main__ - INFO - Upsert complete
+2026-02-09 09:55:32,421 - __main__ - INFO - Verifying loaded data...
+2026-02-09 09:55:32,421 - __main__ - INFO -   - patient_flags: 19 rows
+2026-02-09 09:55:32,421 - __main__ - INFO -   - patient_flag_history: 26 rows
+2026-02-09 09:55:32,422 - __main__ - INFO - Active flags by review status:
+2026-02-09 09:55:32,422 - __main__ - INFO -     - OVERDUE: 13
+2026-02-09 09:55:32,422 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:32,422 - __main__ - INFO - Patient Flags Load Complete
+2026-02-09 09:55:32,422 - __main__ - INFO - ======================================================================
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+══════════════════════════════════════════════════
+>>> Running Encounters pipeline...
+══════════════════════════════════════════════════
+2026-02-09 09:55:34,661 - __main__ - INFO - ============================================================
+2026-02-09 09:55:34,661 - __main__ - INFO - Starting Bronze extraction for Inpatient Encounters
+2026-02-09 09:55:34,661 - __main__ - INFO - ============================================================
+2026-02-09 09:55:34,661 - __main__ - INFO - Starting Bronze extraction: Inpat.Inpatient
+2026-02-09 09:55:34,701 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:34,777 - __main__ - INFO - Extracted 109 inpatient encounters from CDWWork
+2026-02-09 09:55:34,786 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/bronze/cdwwork/inpatient/inpatient_raw.parquet (109 rows)
+2026-02-09 09:55:34,786 - __main__ - INFO - Bronze extraction complete: 109 inpatient encounters written to s3://med-z1/bronze/cdwwork/inpatient/inpatient_raw.parquet
+2026-02-09 09:55:34,786 - __main__ - INFO - ============================================================
+2026-02-09 09:55:34,786 - __main__ - INFO - Bronze extraction complete for Inpatient Encounters
+2026-02-09 09:55:34,786 - __main__ - INFO -   - Inpatient Encounters: 109 rows
+2026-02-09 09:55:34,787 - __main__ - INFO - ============================================================
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+2026-02-09 09:55:34,975 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:34,975 - __main__ - INFO - Starting Silver inpatient transformation
+2026-02-09 09:55:34,975 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:35,016 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:35,016 - __main__ - INFO - Step 1: Loading Bronze Parquet file...
+2026-02-09 09:55:35,025 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/bronze/cdwwork/inpatient/inpatient_raw.parquet (109 rows)
+2026-02-09 09:55:35,025 - __main__ - INFO -   - Loaded 109 inpatient encounters
+2026-02-09 09:55:35,025 - __main__ - INFO - Loading Sta3n lookup table from CDWWork
+2026-02-09 09:55:35,101 - __main__ - INFO - Loaded 21 active stations for lookup
+2026-02-09 09:55:35,101 - __main__ - INFO - Loading Staff lookup table from CDWWork
+2026-02-09 09:55:35,125 - __main__ - INFO - Loaded 6 staff records for lookup
+2026-02-09 09:55:35,125 - __main__ - INFO - Step 2: Resolving Sta3n lookups...
+2026-02-09 09:55:35,125 - __main__ - INFO - Step 3: Resolving admitting provider lookups...
+2026-02-09 09:55:35,126 - __main__ - INFO - Step 4: Cleaning and transforming fields...
+2026-02-09 09:55:35,126 - __main__ - INFO - Step 5: Adding derived fields...
+2026-02-09 09:55:35,127 - __main__ - INFO - Step 6: Selecting final columns...
+2026-02-09 09:55:35,127 - __main__ - INFO - Step 7: Writing to Silver layer...
+2026-02-09 09:55:35,133 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/silver/inpatient/inpatient_cleaned.parquet (109 rows)
+2026-02-09 09:55:35,133 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:35,133 - __main__ - INFO - Silver transformation complete: 109 encounters written to
+2026-02-09 09:55:35,133 - __main__ - INFO -   s3://med-z1/silver/inpatient/inpatient_cleaned.parquet
+2026-02-09 09:55:35,133 - __main__ - INFO - ======================================================================
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+2026-02-09 09:55:35,328 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:35,329 - __main__ - INFO - Starting Gold inpatient transformation
+2026-02-09 09:55:35,329 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:35,369 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:35,369 - __main__ - INFO - Step 1: Loading Silver inpatient...
+2026-02-09 09:55:35,377 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/silver/inpatient/inpatient_cleaned.parquet (109 rows)
+2026-02-09 09:55:35,377 - __main__ - INFO -   - Loaded 109 encounters from Silver layer
+2026-02-09 09:55:35,377 - __main__ - INFO - Step 2: Joining with PatientSID → PatientICN lookup...
+2026-02-09 09:55:35,378 - __main__ - INFO - Loading PatientSID to PatientICN lookup from CDWWork
+2026-02-09 09:55:35,451 - __main__ - INFO -   - Loaded 39 PatientSID → PatientICN mappings
+2026-02-09 09:55:35,452 - __main__ - INFO -   - Sample mapping: shape: (3, 2)
+┌────────────┬────────────┐
+│ PatientSID ┆ PatientICN │
+│ ---        ┆ ---        │
+│ i64        ┆ str        │
+╞════════════╪════════════╡
+│ 1001       ┆ ICN100001  │
+│ 1002       ┆ ICN100002  │
+│ 1003       ┆ ICN100003  │
+└────────────┴────────────┘
+2026-02-09 09:55:35,453 - __main__ - INFO -   - All 109 encounters have PatientICN
+2026-02-09 09:55:35,453 - __main__ - INFO -   - Sample ICNs: ['1021V678901', 'ICN100004', '1025V012345', 'ICN100012', '1016V123456']
+2026-02-09 09:55:35,453 - __main__ - INFO - Step 3: Calculating encounter statistics...
+2026-02-09 09:55:35,454 - __main__ - INFO -   - Active admissions: 5
+2026-02-09 09:55:35,454 - __main__ - INFO -   - Discharged encounters: 104
+2026-02-09 09:55:35,454 - __main__ - INFO -   - Admission categories:
+2026-02-09 09:55:35,454 - __main__ - INFO -     - Standard Stay: 71
+2026-02-09 09:55:35,454 - __main__ - INFO -     - Short Stay: 28
+2026-02-09 09:55:35,455 - __main__ - INFO -     - Active Admission: 5
+2026-02-09 09:55:35,455 - __main__ - INFO -     - Observation: 4
+2026-02-09 09:55:35,455 - __main__ - INFO -     - Extended Stay: 1
+2026-02-09 09:55:35,455 - __main__ - INFO - Step 4: Adding priority flags...
+2026-02-09 09:55:35,456 - __main__ - INFO -   - Recent encounters (last 30 days): 5
+2026-02-09 09:55:35,456 - __main__ - INFO -   - Extended stay (active >14 days): 5
+2026-02-09 09:55:35,456 - __main__ - INFO - Step 5: Sorting by admit_datetime...
+2026-02-09 09:55:35,456 - __main__ - INFO - Step 6: Selecting final columns...
+2026-02-09 09:55:35,456 - __main__ - INFO - Step 7: Writing to Gold layer...
+2026-02-09 09:55:35,465 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/gold/inpatient/inpatient_final.parquet (109 rows)
+2026-02-09 09:55:35,465 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:35,465 - __main__ - INFO - Gold transformation complete: 109 encounters written to
+2026-02-09 09:55:35,465 - __main__ - INFO -   s3://med-z1/gold/inpatient/inpatient_final.parquet
+2026-02-09 09:55:35,465 - __main__ - INFO -   - Active admissions: 5
+2026-02-09 09:55:35,465 - __main__ - INFO -   - Recent encounters: 5
+2026-02-09 09:55:35,465 - __main__ - INFO -   - Extended stays: 5
+2026-02-09 09:55:35,465 - __main__ - INFO - ======================================================================
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+2026-02-09 09:55:35,659 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:35,659 - __main__ - INFO - Starting PostgreSQL load for inpatient encounters
+2026-02-09 09:55:35,659 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:35,702 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:35,702 - __main__ - INFO - Step 1: Loading Gold inpatient encounters...
+2026-02-09 09:55:35,709 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/gold/inpatient/inpatient_final.parquet (109 rows)
+2026-02-09 09:55:35,709 - __main__ - INFO -   - Loaded 109 encounters from Gold layer
+2026-02-09 09:55:35,709 - __main__ - INFO - Step 2: Transforming to match PostgreSQL schema...
+2026-02-09 09:55:35,710 - __main__ - INFO -   - Prepared 109 encounters for PostgreSQL
+2026-02-09 09:55:35,710 - __main__ - INFO -     - Active admissions: 5
+2026-02-09 09:55:35,711 - __main__ - INFO -     - Recent encounters: 5
+2026-02-09 09:55:35,711 - __main__ - INFO - Step 3: Connecting to PostgreSQL...
+2026-02-09 09:55:35,725 - __main__ - INFO - Step 4: Truncating existing patient_encounters table...
+2026-02-09 09:55:35,754 - __main__ - INFO -   - Table truncated
+2026-02-09 09:55:35,754 - __main__ - INFO - Step 5: Loading data into PostgreSQL...
+2026-02-09 09:55:35,975 - __main__ - INFO -   - Loaded 109 encounters into patient_encounters table
+2026-02-09 09:55:35,975 - __main__ - INFO - Step 6: Verifying data...
+2026-02-09 09:55:35,976 - __main__ - INFO -   - Verified: 109 rows in patient_encounters table
+2026-02-09 09:55:35,977 - __main__ - INFO -   - Active admissions: 5
+2026-02-09 09:55:35,977 - __main__ - INFO -   - Recent encounters: 5
+2026-02-09 09:55:35,977 - __main__ - INFO -   - Sample records:
+2026-02-09 09:55:35,977 - __main__ - INFO -     ('ICN100003', datetime.datetime(2025, 12, 13, 6, 0), None, 'Active', 'Active Admission', '(552) Dayton, OH')
+2026-02-09 09:55:35,977 - __main__ - INFO -     ('ICN100002', datetime.datetime(2025, 12, 12, 8, 15), None, 'Active', 'Active Admission', '(516) Bay Pines, FL')
+2026-02-09 09:55:35,977 - __main__ - INFO -     ('ICN100001', datetime.datetime(2025, 12, 10, 14, 30), None, 'Active', 'Active Admission', '(508) Atlanta, GA')
+2026-02-09 09:55:35,977 - __main__ - INFO -     ('ICN100005', datetime.datetime(2025, 12, 9, 7, 0), datetime.datetime(2025, 12, 12, 16, 0), 'Discharged', 'Short Stay', '(508) Atlanta, GA')
+2026-02-09 09:55:35,977 - __main__ - INFO -     ('ICN100004', datetime.datetime(2025, 12, 8, 11, 20), None, 'Active', 'Active Admission', '(688) Washington, DC')
+2026-02-09 09:55:35,978 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:35,978 - __main__ - INFO - PostgreSQL load complete: 109 encounters loaded
+2026-02-09 09:55:35,978 - __main__ - INFO -   - Active admissions: 5
+2026-02-09 09:55:35,978 - __main__ - INFO -   - Recent encounters: 5
+2026-02-09 09:55:35,978 - __main__ - INFO - ======================================================================
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+══════════════════════════════════════════════════
+>>> Running Laboratory Results pipeline...
+══════════════════════════════════════════════════
+INFO:__main__:======================================================================
+INFO:__main__:BRONZE ETL: Laboratory Results (Chemistry)
+INFO:__main__:======================================================================
+INFO:__main__:Starting Bronze extraction: Dim.LabTest
+INFO:lake.minio_client:MinIO client initialized: http://localhost:9000, bucket=med-z1
+INFO:__main__:Extracted 43 lab test definitions from CDWWork
+INFO:lake.minio_client:Written Parquet file: s3://med-z1/bronze/cdwwork/lab_test_dim/lab_test_dim_raw.parquet (43 rows)
+INFO:__main__:Bronze layer written to MinIO: bronze/cdwwork/lab_test_dim/lab_test_dim_raw.parquet
+INFO:__main__:✅ Lab Test Definitions extracted: 43
+INFO:__main__:Starting Bronze extraction: Chem.LabChem
+INFO:lake.minio_client:MinIO client initialized: http://localhost:9000, bucket=med-z1
+INFO:__main__:Extracted 226 lab results from CDWWork
+INFO:lake.minio_client:Written Parquet file: s3://med-z1/bronze/cdwwork/lab_chem/lab_chem_raw.parquet (226 rows)
+INFO:__main__:Bronze layer written to MinIO: bronze/cdwwork/lab_chem/lab_chem_raw.parquet
+INFO:__main__:✅ Lab Results extracted: 226
+INFO:__main__:======================================================================
+INFO:__main__:BRONZE ETL COMPLETE
+INFO:__main__:======================================================================
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+INFO:__main__:======================================================================
+INFO:__main__:SILVER ETL: Laboratory Results (Chemistry)
+INFO:__main__:======================================================================
+INFO:__main__:Starting Silver transformation: Lab Test Definitions
+INFO:lake.minio_client:MinIO client initialized: http://localhost:9000, bucket=med-z1
+INFO:lake.minio_client:Read Parquet file: s3://med-z1/bronze/cdwwork/lab_test_dim/lab_test_dim_raw.parquet (43 rows)
+INFO:__main__:Read 43 test definitions from Bronze layer
+INFO:lake.minio_client:Written Parquet file: s3://med-z1/silver/lab_test_dim/lab_test_dim.parquet (43 rows)
+INFO:__main__:Silver layer written to MinIO: silver/lab_test_dim/lab_test_dim.parquet
+INFO:__main__:✅ Lab Test Definitions transformed: 43
+INFO:__main__:Starting Silver transformation: Lab Results
+INFO:lake.minio_client:MinIO client initialized: http://localhost:9000, bucket=med-z1
+INFO:lake.minio_client:Read Parquet file: s3://med-z1/bronze/cdwwork/lab_chem/lab_chem_raw.parquet (226 rows)
+INFO:__main__:Read 226 lab results from Bronze layer
+INFO:lake.minio_client:Written Parquet file: s3://med-z1/silver/lab_chem/lab_chem.parquet (226 rows)
+INFO:__main__:Silver layer written to MinIO: silver/lab_chem/lab_chem.parquet
+INFO:__main__:✅ Lab Results transformed: 226
+INFO:__main__:======================================================================
+INFO:__main__:SILVER ETL COMPLETE
+INFO:__main__:======================================================================
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+2026-02-09 09:55:38,787 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:38,787 - __main__ - INFO - Starting Gold labs transformation
+2026-02-09 09:55:38,787 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:38,828 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:38,828 - __main__ - INFO - Step 1: Loading Silver Parquet files...
+2026-02-09 09:55:38,838 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/silver/lab_chem/lab_chem.parquet (226 rows)
+2026-02-09 09:55:38,838 - __main__ - INFO -   - Loaded 226 lab results from Silver layer
+2026-02-09 09:55:38,840 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/silver/lab_test_dim/lab_test_dim.parquet (43 rows)
+2026-02-09 09:55:38,840 - __main__ - INFO -   - Loaded 43 lab test definitions from Silver layer
+2026-02-09 09:55:38,841 - __main__ - INFO - Step 2: Loading patient identity lookup...
+2026-02-09 09:55:38,841 - __main__ - INFO - Loading PatientSID to PatientICN lookup from CDWWork
+2026-02-09 09:55:38,918 - __main__ - INFO - Loaded 39 patient ICN mappings
+2026-02-09 09:55:38,919 - __main__ - INFO -   - Patient identity resolution complete
+2026-02-09 09:55:38,919 - __main__ - INFO - Step 3: Loading facility lookup...
+2026-02-09 09:55:38,919 - __main__ - INFO - Loading Sta3n lookup table from CDWWork
+2026-02-09 09:55:38,941 - __main__ - INFO - Loaded 21 active stations for lookup
+2026-02-09 09:55:38,941 - __main__ - INFO - Step 4: Standardizing column names and adding derived fields...
+2026-02-09 09:55:38,942 - __main__ - INFO - Step 5: Selecting final columns for Gold layer...
+2026-02-09 09:55:38,942 - __main__ - INFO -   - Selected 34 columns for Gold layer
+2026-02-09 09:55:38,942 - __main__ - INFO - Step 6: Writing to Gold layer...
+2026-02-09 09:55:38,947 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/gold/labs/labs_final.parquet (226 rows)
+2026-02-09 09:55:38,947 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:38,947 - __main__ - INFO - Gold transformation complete: 226 lab results written to
+2026-02-09 09:55:38,947 - __main__ - INFO -   s3://med-z1/gold/labs/labs_final.parquet
+2026-02-09 09:55:38,948 - __main__ - INFO - ======================================================================
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+2026-02-09 09:55:39,146 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:39,146 - __main__ - INFO - Starting PostgreSQL load for laboratory results
+2026-02-09 09:55:39,146 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:39,187 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:39,187 - __main__ - INFO - Step 1: Loading Gold labs...
+2026-02-09 09:55:39,195 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/gold/labs/labs_final.parquet (226 rows)
+2026-02-09 09:55:39,195 - __main__ - INFO -   - Loaded 226 lab results from Gold layer
+2026-02-09 09:55:39,195 - __main__ - INFO - Step 2: Transforming to match PostgreSQL schema...
+2026-02-09 09:55:39,196 - __main__ - INFO -   - Prepared 226 lab results for PostgreSQL
+2026-02-09 09:55:39,196 - __main__ - INFO - Step 3: Connecting to PostgreSQL...
+2026-02-09 09:55:39,211 - __main__ - INFO - Step 4: Truncating existing patient_labs table...
+2026-02-09 09:55:39,241 - __main__ - INFO -   - Table truncated
+2026-02-09 09:55:39,241 - __main__ - INFO - Step 5: Loading data into PostgreSQL...
+2026-02-09 09:55:39,472 - __main__ - INFO -   - Loaded 226 lab results into patient_labs table
+2026-02-09 09:55:39,472 - __main__ - INFO - Step 6: Verifying data...
+2026-02-09 09:55:39,473 - __main__ - INFO -   - Verified: 226 rows in patient_labs table
+2026-02-09 09:55:39,473 - __main__ - INFO -   - Sample records:
+2026-02-09 09:55:39,474 - __main__ - INFO -     ('ICN100002', 'White Blood Cell Count', '7.2', None, 'Laboratory - Main Lab', datetime.datetime(2025, 12, 13, 14, 15))
+2026-02-09 09:55:39,474 - __main__ - INFO -     ('ICN100002', 'Red Blood Cell Count', '4.8', None, 'Laboratory - Main Lab', datetime.datetime(2025, 12, 13, 14, 15))
+2026-02-09 09:55:39,474 - __main__ - INFO -     ('ICN100002', 'Hemoglobin', '14.2', None, 'Laboratory - Main Lab', datetime.datetime(2025, 12, 13, 14, 15))
+2026-02-09 09:55:39,474 - __main__ - INFO -     ('ICN100002', 'Hematocrit', '42', None, 'Laboratory - Main Lab', datetime.datetime(2025, 12, 13, 14, 15))
+2026-02-09 09:55:39,474 - __main__ - INFO -     ('ICN100002', 'Platelet Count', '250', None, 'Laboratory - Main Lab', datetime.datetime(2025, 12, 13, 14, 15))
+2026-02-09 09:55:39,474 - __main__ - INFO -   - Results by collection location:
+2026-02-09 09:55:39,474 - __main__ - INFO -     Laboratory - Main Lab: 208 results
+2026-02-09 09:55:39,474 - __main__ - INFO -     Laboratory - Phlebotomy Station A: 18 results
+2026-02-09 09:55:39,474 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:39,474 - __main__ - INFO - PostgreSQL load complete: 226 lab results loaded
+2026-02-09 09:55:39,474 - __main__ - INFO - ======================================================================
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+══════════════════════════════════════════════════
+>>> Running Clinical Notes pipeline...
+══════════════════════════════════════════════════
+INFO:__main__:======================================================================
+INFO:__main__:BRONZE ETL: Clinical Notes (VistA TIU)
+INFO:__main__:======================================================================
+INFO:__main__:Starting Bronze extraction: Dim.TIUDocumentDefinition
+INFO:lake.minio_client:MinIO client initialized: http://localhost:9000, bucket=med-z1
+INFO:__main__:Extracted 13 TIU document type definitions from CDWWork
+INFO:lake.minio_client:Written Parquet file: s3://med-z1/bronze/cdwwork/tiu_document_definition_dim/tiu_document_definition_dim_raw.parquet (13 rows)
+INFO:__main__:Bronze layer written to MinIO: bronze/cdwwork/tiu_document_definition_dim/tiu_document_definition_dim_raw.parquet
+INFO:__main__:✅ TIU Document Type Definitions extracted: 13
+INFO:__main__:Starting Bronze extraction: TIU.TIUDocument_8925 + TIU.TIUDocumentText
+INFO:lake.minio_client:MinIO client initialized: http://localhost:9000, bucket=med-z1
+INFO:__main__:Extracted 135 clinical notes from CDWWork
+INFO:lake.minio_client:Written Parquet file: s3://med-z1/bronze/cdwwork/tiu_clinical_notes/tiu_clinical_notes_raw.parquet (135 rows)
+INFO:__main__:Bronze layer written to MinIO: bronze/cdwwork/tiu_clinical_notes/tiu_clinical_notes_raw.parquet
+INFO:__main__:✅ Clinical Notes extracted: 135
+INFO:__main__:======================================================================
+INFO:__main__:BRONZE ETL COMPLETE
+INFO:__main__:======================================================================
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+INFO:__main__:======================================================================
+INFO:__main__:SILVER ETL: Clinical Notes
+INFO:__main__:======================================================================
+INFO:__main__:Starting Silver transformation: TIU Document Type Definitions
+INFO:lake.minio_client:MinIO client initialized: http://localhost:9000, bucket=med-z1
+INFO:lake.minio_client:Read Parquet file: s3://med-z1/bronze/cdwwork/tiu_document_definition_dim/tiu_document_definition_dim_raw.parquet (13 rows)
+INFO:__main__:Read 13 document type definitions from Bronze layer
+INFO:lake.minio_client:Written Parquet file: s3://med-z1/silver/tiu_document_definition_dim/tiu_document_definition_dim.parquet (13 rows)
+INFO:__main__:Silver layer written to MinIO: silver/tiu_document_definition_dim/tiu_document_definition_dim.parquet
+INFO:__main__:✅ TIU Document Type Definitions transformed: 13
+INFO:__main__:Starting Silver transformation: Clinical Notes
+INFO:lake.minio_client:MinIO client initialized: http://localhost:9000, bucket=med-z1
+INFO:lake.minio_client:Read Parquet file: s3://med-z1/bronze/cdwwork/tiu_clinical_notes/tiu_clinical_notes_raw.parquet (135 rows)
+INFO:__main__:Read 135 clinical notes from Bronze layer
+INFO:lake.minio_client:Written Parquet file: s3://med-z1/silver/tiu_clinical_notes/tiu_clinical_notes.parquet (135 rows)
+INFO:__main__:Silver layer written to MinIO: silver/tiu_clinical_notes/tiu_clinical_notes.parquet
+INFO:__main__:✅ Clinical Notes transformed: 135
+INFO:__main__:======================================================================
+INFO:__main__:SILVER ETL COMPLETE
+INFO:__main__:======================================================================
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+INFO:__main__:======================================================================
+INFO:__main__:Starting Gold clinical notes transformation
+INFO:__main__:======================================================================
+INFO:lake.minio_client:MinIO client initialized: http://localhost:9000, bucket=med-z1
+INFO:__main__:Step 1: Loading Silver Parquet files...
+INFO:lake.minio_client:Read Parquet file: s3://med-z1/silver/tiu_clinical_notes/tiu_clinical_notes.parquet (135 rows)
+INFO:__main__:  - Loaded 135 clinical notes from Silver layer
+INFO:lake.minio_client:Read Parquet file: s3://med-z1/silver/tiu_document_definition_dim/tiu_document_definition_dim.parquet (13 rows)
+INFO:__main__:  - Loaded 13 document definitions from Silver layer
+INFO:__main__:Step 2: Loading patient identity lookup...
+INFO:__main__:Loading PatientSID to PatientICN lookup from CDWWork
+INFO:__main__:Loaded 39 patient ICN mappings
+INFO:__main__:  - Patient identity resolution complete
+INFO:__main__:Step 3: Loading facility lookup...
+INFO:__main__:Loading Sta3n lookup table from CDWWork
+INFO:__main__:Loaded 21 active stations for lookup
+INFO:__main__:Step 4: Standardizing column names and adding derived fields...
+INFO:__main__:Step 5: Selecting final columns for Gold layer...
+INFO:__main__:Step 6: Writing to Gold layer...
+INFO:lake.minio_client:Written Parquet file: s3://med-z1/gold/clinical_notes/clinical_notes_final.parquet (135 rows)
+INFO:__main__:  - Written 135 clinical notes to Gold layer
+INFO:__main__:  - Gold layer path: gold/clinical_notes/clinical_notes_final.parquet
+INFO:__main__:Step 7: Summary statistics...
+INFO:__main__:  - Document class distribution:
+INFO:__main__:    Consults: 18
+INFO:__main__:    Discharge Summaries: 14
+INFO:__main__:    Imaging: 14
+INFO:__main__:    Progress Notes: 89
+INFO:__main__:  - Note age distribution:
+INFO:__main__:    30-90 days: 54
+INFO:__main__:    90-180 days: 40
+INFO:__main__:    >180 days: 41
+INFO:__main__:======================================================================
+INFO:__main__:Gold transformation complete
+INFO:__main__:======================================================================
+INFO:__main__:✅ Gold ETL complete: 135 clinical notes
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+INFO:__main__:======================================================================
+INFO:__main__:Starting PostgreSQL load for clinical notes
+INFO:__main__:======================================================================
+INFO:lake.minio_client:MinIO client initialized: http://localhost:9000, bucket=med-z1
+INFO:__main__:Step 1: Loading Gold clinical notes...
+INFO:lake.minio_client:Read Parquet file: s3://med-z1/gold/clinical_notes/clinical_notes_final.parquet (135 rows)
+INFO:__main__:  - Loaded 135 clinical notes from Gold layer
+INFO:__main__:Step 2: Transforming to match PostgreSQL schema...
+INFO:__main__:  - Prepared 135 clinical notes for PostgreSQL
+INFO:__main__:Step 3: Connecting to PostgreSQL...
+INFO:__main__:Step 4: Truncating existing patient_clinical_notes table...
+INFO:__main__:  - Table truncated
+INFO:__main__:Step 5: Loading data into PostgreSQL...
+INFO:__main__:  - Loaded 135 clinical notes into patient_clinical_notes table
+INFO:__main__:Step 6: Verifying data...
+INFO:__main__:  - Verified: 135 rows in patient_clinical_notes table
+INFO:__main__:  - Sample data (most recent 5 notes):
+INFO:__main__:    ICN100001 | GEN MED PROGRESS NOTE | Progress Notes | 2025-12-28 10:30:00 | 1255 chars
+INFO:__main__:    ICN100002 | GEN MED PROGRESS NOTE | Progress Notes | 2025-12-27 11:00:00 | 466 chars
+INFO:__main__:    ICN100001 | CARDIOLOGY PROGRESS NOTE | Progress Notes | 2025-12-26 14:00:00 | 1122 chars
+INFO:__main__:    ICN100010 | GEN MED PROGRESS NOTE | Progress Notes | 2025-12-26 10:00:00 | 669 chars
+INFO:__main__:    ICN100013 | GEN MED PROGRESS NOTE | Progress Notes | 2025-12-25 10:00:00 | 694 chars
+INFO:__main__:  - Document class distribution:
+INFO:__main__:    Consults: 18
+INFO:__main__:    Discharge Summaries: 14
+INFO:__main__:    Imaging: 14
+INFO:__main__:    Progress Notes: 89
+INFO:__main__:  - Note age distribution:
+INFO:__main__:    >180 days: 41
+INFO:__main__:    30-90 days: 54
+INFO:__main__:    90-180 days: 40
+INFO:__main__:======================================================================
+INFO:__main__:PostgreSQL load complete
+INFO:__main__:======================================================================
+INFO:__main__:✅ PostgreSQL load complete
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+══════════════════════════════════════════════════
+>>> Running Immunizations pipeline...
+══════════════════════════════════════════════════
+2026-02-09 09:55:45,184 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:45,184 - __main__ - INFO - BRONZE ETL: Immunizations (CDWWork/VistA)
+2026-02-09 09:55:45,184 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:45,184 - __main__ - INFO - Starting Bronze extraction: Dim.Vaccine
+2026-02-09 09:55:45,222 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:45,301 - __main__ - INFO - Extracted 30 vaccines from CDWWork.Dim.Vaccine
+2026-02-09 09:55:45,311 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/bronze/cdwwork/vaccine_dim/vaccine_dim_raw.parquet (30 rows)
+2026-02-09 09:55:45,311 - __main__ - INFO - ✓ Bronze extraction complete: bronze/cdwwork/vaccine_dim/vaccine_dim_raw.parquet
+2026-02-09 09:55:45,311 - __main__ - INFO -   Records: 30
+2026-02-09 09:55:45,311 - __main__ - INFO -   Columns: ['VaccineSID', 'VaccineName', 'VaccineShortName', 'CVXCode', 'MVXCode', 'VistaIEN', 'IsInactive', 'CreatedDateTimeUTC', 'SourceSystem', 'LoadDateTime']
+2026-02-09 09:55:45,311 - __main__ - INFO - Starting Bronze extraction: Immunization.PatientImmunization
+2026-02-09 09:55:45,313 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:45,339 - __main__ - INFO - Extracted 193 immunization records from CDWWork.Immunization.PatientImmunization
+2026-02-09 09:55:45,345 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/bronze/cdwwork/immunization/patient_immunization_raw.parquet (193 rows)
+2026-02-09 09:55:45,345 - __main__ - INFO - ✓ Bronze extraction complete: bronze/cdwwork/immunization/patient_immunization_raw.parquet
+2026-02-09 09:55:45,345 - __main__ - INFO -   Records: 193
+2026-02-09 09:55:45,345 - __main__ - INFO -   Columns: ['PatientImmunizationSID', 'PatientSID', 'PatientICN', 'VaccineSID', 'CVXCode', 'VaccineName', 'VaccineShortName', 'VisitSID', 'AdministeredDateTime', 'Series', 'Dose', 'Route', 'SiteOfAdministration', 'Reaction', 'OrderingProviderSID', 'AdministeringProviderSID', 'LocationSID', 'Sta3n', 'LotNumber', 'Comments', 'IsActive', 'CreatedDateTimeUTC', 'ModifiedDateTimeUTC', 'SourceSystem', 'LoadDateTime']
+2026-02-09 09:55:45,345 - __main__ - INFO -   Date range: 1953-05-10 10:00:00 to 2024-10-12 13:30:00
+/Users/chuck/swdev/med/med-z1/etl/bronze_immunizations.py:172: DeprecationWarning: `pl.count()` is deprecated. Please use `pl.len()` instead.
+  pl.count().alias("ImmunizationCount")
+2026-02-09 09:55:45,346 - __main__ - INFO -   Patient distribution:
+2026-02-09 09:55:45,346 - __main__ - INFO -     ICN200001: 34 immunizations
+2026-02-09 09:55:45,346 - __main__ - INFO -     ICN100001: 25 immunizations
+2026-02-09 09:55:45,346 - __main__ - INFO -     ICN100003: 21 immunizations
+2026-02-09 09:55:45,346 - __main__ - INFO -     ICN100002: 18 immunizations
+2026-02-09 09:55:45,346 - __main__ - INFO -     ICN100009: 18 immunizations
+2026-02-09 09:55:45,346 - __main__ - INFO -     ICN100013: 17 immunizations
+2026-02-09 09:55:45,346 - __main__ - INFO -     ICN100010: 15 immunizations
+2026-02-09 09:55:45,346 - __main__ - INFO -     ICN100004: 14 immunizations
+2026-02-09 09:55:45,346 - __main__ - INFO -     ICN100016: 12 immunizations
+2026-02-09 09:55:45,346 - __main__ - INFO -     ICN100005: 11 immunizations
+2026-02-09 09:55:45,346 - __main__ - INFO -     ICN100017: 8 immunizations
+2026-02-09 09:55:45,346 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:45,346 - __main__ - INFO - ✓ Bronze extraction complete for Immunizations (CDWWork)
+2026-02-09 09:55:45,346 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:45,346 - __main__ - INFO - Summary:
+2026-02-09 09:55:45,346 - __main__ - INFO -   - Vaccines: 30 records
+2026-02-09 09:55:45,346 - __main__ - INFO -   - Immunizations: 193 records
+2026-02-09 09:55:45,346 - __main__ - INFO -   - Output: MinIO bucket 'med-z1' under bronze/cdwwork/
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+2026-02-09 09:55:45,544 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:45,544 - __main__ - INFO - BRONZE ETL: Immunizations (CDWWork2/Cerner)
+2026-02-09 09:55:45,544 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:45,544 - __main__ - INFO - Starting Bronze extraction: ImmunizationMill.VaccineCode
+2026-02-09 09:55:45,586 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:45,664 - __main__ - INFO - Extracted 15 vaccine codes from CDWWork2.ImmunizationMill.VaccineCode
+2026-02-09 09:55:45,676 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/bronze/cdwwork2/immunization_mill/vaccine_code_raw.parquet (15 rows)
+2026-02-09 09:55:45,676 - __main__ - INFO - ✓ Bronze extraction complete: bronze/cdwwork2/immunization_mill/vaccine_code_raw.parquet
+2026-02-09 09:55:45,676 - __main__ - INFO -   Records: 15
+2026-02-09 09:55:45,676 - __main__ - INFO -   Columns: ['VaccineCodeSID', 'CodeValue', 'Display', 'Definition', 'CVXCode', 'CodeSet', 'IsActive', 'CreatedDateTimeUTC', 'SourceSystem', 'LoadDateTime']
+2026-02-09 09:55:45,676 - __main__ - INFO - Starting Bronze extraction: ImmunizationMill.VaccineAdmin
+2026-02-09 09:55:45,678 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:45,698 - __main__ - INFO - Extracted 40 immunization records from CDWWork2.ImmunizationMill.VaccineAdmin
+2026-02-09 09:55:45,704 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/bronze/cdwwork2/immunization_mill/vaccine_admin_raw.parquet (40 rows)
+2026-02-09 09:55:45,704 - __main__ - INFO - ✓ Bronze extraction complete: bronze/cdwwork2/immunization_mill/vaccine_admin_raw.parquet
+2026-02-09 09:55:45,704 - __main__ - INFO -   Records: 40
+2026-02-09 09:55:45,704 - __main__ - INFO -   Columns: ['VaccineAdminSID', 'PersonSID', 'EncounterSID', 'PatientICN', 'VaccineCodeSID', 'CVXCode', 'VaccineName', 'CernerCodeValue', 'AdministeredDateTime', 'SeriesNumber', 'TotalInSeries', 'DoseAmount', 'DoseUnit', 'RouteCode', 'BodySite', 'AdverseReaction', 'ProviderSID', 'FacilitySID', 'IsActive', 'CreatedDateTimeUTC', 'SourceSystem', 'LoadDateTime']
+2026-02-09 09:55:45,704 - __main__ - INFO -   Date range: 1991-08-15 10:00:00 to 2024-10-12 14:30:00
+/Users/chuck/swdev/med/med-z1/etl/bronze_cdwwork2_immunizations.py:168: DeprecationWarning: `pl.count()` is deprecated. Please use `pl.len()` instead.
+  pl.count().alias("ImmunizationCount")
+2026-02-09 09:55:45,705 - __main__ - INFO -   Patient distribution:
+2026-02-09 09:55:45,705 - __main__ - INFO -     ICN100010: 23 immunizations
+2026-02-09 09:55:45,705 - __main__ - INFO -     ICN100001: 17 immunizations
+2026-02-09 09:55:45,705 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:45,705 - __main__ - INFO - ✓ Bronze extraction complete for Immunizations (CDWWork2)
+2026-02-09 09:55:45,705 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:45,705 - __main__ - INFO - Summary:
+2026-02-09 09:55:45,705 - __main__ - INFO -   - Vaccine Codes: 15 records
+2026-02-09 09:55:45,705 - __main__ - INFO -   - Vaccine Administrations: 40 records
+2026-02-09 09:55:45,705 - __main__ - INFO -   - Output: MinIO bucket 'med-z1' under bronze/cdwwork2/immunization_mill/
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+2026-02-09 09:55:45,900 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:45,900 - __main__ - INFO - SILVER ETL: Immunizations
+2026-02-09 09:55:45,900 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:45,941 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:45,941 - __main__ - INFO - Loading Sta3n lookup table from CDWWork
+2026-02-09 09:55:46,015 - __main__ - INFO - Loaded 21 active stations for lookup
+2026-02-09 09:55:46,015 - __main__ - INFO - Loading PatientICN lookup table from CDWWork
+2026-02-09 09:55:46,037 - __main__ - INFO - Loaded 39 PatientSID->ICN mappings
+2026-02-09 09:55:46,037 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:46,037 - __main__ - INFO - Transforming CDWWork (VistA) immunizations...
+2026-02-09 09:55:46,037 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:46,037 - __main__ - INFO - Step 1: Loading CDWWork Bronze files...
+2026-02-09 09:55:46,043 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/bronze/cdwwork/vaccine_dim/vaccine_dim_raw.parquet (30 rows)
+2026-02-09 09:55:46,043 - __main__ - INFO -   - Loaded 30 vaccines from Dim.Vaccine
+2026-02-09 09:55:46,045 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/bronze/cdwwork/immunization/patient_immunization_raw.parquet (193 rows)
+2026-02-09 09:55:46,045 - __main__ - INFO -   - Loaded 193 immunization records from PatientImmunization
+2026-02-09 09:55:46,045 - __main__ - INFO - Step 2: Resolving PatientICN...
+2026-02-09 09:55:46,046 - __main__ - INFO -   - Resolved PatientICN for 193 immunizations
+2026-02-09 09:55:46,046 - __main__ - INFO - Step 3: Joining with Vaccine dimension...
+2026-02-09 09:55:46,047 - __main__ - INFO -   - Joined vaccine names: 193 records
+2026-02-09 09:55:46,047 - __main__ - INFO - Step 4: Parsing series information...
+2026-02-09 09:55:46,048 - __main__ - INFO -   - Parsed series for 193 records
+2026-02-09 09:55:46,049 - __main__ - INFO -     - Complete series: 36
+2026-02-09 09:55:46,049 - __main__ - INFO -     - Incomplete series: 71
+2026-02-09 09:55:46,049 - __main__ - INFO -     - Unknown series: 86
+2026-02-09 09:55:46,049 - __main__ - INFO - Step 5: Standardizing anatomical sites...
+2026-02-09 09:55:46,050 - __main__ - INFO - Step 6: Adding derived flags...
+2026-02-09 09:55:46,050 - __main__ - INFO -   - Has adverse reaction: 2
+2026-02-09 09:55:46,051 - __main__ - INFO -   - Annual vaccines: 42
+2026-02-09 09:55:46,051 - __main__ - INFO -   - COVID vaccines: 26
+2026-02-09 09:55:46,051 - __main__ - INFO - Step 7: Standardizing vaccine names...
+2026-02-09 09:55:46,051 - __main__ - INFO - Step 8: Mapping to Silver schema...
+2026-02-09 09:55:46,052 - __main__ - INFO - Silver transformation complete (CDWWork): 193 immunization records
+2026-02-09 09:55:46,052 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:46,052 - __main__ - INFO - Transforming CDWWork2 (Cerner) immunizations...
+2026-02-09 09:55:46,052 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:46,052 - __main__ - INFO - Step 1: Loading CDWWork2 Bronze files...
+2026-02-09 09:55:46,054 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/bronze/cdwwork2/immunization_mill/vaccine_code_raw.parquet (15 rows)
+2026-02-09 09:55:46,054 - __main__ - INFO -   - Loaded 15 vaccine codes from VaccineCode
+2026-02-09 09:55:46,055 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/bronze/cdwwork2/immunization_mill/vaccine_admin_raw.parquet (40 rows)
+2026-02-09 09:55:46,056 - __main__ - INFO -   - Loaded 40 vaccine administrations from VaccineAdmin
+2026-02-09 09:55:46,056 - __main__ - INFO - Step 2: Joining with VaccineCode dimension...
+2026-02-09 09:55:46,056 - __main__ - INFO -   - Joined vaccine codes: 40 records
+2026-02-09 09:55:46,056 - __main__ - INFO - Step 3: Parsing series information...
+2026-02-09 09:55:46,057 - __main__ - INFO -   - Parsed series for 40 records
+2026-02-09 09:55:46,057 - __main__ - INFO -     - Complete series: 8
+2026-02-09 09:55:46,057 - __main__ - INFO -     - Incomplete series: 18
+2026-02-09 09:55:46,058 - __main__ - INFO -     - Unknown series: 14
+2026-02-09 09:55:46,058 - __main__ - INFO - Step 4: Standardizing anatomical sites...
+2026-02-09 09:55:46,058 - __main__ - INFO - Step 5: Adding derived flags...
+2026-02-09 09:55:46,058 - __main__ - INFO -   - Has adverse reaction: 0
+2026-02-09 09:55:46,059 - __main__ - INFO -   - Annual vaccines: 8
+2026-02-09 09:55:46,059 - __main__ - INFO -   - COVID vaccines: 7
+2026-02-09 09:55:46,059 - __main__ - INFO - Step 6: Standardizing vaccine names...
+2026-02-09 09:55:46,059 - __main__ - INFO - Step 7: Combining dose amount and unit...
+2026-02-09 09:55:46,059 - __main__ - INFO - Step 8: Mapping to Silver schema...
+2026-02-09 09:55:46,060 - __main__ - INFO - Silver transformation complete (CDWWork2): 40 immunization records
+2026-02-09 09:55:46,060 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:46,060 - __main__ - INFO - Merging and deduplicating CDWWork and CDWWork2 immunizations...
+2026-02-09 09:55:46,060 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:46,060 - __main__ - INFO - Step 1: Concatenating CDWWork and CDWWork2...
+2026-02-09 09:55:46,060 - __main__ - INFO -   - Total records before deduplication: 233
+2026-02-09 09:55:46,060 - __main__ - INFO - Step 2: Creating deduplication key...
+2026-02-09 09:55:46,060 - __main__ - INFO - Step 3: Deduplicating (prioritizing CDWWork2)...
+2026-02-09 09:55:46,061 - __main__ - INFO -   - Records after deduplication: 232
+2026-02-09 09:55:46,061 - __main__ - INFO -   - Duplicates removed: 1
+2026-02-09 09:55:46,061 - __main__ - INFO - Step 4: Sorting by patient and date...
+2026-02-09 09:55:46,066 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/silver/immunizations/immunization_harmonized.parquet (232 rows)
+2026-02-09 09:55:46,066 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:46,066 - __main__ - INFO - ✓ Silver transformation complete for Immunizations
+2026-02-09 09:55:46,066 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:46,066 - __main__ - INFO - Summary:
+2026-02-09 09:55:46,066 - __main__ - INFO -   - CDWWork records: 193
+2026-02-09 09:55:46,066 - __main__ - INFO -   - CDWWork2 records: 40
+2026-02-09 09:55:46,067 - __main__ - INFO -   - Total after merge: 232
+2026-02-09 09:55:46,067 - __main__ - INFO -   - Output: s3://med-z1/silver/immunizations/immunization_harmonized.parquet
+2026-02-09 09:55:46,067 - __main__ - INFO -   - Patients: 11
+2026-02-09 09:55:46,067 - __main__ - INFO -   - Date range: 1953-05-10 10:00:00 to 2024-10-12 14:30:00
+2026-02-09 09:55:46,067 - __main__ - INFO -   - Patient distribution (top 10):
+2026-02-09 09:55:46,067 - __main__ - INFO -     ICN100001: 41 immunizations
+2026-02-09 09:55:46,067 - __main__ - INFO -     ICN100010: 38 immunizations
+2026-02-09 09:55:46,067 - __main__ - INFO -     ICN200001: 34 immunizations
+2026-02-09 09:55:46,067 - __main__ - INFO -     ICN100003: 21 immunizations
+2026-02-09 09:55:46,067 - __main__ - INFO -     ICN100002: 18 immunizations
+2026-02-09 09:55:46,067 - __main__ - INFO -     ICN100009: 18 immunizations
+2026-02-09 09:55:46,067 - __main__ - INFO -     ICN100013: 17 immunizations
+2026-02-09 09:55:46,067 - __main__ - INFO -     ICN100004: 14 immunizations
+2026-02-09 09:55:46,067 - __main__ - INFO -     ICN100016: 12 immunizations
+2026-02-09 09:55:46,067 - __main__ - INFO -     ICN100005: 11 immunizations
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+2026-02-09 09:55:46,258 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:46,258 - __main__ - INFO - GOLD ETL: Immunizations
+2026-02-09 09:55:46,258 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:46,299 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:46,299 - __main__ - INFO - Step 1: Loading Silver immunizations...
+2026-02-09 09:55:46,309 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/silver/immunizations/immunization_harmonized.parquet (232 rows)
+2026-02-09 09:55:46,309 - __main__ - INFO -   - Read 232 immunization records from Silver layer
+2026-02-09 09:55:46,309 - __main__ - INFO - Step 2: Loading Gold patient demographics...
+2026-02-09 09:55:46,311 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/gold/patient_demographics/patient_demographics.parquet (39 rows)
+2026-02-09 09:55:46,312 - __main__ - INFO -   - Read 39 patient records from Gold patient demographics
+2026-02-09 09:55:46,312 - __main__ - INFO - Step 3: Joining with patient demographics...
+2026-02-09 09:55:46,312 - __main__ - INFO -   - Joined immunizations with patient demographics: 232 records
+2026-02-09 09:55:46,312 - __main__ - INFO -   - Filtered to patients with valid ICN: 209 records
+2026-02-09 09:55:46,313 - __main__ - INFO - Step 4: Loading lookup tables...
+2026-02-09 09:55:46,313 - __main__ - INFO - Loading Location lookup table from CDWWork
+2026-02-09 09:55:46,387 - __main__ - INFO - Loaded 208 locations for lookup
+2026-02-09 09:55:46,387 - __main__ - INFO - Loading Provider lookup table from CDWWork
+2026-02-09 09:55:46,410 - __main__ - INFO - Loaded 6 providers for lookup
+2026-02-09 09:55:46,410 - __main__ - INFO - Loading Sta3n lookup table from CDWWork
+2026-02-09 09:55:46,428 - __main__ - INFO - Loaded 21 active stations for lookup
+2026-02-09 09:55:46,428 - __main__ - INFO - Step 5: Joining with Location lookup...
+2026-02-09 09:55:46,429 - __main__ - INFO -   - Joined with locations: 192 have location names
+2026-02-09 09:55:46,429 - __main__ - INFO - Step 6: Joining with Provider lookup (ordering provider)...
+2026-02-09 09:55:46,429 - __main__ - INFO -   - Joined with ordering providers: 189 have provider names
+2026-02-09 09:55:46,429 - __main__ - INFO - Step 7: Joining with Provider lookup (administering provider)...
+2026-02-09 09:55:46,430 - __main__ - INFO -   - Joined with administering providers: 189 have provider names
+2026-02-09 09:55:46,430 - __main__ - INFO - Step 8: Joining with Sta3n lookup...
+2026-02-09 09:55:46,431 - __main__ - INFO -   - Joined with stations: 192 have station names
+2026-02-09 09:55:46,431 - __main__ - INFO - Step 9: Combining provider names...
+2026-02-09 09:55:46,431 - __main__ - INFO - Step 10: Sorting immunizations...
+2026-02-09 09:55:46,431 - __main__ - INFO -   - Sorted 209 immunizations by patient and date
+2026-02-09 09:55:46,431 - __main__ - INFO - Step 11: Mapping to Gold schema...
+2026-02-09 09:55:46,432 - __main__ - INFO -   - Final Gold schema: 26 columns, 209 records
+2026-02-09 09:55:46,432 - __main__ - INFO - Step 12: Writing to Gold layer...
+2026-02-09 09:55:46,437 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/gold/immunizations/patient_immunizations_final.parquet (209 rows)
+2026-02-09 09:55:46,437 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:46,437 - __main__ - INFO - ✓ Gold transformation complete for Immunizations
+2026-02-09 09:55:46,437 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:46,437 - __main__ - INFO - Summary:
+2026-02-09 09:55:46,437 - __main__ - INFO -   - Total immunizations: 209
+2026-02-09 09:55:46,437 - __main__ - INFO -   - Patients: 11
+2026-02-09 09:55:46,437 - __main__ - INFO -   - Output: s3://med-z1/gold/immunizations/patient_immunizations_final.parquet
+2026-02-09 09:55:46,437 - __main__ - INFO -   - Date range: 1953-05-10 10:00:00 to 2024-10-12 13:30:00
+2026-02-09 09:55:46,438 - __main__ - INFO -   - Patient distribution:
+2026-02-09 09:55:46,438 - __main__ - INFO -     ICN200001: 51 immunizations
+2026-02-09 09:55:46,438 - __main__ - INFO -     ICN100001: 24 immunizations
+2026-02-09 09:55:46,438 - __main__ - INFO -     ICN100003: 21 immunizations
+2026-02-09 09:55:46,438 - __main__ - INFO -     ICN100009: 18 immunizations
+2026-02-09 09:55:46,438 - __main__ - INFO -     ICN100002: 18 immunizations
+2026-02-09 09:55:46,438 - __main__ - INFO -     ICN100013: 17 immunizations
+2026-02-09 09:55:46,438 - __main__ - INFO -     ICN100010: 15 immunizations
+2026-02-09 09:55:46,438 - __main__ - INFO -     ICN100004: 14 immunizations
+2026-02-09 09:55:46,438 - __main__ - INFO -     ICN100016: 12 immunizations
+2026-02-09 09:55:46,438 - __main__ - INFO -     ICN100005: 11 immunizations
+2026-02-09 09:55:46,438 - __main__ - INFO -   - Series completion:
+2026-02-09 09:55:46,438 - __main__ - INFO -     Complete: 40
+2026-02-09 09:55:46,439 - __main__ - INFO -     Incomplete: 76
+2026-02-09 09:55:46,439 - __main__ - INFO -     Unknown: 93
+2026-02-09 09:55:46,439 - __main__ - INFO -   - Vaccine types:
+2026-02-09 09:55:46,439 - __main__ - INFO -     Annual (Influenza): 45
+2026-02-09 09:55:46,440 - __main__ - INFO -     COVID-19: 30
+2026-02-09 09:55:46,440 - __main__ - INFO -     Adverse reactions: 2
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+2026-02-09 09:55:46,644 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:46,644 - __main__ - INFO - PostgreSQL Load: Immunizations
+2026-02-09 09:55:46,644 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:46,686 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:46,686 - __main__ - INFO - Step 1: Loading Gold immunizations...
+2026-02-09 09:55:46,694 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/gold/immunizations/patient_immunizations_final.parquet (209 rows)
+2026-02-09 09:55:46,694 - __main__ - INFO -   - Loaded 209 immunizations from Gold layer
+2026-02-09 09:55:46,694 - __main__ - INFO - Step 2: Transforming to match PostgreSQL schema...
+2026-02-09 09:55:46,694 - __main__ - INFO -   - Prepared 209 immunizations for PostgreSQL
+2026-02-09 09:55:46,694 - __main__ - INFO - Step 3: Connecting to PostgreSQL...
+2026-02-09 09:55:46,709 - __main__ - INFO - Step 4: Truncating existing patient_immunizations table...
+2026-02-09 09:55:46,743 - __main__ - INFO -   - Table truncated
+2026-02-09 09:55:46,743 - __main__ - INFO - Step 5: Loading data into PostgreSQL...
+2026-02-09 09:55:46,969 - __main__ - INFO -   - Loaded 209 immunizations into patient_immunizations table
+2026-02-09 09:55:46,969 - __main__ - INFO - Step 6: Verifying data...
+2026-02-09 09:55:46,970 - __main__ - INFO -   - Verified: 209 rows in patient_immunizations table
+2026-02-09 09:55:46,971 - __main__ - INFO -   - Patients: 11
+2026-02-09 09:55:46,971 - __main__ - INFO -   - Top 5 vaccine types (CVX):
+2026-02-09 09:55:46,971 - __main__ - INFO -     CVX 135: 45 administrations
+2026-02-09 09:55:46,971 - __main__ - INFO -     CVX 008: 27 administrations
+2026-02-09 09:55:46,971 - __main__ - INFO -     CVX 020: 25 administrations
+2026-02-09 09:55:46,971 - __main__ - INFO -     CVX 208: 23 administrations
+2026-02-09 09:55:46,971 - __main__ - INFO -     CVX 088: 13 administrations
+2026-02-09 09:55:46,971 - __main__ - INFO -   - Series completion:
+2026-02-09 09:55:46,971 - __main__ - INFO -     Complete: 40
+2026-02-09 09:55:46,971 - __main__ - INFO -     Incomplete: 76
+2026-02-09 09:55:46,971 - __main__ - INFO -     Unknown: 93
+2026-02-09 09:55:46,972 - __main__ - INFO -   - Vaccine types:
+2026-02-09 09:55:46,972 - __main__ - INFO -     Annual (Influenza): 45
+2026-02-09 09:55:46,972 - __main__ - INFO -     COVID-19: 30
+2026-02-09 09:55:46,972 - __main__ - INFO -     Adverse reactions: 2
+2026-02-09 09:55:46,972 - __main__ - INFO -   - Sample records (most recent 5):
+2026-02-09 09:55:46,972 - __main__ - INFO -     ICN100010: INFLUENZA, UNSPECIFIED FORMULATION... on 2024-10-12 13:30:00 (ANNUAL 2024, CDWWork)
+2026-02-09 09:55:46,972 - __main__ - INFO -     ICN100003: INFLUENZA, UNSPECIFIED FORMULATION... on 2024-10-10 15:00:00 (ANNUAL 2024, CDWWork)
+2026-02-09 09:55:46,972 - __main__ - INFO -     ICN100017: INFLUENZA, HIGH DOSE SEASONAL, PRESERVAT... on 2024-10-10 13:45:00 (ANNUAL 2024, CDWWork)
+2026-02-09 09:55:46,972 - __main__ - INFO -     ICN200001: INFLUENZA HIGH DOSE... on 2024-10-08 14:15:00 (ANNUAL 2024, CDWWork2)
+2026-02-09 09:55:46,972 - __main__ - INFO -     ICN100005: INFLUENZA, UNSPECIFIED FORMULATION... on 2024-10-08 14:00:00 (ANNUAL 2024, CDWWork)
+2026-02-09 09:55:46,972 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:46,972 - __main__ - INFO - ✓ PostgreSQL load complete: 209 immunizations loaded
+2026-02-09 09:55:46,972 - __main__ - INFO - ======================================================================
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+══════════════════════════════════════════════════
+>>> Running Problems/Diagnoses pipeline...
+══════════════════════════════════════════════════
+2026-02-09 09:55:49,214 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:49,214 - __main__ - INFO - Starting Bronze extraction for all Problems/Diagnoses tables
+2026-02-09 09:55:49,214 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:49,214 - __main__ - INFO - Starting Bronze extraction: Dim.ICD10
+2026-02-09 09:55:49,253 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:49,332 - __main__ - INFO - Extracted 50 ICD-10 codes from CDWWork
+2026-02-09 09:55:49,343 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/bronze/cdwwork/icd10_dim/icd10_dim_raw.parquet (50 rows)
+2026-02-09 09:55:49,344 - __main__ - INFO - Bronze extraction complete: 50 ICD-10 codes written to s3://med-z1/bronze/cdwwork/icd10_dim/icd10_dim_raw.parquet
+2026-02-09 09:55:49,344 - __main__ - INFO - Starting Bronze extraction: Dim.CharlsonMapping
+2026-02-09 09:55:49,345 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:49,366 - __main__ - INFO - Extracted 63 Charlson mappings from CDWWork
+2026-02-09 09:55:49,372 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/bronze/cdwwork/charlson_mapping/charlson_mapping_raw.parquet (63 rows)
+2026-02-09 09:55:49,372 - __main__ - INFO - Bronze extraction complete: 63 Charlson mappings written to s3://med-z1/bronze/cdwwork/charlson_mapping/charlson_mapping_raw.parquet
+2026-02-09 09:55:49,372 - __main__ - INFO - Starting Bronze extraction: Outpat.ProblemList
+2026-02-09 09:55:49,374 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:49,396 - __main__ - INFO - Extracted 73 VistA problem records from CDWWork
+2026-02-09 09:55:49,402 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/bronze/cdwwork/outpat_problemlist/outpat_problemlist_raw.parquet (73 rows)
+2026-02-09 09:55:49,402 - __main__ - INFO - Bronze extraction complete: 73 VistA problem records written to s3://med-z1/bronze/cdwwork/outpat_problemlist/outpat_problemlist_raw.parquet
+2026-02-09 09:55:49,402 - __main__ - INFO - Starting Bronze extraction: EncMill.ProblemList
+2026-02-09 09:55:49,405 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:49,429 - __main__ - INFO - Extracted 18 Cerner problem records from CDWWork2
+2026-02-09 09:55:49,435 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/bronze/cdwwork2/encmill_problemlist/encmill_problemlist_raw.parquet (18 rows)
+2026-02-09 09:55:49,435 - __main__ - INFO - Bronze extraction complete: 18 Cerner problem records written to s3://med-z1/bronze/cdwwork2/encmill_problemlist/encmill_problemlist_raw.parquet
+2026-02-09 09:55:49,435 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:49,435 - __main__ - INFO - Bronze extraction complete for all Problems/Diagnoses tables
+2026-02-09 09:55:49,435 - __main__ - INFO -   - ICD-10 Codes: 50 rows
+2026-02-09 09:55:49,435 - __main__ - INFO -   - Charlson Mappings: 63 rows
+2026-02-09 09:55:49,435 - __main__ - INFO -   - VistA Problems (CDWWork): 73 rows
+2026-02-09 09:55:49,435 - __main__ - INFO -   - Cerner Problems (CDWWork2): 18 rows
+2026-02-09 09:55:49,435 - __main__ - INFO -   - Total Problem Records: 91
+2026-02-09 09:55:49,435 - __main__ - INFO - ======================================================================
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+2026-02-09 09:55:49,586 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:49,586 - __main__ - INFO - Starting Silver Problems transformation
+2026-02-09 09:55:49,586 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:49,633 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:49,633 - __main__ - INFO - Step 1: Loading Bronze Parquet files...
+2026-02-09 09:55:49,642 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/bronze/cdwwork/icd10_dim/icd10_dim_raw.parquet (50 rows)
+2026-02-09 09:55:49,642 - __main__ - INFO -   - Loaded 50 ICD-10 codes
+2026-02-09 09:55:49,645 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/bronze/cdwwork/charlson_mapping/charlson_mapping_raw.parquet (63 rows)
+2026-02-09 09:55:49,645 - __main__ - INFO -   - Loaded 63 Charlson mappings
+2026-02-09 09:55:49,647 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/bronze/cdwwork/outpat_problemlist/outpat_problemlist_raw.parquet (73 rows)
+2026-02-09 09:55:49,647 - __main__ - INFO -   - Loaded 73 VistA problem records
+2026-02-09 09:55:49,650 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/bronze/cdwwork2/encmill_problemlist/encmill_problemlist_raw.parquet (18 rows)
+2026-02-09 09:55:49,650 - __main__ - INFO -   - Loaded 18 Cerner problem records
+2026-02-09 09:55:49,650 - __main__ - INFO - Step 2: Harmonizing VistA schema...
+2026-02-09 09:55:49,650 - __main__ - INFO -   - Harmonized 73 VistA records
+2026-02-09 09:55:49,650 - __main__ - INFO - Step 3: Harmonizing Cerner schema...
+2026-02-09 09:55:49,651 - __main__ - INFO -   - Harmonized 18 Cerner records
+2026-02-09 09:55:49,651 - __main__ - INFO - Step 4: Combining VistA and Cerner records...
+2026-02-09 09:55:49,651 - __main__ - INFO -   - Combined 91 total problem records
+2026-02-09 09:55:49,651 - __main__ - INFO - Step 5: Deduplicating problems across both systems...
+2026-02-09 09:55:49,652 - __main__ - INFO -   - Removed 1 duplicate problems
+2026-02-09 09:55:49,652 - __main__ - INFO -   - Retained 90 unique problems
+2026-02-09 09:55:49,652 - __main__ - INFO - Step 6: Enriching with ICD-10 reference data...
+2026-02-09 09:55:49,652 - __main__ - WARNING -   - 17 problems missing ICD-10 reference data
+2026-02-09 09:55:49,652 - __main__ - INFO - Step 7: Adding Silver metadata...
+2026-02-09 09:55:49,653 - __main__ - INFO - Step 8: Writing to Silver layer...
+2026-02-09 09:55:49,660 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/silver/problems/problems_harmonized.parquet (90 rows)
+2026-02-09 09:55:49,660 - __main__ - INFO - Silver transformation complete: 90 problems written to s3://med-z1/silver/problems/problems_harmonized.parquet
+2026-02-09 09:55:49,660 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:49,660 - __main__ - INFO - Silver Problems Transformation Summary
+2026-02-09 09:55:49,660 - __main__ - INFO - ======================================================================
+/Users/chuck/swdev/med/med-z1/etl/silver_problems.py:265: DeprecationWarning: `pl.count()` is deprecated. Please use `pl.len()` instead.
+  pl.count().alias("count")
+2026-02-09 09:55:49,661 - __main__ - INFO -   - Cerner: 17 problems
+2026-02-09 09:55:49,661 - __main__ - INFO -   - VistA: 73 problems
+/Users/chuck/swdev/med/med-z1/etl/silver_problems.py:272: DeprecationWarning: `pl.count()` is deprecated. Please use `pl.len()` instead.
+  pl.count().alias("count")
+2026-02-09 09:55:49,661 - __main__ - INFO -   - Active: 82 problems
+2026-02-09 09:55:49,661 - __main__ - INFO -   - Resolved: 5 problems
+2026-02-09 09:55:49,661 - __main__ - INFO -   - Inactive: 3 problems
+2026-02-09 09:55:49,662 - __main__ - INFO -   - Chronic conditions: 82
+2026-02-09 09:55:49,662 - __main__ - INFO -   - Service-connected: 33
+2026-02-09 09:55:49,663 - __main__ - INFO -   - Problems with Charlson Index mapping: 28
+2026-02-09 09:55:49,663 - __main__ - INFO - ======================================================================
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+2026-02-09 09:55:49,788 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:49,788 - __main__ - INFO - Starting Gold Problems transformation (Charlson Index)
+2026-02-09 09:55:49,788 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:49,836 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:49,836 - __main__ - INFO - Step 1: Loading Silver Parquet file...
+2026-02-09 09:55:49,844 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/silver/problems/problems_harmonized.parquet (90 rows)
+2026-02-09 09:55:49,844 - __main__ - INFO -   - Loaded 90 problem records from Silver
+2026-02-09 09:55:49,848 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/bronze/cdwwork/charlson_mapping/charlson_mapping_raw.parquet (63 rows)
+2026-02-09 09:55:49,848 - __main__ - INFO -   - Loaded 63 Charlson mappings from Bronze
+2026-02-09 09:55:49,848 - __main__ - INFO - Step 2: Calculating Charlson Comorbidity Index per patient...
+2026-02-09 09:55:49,848 - __main__ - INFO -   - Filtered to 82 active problems
+2026-02-09 09:55:49,849 - __main__ - INFO -   - Found 23 active problems with Charlson mappings and weights
+2026-02-09 09:55:49,850 - __main__ - INFO -   - Aggregated to 18 patient-condition pairs
+2026-02-09 09:55:49,850 - __main__ - INFO -   - Calculated Charlson Index for 5 patients
+2026-02-09 09:55:49,850 - __main__ - INFO - Step 3: Calculating problem counts per patient...
+2026-02-09 09:55:49,850 - __main__ - INFO -   - Calculated problem counts for 8 patients
+2026-02-09 09:55:49,850 - __main__ - INFO - Step 4: Flagging specific chronic conditions per patient...
+2026-02-09 09:55:49,851 - __main__ - INFO -   - Created chronic condition flags for 8 patients
+2026-02-09 09:55:49,851 - __main__ - INFO - Step 5: Joining patient-level aggregations...
+2026-02-09 09:55:49,852 - __main__ - INFO - Step 6: Adding Gold metadata...
+2026-02-09 09:55:49,853 - __main__ - INFO - Step 7: Writing to Gold layer...
+2026-02-09 09:55:49,860 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/gold/problems/patient_problems.parquet (90 rows)
+2026-02-09 09:55:49,860 - __main__ - INFO - Gold transformation complete: 90 problem records written to s3://med-z1/gold/problems/patient_problems.parquet
+2026-02-09 09:55:49,860 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:49,860 - __main__ - INFO - Gold Problems Transformation Summary
+2026-02-09 09:55:49,860 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:49,860 - __main__ - INFO - Charlson Index Distribution (unique patients):
+2026-02-09 09:55:49,860 - __main__ - INFO -   - Min: 0, Max: 7, Mean: 3.12, Median: 2.0
+2026-02-09 09:55:49,861 - __main__ - INFO - Patients by Charlson Index range:
+2026-02-09 09:55:49,861 - __main__ - INFO -   - 0 (No comorbidities): 3 patients
+2026-02-09 09:55:49,861 - __main__ - INFO -   - 1-2 (Low): 1 patients
+2026-02-09 09:55:49,861 - __main__ - INFO -   - 3-4 (Moderate): 1 patients
+2026-02-09 09:55:49,861 - __main__ - INFO -   - 5+ (High): 3 patients
+2026-02-09 09:55:49,861 - __main__ - INFO - Patients with specific chronic conditions:
+2026-02-09 09:55:49,861 - __main__ - INFO -   - CHF: 2 patients
+2026-02-09 09:55:49,861 - __main__ - INFO -   - Diabetes: 5 patients
+2026-02-09 09:55:49,861 - __main__ - INFO -   - COPD: 3 patients
+2026-02-09 09:55:49,861 - __main__ - INFO -   - CKD: 4 patients
+2026-02-09 09:55:49,861 - __main__ - INFO -   - Hypertension: 7 patients
+2026-02-09 09:55:49,861 - __main__ - INFO -   - Depression: 3 patients
+2026-02-09 09:55:49,861 - __main__ - INFO -   - PTSD: 5 patients
+2026-02-09 09:55:49,861 - __main__ - INFO -   - Cancer: 0 patients
+2026-02-09 09:55:49,861 - __main__ - INFO - ======================================================================
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+2026-02-09 09:55:50,046 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:50,046 - __main__ - INFO - PostgreSQL Load: Problems/Diagnoses
+2026-02-09 09:55:50,046 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:50,087 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:50,087 - __main__ - INFO - Step 1: Loading Gold problems...
+2026-02-09 09:55:50,095 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/gold/problems/patient_problems.parquet (90 rows)
+2026-02-09 09:55:50,095 - __main__ - INFO -   - Loaded 90 problem records from Gold layer
+2026-02-09 09:55:50,095 - __main__ - INFO - Step 2: Transforming to match PostgreSQL schema...
+2026-02-09 09:55:50,096 - __main__ - INFO -   - Prepared 90 problem records for PostgreSQL
+2026-02-09 09:55:50,096 - __main__ - INFO - Step 3: Connecting to PostgreSQL...
+2026-02-09 09:55:50,111 - __main__ - INFO - Step 4: Truncating existing patient_problems table...
+2026-02-09 09:55:50,147 - __main__ - INFO -   - Table truncated
+2026-02-09 09:55:50,147 - __main__ - INFO - Step 5: Loading data into PostgreSQL...
+2026-02-09 09:55:50,373 - __main__ - INFO -   - Loaded 90 problem records into patient_problems table
+2026-02-09 09:55:50,373 - __main__ - INFO - Step 6: Verifying data...
+2026-02-09 09:55:50,374 - __main__ - INFO -   - Verified: 90 rows in patient_problems table
+2026-02-09 09:55:50,374 - __main__ - INFO -   - Patients: 8
+2026-02-09 09:55:50,374 - __main__ - INFO -   - Problem status distribution:
+2026-02-09 09:55:50,374 - __main__ - INFO -     Active: 82 problems
+2026-02-09 09:55:50,374 - __main__ - INFO -     Resolved: 5 problems
+2026-02-09 09:55:50,374 - __main__ - INFO -     Inactive: 3 problems
+2026-02-09 09:55:50,375 - __main__ - INFO -   - Top 5 ICD-10 categories (active problems):
+2026-02-09 09:55:50,375 - __main__ - INFO -     Cardiovascular: 21 problems
+2026-02-09 09:55:50,375 - __main__ - INFO -     Endocrine: 14 problems
+2026-02-09 09:55:50,375 - __main__ - INFO -     Mental Health: 8 problems
+2026-02-09 09:55:50,375 - __main__ - INFO -     Gastrointestinal: 7 problems
+2026-02-09 09:55:50,375 - __main__ - INFO -     Respiratory: 6 problems
+2026-02-09 09:55:50,375 - __main__ - INFO -   - Charlson Index distribution (unique patients):
+2026-02-09 09:55:50,375 - __main__ - INFO -     Min: 0, Max: 7, Mean: 3.13, Median: 2.00
+2026-02-09 09:55:50,376 - __main__ - INFO -   - Patients by Charlson Index range:
+2026-02-09 09:55:50,376 - __main__ - INFO -     0 (No comorbidities): 3 patients
+2026-02-09 09:55:50,376 - __main__ - INFO -     1-2 (Low): 1 patients
+2026-02-09 09:55:50,376 - __main__ - INFO -     3-4 (Moderate): 1 patients
+2026-02-09 09:55:50,376 - __main__ - INFO -     5+ (High): 3 patients
+2026-02-09 09:55:50,376 - __main__ - INFO -   - Patients with specific chronic conditions:
+2026-02-09 09:55:50,376 - __main__ - INFO -     CHF: 2, Diabetes: 5, COPD: 3, CKD: 4
+2026-02-09 09:55:50,376 - __main__ - INFO -     Hypertension: 7, Depression: 3, PTSD: 5, Cancer: 0
+2026-02-09 09:55:50,377 - __main__ - INFO -   - Active service-connected problems: 32
+2026-02-09 09:55:50,377 - __main__ - INFO -   - Problems by source EHR:
+2026-02-09 09:55:50,377 - __main__ - INFO -     VistA: 73 problems
+2026-02-09 09:55:50,377 - __main__ - INFO -     Cerner: 17 problems
+2026-02-09 09:55:50,377 - __main__ - INFO -   - Sample active problems (most recent 5):
+2026-02-09 09:55:50,377 - __main__ - INFO -     ICN100002: I25.10 - Atherosclerotic heart disease of native coronary a... (Active, 2023-07-15, VistA)
+2026-02-09 09:55:50,377 - __main__ - INFO -     ICN100006: R73.03 - Prediabetes... (Active, 2023-04-10, VistA)
+2026-02-09 09:55:50,377 - __main__ - INFO -     ICN100001: G30.9 - Alzheimer disease, unspecified... (Active, 2022-06-10, VistA)
+2026-02-09 09:55:50,377 - __main__ - INFO -     ICN100005: F32.9 - Major depressive disorder, single episode, unspeci... (Active, 2022-05-10, VistA)
+2026-02-09 09:55:50,377 - __main__ - INFO -     ICN100001: I48.91 - Unspecified atrial fibrillation... (Active, 2021-11-20, Cerner)
+2026-02-09 09:55:50,378 - __main__ - INFO - ======================================================================
+2026-02-09 09:55:50,378 - __main__ - INFO - ✓ PostgreSQL load complete: 90 problem records loaded
+2026-02-09 09:55:50,378 - __main__ - INFO - ======================================================================
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+══════════════════════════════════════════════════
+>>> Running DDI Reference Data pipeline...
+══════════════════════════════════════════════════
+2026-02-09 09:55:52,574 - __main__ - INFO - Starting Bronze DDI extraction
+2026-02-09 09:55:52,618 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:52,618 - __main__ - INFO - Reading CSV from MinIO: kaggle-data/ddi/db_drug_interactions.csv
+2026-02-09 09:55:52,658 - __main__ - INFO - Loaded 191,541 rows from CSV
+2026-02-09 09:55:52,658 - __main__ - INFO - Columns: ['Drug 1', 'Drug 2', 'Interaction Description']
+2026-02-09 09:55:52,658 - __main__ - INFO - Schema: Schema([('Drug 1', String), ('Drug 2', String), ('Interaction Description', String)])
+2026-02-09 09:55:52,658 - __main__ - INFO - Writing Bronze Parquet: bronze/ddi/ddi_raw.parquet
+2026-02-09 09:55:52,695 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/bronze/ddi/ddi_raw.parquet (191541 rows)
+2026-02-09 09:55:52,695 - __main__ - INFO - ✅ Bronze extraction complete: 191,541 rows written to bronze/ddi/ddi_raw.parquet
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+2026-02-09 09:55:52,822 - __main__ - INFO - Starting Silver DDI transformation
+2026-02-09 09:55:52,868 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:52,868 - __main__ - INFO - Reading from Bronze: bronze/ddi/ddi_raw.parquet
+2026-02-09 09:55:52,888 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/bronze/ddi/ddi_raw.parquet (191541 rows)
+2026-02-09 09:55:52,888 - __main__ - INFO - Bronze data: 191,541 rows
+2026-02-09 09:55:52,888 - __main__ - INFO - Columns: ['Drug 1', 'Drug 2', 'Interaction Description']
+2026-02-09 09:55:52,888 - __main__ - INFO - After removing nulls: 191,541 rows (0 removed)
+2026-02-09 09:55:52,892 - __main__ - INFO - After deduplication: 191,252 rows (289 removed)
+2026-02-09 09:55:52,906 - __main__ - INFO - Cleaning complete: 191,252 rows (289 removed, 0.2%)
+2026-02-09 09:55:52,906 - __main__ - INFO - Writing to Silver: silver/ddi/ddi_clean.parquet
+2026-02-09 09:55:52,966 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/silver/ddi/ddi_clean.parquet (191252 rows)
+2026-02-09 09:55:52,966 - __main__ - INFO - ✅ Silver transformation complete: 191,252 rows written
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+2026-02-09 09:55:53,097 - __main__ - INFO - Starting Gold DDI transformation
+2026-02-09 09:55:53,144 - lake.minio_client - INFO - MinIO client initialized: http://localhost:9000, bucket=med-z1
+2026-02-09 09:55:53,144 - __main__ - INFO - Reading from Silver: silver/ddi/ddi_clean.parquet
+2026-02-09 09:55:53,171 - lake.minio_client - INFO - Read Parquet file: s3://med-z1/silver/ddi/ddi_clean.parquet (191252 rows)
+2026-02-09 09:55:53,171 - __main__ - INFO - Silver data: 191,252 rows
+2026-02-09 09:55:53,171 - __main__ - INFO - Schema: Schema([('drug_1', String), ('drug_2', String), ('interaction_description', String)])
+2026-02-09 09:55:53,171 - __main__ - INFO - Gold transformation complete: 191,252 rows
+2026-02-09 09:55:53,175 - __main__ - INFO - Unique drugs in reference: 1,701
+2026-02-09 09:55:53,175 - __main__ - INFO - Writing to Gold: gold/ddi/ddi_reference.parquet
+2026-02-09 09:55:53,227 - lake.minio_client - INFO - Written Parquet file: s3://med-z1/gold/ddi/ddi_reference.parquet (191252 rows)
+2026-02-09 09:55:53,227 - __main__ - INFO - ✅ Gold layer complete: 191,252 rows written to gold/ddi/ddi_reference.parquet
+2026-02-09 09:55:53,227 - __main__ - INFO -    Unique drugs: 1,701
+2026-02-09 09:55:53,227 - __main__ - INFO -    Memory estimate: ~20.5 MB
+
+Loaded config from: /Users/chuck/swdev/med/med-z1/.env
+      Project root: /Users/chuck/swdev/med/med-z1
+    CDWWORK server: 127.0.0.1,1433 / DB: CDWWork
+   CDWWORK2 server: 127.0.0.1,1433 / DB: CDWWork2
+    MinIO endpoint: localhost:9000, bucket: med-z1
+         USE_MINIO: True
+        PostgreSQL: localhost:5432 / DB: medz1
+      CCOW enabled: True, URL: http://localhost:8001
+     Vista enabled: True, URL: http://localhost:8003
+   Session timeout: 25 minutes
+
+══════════════════════════════════════════
+All ETL pipelines completed successfully!
+══════════════════════════════════════════

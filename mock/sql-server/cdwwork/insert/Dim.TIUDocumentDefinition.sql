@@ -16,7 +16,10 @@ SET IDENTITY_INSERT Dim.TIUDocumentDefinition ON;
 GO
 
 -- Insert TIU document type definitions
-INSERT INTO Dim.TIUDocumentDefinition (DocumentDefinitionSID, TIUDocumentTitle, DocumentClass, VHAEnterpriseStandardTitle, IsActive, Sta3n)
+INSERT INTO Dim.TIUDocumentDefinition (
+    DocumentDefinitionSID, TIUDocumentTitle, DocumentClass,
+    VHAEnterpriseStandardTitle, IsActive, Sta3n
+)
 VALUES
     -- Progress Notes (100-series)
     (100, 'GEN MED PROGRESS NOTE', 'Progress Notes', 'Physician Progress Note', 1, NULL),

@@ -12,7 +12,7 @@ DROP TABLE IF EXISTS clinical.patient_immunizations CASCADE;
 CREATE TABLE clinical.patient_immunizations (
     immunization_id         SERIAL PRIMARY KEY,
     patient_key             VARCHAR(50) NOT NULL,       -- ICN (Integrated Care Number)
-    immunization_sid        BIGINT NOT NULL UNIQUE,     -- Source system ID (PatientImmunizationSID or VaccineAdminSID)
+    immunization_sid        VARCHAR(20) NOT NULL UNIQUE,  -- Source system ID with prefix (V-123 for VistA, C-456 for Cerner)
 
     -- Vaccine identification (CVX-coded for AI/compliance)
     cvx_code                VARCHAR(10),                -- CDC CVX code (https://www2.cdc.gov/vaccines/iis/iisstandards/vaccines.asp)
@@ -102,7 +102,7 @@ CREATE INDEX idx_immunizations_data_source
 
 COMMENT ON TABLE clinical.patient_immunizations IS 'Patient immunization records from Gold layer';
 COMMENT ON COLUMN clinical.patient_immunizations.patient_key IS 'Patient ICN (Integrated Care Number) - universal identifier';
-COMMENT ON COLUMN clinical.patient_immunizations.immunization_sid IS 'Source system surrogate key (PatientImmunizationSID from CDWWork or VaccineAdminSID from CDWWork2)';
+COMMENT ON COLUMN clinical.patient_immunizations.immunization_sid IS 'Source system surrogate key with prefix (V-{sid} for VistA/CDWWork, C-{sid} for Cerner/CDWWork2)';
 COMMENT ON COLUMN clinical.patient_immunizations.cvx_code IS 'CDC CVX code for vaccine identification (https://www2.cdc.gov/vaccines/iis/iisstandards/vaccines.asp)';
 COMMENT ON COLUMN clinical.patient_immunizations.vaccine_name IS 'Standardized vaccine name (UPPERCASE for consistency)';
 COMMENT ON COLUMN clinical.patient_immunizations.vaccine_name_local IS 'Original vaccine name as entered by clinician';

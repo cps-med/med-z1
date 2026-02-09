@@ -20,7 +20,10 @@ GO
 -- =============================================================================
 
 INSERT INTO Immunization.PatientImmunization
-(PatientSID, VaccineSID, AdministeredDateTime, Series, Dose, Route, SiteOfAdministration, Reaction, OrderingProviderSID, AdministeringProviderSID, LocationSID, Sta3n, LotNumber, IsActive)
+(
+    PatientSID, VaccineSID, AdministeredDateTime, Series, Dose, Route, SiteOfAdministration, Reaction,
+    OrderingProviderSID, AdministeringProviderSID, LocationSID, Sta3n, LotNumber, IsActive
+)
 VALUES
 -- Childhood vaccines (historical, 1960s)
 (1001, 1, '1958-03-15 10:00:00', '1 of 3', '0.5 ML', 'IM', 'L DELTOID', NULL, 1001, 1002, 13, 508, 'LOT195801', 1),  -- Hep B pediatric (Walter Reed ordering, Marie Curry admin) @ Primary Care A

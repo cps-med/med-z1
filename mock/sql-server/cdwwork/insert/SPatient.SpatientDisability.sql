@@ -47,9 +47,8 @@ GO
 INSERT INTO SPatient.SPatientDisability
 (
     SPatientDisabilitySID, PatientSID, PatientIEN, Sta3n, ClaimFolderInstitutionSID,
-    ServiceConnectedFlag, ServiceConnectedPercent,
-    AgentOrangeExposureCode, IonizingRadiationCode, POWStatusCode, SHADFlag,
-    AgentOrangeLocation, POWLocation, SWAsiaCode, CampLejeuneFlag
+    ServiceConnectedFlag, ServiceConnectedPercent, AgentOrangeExposureCode, IonizingRadiationCode,
+    POWStatusCode, SHADFlag, AgentOrangeLocation, POWLocation, SWAsiaCode, CampLejeuneFlag
 )
 VALUES
 -- =============================================

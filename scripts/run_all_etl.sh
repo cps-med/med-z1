@@ -16,6 +16,7 @@ echo "════════════════════════�
 sleep 2
 python -m etl.bronze_patient
 python -m etl.bronze_patient_address
+python -m etl.bronze_patient_phone
 python -m etl.bronze_patient_disability
 python -m etl.bronze_patient_insurance
 python -m etl.bronze_insurance_company
