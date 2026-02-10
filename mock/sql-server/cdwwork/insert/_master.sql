@@ -120,6 +120,6 @@
 -- and varying clinical complexity levels (Charlson: 5, 2, 0)
 
 :r Thompson-Bailey.sql
--- :r Thompson-Alananah.sql
--- :r Thompson-Joe.sql
+:r Thompson-Alananah.sql
+:r Thompson-Joe.sql
 

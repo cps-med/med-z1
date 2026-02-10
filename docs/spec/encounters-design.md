@@ -1,10 +1,14 @@
 # Encounters Domain - Design Specification
 
-**Document Version:** v1.1 (Implementation Complete)
-**Last Updated:** December 15, 2025
-**Implementation Status:** ✅ **COMPLETE** (All 6 days implemented 2025-12-15)
-**Current Scope:** Inpatient Admissions (Phase 1)
-**Future Scope:** Outpatient Encounters (Phase 2)
+**Document Version:** v2.0 (Phase 2 Design - CDWWork2 Integration)
+**Last Updated:** February 9, 2026
+**Implementation Status:**
+- ✅ **Phase 1 COMPLETE** - CDWWork Inpatient Admissions (December 15, 2025)
+- 🚧 **Phase 2 IN DESIGN** - CDWWork2 Dual-Source Integration (February 9, 2026)
+**Current Scope:**
+- Phase 1: Inpatient Admissions from CDWWork (VistA sites)
+- Phase 2: Dual-source integration with CDWWork2 (Cerner sites)
+**Future Scope:** Outpatient Encounters (Phase 3)
 
 ---
 
@@ -38,8 +42,9 @@
 7. [API Design](#7-api-design)
 8. [UI Specifications](#8-ui-specifications)
 9. [Implementation Roadmap](#9-implementation-roadmap)
-10. [Testing Strategy](#10-testing-strategy)
-11. [Future Enhancements](#11-future-enhancements)
+10. [Phase 2: CDWWork2 Integration](#10-phase-2-cdwwork2-integration)
+11. [Testing Strategy](#11-testing-strategy)
+12. [Future Enhancements](#12-future-enhancements)
 
 ---
 
@@ -1275,7 +1280,1258 @@ def get_all_encounters(
 
 ---
 
-## 10. Testing Strategy
+## 10. Phase 2: CDWWork2 Integration
+
+### 10.1 Overview and Objectives
+
+**Phase 2 Goal**: Enhance the Encounters domain to process and display encounter data from both CDWWork (VistA sites) and CDWWork2 (Cerner/Oracle Health sites) as a unified dataset.
+
+**Key Objectives**:
+1. **Bronze Layer Extraction**: Create Bronze ETL extraction for CDWWork2 `EncMill.Encounter` table
+2. **Silver Layer Harmonization**: Merge CDWWork `Inpat.Inpatient` and CDWWork2 `EncMill.Encounter` into common schema
+3. **Schema Alignment**: Map divergent field structures to unified Silver schema
+4. **Data Source Tracking**: Add `data_source` column throughout pipeline (Silver → Gold → PostgreSQL)
+5. **UI Transparency**: Display encounter source (VistA vs Cerner) in user interface
+6. **Test Coverage**: Validate dual-source workflow with Thompson patients (ICN200001-200003)
+
+**Business Value**:
+- **Complete Patient View**: Veterans treated at both VistA and Cerner sites see all encounters in one place
+- **Site Migration Support**: Handle patients who transition between EHR systems (e.g., Bay Pines VistA → Walla Walla Cerner)
+- **Production Readiness**: Prepare med-z1 for real-world VA environment with mixed EHR sites
+
+### 10.2 Source System Comparison
+
+#### 10.2.1 CDWWork (VistA) - Inpatient Only
+
+**Table**: `CDWWork.Inpat.Inpatient`
+**VistA Source**: Patient Treatment File (PTF) #45
+**Scope**: Inpatient admissions only (no outpatient visits)
+
+**Key Characteristics**:
+- **Patient-centric model**: Linked directly to `SPatient.SPatient` via `PatientSID`
+- **Inpatient-only**: Only hospital admissions, not clinic visits
+- **Surrogate Key**: `InpatientSID` (BIGINT IDENTITY)
+- **Identity Field**: `PatientSID` (requires ICN lookup for cross-system join)
+
+**Schema (19 columns)**:
+```sql
+CREATE TABLE [Inpat].[Inpatient] (
+    -- Primary key
+    [InpatientSID] BIGINT IDENTITY(1,1) PRIMARY KEY,
+
+    -- Patient reference (requires ICN lookup)
+    [PatientSID] INT NOT NULL,
+
+    -- Admission details
+    [AdmitDateTime] DATETIME2(0) NOT NULL,
+    [AdmitLocationSID] INT NULL,           -- FK to Dim.Location
+    [AdmittingProviderSID] INT NULL,       -- FK to SStaff.SStaff
+    [AdmitDiagnosisICD10] VARCHAR(20) NULL,
+
+    -- Discharge details (NULL = active admission)
+    [DischargeDateTime] DATETIME2(0) NULL,
+    [DischargeDateSID] INT NULL,
+    [DischargeWardLocationSID] INT NULL,   -- FK to Dim.Location
+    [DischargeDiagnosisICD10] VARCHAR(20) NULL,
+    [DischargeDiagnosis] VARCHAR(100) NULL,
+    [DischargeDisposition] VARCHAR(50) NULL,
+
+    -- Calculated fields
+    [LengthOfStay] INT NULL,
+    [EncounterStatus] VARCHAR(20) NULL,    -- 'Active' or 'Discharged'
+
+    -- Facility
+    [Sta3n] INT NOT NULL
+);
+```
+
+**Encounter Types**: Inpatient only (no type field needed)
+
+#### 10.2.2 CDWWork2 (Cerner) - Multi-Type Encounters
+
+**Table**: `CDWWork2.EncMill.Encounter`
+**Cerner Source**: Cerner Millennium Encounter table
+**Scope**: All encounter types (Inpatient, Outpatient, Emergency)
+
+**Key Characteristics**:
+- **Encounter-centric model**: Central table for all clinical data linkage
+- **Multi-type encounters**: INPATIENT, OUTPATIENT, EMERGENCY
+- **Surrogate Key**: `EncounterSID` (BIGINT IDENTITY)
+- **Identity Field**: `PatientICN` (direct, no lookup needed)
+- **Denormalized**: Includes provider/location names (not just SIDs)
+
+**Schema (15 columns)**:
+```sql
+CREATE TABLE EncMill.Encounter (
+    -- Primary key
+    EncounterSID BIGINT PRIMARY KEY IDENTITY(1,1),
+
+    -- Patient reference (direct ICN)
+    PersonSID BIGINT NOT NULL,             -- FK to VeteranMill.SPerson
+    PatientICN VARCHAR(50) NOT NULL,       -- Direct ICN (no lookup needed!)
+
+    -- Facility
+    Sta3n VARCHAR(10) NOT NULL,            -- Note: VARCHAR vs INT in CDWWork
+    FacilityName VARCHAR(200) NULL,        -- Denormalized
+
+    -- Encounter classification
+    EncounterType VARCHAR(50) NOT NULL,    -- 'INPATIENT', 'OUTPATIENT', 'EMERGENCY'
+
+    -- Timing (three date fields)
+    EncounterDate DATETIME NOT NULL,       -- Primary encounter date
+    AdmitDate DATETIME NULL,               -- For inpatient encounters
+    DischargeDate DATETIME NULL,           -- For discharged inpatients
+
+    -- Location (denormalized names, no SIDs)
+    LocationName VARCHAR(200) NULL,
+    LocationType VARCHAR(50) NULL,         -- 'CLINIC', 'WARD', 'ED'
+
+    -- Provider (denormalized, no SID required)
+    ProviderName VARCHAR(200) NULL,
+    ProviderSID BIGINT NULL,               -- Optional FK
+
+    -- Metadata
+    IsActive BIT NOT NULL DEFAULT 1,
+    CreatedDate DATETIME NOT NULL DEFAULT GETDATE()
+);
+```
+
+**Encounter Types**: INPATIENT, OUTPATIENT, EMERGENCY (explicit field)
+
+#### 10.2.3 Schema Differences - Field Mapping
+
+| Concept | CDWWork (Inpat.Inpatient) | CDWWork2 (EncMill.Encounter) | Harmonization Strategy |
+|---------|---------------------------|------------------------------|------------------------|
+| **Primary Key** | `InpatientSID` | `EncounterSID` | Map both to `encounter_record_id` in Silver |
+| **Patient Identity** | `PatientSID` (INT, requires JOIN to get ICN) | `PatientICN` (VARCHAR, direct) | CDWWork: JOIN `SPatient.SPatient` to resolve ICN |
+| **Encounter Type** | Implicit "INPATIENT" (no field) | `EncounterType` (INPATIENT/OUTPATIENT/EMERGENCY) | CDWWork: Add literal "INPATIENT" |
+| **Primary Date** | `AdmitDateTime` (admission date) | `EncounterDate` (primary date), `AdmitDate` (admission) | CDWWork: Use `AdmitDateTime` for both<br>CDWWork2: Use `EncounterDate` as primary, `AdmitDate` if available |
+| **Discharge Date** | `DischargeDateTime` | `DischargeDate` | Direct mapping (both nullable) |
+| **Location Fields** | `AdmitLocationSID` (FK), `DischargeWardLocationSID` (FK) | `LocationName` (VARCHAR), `LocationType` (VARCHAR) | CDWWork: JOIN `Dim.Location` to resolve names<br>CDWWork2: Use direct values |
+| **Provider Fields** | `AdmittingProviderSID` (FK) | `ProviderName` (VARCHAR), `ProviderSID` (optional) | CDWWork: JOIN `SStaff.SStaff` to resolve name<br>CDWWork2: Use `ProviderName` directly |
+| **Diagnosis** | `AdmitDiagnosisICD10`, `DischargeDiagnosisICD10`, `DischargeDiagnosis` | Not in Encounter table (in separate tables) | CDWWork: Include diagnosis fields<br>CDWWork2: Leave NULL (Phase 2), add later |
+| **Disposition** | `DischargeDisposition` | Not in Encounter table | CDWWork: Include<br>CDWWork2: Leave NULL |
+| **Length of Stay** | `LengthOfStay` (INT, pre-calculated) | Not in Encounter table | Calculate in Silver for both: `DischargeDate - AdmitDate` |
+| **Encounter Status** | `EncounterStatus` ('Active'/'Discharged') | Derived from `DischargeDate` | Derive in Silver: NULL discharge date → 'Active' |
+| **Facility** | `Sta3n` (INT) | `Sta3n` (VARCHAR), `FacilityName` (denormalized) | Cast CDWWork2 Sta3n to INT, add facility name lookup |
+| **Data Source** | N/A (implicit CDWWork) | N/A (implicit CDWWork2) | Add `data_source` column in Silver: 'CDWWork' or 'CDWWork2' |
+
+**Key Insight**: CDWWork2 is **more denormalized** (includes names directly), while CDWWork requires **more JOINs** to resolve SIDs.
+
+### 10.3 Common Silver Schema Definition
+
+To harmonize CDWorkWork and CDWWork2 encounters, we define a **unified Silver schema** with these columns:
+
+**Silver Schema: `silver/encounters/encounters_merged.parquet`**
+
+| Column Name | Type | Source | Description |
+|-------------|------|--------|-------------|
+| `patient_icn` | VARCHAR | Both | Harmonized patient identifier (ICN format) |
+| `encounter_record_id` | BIGINT | Both | Source-specific surrogate key (InpatientSID or EncounterSID) |
+| `encounter_type` | VARCHAR | Both | 'INPATIENT', 'OUTPATIENT', 'EMERGENCY' |
+| `encounter_date` | DATETIME | Both | Primary encounter date (admit date for inpatients) |
+| `admit_date` | DATETIME | Both | Admission date (NULL for outpatient/emergency) |
+| `discharge_date` | DATETIME | Both | Discharge date (NULL if active) |
+| `length_of_stay` | INT | Calculated | Days between admit and discharge (NULL if active) |
+| `facility_sta3n` | VARCHAR | Both | Station number (as string for consistency) |
+| `facility_name` | VARCHAR | Both | Facility name (via lookup or direct) |
+| `admit_location_name` | VARCHAR | Both | Admission ward/clinic name |
+| `admit_location_type` | VARCHAR | Both | 'WARD', 'CLINIC', 'ED', etc. |
+| `discharge_location_name` | VARCHAR | CDWWork | Discharge ward name (NULL for CDWWork2) |
+| `discharge_location_type` | VARCHAR | CDWWork | Discharge ward type (NULL for CDWWork2) |
+| `provider_name` | VARCHAR | Both | Attending/responsible provider name |
+| `admit_diagnosis_icd10` | VARCHAR | CDWWork | Admission diagnosis code (NULL for CDWWork2 Phase 2) |
+| `discharge_diagnosis_icd10` | VARCHAR | CDWWork | Discharge diagnosis code (NULL for CDWWork2 Phase 2) |
+| `discharge_diagnosis` | VARCHAR | CDWWork | Discharge diagnosis text (NULL for CDWWork2 Phase 2) |
+| `discharge_disposition` | VARCHAR | CDWWork | 'Home', 'SNF', 'Rehab', 'AMA', etc. (NULL for CDWWork2 Phase 2) |
+| `encounter_status` | VARCHAR | Calculated | 'Active' or 'Discharged' (derived from discharge_date) |
+| `data_source` | VARCHAR | Metadata | 'CDWWork' or 'CDWWork2' (source system) |
+| `last_updated` | DATETIME | Metadata | ETL processing timestamp |
+
+**Design Notes**:
+- **CDWWork2 NULL fields**: Diagnosis and disposition fields will be NULL in Phase 2 (added in later phase when we implement Cerner diagnosis tables)
+- **Encounter types**: CDWWork only has 'INPATIENT', CDWWork2 includes 'OUTPATIENT' and 'EMERGENCY' (future UI enhancement)
+- **Sta3n data type**: Unified as VARCHAR (CDWWork2 uses VARCHAR, CDWWork uses INT → cast to VARCHAR)
+- **Location denormalization**: Both sources resolve to location names (CDWWork via JOIN, CDWWork2 direct)
+
+### 10.4 ETL Pipeline Design
+
+#### 10.4.1 Bronze Layer - New Script
+
+**Create**: `etl/bronze_cdwwork2_encounters.py`
+
+**Purpose**: Extract raw encounter data from `CDWWork2.EncMill.Encounter`
+
+**Implementation Pattern**: Follow `etl/bronze_cdwwork2_vitals.py` (existing reference)
+
+**SQL Query**:
+```python
+query = """
+SELECT
+    EncounterSID,
+    PersonSID,
+    PatientICN,
+    Sta3n,
+    FacilityName,
+    EncounterType,
+    EncounterDate,
+    AdmitDate,
+    DischargeDate,
+    LocationName,
+    LocationType,
+    ProviderName,
+    ProviderSID,
+    IsActive,
+    CreatedDate
+FROM EncMill.Encounter
+WHERE IsActive = 1
+ORDER BY EncounterDate DESC
+"""
+```
+
+**Output**: `bronze/cdwwork2/encounters/encounters_raw.parquet`
+
+**Metadata Columns**:
+- `SourceSystem`: 'CDWWork2' (literal)
+- `LoadDateTime`: Current UTC timestamp
+
+**Key Code Structure**:
+```python
+#!/usr/bin/env python3
+"""
+Bronze extraction: CDWWork2 Encounters (EncMill.Encounter)
+Extracts all encounter types from Cerner/Oracle Health CDWWork2 database.
+"""
+
+import logging
+from datetime import datetime, timezone
+from sqlalchemy import create_engine
+import polars as pl
+
+from config import CDWWORK2_DB_CONFIG
+from etl.minio_utils import MinIOClient, build_bronze_path
+
+logger = logging.getLogger(__name__)
+
+
+def extract_encounters():
+    """Extract EncMill.Encounter to Bronze layer."""
+
+    logger.info("=" * 70)
+    logger.info("Extracting CDWWork2 Encounters (EncMill.Encounter)...")
+    logger.info("=" * 70)
+
+    # Build connection string
+    conn_str = (
+        f"mssql+pyodbc://{CDWWORK2_DB_CONFIG['user']}:"
+        f"{CDWWORK2_DB_CONFIG['password']}@"
+        f"{CDWWORK2_DB_CONFIG['server']}/"
+        f"{CDWWORK2_DB_CONFIG['name']}?"
+        f"driver={CDWWORK2_DB_CONFIG['driver']}&"
+        f"TrustServerCertificate=yes"
+    )
+
+    engine = create_engine(conn_str)
+
+    # Extract query (see above)
+    query = """..."""
+
+    logger.info("Executing query...")
+    df = pl.read_database(query, connection=engine)
+    logger.info(f"  - Extracted {len(df)} encounters")
+
+    # Add metadata columns
+    df = df.with_columns([
+        pl.lit("CDWWork2").alias("SourceSystem"),
+        pl.lit(datetime.now(timezone.utc)).alias("LoadDateTime"),
+    ])
+
+    # Write to MinIO Bronze layer
+    minio_client = MinIOClient()
+    object_key = build_bronze_path("cdwwork2", "encounters", "encounters_raw.parquet")
+
+    logger.info(f"Writing to MinIO: {object_key}")
+    minio_client.write_parquet(df, object_key)
+
+    logger.info("=" * 70)
+    logger.info(f"Bronze extraction complete: {len(df)} encounters")
+    logger.info(f"  - Written to: s3://{minio_client.bucket_name}/{object_key}")
+    logger.info("=" * 70)
+
+    engine.dispose()
+    return df
+
+
+if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    extract_encounters()
+```
+
+**Testing**:
+```bash
+# Run Bronze extraction
+python etl/bronze_cdwwork2_encounters.py
+
+# Verify Parquet file created
+mc ls medz1/bronze/cdwwork2/encounters/
+
+# Validate data
+python -c "
+from etl.minio_utils import MinIOClient
+client = MinIOClient()
+df = client.read_parquet('bronze/cdwwork2/encounters/encounters_raw.parquet')
+print(f'Total encounters: {len(df)}')
+print(f'Encounter types: {df[\"EncounterType\"].value_counts()}')
+print(df.head())
+"
+```
+
+**Expected Output** (Thompson patients):
+- Bailey (ICN200001): 7 encounters (Sta3n 687, Walla Walla VAMC)
+- Alananah (ICN200002): 3 encounters (Sta3n 687, Walla Walla VAMC)
+- Joe (ICN200003): 2 encounters (Sta3n 687, Walla Walla VAMC)
+- **Total**: 12 CDWWork2 encounters
+
+#### 10.4.2 Silver Layer - Enhanced Dual-Source Transformation
+
+**Modify**: `etl/silver_inpatient.py` → Refactor to dual-source pattern
+
+**Current State**: Only processes CDWWork `Inpat.Inpatient`
+
+**New Structure** (follow `etl/silver_vitals.py` pattern):
+1. **Rename existing function**: `transform_inpatient_silver()` → `transform_cdwwork_encounters()`
+2. **Add new function**: `transform_cdwwork2_encounters()`
+3. **Add main function**: `transform_encounters_silver()` (merges both sources)
+
+**Function 1: `transform_cdwwork_encounters()`**
+
+Transform CDWWork inpatient data to common Silver schema:
+
+```python
+def transform_cdwwork_encounters(minio_client, sta3n_lookup, patient_icn_lookup):
+    """
+    Transform CDWWork (VistA) inpatient encounters to common Silver schema.
+    Returns Polars DataFrame with harmonized encounters.
+    """
+    logger.info("=" * 70)
+    logger.info("Transforming CDWWork (VistA) encounters...")
+    logger.info("=" * 70)
+
+    # Step 1: Load Bronze files
+    logger.info("Step 1: Loading CDWWork Bronze files...")
+    inpatient_path = build_bronze_path("cdwwork", "inpatient", "inpatient_raw.parquet")
+    df = minio_client.read_parquet(inpatient_path)
+    logger.info(f"  - Loaded {len(df)} inpatient encounters")
+
+    # Step 2: Resolve PatientICN (CDWWork uses PatientSID)
+    logger.info("Step 2: Resolving PatientICN...")
+    df = df.join(
+        patient_icn_lookup.select([
+            pl.col("PatientSID"),
+            pl.col("PatientICN").alias("patient_icn")
+        ]),
+        on="PatientSID",
+        how="left"
+    )
+
+    # Step 3: Resolve Sta3n lookup (facility names)
+    logger.info("Step 3: Resolving Sta3n lookups...")
+    df = df.with_columns([
+        pl.col("Sta3n").cast(pl.Utf8).alias("Sta3n")
+    ])
+    df = df.join(
+        sta3n_lookup.select([
+            pl.col("Sta3n"),
+            pl.col("Sta3nName").alias("facility_name")
+        ]),
+        on="Sta3n",
+        how="left"
+    )
+
+    # Step 4: Transform to common Silver schema
+    logger.info("Step 4: Transforming to common schema...")
+    df = df.with_columns([
+        # Identity
+        pl.col("patient_icn"),
+
+        # Encounter identification
+        pl.col("InpatientSID").alias("encounter_record_id"),
+        pl.lit("INPATIENT").alias("encounter_type"),  # CDWWork has inpatient only
+
+        # Dates
+        pl.col("AdmitDateTime").alias("encounter_date"),  # Primary date
+        pl.col("AdmitDateTime").alias("admit_date"),      # Also admission date
+        pl.col("DischargeDateTime").alias("discharge_date"),
+        pl.col("LengthOfStay").alias("length_of_stay"),
+
+        # Facility
+        pl.col("Sta3n").alias("facility_sta3n"),
+        pl.col("facility_name"),
+
+        # Locations (from Bronze JOINs)
+        pl.col("AdmitWard").alias("admit_location_name"),
+        pl.lit("WARD").alias("admit_location_type"),  # CDWWork inpatient = ward
+        pl.col("DischargeWard").alias("discharge_location_name"),
+        pl.lit("WARD").alias("discharge_location_type"),
+
+        # Provider
+        pl.col("AttendingProvider").alias("provider_name"),
+
+        # Diagnoses (CDWWork has these, CDWWork2 doesn't in Phase 2)
+        pl.col("AdmitDiagnosisICD10").alias("admit_diagnosis_icd10"),
+        pl.col("DischargeDiagnosisICD10").alias("discharge_diagnosis_icd10"),
+        pl.col("DischargeDiagnosis").alias("discharge_diagnosis"),
+        pl.col("DischargeDisposition").alias("discharge_disposition"),
+
+        # Status
+        pl.col("EncounterStatus").alias("encounter_status"),
+
+        # Data source
+        pl.lit("CDWWork").alias("data_source"),
+
+        # Metadata
+        pl.lit(datetime.now(timezone.utc)).alias("last_updated"),
+    ])
+
+    # Step 5: Select final columns (common Silver schema)
+    logger.info("Step 5: Selecting final columns...")
+    df = df.select([
+        "patient_icn",
+        "encounter_record_id",
+        "encounter_type",
+        "encounter_date",
+        "admit_date",
+        "discharge_date",
+        "length_of_stay",
+        "facility_sta3n",
+        "facility_name",
+        "admit_location_name",
+        "admit_location_type",
+        "discharge_location_name",
+        "discharge_location_type",
+        "provider_name",
+        "admit_diagnosis_icd10",
+        "discharge_diagnosis_icd10",
+        "discharge_diagnosis",
+        "discharge_disposition",
+        "encounter_status",
+        "data_source",
+        "last_updated",
+    ])
+
+    logger.info(f"CDWWork transformation complete: {len(df)} encounters")
+    return df
+```
+
+**Function 2: `transform_cdwwork2_encounters()`**
+
+Transform CDWWork2 encounter data to common Silver schema:
+
+```python
+def transform_cdwwork2_encounters(minio_client, sta3n_lookup):
+    """
+    Transform CDWWork2 (Oracle Health) encounters to common Silver schema.
+    Returns Polars DataFrame with harmonized encounters.
+    """
+    logger.info("=" * 70)
+    logger.info("Transforming CDWWork2 (Oracle Health) encounters...")
+    logger.info("=" * 70)
+
+    # Step 1: Load Bronze files
+    logger.info("Step 1: Loading CDWWork2 Bronze files...")
+    encounters_path = build_bronze_path("cdwwork2", "encounters", "encounters_raw.parquet")
+    df = minio_client.read_parquet(encounters_path)
+    logger.info(f"  - Loaded {len(df)} encounters")
+
+    # Step 2: Resolve Sta3n lookup (CDWWork2 has FacilityName, but may need standardization)
+    logger.info("Step 2: Resolving Sta3n lookups...")
+    df = df.join(
+        sta3n_lookup.select([
+            pl.col("Sta3n"),
+            pl.col("Sta3nName").alias("facility_name_lookup")
+        ]),
+        on="Sta3n",
+        how="left"
+    )
+    # Use CDWWork2's FacilityName if present, otherwise use lookup
+    df = df.with_columns([
+        pl.when(pl.col("FacilityName").is_not_null())
+            .then(pl.col("FacilityName"))
+            .otherwise(pl.col("facility_name_lookup"))
+            .alias("facility_name")
+    ])
+
+    # Step 3: Calculate length of stay (CDWWork2 doesn't have pre-calculated)
+    logger.info("Step 3: Calculating length of stay...")
+    df = df.with_columns([
+        pl.when(pl.col("DischargeDate").is_not_null())
+            .then(
+                (pl.col("DischargeDate").cast(pl.Date) -
+                 pl.col("AdmitDate").cast(pl.Date)).dt.total_days()
+            )
+            .otherwise(pl.lit(None))
+            .alias("length_of_stay")
+    ])
+
+    # Step 4: Derive encounter status
+    logger.info("Step 4: Deriving encounter status...")
+    df = df.with_columns([
+        pl.when(pl.col("DischargeDate").is_null())
+            .then(pl.lit("Active"))
+            .otherwise(pl.lit("Discharged"))
+            .alias("encounter_status")
+    ])
+
+    # Step 5: Transform to common Silver schema
+    logger.info("Step 5: Transforming to common schema...")
+    df = df.with_columns([
+        # Identity (CDWWork2 already has PatientICN!)
+        pl.col("PatientICN").alias("patient_icn"),
+
+        # Encounter identification
+        pl.col("EncounterSID").alias("encounter_record_id"),
+        pl.col("EncounterType").alias("encounter_type"),  # INPATIENT, OUTPATIENT, EMERGENCY
+
+        # Dates
+        pl.col("EncounterDate").alias("encounter_date"),
+        pl.col("AdmitDate").alias("admit_date"),
+        pl.col("DischargeDate").alias("discharge_date"),
+        pl.col("length_of_stay"),
+
+        # Facility
+        pl.col("Sta3n").alias("facility_sta3n"),
+        pl.col("facility_name"),
+
+        # Locations (CDWWork2 has name/type directly)
+        pl.col("LocationName").alias("admit_location_name"),
+        pl.col("LocationType").alias("admit_location_type"),
+        pl.lit(None).cast(pl.Utf8).alias("discharge_location_name"),  # CDWWork2 doesn't have separate discharge location
+        pl.lit(None).cast(pl.Utf8).alias("discharge_location_type"),
+
+        # Provider (CDWWork2 has name directly)
+        pl.col("ProviderName").alias("provider_name"),
+
+        # Diagnoses (NULL for CDWWork2 Phase 2 - not in Encounter table)
+        pl.lit(None).cast(pl.Utf8).alias("admit_diagnosis_icd10"),
+        pl.lit(None).cast(pl.Utf8).alias("discharge_diagnosis_icd10"),
+        pl.lit(None).cast(pl.Utf8).alias("discharge_diagnosis"),
+        pl.lit(None).cast(pl.Utf8).alias("discharge_disposition"),
+
+        # Status
+        pl.col("encounter_status"),
+
+        # Data source
+        pl.lit("CDWWork2").alias("data_source"),
+
+        # Metadata
+        pl.lit(datetime.now(timezone.utc)).alias("last_updated"),
+    ])
+
+    # Step 6: Select final columns (common Silver schema)
+    logger.info("Step 6: Selecting final columns...")
+    df = df.select([
+        "patient_icn",
+        "encounter_record_id",
+        "encounter_type",
+        "encounter_date",
+        "admit_date",
+        "discharge_date",
+        "length_of_stay",
+        "facility_sta3n",
+        "facility_name",
+        "admit_location_name",
+        "admit_location_type",
+        "discharge_location_name",
+        "discharge_location_type",
+        "provider_name",
+        "admit_diagnosis_icd10",
+        "discharge_diagnosis_icd10",
+        "discharge_diagnosis",
+        "discharge_disposition",
+        "encounter_status",
+        "data_source",
+        "last_updated",
+    ])
+
+    logger.info(f"CDWWork2 transformation complete: {len(df)} encounters")
+    return df
+```
+
+**Function 3: `transform_encounters_silver()` (main entry point)**
+
+Merge both sources and write unified Silver layer:
+
+```python
+def transform_encounters_silver():
+    """
+    Transform Bronze encounters from both CDWWork and CDWWork2 to Silver layer.
+    Harmonizes schemas, adds data_source tracking, and merges into single dataset.
+    """
+
+    logger.info("=" * 70)
+    logger.info("Starting Silver encounters transformation (CDWWork + CDWWork2)")
+    logger.info("=" * 70)
+
+    # Initialize MinIO client
+    minio_client = MinIOClient()
+
+    # Load shared lookup tables
+    sta3n_lookup = load_sta3n_lookup()
+    patient_icn_lookup = load_patient_icn_lookup()
+
+    # Transform CDWWork encounters
+    df_cdwwork = transform_cdwwork_encounters(minio_client, sta3n_lookup, patient_icn_lookup)
+
+    # Transform CDWWork2 encounters
+    df_cdwwork2 = transform_cdwwork2_encounters(minio_client, sta3n_lookup)
+
+    # ==================================================================
+    # Merge both sources
+    # ==================================================================
+    logger.info("=" * 70)
+    logger.info("Merging CDWWork and CDWWork2 encounters...")
+    logger.info("=" * 70)
+
+    df_merged = pl.concat([df_cdwwork, df_cdwwork2], how="vertical")
+    logger.info(f"  - Total encounters after merge: {len(df_merged)}")
+    logger.info(f"    - CDWWork: {len(df_cdwwork)}")
+    logger.info(f"    - CDWWork2: {len(df_cdwwork2)}")
+
+    # ==================================================================
+    # Sort and deduplicate (if needed)
+    # ==================================================================
+    # Sort by patient_icn, encounter_date, data_source
+    df_merged = df_merged.sort(["patient_icn", "encounter_date", "data_source"])
+
+    # Check for potential duplicates
+    dup_check = df_merged.group_by(["patient_icn", "encounter_date", "admit_location_name"]).agg([
+        pl.count().alias("count")
+    ]).filter(pl.col("count") > 1)
+
+    if len(dup_check) > 0:
+        logger.warning(f"Found {len(dup_check)} potential duplicate encounters (same patient + date + location)")
+        logger.warning("Keeping all records (no deduplication in Phase 2)")
+    else:
+        logger.info("No duplicate encounters found")
+
+    # ==================================================================
+    # Write to Silver layer
+    # ==================================================================
+    logger.info("=" * 70)
+    logger.info("Writing to Silver layer...")
+    logger.info("=" * 70)
+
+    silver_path = build_silver_path("encounters", "encounters_merged.parquet")
+    minio_client.write_parquet(df_merged, silver_path)
+
+    logger.info("=" * 70)
+    logger.info(f"Silver transformation complete: {len(df_merged)} encounters written to")
+    logger.info(f"  s3://{minio_client.bucket_name}/{silver_path}")
+    logger.info(f"  - CDWWork (VistA): {len(df_cdwwork)} encounters")
+    logger.info(f"  - CDWWork2 (Oracle Health): {len(df_cdwwork2)} encounters")
+    logger.info("=" * 70)
+
+    return df_merged
+
+
+if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    transform_encounters_silver()
+```
+
+**Testing Silver Layer**:
+```bash
+# Run Silver transformation
+python etl/silver_inpatient.py
+
+# Verify merged Parquet file
+mc ls medz1/silver/encounters/
+
+# Validate data
+python -c "
+from etl.minio_utils import MinIOClient
+client = MinIOClient()
+df = client.read_parquet('silver/encounters/encounters_merged.parquet')
+print(f'Total encounters: {len(df)}')
+print('\\nBy data source:')
+print(df.groupby('data_source').count())
+print('\\nBy encounter type:')
+print(df.groupby('encounter_type').count())
+"
+```
+
+**Expected Silver Output**:
+- CDWWork encounters: ~73 (existing inpatient data)
+- CDWWork2 encounters: 12 (Thompson patients at Walla Walla)
+- **Total Silver encounters**: ~85
+
+#### 10.4.3 Gold Layer - Verify Data Source Column
+
+**Modify**: `etl/gold_inpatient.py` (minimal changes expected)
+
+**Key Change**: Ensure `data_source` column is propagated from Silver to Gold
+
+**Verification Steps**:
+1. Read `silver/encounters/encounters_merged.parquet` (not old CDWWork-only path)
+2. Confirm `data_source` column exists in Gold output
+3. Test Gold transformation
+
+```python
+# In gold_inpatient.py, verify Silver path
+silver_path = build_silver_path("encounters", "encounters_merged.parquet")  # Updated path
+df_silver = minio_client.read_parquet(silver_path)
+
+# Ensure data_source column is included in Gold schema
+df_gold = df_silver.select([
+    "patient_icn",
+    "patient_key",
+    "encounter_record_id",
+    "encounter_type",
+    "encounter_date",
+    "admit_date",
+    "discharge_date",
+    "length_of_stay",
+    "facility_sta3n",
+    "facility_name",
+    "admit_location_name",
+    "provider_name",
+    "discharge_diagnosis",
+    "discharge_disposition",
+    "encounter_status",
+    "data_source",  # <--- Ensure this is included!
+    "last_updated",
+])
+```
+
+**Testing**:
+```bash
+python etl/gold_inpatient.py
+
+# Verify data_source column exists
+python -c "
+from etl.minio_utils import MinIOClient
+client = MinIOClient()
+df = client.read_parquet('gold/inpatient/encounters.parquet')
+print('Columns:', df.columns)
+assert 'data_source' in df.columns, 'Missing data_source column!'
+print('✓ data_source column present')
+"
+```
+
+#### 10.4.4 PostgreSQL Loading - Add Data Source Column
+
+**Modify**: `db/ddl/create_patient_encounters_table.sql` (ALTER TABLE)
+
+**Add Column**:
+```sql
+-- Add data_source column to patient_encounters table
+ALTER TABLE patient_encounters
+ADD COLUMN IF NOT EXISTS data_source VARCHAR(20);
+
+-- Add index for data source filtering (optional)
+CREATE INDEX IF NOT EXISTS idx_encounters_data_source
+ON patient_encounters(data_source);
+
+-- Verify column added
+SELECT column_name, data_type, character_maximum_length
+FROM information_schema.columns
+WHERE table_name = 'patient_encounters' AND column_name = 'data_source';
+```
+
+**Apply Schema Change**:
+```bash
+# Connect to PostgreSQL and apply ALTER TABLE
+docker exec -i postgres16 psql -U medz1user -d medz1 < db/ddl/add_encounters_data_source.sql
+```
+
+**Modify**: `etl/load_encounters.py` (minimal changes)
+
+**Key Change**: Ensure `data_source` column is included in PostgreSQL INSERT
+
+```python
+# In load_encounters.py, verify column list includes data_source
+columns_to_load = [
+    'patient_icn',
+    'patient_key',
+    'inpatient_sid',  # Maps to encounter_record_id in Silver
+    'encounter_type',
+    'encounter_status',
+    'admit_datetime',
+    'discharge_datetime',
+    'admit_ward',
+    'discharge_ward',
+    'attending_provider',
+    'admit_diagnosis_icd10',
+    'discharge_diagnosis_icd10',
+    'discharge_diagnosis',
+    'discharge_disposition',
+    'length_of_stay',
+    'facility_name',
+    'sta3n',
+    'data_source',  # <--- New column
+    'created_at',
+    'updated_at',
+]
+```
+
+**Testing**:
+```bash
+# Run PostgreSQL load
+python etl/load_encounters.py
+
+# Verify data_source column populated
+docker exec -i postgres16 psql -U medz1user -d medz1 -c "
+SELECT data_source, encounter_type, COUNT(*)
+FROM patient_encounters
+GROUP BY data_source, encounter_type
+ORDER BY data_source, encounter_type;
+"
+
+# Expected output:
+#  data_source | encounter_type | count
+# -------------+----------------+-------
+#  CDWWork     | INPATIENT      |    73
+#  CDWWork2    | INPATIENT      |     7
+#  CDWWork2    | OUTPATIENT     |     5
+```
+
+### 10.5 UI Enhancements
+
+#### 10.5.1 Data Source Badge Design
+
+**Purpose**: Visually indicate which EHR system (VistA or Cerner) provided each encounter
+
+**Design Options**:
+
+**Option A: Discrete Badge** (Recommended)
+```html
+<!-- Full page encounter row -->
+<td>
+    {{ enc.admit_datetime.strftime('%m/%d/%Y') }}
+    {% if enc.data_source == 'CDWWork2' %}
+        <span class="badge badge--cerner badge--xs" title="Oracle Health (Cerner)">C</span>
+    {% else %}
+        <span class="badge badge--vista badge--xs" title="VistA">V</span>
+    {% endif %}
+</td>
+```
+
+**Styling**:
+```css
+/* Data source badges */
+.badge--vista {
+    background-color: #4CAF50;  /* Green for VistA */
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.7rem;
+    font-weight: bold;
+    margin-left: 6px;
+}
+
+.badge--cerner {
+    background-color: #2196F3;  /* Blue for Cerner */
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.7rem;
+    font-weight: bold;
+    margin-left: 6px;
+}
+
+.badge--xs {
+    font-size: 0.65rem;
+    padding: 1px 4px;
+}
+```
+
+**Option B: Icon with Tooltip**
+```html
+<td>
+    {{ enc.admit_datetime.strftime('%m/%d/%Y') }}
+    {% if enc.data_source == 'CDWWork2' %}
+        <i class="fa-solid fa-c data-source-icon data-source-icon--cerner"
+           title="Oracle Health (Cerner)"></i>
+    {% else %}
+        <i class="fa-solid fa-v data-source-icon data-source-icon--vista"
+           title="VistA"></i>
+    {% endif %}
+</td>
+```
+
+**Option C: Facility Name Suffix**
+```html
+<td>{{ enc.facility_name }} {% if enc.data_source == 'CDWWork2' %}(Cerner){% endif %}</td>
+```
+
+**Recommendation**: Use **Option A (Badge)** for primary implementation. Badges are:
+- Visually distinct
+- Space-efficient
+- Consistent with existing med-z1 badge patterns
+- Accessible (tooltip provides full context)
+
+#### 10.5.2 Widget Updates
+
+**File**: `app/templates/partials/encounters_widget.html`
+
+**Change**: Add data source badge to each encounter item
+
+```html
+<div class="encounter-item-widget__date">
+    {% if enc.encounter_status == 'Active' %}
+        <i class="fa-solid fa-hospital text-warning"></i>
+        {{ enc.admit_datetime.strftime('%m/%d/%Y') }} - {{ enc.admit_ward }}
+        <span class="badge badge--warning badge--sm">ACTIVE</span>
+        {% if enc.data_source == 'CDWWork2' %}
+            <span class="badge badge--cerner badge--xs" title="Oracle Health (Cerner)">C</span>
+        {% endif %}
+    {% else %}
+        {{ enc.admit_datetime.strftime('%m/%d/%Y') }} - {{ enc.discharge_datetime.strftime('%m/%d/%Y') }}
+        ({{ enc.length_of_stay }} day{{ 's' if enc.length_of_stay != 1 else '' }})
+        {% if enc.data_source == 'CDWWork2' %}
+            <span class="badge badge--cerner badge--xs" title="Oracle Health (Cerner)">C</span>
+        {% endif %}
+    {% endif %}
+</div>
+```
+
+**Design Note**: Only show Cerner badge (not VistA) to reduce visual clutter - VistA is the "default" source
+
+#### 10.5.3 Full Page Updates
+
+**File**: `app/templates/patient_encounters.html`
+
+**Change 1**: Add data source badge to table rows
+
+```html
+<tbody>
+  {% for enc in encounters %}
+    <tr class="{% if enc.encounter_status == 'Active' %}active-encounter{% endif %}">
+      <td>
+          {{ enc.admit_datetime.strftime('%m/%d/%Y') }}
+          {% if enc.data_source == 'CDWWork2' %}
+              <span class="badge badge--cerner badge--xs" title="Oracle Health (Cerner)">C</span>
+          {% endif %}
+      </td>
+      <td>
+        {% if enc.encounter_status == 'Active' %}
+          <strong>ACTIVE</strong>
+        {% else %}
+          {{ enc.discharge_datetime.strftime('%m/%d/%Y') }}
+        {% endif %}
+      </td>
+      <td>{{ enc.admit_ward }}</td>
+      <td>{{ enc.attending_provider }}</td>
+      <td>{{ enc.length_of_stay if enc.length_of_stay else '-' }}</td>
+    </tr>
+    <tr class="encounter-details">
+      <td colspan="5">
+        <strong>Facility:</strong> {{ enc.facility_name }} ({{ enc.sta3n }})
+        {% if enc.data_source == 'CDWWork2' %}
+            <span class="text-muted"> · Source: Oracle Health (Cerner)</span>
+        {% endif %}
+        {% if enc.discharge_diagnosis %}
+          <br><strong>Discharge Diagnosis:</strong> {{ enc.discharge_diagnosis }}
+          <br><strong>Disposition:</strong> {{ enc.discharge_disposition }}
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+</tbody>
+```
+
+**Change 2**: Add optional data source filter (future enhancement)
+
+```html
+<div class="filters">
+  <label>Status:
+    <select name="status" hx-get="/patient/{{ patient_icn }}/encounters" hx-target="#encounters-table">
+      <option value="all">All</option>
+      <option value="active">Active</option>
+      <option value="discharged">Discharged</option>
+    </select>
+  </label>
+
+  <label>Data Source:
+    <select name="data_source" hx-get="/patient/{{ patient_icn }}/encounters" hx-target="#encounters-table">
+      <option value="all">All Sources</option>
+      <option value="CDWWork">VistA Sites</option>
+      <option value="CDWWork2">Cerner Sites</option>
+    </select>
+  </label>
+</div>
+```
+
+#### 10.5.4 API Query Layer Updates
+
+**File**: `app/db/encounters.py`
+
+**Change**: Add `data_source` column to all SELECT statements
+
+```python
+def get_recent_encounters(icn: str, limit: int = 4) -> List[Dict[str, Any]]:
+    """Fetch most recent encounters for widget."""
+    query = text("""
+        SELECT
+            encounter_id,
+            inpatient_sid,
+            encounter_status,
+            admit_datetime,
+            discharge_datetime,
+            admit_ward,
+            attending_provider,
+            discharge_diagnosis,
+            length_of_stay,
+            facility_name,
+            sta3n,
+            data_source  -- <--- NEW COLUMN
+        FROM patient_encounters
+        WHERE patient_icn = :icn
+        ORDER BY admit_datetime DESC
+        LIMIT :limit
+    """)
+    # ... rest of function unchanged
+```
+
+**Apply same change to**:
+- `get_encounter_summary()` (no change needed - aggregate function)
+- `get_all_encounters()` (add `data_source` to SELECT list)
+
+**Optional**: Add data source filter parameter
+
+```python
+def get_all_encounters(
+    icn: str,
+    status: str = 'all',
+    facility: Optional[int] = None,
+    data_source: str = 'all',  # <--- NEW PARAMETER
+    sort_by: str = 'admit_date',
+    order: str = 'desc',
+    page: int = 1,
+    per_page: int = 20
+) -> List[Dict[str, Any]]:
+    """Fetch all encounters with filtering, sorting, pagination."""
+
+    # Build WHERE clause
+    where_clauses = ["patient_icn = :icn"]
+    params = {"icn": icn, "per_page": per_page, "offset": (page - 1) * per_page}
+
+    if status != 'all':
+        where_clauses.append("encounter_status = :status")
+        params["status"] = status.capitalize()
+
+    if facility:
+        where_clauses.append("sta3n = :facility")
+        params["facility"] = facility
+
+    if data_source != 'all':  # <--- NEW FILTER
+        where_clauses.append("data_source = :data_source")
+        params["data_source"] = data_source
+
+    # ... rest of function unchanged
+```
+
+### 10.6 Test Data - Thompson Patients
+
+#### 10.6.1 Thompson Patient Overview
+
+**Purpose**: Thompson siblings (Bailey, Alananah, Joe) provide test cases for CDWWork2 encounters
+
+**Patient Profiles**:
+
+| Patient | ICN | PersonSID (CDWWork2) | PatientSID (CDWWork) | Site Transition |
+|---------|-----|---------------------|----------------------|-----------------|
+| Bailey Thompson | ICN200001 | 3001 | 2001 | Bay Pines FL (516) → Walla Walla WA (687) |
+| Alananah Thompson | ICN200002 | 3002 | 2002 | Bay Pines FL (516) → Walla Walla WA (687) |
+| Joe Thompson | ICN200003 | 3003 | 2003 | Bay Pines FL (516) → Walla Walla WA (687) |
+
+**Scenario**: Three siblings served at Bay Pines VA (VistA/Sta3n 516) until February 2025, then relocated to Walla Walla VA (Cerner/Sta3n 687)
+
+**Data Distribution**:
+- **CDWWork encounters**: Historical data at Bay Pines (Sta3n 516) before February 2025
+- **CDWWork2 encounters**: Current data at Walla Walla (Sta3n 687) from February 2025 onward
+
+#### 10.6.2 Thompson CDWWork2 Encounter Data
+
+**File**: `mock/sql-server/cdwwork2/insert/Thompson-Bailey.sql` (already created)
+
+**Bailey Thompson - 7 Encounters**:
+- 5 Outpatient clinic visits (Primary Care, Cardiology)
+- 2 Inpatient admissions (CHF exacerbation, Pneumonia)
+- Date range: 2025-02-15 to 2026-02-01
+
+**File**: `mock/sql-server/cdwwork2/insert/Thompson-Alananah.sql` (already created)
+
+**Alananah Thompson - 3 Encounters**:
+- 3 Outpatient clinic visits (Primary Care)
+- 0 Inpatient admissions (healthy control relative to Bailey)
+- Date range: 2025-02-15 to 2026-02-01
+
+**File**: `mock/sql-server/cdwwork2/insert/Thompson-Joe.sql` (already created)
+
+**Joe Thompson - 2 Encounters**:
+- 2 Outpatient clinic visits (Primary Care)
+- 0 Inpatient admissions (healthiest of three siblings)
+- Date range: 2025-02-15 to 2026-02-01
+
+**Total CDWWork2 Encounters**: 12 (7 Bailey + 3 Alananah + 2 Joe)
+
+**Verification Query**:
+```sql
+-- Verify Thompson CDWWork2 encounters
+USE CDWWork2;
+GO
+
+SELECT
+    e.PatientICN,
+    e.EncounterType,
+    e.EncounterDate,
+    e.LocationName,
+    e.ProviderName,
+    e.FacilityName
+FROM EncMill.Encounter e
+WHERE e.PatientICN IN ('ICN200001', 'ICN200002', 'ICN200003')
+ORDER BY e.PatientICN, e.EncounterDate;
+GO
+
+-- Expected: 12 encounters (7 Bailey, 3 Alananah, 2 Joe)
+```
+
+### 10.7 Implementation Roadmap
+
+**Phase 2 Timeline**: 4-5 days of focused work
+
+#### Day 1: Bronze Layer (2-3 hours)
+- ✅ Prerequisite: Thompson CDWWork2 scripts already created and populated
+- Create `etl/bronze_cdwwork2_encounters.py` following vitals pattern
+- Test Bronze extraction
+- Verify Parquet file in MinIO (`bronze/cdwwork2/encounters/`)
+- Validate data (12 Thompson encounters)
+
+**Deliverables**:
+- `etl/bronze_cdwwork2_encounters.py`
+- Bronze Parquet file with 12 encounters
+- Verification script output
+
+#### Day 2-3: Silver Layer (6-8 hours)
+- Refactor `etl/silver_inpatient.py` to dual-source pattern
+  - Rename existing logic to `transform_cdwwork_encounters()`
+  - Create `transform_cdwwork2_encounters()`
+  - Create `transform_encounters_silver()` main function
+- Test Silver transformation
+- Verify merged output (~85 encounters = 73 CDWWork + 12 CDWWork2)
+- Validate common schema alignment
+
+**Deliverables**:
+- Updated `etl/silver_inpatient.py` (dual-source)
+- Silver Parquet file (`silver/encounters/encounters_merged.parquet`)
+- Schema validation output
+
+#### Day 3: Gold Layer & PostgreSQL (3-4 hours)
+- Update `etl/gold_inpatient.py` to read from new Silver path
+- Verify `data_source` column propagated
+- Add `data_source` column to PostgreSQL `patient_encounters` table
+- Update `etl/load_encounters.py` to include `data_source` in INSERT
+- Test full ETL pipeline end-to-end
+- Verify PostgreSQL data includes both sources
+
+**Deliverables**:
+- Updated `etl/gold_inpatient.py`
+- PostgreSQL ALTER TABLE script
+- Updated `etl/load_encounters.py`
+- PostgreSQL verification queries
+
+#### Day 4: API & UI (4-5 hours)
+- Update `app/db/encounters.py` to SELECT `data_source` column
+- Add CSS for data source badges (`.badge--vista`, `.badge--cerner`)
+- Update widget template to show Cerner badge
+- Update full page template to show source indicators
+- Test UI with Thompson patients
+- Verify badges display correctly
+
+**Deliverables**:
+- Updated `app/db/encounters.py`
+- Updated CSS (`app/static/styles.css`)
+- Updated `app/templates/partials/encounters_widget.html`
+- Updated `app/templates/patient_encounters.html`
+- UI screenshots
+
+#### Day 5: Testing & Documentation (3-4 hours)
+- Run full ETL pipeline (`scripts/run_all_etl.sh`)
+- Test all three Thompson patients in UI
+- Verify encounter counts match expectations
+- Write integration tests
+- Update this design document (mark Phase 2 complete)
+- Update `docs/spec/cdwwork2-design.md` (add Phase 5 status)
+- Code review and cleanup
+
+**Deliverables**:
+- ETL pipeline run log
+- Test results
+- Updated documentation
+- Phase 2 completion status
+
+**Total Estimated Time**: 18-24 hours (~3-5 days)
+
+### 10.8 Success Criteria
+
+**Phase 2 Complete When**:
+
+**ETL Pipeline**:
+- ✅ Bronze ETL extracts 12 CDWWork2 encounters
+- ✅ Silver ETL produces ~85 merged encounters (73 CDWWork + 12 CDWWork2)
+- ✅ Gold Parquet includes `data_source` column
+- ✅ PostgreSQL `patient_encounters` table has `data_source` column
+- ✅ PostgreSQL contains ~85 total encounters with correct source attribution
+
+**Data Quality**:
+- ✅ No duplicate encounters (same patient + date + location)
+- ✅ All Thompson encounters (12) visible in UI
+- ✅ Encounter types correctly mapped (INPATIENT → INPATIENT, etc.)
+- ✅ Facility names resolved correctly (Walla Walla VAMC for Sta3n 687)
+
+**UI Verification**:
+- ✅ Bailey Thompson encounters page shows 7 CDWWork2 encounters with Cerner badge
+- ✅ Alananah Thompson encounters page shows 3 CDWWork2 encounters with Cerner badge
+- ✅ Joe Thompson encounters page shows 2 CDWWork2 encounters with Cerner badge
+- ✅ Existing patients (ICN100001-ICN100013) continue to show CDWWork encounters (no regression)
+- ✅ Data source badges render correctly and have accessible tooltips
+
+**Documentation**:
+- ✅ Phase 2 marked complete in this document
+- ✅ `docs/spec/cdwwork2-design.md` updated with Phase 5 (Encounters) status
+- ✅ Code comments explain dual-source harmonization logic
+
+### 10.9 Known Limitations (Phase 2)
+
+1. **CDWWork2 Diagnosis Fields**: NULL in Phase 2 (Cerner diagnoses are in separate tables, not in `EncMill.Encounter`)
+   - **Impact**: Discharge diagnosis/disposition only shown for CDWWork encounters
+   - **Future**: Add CDWWork2 diagnosis linkage in Phase 3
+
+2. **Encounter Type Filtering**: UI currently supports "All", "Active", "Discharged" filters
+   - **Missing**: "Inpatient", "Outpatient", "Emergency" type filter
+   - **Future**: Add encounter type dropdown in UI enhancement phase
+
+3. **Discharge Location**: CDWWork2 doesn't track discharge ward separately from admit ward
+   - **Impact**: `discharge_location_name` NULL for CDWWork2 encounters
+   - **Future**: Investigate if Cerner tracks discharge location in ward transfer tables
+
+4. **Deduplication**: Current implementation keeps all records if potential duplicates detected
+   - **Impact**: Same encounter may appear twice if data overlaps (unlikely in current mock data)
+   - **Future**: Implement canonical encounter matching logic (ICN + admit date + facility)
+
+5. **Real-Time Data**: Phase 2 does not include Vista RPC overlay for T-0 encounters
+   - **Future**: Add "Refresh from Vista" button in Phase 3 (per Vitals domain pattern)
+
+---
+
+## 11. Testing Strategy
 
 ### 10.1 Unit Tests
 
@@ -1597,4 +2853,5 @@ ORDER BY EncounterCount DESC;
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | v1.0 | 2025-12-15 | Claude Code | Initial design document for Encounters (Inpatient) Phase 1 |
-| v1.1 | 2025-12-15 | Claude Code | ✅ **Implementation complete**. Updated status to reflect all 6 days completed, including ETL pipeline, widget, full page with pagination (ADR-005), patient ICN fix, Home + O₂ badge, and breadcrumb consistency |
+| v1.1 | 2025-12-15 | Claude Code | ✅ **Phase 1 implementation complete**. Updated status to reflect all 6 days completed, including ETL pipeline, widget, full page with pagination (ADR-005), patient ICN fix, Home + O₂ badge, and breadcrumb consistency |
+| v2.0 | 2026-02-09 | Claude Code | 🚧 **Phase 2 design added** - CDWWork2 Integration. Added comprehensive Section 10 covering: dual-source ETL architecture, schema harmonization (CDWWork Inpat.Inpatient ↔ CDWWork2 EncMill.Encounter), Bronze/Silver/Gold pipeline design, PostgreSQL data_source column, UI badges for source attribution, Thompson patient test data (12 CDWWork2 encounters), 4-5 day implementation roadmap with detailed code examples, success criteria, and known limitations. Total addition: ~2,000 lines of detailed technical specification. |

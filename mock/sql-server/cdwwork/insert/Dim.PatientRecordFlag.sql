@@ -37,5 +37,7 @@ VALUES
     ('PATIENT ADVOCATE REFERRAL', 'ADMINISTRATIVE', 'II', 'L', NULL, 8, 365, 30, 1),
     ('SPECIAL HANDLING REQUIRED', 'ADMINISTRATIVE', 'II', 'L', NULL, 9, 180, 14, 1),
     ('COMBAT VETERAN PTSD', 'CLINICAL', 'II', 'L', NULL, 10, 180, 14, 1),
-    ('PALLIATIVE CARE', 'CLINICAL', 'II', 'L', NULL, 11, 30, 7, 1);  -- Added 2026-02-04 for end-of-life care tracking
+    ('PALLIATIVE CARE', 'CLINICAL', 'II', 'L', NULL, 11, 30, 7, 1),  -- Added 2026-02-04 for end-of-life care tracking
+    ('DIABETIC PATIENT', 'CLINICAL', 'II', 'L', NULL, 12, 90, 7, 1),  -- Added 2026-02-09 for diabetes care management
+    ('CANCER HISTORY', 'CLINICAL', 'II', 'L', NULL, 13, 365, 30, 1);  -- Added 2026-02-09 for cancer survivor follow-up
 GO

@@ -1,16 +1,23 @@
 # Thompson Twins Implementation Plan
 
-**Document Version:** v2.1
+**Document Version:** v2.2
 **Last Updated:** February 9, 2026
-**Status:** ✅ Bailey Complete, 🔧 Alananah/Joe In Progress
+**Status:** ✅ Bailey CDWWork Complete, ✅ Alananah CDWWork Complete, 🔧 Joe In Progress, 🔧 CDWWork2 Scripts Need Review
 **Related Documents:**
-- Requirements: `docs/spec/thompson-twins-patient-reqs.md` (v3.2)
+- Requirements: `docs/spec/thompson-twins-patient-reqs.md` (v3.3)
 - Architecture: `docs/spec/med-z1-architecture.md`
-- Error Analysis: `docs/spec/thompson-alananah-errors-found.md` (Alananah script corrections needed)
+- Completion Summary: `docs/spec/thompson-twins-completion-summary.md` (Bailey & Alananah CDWWork verified 2026-02-09)
 
 ---
 
 ## Version History
+
+### v2.2 (2026-02-09)
+- **Updated status:** Bailey and Alananah CDWWork scripts ✅ COMPLETE and tested
+- **CDWWork2 scripts:** Created but require further review/verification before considered done
+- **Joe CDWWork script:** Next priority (will be created after this documentation update)
+- **Linked completion summary:** `thompson-twins-completion-summary.md` documents all fixes and testing
+- **Rationale:** User will revisit CDWWork2 scripts after Joe's CDWWork script is complete
 
 ### v2.1 (2026-02-09)
 - **Added schema reference section** with warnings about common INSERT errors
@@ -1515,35 +1522,38 @@ Use this checklist to track progress:
 - [ ] Set up SQL Server development environment
 - [ ] Verify access to CDWWork and CDWWork2 databases
 
-### Phase 2: CDWWork - Bailey Thompson
-- [ ] Create `mock/sql-server/cdwwork/insert/Thompson-Bailey.sql`
-- [ ] Implement demographics section (PatientSID 2001)
-- [ ] Implement vitals section (~60 readings)
-- [ ] Implement allergies section (2 allergies)
-- [ ] Implement medications section (45 meds, RxOutpatSID 8001-8045)
-- [ ] Implement encounters section (32 admissions)
-- [ ] Implement clinical notes section (220 notes)
-- [ ] Implement immunizations section (42 vaccines)
-- [ ] Implement problems section (18 problems, Charlson=5)
-- [ ] Implement labs section (~160 results)
-- [ ] Implement patient flags section (2 flags)
-- [ ] Test script execution in clean SQL Server
-- [ ] Run validation queries
+### Phase 2: CDWWork - Bailey Thompson ✅ **COMPLETE (2026-02-09)**
+- [x] Create `mock/sql-server/cdwwork/insert/Thompson-Bailey.sql`
+- [x] Implement demographics section (PatientSID 2001)
+- [x] Implement vitals section (231 readings, VitalSignSID 9001-9231)
+- [x] Implement allergies section (2 allergies, PatientAllergySID 9001-9002)
+- [x] Implement medications section (45 meds, RxOutpatSID 8001-8045)
+- [x] Implement encounters section (32 admissions)
+- [x] Implement clinical notes section (8 notes)
+- [x] Implement immunizations section (42 vaccines)
+- [x] Implement problems section (18 problems, Charlson=5)
+- [x] Implement labs section (~160 results)
+- [x] Implement patient flags section (2 flags: HIGH RISK FOR SUICIDE, OPIOID RISK TOOL)
+- [x] Test script execution in clean SQL Server
+- [x] Run validation queries
+- [x] Full ETL pipeline testing (Bronze → Silver → Gold → PostgreSQL) ✅ All tests passed
 
-### Phase 3: CDWWork - Alananah Thompson
-- [ ] Create `mock/sql-server/cdwwork/insert/Thompson-Alananah.sql`
-- [ ] Implement demographics section (PatientSID 2002)
-- [ ] Implement vitals section (~60 readings)
-- [ ] Implement allergies section (2 allergies)
-- [ ] Implement medications section (40 meds, RxOutpatSID 8046-8085)
-- [ ] Implement encounters section (28 admissions)
-- [ ] Implement clinical notes section (180 notes)
-- [ ] Implement immunizations section (40 vaccines)
-- [ ] Implement problems section (16 problems, Charlson=4)
-- [ ] Implement labs section (~140 results)
-- [ ] Implement patient flags section (2 flags)
-- [ ] Test script execution
-- [ ] Run validation queries
+### Phase 3: CDWWork - Alananah Thompson ✅ **COMPLETE (2026-02-09)**
+- [x] Create `mock/sql-server/cdwwork/insert/Thompson-Alananah.sql`
+- [x] Implement demographics section (PatientSID 2002)
+- [x] Implement vitals section (231 readings, VitalSignSID 10001-10231, female weight trajectory)
+- [x] Implement allergies section (2 allergies, PatientAllergySID 10001-10002)
+- [x] Implement medications section (32 meds, RxOutpatSID 8046-8077)
+- [x] Implement encounters section (8 admissions)
+- [x] Implement clinical notes section (3 notes)
+- [x] Implement immunizations section (42 vaccines)
+- [x] Implement problems section (10 problems, Charlson=2)
+- [x] Implement labs section (~140 results)
+- [x] Implement patient flags section (2 flags: DIABETIC PATIENT, CANCER HISTORY)
+- [x] Test script execution
+- [x] Run validation queries
+- [x] Fixed all SID conflicts (vitals, allergies, patient flags)
+- [x] Full ETL pipeline testing (Bronze → Silver → Gold → PostgreSQL) ✅ All tests passed
 
 ### Phase 3.5: CDWWork - Joe Thompson
 - [ ] Create `mock/sql-server/cdwwork/insert/Thompson-Joe.sql`
@@ -1560,25 +1570,29 @@ Use this checklist to track progress:
 - [ ] Test script execution
 - [ ] Run validation queries
 
-### Phase 4: CDWWork2 - Bailey Thompson
-- [ ] Create `mock/sql-server/cdwwork2/insert/Thompson-Bailey.sql`
-- [ ] Implement demographics section (PersonSID 20001, relative dates)
-- [ ] Implement vitals section (~4 readings, DATEADD functions)
-- [ ] Implement encounters section (~2 admissions)
-- [ ] Implement problems section (active problems only)
-- [ ] Implement immunizations section (~4 recent vaccines)
-- [ ] Test script execution
-- [ ] Run validation queries
+### Phase 4: CDWWork2 - Bailey Thompson 🔧 **NEEDS REVIEW**
+- [x] Create `mock/sql-server/cdwwork2/insert/Thompson-Bailey.sql` (created, not verified)
+- [x] Implement demographics section (PersonSID 20001, relative dates) (created, not verified)
+- [x] Implement vitals section (~4 readings, DATEADD functions) (created, not verified)
+- [x] Implement encounters section (~2 admissions) (created, not verified)
+- [x] Implement problems section (active problems only) (created, not verified)
+- [x] Implement immunizations section (~4 recent vaccines) (created, not verified)
+- [ ] Test script execution **⚠️ PENDING** (will be tested after Joe CDWWork complete)
+- [ ] Run validation queries **⚠️ PENDING**
 
-### Phase 5: CDWWork2 - Alananah Thompson
-- [ ] Create `mock/sql-server/cdwwork2/insert/Thompson-Alananah.sql`
-- [ ] Implement demographics section (PersonSID 20002)
-- [ ] Implement vitals section (~4 readings)
-- [ ] Implement encounters section (~2 admissions)
-- [ ] Implement problems section (active problems only)
-- [ ] Implement immunizations section (~4 recent vaccines)
-- [ ] Test script execution
-- [ ] Run validation queries
+**Note:** CDWWork2 scripts created but require further review and verification before considered complete. User will revisit after Joe's CDWWork script is done.
+
+### Phase 5: CDWWork2 - Alananah Thompson 🔧 **NEEDS REVIEW**
+- [x] Create `mock/sql-server/cdwwork2/insert/Thompson-Alananah.sql` (created, not verified)
+- [x] Implement demographics section (PersonSID 20002) (created, not verified)
+- [x] Implement vitals section (~4 readings) (created, not verified)
+- [x] Implement encounters section (~2 admissions) (created, not verified)
+- [x] Implement problems section (active problems only) (created, not verified)
+- [x] Implement immunizations section (~4 recent vaccines) (created, not verified)
+- [ ] Test script execution **⚠️ PENDING** (will be tested after Joe CDWWork complete)
+- [ ] Run validation queries **⚠️ PENDING**
+
+**Note:** CDWWork2 scripts created but require further review and verification before considered complete. User will revisit after Joe's CDWWork script is done.
 
 ### Phase 5.5: CDWWork2 - Joe Thompson
 - [ ] Create `mock/sql-server/cdwwork2/insert/Thompson-Joe.sql`
@@ -1591,26 +1605,32 @@ Use this checklist to track progress:
 - [ ] Run validation queries
 
 ### Phase 6: Integration & Testing
-- [ ] Update `mock/sql-server/cdwwork/insert/_master.sql` with Thompson Twins scripts
-- [ ] Update `mock/sql-server/cdwwork2/insert/_master.sql` with Thompson Twins scripts
-- [ ] Test full database rebuild (run both master scripts)
-- [ ] Run ETL Bronze extraction (CDWWork → Parquet)
-- [ ] Run ETL Bronze extraction (CDWWork2 → Parquet)
-- [ ] Run ETL Silver transformation (identity resolution ICN200001/ICN200002/ICN200003)
-- [ ] Run ETL Gold curation
-- [ ] Run ETL Load (Parquet → PostgreSQL)
-- [ ] Verify Thompson Twins in PostgreSQL serving database
-- [ ] Test UI display (http://127.0.0.1:8000/)
-  - [ ] Bailey Thompson dashboard (all 10 domains, Charlson=5)
-  - [ ] Alananah Thompson dashboard (all 10 domains, Charlson=4)
-  - [ ] Joe Thompson dashboard (all 10 domains, Charlson=0, healthy control)
-  - [ ] Patient flags modal (Bailey: High Risk; Alananah: Cancer Survivor; Joe: 0 flags)
-  - [ ] Vitals charts (Bailey: weight trends, Alananah: weight trends, Joe: stable)
-  - [ ] Medications page (active/historical split)
-  - [ ] Encounters pagination
-  - [ ] Clinical notes filtering
-  - [ ] Problems page (Charlson badge)
-  - [ ] AI Insight tool queries (test all 3 patients)
+**CDWWork (Bailey & Alananah):** ✅ **COMPLETE (2026-02-09)**
+- [x] Update `mock/sql-server/cdwwork/insert/_master.sql` with Thompson-Bailey.sql and Thompson-Alananah.sql
+- [x] Test full database rebuild (run CDWWork master script)
+- [x] Run ETL Bronze extraction (CDWWork → Parquet)
+- [x] Run ETL Silver transformation (identity resolution ICN100001/ICN200002)
+- [x] Run ETL Gold curation
+- [x] Run ETL Load (Parquet → PostgreSQL)
+- [x] Verify Bailey and Alananah in PostgreSQL serving database ✅ All data present, no errors
+- [x] Test UI display (http://127.0.0.1:8000/)
+  - [x] Bailey Thompson dashboard (all 10 domains, Charlson=5) ✅ Operational
+  - [x] Alananah Thompson dashboard (all 10 domains, Charlson=2) ✅ Operational
+  - [x] Patient flags modal (Bailey: High Risk for Suicide + Opioid Risk, Alananah: Diabetic Patient + Cancer History) ✅ Working
+  - [x] Vitals charts (Bailey: weight trends, Alananah: female weight trends) ✅ Working
+  - [x] Medications page (active/historical split) ✅ Working
+  - [x] Encounters pagination ✅ Working
+  - [x] Clinical notes filtering ✅ Working
+  - [x] Problems page (Charlson badge) ✅ Working
+
+**CDWWork2 (Bailey & Alananah):** 🔧 **PENDING REVIEW** (will test after Joe CDWWork complete)
+- [ ] Update `mock/sql-server/cdwwork2/insert/_master.sql` with Thompson-Bailey.sql and Thompson-Alananah.sql **⚠️ PENDING**
+- [ ] Test full database rebuild (run CDWWork2 master script) **⚠️ PENDING**
+- [ ] Run ETL Bronze extraction (CDWWork2 → Parquet) **⚠️ PENDING**
+- [ ] Run ETL Silver transformation (identity resolution with CDWWork2 data) **⚠️ PENDING**
+
+**Joe Thompson (CDWWork & CDWWork2):** 🚧 **NOT STARTED** (next priority)
+- [ ] All Joe Thompson items deferred until CDWWork script is complete
 
 ### Phase 7: Documentation
 - [ ] Mark implementation plan as "Complete"
@@ -1623,11 +1643,21 @@ Use this checklist to track progress:
 
 ## End of Implementation Plan
 
-**Next Steps:**
-1. Review this plan with stakeholders
-2. Begin Phase 2 (CDWWork - Bailey Thompson script development)
-3. Iterate and refine as needed
+**Current Status (2026-02-09):**
+- ✅ Bailey CDWWork: Complete and tested (all 10 domains operational in UI)
+- ✅ Alananah CDWWork: Complete and tested (all 10 domains operational in UI)
+- 🚧 Joe CDWWork: Not started (next priority)
+- 🔧 CDWWork2 (Bailey & Alananah): Scripts created but need review/verification (deferred until after Joe CDWWork complete)
+- 🔧 CDWWork2 (Joe): Not started
 
-**Questions/Issues:**
-- Contact: Development team
-- Related: `docs/spec/thompson-twins-patient-reqs.md` (v3.0)
+**Next Steps:**
+1. ✅ ~~Review this plan with stakeholders~~ **DONE**
+2. ✅ ~~Phase 2 (CDWWork - Bailey Thompson script development)~~ **COMPLETE**
+3. ✅ ~~Phase 3 (CDWWork - Alananah Thompson script development)~~ **COMPLETE**
+4. 🚧 **CURRENT:** Phase 3.5 (CDWWork - Joe Thompson script development)
+5. 🔧 **FUTURE:** Phase 4-5 (CDWWork2 review and verification for all three patients)
+
+**Related Documents:**
+- Requirements: `docs/spec/thompson-twins-patient-reqs.md` (v3.3)
+- Completion Summary: `docs/spec/thompson-twins-completion-summary.md` (Bailey & Alananah verification)
+- Fix Documentation: `docs/spec/thompson-alananah-all-fixes-complete.md` (SID conflict resolutions)

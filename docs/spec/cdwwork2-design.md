@@ -1,12 +1,20 @@
 # CDWWork2 (Oracle Health/Cerner) Mock Database - Design Document
 
-**Document Version:** 1.4
+**Document Version:** 1.5
 **Date:** 2025-12-17
-**Last Updated:** 2025-12-30
-**Status:** ✅ Phase 1 Complete - Ready for Phase 2 (Vitals Domain)
-**Implementation Phase:** Phase 2 (Vitals) - Starting
+**Last Updated:** 2026-02-09
+**Status:** ✅ Phases 1-4 Complete - Phase 5 (Encounters) In Design
+**Implementation Phase:** Phase 5 (Encounters) - Design Complete, Implementation Pending
 
 **Changelog:**
+- **v1.5** (2026-02-09): Phase 5 (Encounters Domain) Design Added
+  - **Phase 5 Scope**: CDWWork2 `EncMill.Encounter` ETL integration
+  - **Roadmap Updates**: Section 10.1 updated with Phase 5 details (4-5 day timeline, 12 Thompson encounters)
+  - **Success Metrics**: Section 10.3 updated with "Phase 5 Complete When" criteria (11 checklist items)
+  - **Post-Demo Phases**: Updated to reflect Phase 5 as formal phase (renumbered Phase 6-9)
+  - **Cross-Reference**: Links to `docs/spec/encounters-design.md` Phase 2 (v2.0) for comprehensive technical design
+  - **Test Data**: Thompson patients (ICN200001-200003) provide 12 CDWWork2 encounters for validation
+  - **Key Design Elements**: Schema harmonization (Inpat.Inpatient ↔ EncMill.Encounter), dual-source Bronze/Silver ETL, `data_source` column tracking, UI badges for source attribution
 - **v1.4** (2025-12-30): Phase 1 Foundation Complete
   - **Implementation Status:** Phase 1 complete - CDWWork2 database created and populated
   - **Deliverables:** 6 tables created, 48 code values, 2 patients, 16 encounters
@@ -1820,7 +1828,34 @@ def get_all_vitals(icn: str) -> List[Dict[str, Any]]:
 - **Buffer**: Handle any discovered issues or edge cases
 - **Success Criteria**: Ready for internal demo dry run
 
-**Total Timeline**: 10 days (2 weeks with buffer)
+**Total Timeline (Phases 1-4)**: 10 days (2 weeks with buffer)
+
+**Phase 5: Encounters Domain** (Days 11-15) **⏱️ 4-5 days** 🚧 **IN DESIGN (2026-02-09)**
+- **Status**: Design complete, implementation pending
+- **Documentation**: See `docs/spec/encounters-design.md` Phase 2 (v2.0, 2026-02-09)
+- **Scope**: Integrate CDWWork2 `EncMill.Encounter` table into ETL pipeline
+- **Test Data**: Thompson patients (Bailey, Alananah, Joe) - 12 encounters at Walla Walla VAMC (Sta3n 687)
+- **Bronze ETL**: Create `etl/bronze_cdwwork2_encounters.py` - extract 12 CDWWork2 encounters
+- **Silver ETL**: Enhance `etl/silver_inpatient.py` - merge CDWWork + CDWWork2 to ~85 total encounters
+  - Harmonize `Inpat.Inpatient` (VistA) ↔ `EncMill.Encounter` (Cerner) schemas
+  - Map 19 CDWWork columns to 15 CDWWork2 columns via common Silver schema (21 columns)
+  - Key challenges: PatientSID → ICN resolution (CDWWork), encounter type derivation (CDWWork), diagnosis fields NULL for CDWWork2 (separate tables)
+- **Gold ETL**: Verify `data_source` column propagation through `etl/gold_inpatient.py`
+- **PostgreSQL**: ALTER TABLE `patient_encounters` ADD COLUMN `data_source VARCHAR(20)`
+- **Query Layer**: Update `app/db/encounters.py` to SELECT `data_source` column
+- **UI**: Add data source badges to widget and full page (`badge--vista` / `badge--cerner`)
+- **Test**: Verify Thompson patients show CDWWork2 encounters with Cerner badges
+- **Success Criteria**:
+  - ✅ Bailey Thompson: 7 CDWWork2 encounters visible with Cerner badges
+  - ✅ Alananah Thompson: 3 CDWWork2 encounters visible
+  - ✅ Joe Thompson: 2 CDWWork2 encounters visible
+  - ✅ Existing patients (ICN100001-ICN100013) continue to show CDWWork encounters (no regression)
+  - ✅ PostgreSQL query: `SELECT data_source, COUNT(*) FROM patient_encounters GROUP BY data_source` → CDWWork: 73, CDWWork2: 12
+- **Known Limitations**:
+  - CDWWork2 diagnosis fields NULL (diagnoses in separate Cerner tables, deferred to Phase 6)
+  - CDWWork2 discharge location NULL (not tracked separately in EncMill.Encounter)
+  - No encounter type filter in UI (only status filter: Active/Discharged)
+  - No deduplication logic (keeps all records, assuming no overlaps)
 
 **Scope Control**:
 - ✅ **DO**: Focus on Vitals + Allergies (simplest, highest demo value)
@@ -1831,11 +1866,11 @@ def get_all_vitals(icn: str) -> List[Dict[str, Any]]:
 - ❌ **DON'T**: Populate many patients or encounters (2 patients, 10 encounters each is sufficient)
 - ❌ **DON'T**: Implement advanced features (encounter linking optional, demographics merge can wait)
 
-**Post-Demo Phases** (Optional Future Work):
-- **Phase 5: Labs Domain** (2-3 days) - if time allows before demo
-- **Phase 6: Demographics Domain** (2-3 days) - merge logic is complex, defer
-- **Phase 7: Additional Patients** (1-2 days) - expand beyond Adam & Alexander
-- **Phase 8: Production Readiness** (1-2 weeks) - performance, error handling, monitoring
+**Post-Demo Phases** (Future Work):
+- **Phase 6: Encounter Diagnoses** (2-3 days) - Link CDWWork2 diagnosis tables to encounters (address NULL diagnosis limitation from Phase 5)
+- **Phase 7: Demographics Merge** (2-3 days) - Merge logic is complex (address field type differences, contact info reconciliation)
+- **Phase 8: Additional Patients** (1-2 days) - Expand beyond Adam, Alexander, and Thompson siblings
+- **Phase 9: Production Readiness** (1-2 weeks) - Performance tuning, error handling, monitoring, real Cerner data patterns
 
 ### 10.2 Detailed Task Breakdown (Phase 1)
 
@@ -1916,6 +1951,19 @@ def get_all_vitals(icn: str) -> List[Dict[str, Any]]:
 - ✅ PostgreSQL `patient_vitals` table has `data_source` column
 - ✅ UI displays vitals from both sources with source badge/tooltip
 - ✅ Patient 1001 shows 25 total vitals (20 VistA + 5 Cerner)
+
+**Phase 5 Complete When** (Encounters):
+- ✅ `EncMill.Encounter` populated with 12 Thompson encounters (Sta3n 687 Walla Walla)
+- ✅ Bronze ETL script `bronze_cdwwork2_encounters.py` extracts 12 CDWWork2 encounters
+- ✅ Silver ETL merges CDWWork + CDWWork2 encounters (~85 total: 73 + 12)
+- ✅ Common Silver schema harmonizes 19 CDWWork columns with 15 CDWWork2 columns
+- ✅ Gold layer includes `data_source` column
+- ✅ PostgreSQL `patient_encounters` table has `data_source VARCHAR(20)` column
+- ✅ Query layer (`app/db/encounters.py`) SELECTs `data_source` in all functions
+- ✅ UI displays encounters with data source badges (`.badge--vista`, `.badge--cerner`)
+- ✅ Thompson patients (ICN200001-200003) show CDWWork2 encounters in UI
+- ✅ Existing patients continue to show CDWWork encounters (no regression)
+- ✅ Integration tests pass for dual-source encounter workflow
 
 **Full Implementation Complete When**:
 - ✅ All 5 clinical domains implemented (Demographics, Vitals, Allergies, Labs, Encounters)
