@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}Clinical Tasks - {{ patient.name_display if patient else 'Med-Z1' }}{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    {% if error %}
+        <!-- Error State -->
+        <div class="page-error">
+            <div class="page-error__icon">
+                <i class="fa-solid fa-triangle-exclamation fa-3x"></i>
+            </div>
+            <h2 class="page-error__title">Error Loading Tasks</h2>
+            <p class="page-error__message">{{ error }}</p>
+            <a href="/" class="btn btn--primary">
+                <i class="fa-solid fa-house"></i>
+                Return to Dashboard
+            </a>
+        </div>
+    {% elif not patient %}
+        <!-- No Patient State -->
+        <div class="page-error">
+            <div class="page-error__icon">
+                <i class="fa-regular fa-user fa-3x"></i>
+            </div>
+            <h2 class="page-error__title">No Patient Selected</h2>
+            <p class="page-error__message">Please select a patient to view their clinical tasks</p>
+            <a href="/" class="btn btn--primary">
+                <i class="fa-solid fa-house"></i>
+                Return to Dashboard
+            </a>
+        </div>
+    {% else %}
+        <!-- Page Header with Breadcrumbs -->
+        <div class="page-header-breadcrumb">
+            <!-- Breadcrumbs (left-aligned) -->
+            <nav aria-label="breadcrumb" class="breadcrumb-nav">
+                <a href="/?icn={{ patient.icn }}" class="breadcrumb-link">
+                    <i class="fa-solid fa-house"></i>
+                    Dashboard
+                </a>
+                <i class="fa-solid fa-chevron-right breadcrumb-separator"></i>
+                <span class="breadcrumb-current">Clinical Tasks</span>
+            </nav>
+
+            <!-- Quick Create Button (right-aligned) -->
+            <div class="page-header-actions">
+                <button type="button"
+                        class="btn btn--primary btn--sm"
+                        hx-get="/api/patient/tasks/quick-create-modal?icn={{ patient.icn }}"
+                        hx-target="#modal-container"
+                        hx-swap="innerHTML"
+                        title="Create New Task">
+                    <i class="fa-solid fa-plus"></i>
+                    New Task
+                </button>
+            </div>
+        </div>
+
+        <!-- Page Title Section -->
+        <div class="page-header__title-group">
+            <h1 class="page-header__title">
+                Clinical Tasks
+            </h1>
+        </div>
+
+        <!-- Summary Stats Card -->
+        <div class="tasks-summary-card">
+            <div class="tasks-summary-stat">
+                <div class="tasks-summary-stat__value">{{ summary.todo_count }}</div>
+                <div class="tasks-summary-stat__label">
+                    <i class="fa-regular fa-circle"></i>
+                    To Do
+                </div>
+            </div>
+            <div class="tasks-summary-stat">
+                <div class="tasks-summary-stat__value {% if summary.in_progress_count > 0 %}text-primary{% endif %}">
+                    {{ summary.in_progress_count }}
+                </div>
+                <div class="tasks-summary-stat__label">
+                    <i class="fa-solid fa-spinner"></i>
+                    In Progress
+                </div>
+            </div>
+            <div class="tasks-summary-stat">
+                <div class="tasks-summary-stat__value">{{ summary.completed_today_count }}</div>
+                <div class="tasks-summary-stat__label">
+                    <i class="fa-solid fa-check-circle"></i>
+                    Completed Today
+                </div>
+            </div>
+            <div class="tasks-summary-stat">
+                <div class="tasks-summary-stat__value">{{ summary.high_priority_count }}</div>
+                <div class="tasks-summary-stat__label">
+                    <i class="fa-solid fa-exclamation-circle"></i>
+                    High Priority
+                </div>
+            </div>
+            {% if summary.ai_generated_count > 0 %}
+            <div class="tasks-summary-stat">
+                <div class="tasks-summary-stat__value text-purple">{{ summary.ai_generated_count }}</div>
+                <div class="tasks-summary-stat__label">
+                    <i class="fa-solid fa-robot"></i>
+                    AI-Suggested
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Filters and Controls -->
+        <div class="tasks-controls">
+            <!-- Filter Section (HTMX Form) -->
+            <form class="tasks-filters"
+                  hx-get="/patient/{{ patient.icn }}/tasks/filtered"
+                  hx-target="#tasks-list-container"
+                  hx-swap="innerHTML"
+                  hx-trigger="change"
+                  hx-indicator="#tasks-loading">
+
+                <!-- Status Filter -->
+                <div class="filter-group">
+                    <label class="filter-group__label">
+                        <i class="fa-solid fa-filter"></i>
+                        Status:
+                    </label>
+                    <select name="status" class="filter-select">
+                        <option value="" {% if not filters.status %}selected{% endif %}>All Tasks ({{ summary.total_count }})</option>
+                        <option value="active" {% if filters.status == 'active' %}selected{% endif %}>Active ({{ summary.todo_count + summary.in_progress_count }})</option>
+                        <option value="TODO" {% if filters.status == 'TODO' %}selected{% endif %}>To Do ({{ summary.todo_count }})</option>
+                        <option value="IN_PROGRESS" {% if filters.status == 'IN_PROGRESS' %}selected{% endif %}>In Progress ({{ summary.in_progress_count }})</option>
+                        <option value="COMPLETED" {% if filters.status == 'COMPLETED' %}selected{% endif %}>Completed</option>
+                    </select>
+                </div>
+
+                <!-- Priority Filter -->
+                <div class="filter-group">
+                    <label class="filter-group__label">
+                        <i class="fa-solid fa-exclamation-triangle"></i>
+                        Priority:
+                    </label>
+                    <select name="priority" class="filter-select">
+                        <option value="" {% if not filters.priority %}selected{% endif %}>All Priorities</option>
+                        <option value="HIGH" {% if filters.priority == 'HIGH' %}selected{% endif %}>High ({{ summary.high_priority_count }})</option>
+                        <option value="MEDIUM" {% if filters.priority == 'MEDIUM' %}selected{% endif %}>Medium</option>
+                        <option value="LOW" {% if filters.priority == 'LOW' %}selected{% endif %}>Low</option>
+                    </select>
+                </div>
+
+                <!-- Created By Filter -->
+                <div class="filter-group">
+                    <label class="filter-group__label">
+                        <i class="fa-solid fa-user"></i>
+                        Created By:
+                    </label>
+                    <select name="created_by" class="filter-select">
+                        <option value="" {% if not filters.created_by %}selected{% endif %}>All Users</option>
+                        <option value="{{ current_user_id }}" {% if filters.created_by == current_user_id %}selected{% endif %}>My Tasks</option>
+                        {% if summary.ai_generated_count > 0 %}
+                        <option value="ai" {% if filters.created_by == 'ai' %}selected{% endif %}>AI-Suggested ({{ summary.ai_generated_count }})</option>
+                        {% endif %}
+                    </select>
+                </div>
+
+                <!-- Loading Indicator -->
+                <div id="tasks-loading" class="htmx-indicator" style="margin-left: auto;">
+                    <i class="fa-solid fa-spinner fa-spin"></i> Filtering...
+                </div>
+            </form>
+        </div>
+
+        <!-- Tasks List Container -->
+        <div id="tasks-list-container">
+            {% include 'partials/tasks_list.html' %}
+        </div>
+
+    {% endif %}
+</div>
+{% endblock %}

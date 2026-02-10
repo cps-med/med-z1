@@ -336,8 +336,8 @@ The med-z1 AI subsystem provides LangGraph-powered clinical decision support via
 
 ### Clinical Domains (Complete Scope)
 
-**Implemented Domains (9):**
-1. ✅ Dashboard - Patient overview with clinical widgets
+**Implemented Domains (11):**
+1. ✅ Dashboard - Patient overview with clinical widgets (7 rows, fully balanced 3-column grid)
 2. ✅ Demographics - Full implementation (widget + dedicated page with comprehensive information)
 3. ✅ Vitals - Full implementation (widget + dedicated page with charts)
 4. ✅ Patient Flags - Modal-only implementation (topbar button, no widget/dedicated page)
@@ -359,20 +359,51 @@ The med-z1 AI subsystem provides LangGraph-powered clinical decision support via
    - **VistA Integration:** ORQQPL LIST RPC with session cache (30-min TTL), automatic merge/dedupe on page load
    - **AI Integration:** Phase 6 complete (2026-02-08) - Problems integrated into `get_patient_summary` tool with Charlson analysis
    - **Scope:** Problem List (longitudinal) implemented, Encounter Diagnoses (episodic) deferred to Phase 2+
+11. ✅ **Clinical Tasks** - **Full implementation** (2x1 widget + dedicated page with filtering, 15 test tasks in PostgreSQL) - **Completed 2026-02-10**
+   - **Key Features:** Patient-centric task tracking, three-state lifecycle (TODO → IN_PROGRESS → COMPLETED), priority levels (HIGH/MEDIUM/LOW), AI-suggested tasks support, user attribution
+   - **Database:** `clinical.patient_tasks` table with triggers for auto-timestamps, seed data for 4 test patients
+   - **Query Layer:** `app/db/patient_tasks.py` with 9 CRUD functions (create, update, complete, delete, get, get_summary)
+   - **API:** 13 endpoints total (10 API routes, 3 page routes) using dual router structure (Pattern B)
+   - **UI:** Dashboard widget shows 8 active tasks with quick actions (Start/Complete/Revert), full page with filtering by status/priority/creator, modal-based create/edit forms
+   - **Modal Integration:** HTMX-powered modals with background scroll prevention, inline JavaScript onclick handlers for widget buttons
+   - **Known Issue:** Dashboard widget does not auto-refresh after task create/edit (requires manual page refresh). Documented in `docs/spec/task-tracking-design.md` Section 11.
+   - **Design Documentation:** Complete specification in `docs/spec/task-tracking-design.md` (v1.1, 2600+ lines)
 
 **ETL Complete, UI Pending (1):**
-11. 🔧 Labs - **ETL pipeline complete** (Bronze/Silver/Gold/Load), 58 results in PostgreSQL. UI implementation pending (3x1 widget recommended) - **ETL Completed 2025-12-16**
+12. 🔧 Labs - **ETL pipeline complete** (Bronze/Silver/Gold/Load), 58 results in PostgreSQL. UI implementation pending (3x1 widget recommended) - **ETL Completed 2025-12-16**
 
 **Placeholder Domains (3):**
-12. 🚧 Orders - Clinical orders and requests
-13. 🚧 Imaging - Radiology and imaging studies
-14. 🚧 Procedures - Surgical and procedural history (Later Phase)
+13. 🚧 Orders - Clinical orders and requests
+14. 🚧 Imaging - Radiology and imaging studies (3x1 placeholder)
+15. 🚧 Procedures - Surgical and procedural history (Later Phase)
+
+**Planned Future Domains (1):**
+16. 📋 **Family History** - Familial disease history and genetic risk factors (Phase 2+)
+   - **Clinical Importance:** Risk stratification for cancer, cardiovascular disease, diabetes, mental health conditions; influences screening recommendations, preventive care decisions, and genetic counseling referrals
+   - **Industry Standards:** HL7 FHIR `FamilyMemberHistory` resource, VistA File #8810.4, ICD-10 Z-codes (Z80-Z87)
+   - **Typical Data:** Relationship (father, mother, sibling, etc.), condition/diagnosis (ICD-10/SNOMED), age of onset, living status, age at death, cause of death
+   - **Use Cases:** Cancer risk assessment (BRCA testing criteria), cardiovascular risk (early statin consideration), diabetes screening (earlier A1C monitoring), mental health treatment decisions
+   - **Implementation Notes:** Standalone domain (not part of Problems or Social History), VistA RPC integration, potential for family tree visualization, AI pattern recognition for multi-generational risk
+   - **Recommended Widget Size:** 1x1 or 2x1 showing high-risk conditions with priority badges
+
+**Dashboard Widget Layout (Updated 2026-02-10):**
+The dashboard uses a 3-column grid system with 7 fully balanced rows:
+- **Row 1:** Demographics (1x1) + My Active Tasks (2x1)
+- **Row 2:** Vital Signs (1x1) + Allergies (1x1) + Encounters (1x1)
+- **Row 3:** Medications (2x1) + Immunizations (1x1)
+- **Row 4:** Laboratory Results (3x1)
+- **Row 5:** Clinical Notes (2x1) + Orders (1x1 placeholder)
+- **Row 6:** Problems/Diagnoses (2x1) + Procedures (1x1 placeholder)
+- **Row 7:** Radiology/Imaging (3x1 placeholder)
+
+Sidebar navigation order matches dashboard widget order for consistency.
 
 **UI Implementation Notes:**
 - **Patient Flags**: Modal-only (accessible via topbar "View Flags" button with badge count). No dashboard widget or dedicated page per design decision 2025-12-14.
 - **Encounters**: First domain to implement pagination (ADR-005). Shows inpatient admissions only (outpatient visits deferred to Phase 2). Default page size: 20, supports 10/20/50/100 per page.
 - **Laboratory Results**: Recommended as 3x1 full-width widget to display multiple lab panels side-by-side with trend sparklines.
 - **Problems/Diagnoses**: Full page groups problems by ICD-10 category (collapsible sections). Widget shows top 5 active problems with Charlson Comorbidity Index badge. VistA cache auto-merges on page load (fixes cache inconsistency bug from 2026-02-08).
+- **Clinical Tasks**: Uses dedicated router (Pattern B). Modal forms use `onclick="htmx.ajax(...)"` for widget integration due to HTMX attribute processing issues with dynamically loaded content.
 - **All other domains**: Follow Pattern A (patient.py routes) or Pattern B (dedicated router) based on complexity (see `docs/spec/med-z1-architecture.md` Section 3).
 
 **DoD-specific views** (CHCS/AHLTA) are explicitly out of scope for early versions.

@@ -78,11 +78,15 @@ FastAPI + HTMX UI - Patient-aware topbar with search
 | **Phase 10** | AI Clinical Insights (Phases 1-6) | 3 weeks | ✅ Complete (2026-01-20) |
 | **Phase 11** | Military History & Environmental Exposures | 1 week | ✅ Complete (2026-02-07) |
 | **Phase 12** | Problems/Diagnoses Domain | 2-3 weeks | ✅ Complete (2026-02-08) |
+| **Phase 13** | Clinical Task Tracking | 1 week | ✅ Complete (2026-02-10) |
 
 **Functional Patient-Aware UI: ✅ Delivered**
-**Clinical Domains Implemented: 11** (Demographics, Flags, Vitals, Allergies, Medications, Encounters, Clinical Notes, Immunizations, Military History, Problems, Labs (partial))
+**Clinical Domains Implemented: 12** (Demographics, Flags, Vitals, Allergies, Medications, Encounters, Clinical Notes, Immunizations, Military History, Problems, Clinical Tasks, Labs (partial))
 **AI Features: ✅ Operational** (4 tools, conversation memory, environmental exposure awareness)
 **Vista RPC Broker: ✅ Operational** (4 domains with real-time data)
+
+**Planned Future Domains:**
+- **Family History** (Phase 14+): Familial disease history and genetic risk factors - HL7 FHIR FamilyMemberHistory resource, VistA File #8810.4, ICD-10 Z-codes for risk stratification, cancer/CVD/diabetes screening decisions, genetic counseling criteria
 
 ---
 

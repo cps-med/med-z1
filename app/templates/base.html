@@ -53,17 +53,17 @@
                     <i class="fa-solid fa-user fa-lg"></i>
                     <span class="sidebar__text">Demographics</span>
                 </a>
+                <a href="/tasks"
+                   class="sidebar__link {{ 'sidebar__link--active' if active_page == 'tasks' else '' }}"
+                   data-tooltip="Clinical Tasks">
+                    <i class="fa-solid fa-tasks fa-lg"></i>
+                    <span class="sidebar__text">Tasks</span>
+                </a>
                 <a href="/vitals"
                    class="sidebar__link {{ 'sidebar__link--active' if active_page == 'vitals' else '' }}"
                    data-tooltip="Patient Vital Signs">
                     <i class="fa-solid fa-heart-pulse fa-lg"></i>
                     <span class="sidebar__text">Vitals</span>
-                </a>
-                <a href="/encounters"
-                   class="sidebar__link {{ 'sidebar__link--active' if active_page == 'encounters' else '' }}"
-                   data-tooltip="Inpatient Encounters">
-                    <i class="fa-solid fa-hospital fa-lg"></i>
-                    <span class="sidebar__text">Encounters</span>
                 </a>
                 <a href="/allergies"
                    class="sidebar__link {{ 'sidebar__link--active' if active_page == 'allergies' else '' }}"
@@ -71,11 +71,23 @@
                     <i class="fa-solid fa-capsules fa-lg"></i>
                     <span class="sidebar__text">Allergies</span>
                 </a>
+                <a href="/encounters"
+                   class="sidebar__link {{ 'sidebar__link--active' if active_page == 'encounters' else '' }}"
+                   data-tooltip="Inpatient Encounters">
+                    <i class="fa-solid fa-hospital fa-lg"></i>
+                    <span class="sidebar__text">Encounters</span>
+                </a>
                 <a href="/medications"
                    class="sidebar__link {% if active_page == 'medications' %}sidebar__link--active{% endif %}"
                    data-tooltip="Patient Medications">
                     <i class="fa-solid fa-pills fa-lg"></i>
                     <span class="sidebar__text">Medications</span>
+                </a>
+                <a href="/immunizations"
+                   class="sidebar__link {{ 'sidebar__link--active' if active_page == 'immunizations' else '' }}"
+                   data-tooltip="Immunizations">
+                    <i class="fa-solid fa-syringe fa-lg"></i>
+                    <span class="sidebar__text">Immunizations</span>
                 </a>
                 <a href="/labs"
                    class="sidebar__link {{ 'sidebar__link--active' if active_page == 'labs' else '' }}"
@@ -89,23 +101,17 @@
                     <i class="fa-solid fa-file-medical fa-lg"></i>
                     <span class="sidebar__text">Notes</span>
                 </a>
-                <a href="/immunizations"
-                   class="sidebar__link {{ 'sidebar__link--active' if active_page == 'immunizations' else '' }}"
-                   data-tooltip="Immunizations">
-                    <i class="fa-solid fa-syringe fa-lg"></i>
-                    <span class="sidebar__text">Immunizations</span>
+                <a href="#"
+                   class="sidebar__link sidebar__link--disabled"
+                   data-tooltip="Orders (Coming Soon)">
+                    <i class="fa-solid fa-clipboard-list fa-lg"></i>
+                    <span class="sidebar__text">Orders</span>
                 </a>
                 <a href="/problems"
                    class="sidebar__link {% if active_page == 'problems' %}sidebar__link--active{% endif %}"
                    data-tooltip="Problems/Diagnoses">
                     <i class="fa-solid fa-stethoscope fa-lg"></i>
                     <span class="sidebar__text">Problems</span>
-                </a>
-                <a href="#"
-                   class="sidebar__link sidebar__link--disabled"
-                   data-tooltip="Orders (Coming Soon)">
-                    <i class="fa-solid fa-clipboard-list fa-lg"></i>
-                    <span class="sidebar__text">Orders</span>
                 </a>
                 <a href="#"
                    class="sidebar__link sidebar__link--disabled"
@@ -221,6 +227,9 @@
 {% include "partials/patient_search_modal.html" %}
 {% include "partials/patient_flags_modal.html" %}
 {% include "partials/problem_detail_modal.html" %}
+
+<!-- Dynamic modal container (for HTMX-loaded modals) -->
+<div id="modal-container"></div>
 
 </body>
 </html>

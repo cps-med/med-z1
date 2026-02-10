@@ -241,17 +241,27 @@ page_router = APIRouter(tags=["vitals-pages"])
 | Notes         | `notes.py`        | B       | Yes        | Yes     | **Complete (2026-01-02)** - Text-heavy domain with filtering |
 | Immunizations | `immunizations.py`| B       | Yes        | Yes     | **Complete (2026-01-14)** - Multi-source harmonization |
 | Problems      | `problems.py`     | B       | Yes        | Yes     | **Complete (2026-02-08)** - Charlson Index, ICD-10 grouping |
+| Tasks         | `tasks.py`        | B       | Yes        | Yes     | **Complete (2026-02-10)** - Task tracking with modal create/edit |
 | Labs          | TBD               | B (rec) | TBD        | TBD     | **ETL Complete** - UI implementation pending |
 | Orders        | TBD               | B (rec) | TBD        | TBD     | Planned - Complex workflow domain            |
 | Imaging       | TBD               | B (rec) | TBD        | TBD     | Planned - May need external viewer           |
 | Procedures    | TBD               | A or B  | TBD        | TBD     | Later Phase - Pattern TBD                    |
+| Family History| TBD               | B (rec) | Yes        | Yes     | **Planned (Phase 14+)** - Risk stratification, genetic factors |
 
-**Important Note on Patient Flags (Design Decision 2025-12-14):**
+**Important Implementation Notes:**
+
+**Patient Flags (Design Decision 2025-12-14):**
 - Patient Flags uses a **modal-only UI pattern** accessed via topbar "View Flags" button with badge count
 - **No dashboard widget** (previously implemented, now removed)
 - **No dedicated full page** (deemed unnecessary - modal provides sufficient functionality)
 - This is an intentional deviation from the standard widget + page pattern
 - Rationale: Flags are critical safety alerts best displayed on-demand via persistent topbar access
+
+**Clinical Tasks (Implementation Note 2026-02-10):**
+- Uses **dedicated router (Pattern B)** with dual router structure (API + page + modal endpoints)
+- Modal forms use `onclick="htmx.ajax(...)"` instead of `hx-get` attributes for widget integration
+- Reason: HTMX does not properly process `hx-*` attributes on dynamically loaded widget content
+- Widget auto-refresh after create/edit has known issue (requires manual page refresh) - documented in task-tracking-design.md Section 11
 
 ### 3.4 Decision Matrix: When to Create a Dedicated Router
 
@@ -1075,6 +1085,71 @@ app.add_middleware(
 - `docs/ai-insight-design.md` - Section 2.5 (Vista Session Caching Architecture)
 - `app/services/vista_cache.py` - Cache management service
 - `ai/services/vitals_trend_analyzer.py` - AI tool integration
+
+---
+
+### ADR-009: Dashboard Widget Layout Reorganization (2026-02-10)
+**Status:** Accepted
+**Context:** With 12 clinical domains implemented (including Clinical Tasks), the dashboard widget order needed reorganization to improve clinical workflow and visual balance. The original order was organically grown as domains were implemented, rather than following clinical priority or user workflow patterns.
+
+**Problem:**
+1. **Clinical Workflow:** Domain order didn't match typical clinician review pattern
+2. **Visual Balance:** Some rows had unbalanced widget sizes causing layout gaps
+3. **Sidebar Consistency:** Sidebar navigation order didn't match dashboard order
+4. **Placeholder Sizing:** Radiology/Imaging placeholder was 1x1, leaving Row 7 incomplete (only 1 of 3 columns filled)
+
+**Decision:** Reorganize dashboard to 7 fully balanced rows following clinical workflow priority:
+- **Row 1:** Demographics (1x1) + My Active Tasks (2x1)
+- **Row 2:** Vital Signs (1x1) + Allergies (1x1) + Encounters (1x1)
+- **Row 3:** Medications (2x1) + Immunizations (1x1)
+- **Row 4:** Laboratory Results (3x1)
+- **Row 5:** Clinical Notes (2x1) + Orders (1x1 placeholder)
+- **Row 6:** Problems/Diagnoses (2x1) + Procedures (1x1 placeholder)
+- **Row 7:** Radiology/Imaging (3x1 placeholder - **updated from 1x1**)
+
+**Rationale:**
+- **Row 1:** Patient identity and immediate action items (most frequently accessed)
+- **Row 2:** Safety-critical information (vitals, allergies, active care episodes)
+- **Row 3:** Current treatments (medications, preventive care)
+- **Row 4:** Diagnostic data (labs get full width for multi-panel display)
+- **Row 5-6:** Clinical documentation and problems (comprehensive patient picture)
+- **Row 7:** Imaging studies (less frequently accessed, full width for image previews)
+
+**Changes:**
+1. **Dashboard Grid** (`app/templates/dashboard.html`):
+   - Reordered widgets to match 7-row layout
+   - Changed Radiology/Imaging from 1x1 to 3x1 placeholder
+   - Added row comments for clarity
+2. **Sidebar Navigation** (`app/templates/base.html`):
+   - Reordered sidebar links to match dashboard order
+   - Demographics → Tasks → Vitals → Allergies → Encounters → Medications → Immunizations → Labs → Notes → Orders → Problems → Procedures → Imaging → Insights
+
+**Consequences:**
+- ✅ **Positive:**
+  - Every row fully balanced (all rows = 3 columns)
+  - Clinical workflow priority order
+  - Sidebar matches dashboard (reduces cognitive load)
+  - Visual consistency and symmetry
+  - Placeholder sizing allows for future full-width imaging previews
+- ⚠️ **Trade-offs:**
+  - Users accustomed to old order may need brief adjustment period
+  - Breaking change for existing users (mitigated by infrequent dashboard visits in Phase 1)
+- 🔮 **Future Enhancements:**
+  - User-configurable dashboard layouts (Phase 2+)
+  - Drag-and-drop widget reordering (Phase 3+)
+
+**Alternatives Considered:**
+1. **Keep original organic order** - Rejected: Doesn't follow clinical workflow
+2. **Alphabetical order** - Rejected: Meaningless for clinical context
+3. **Keep Row 7 with 1x1 placeholder** - Rejected: Creates visual imbalance (1 of 3 columns filled)
+4. **Make imaging 2x1** - Rejected: Imaging benefits from full-width display for side-by-side comparisons
+
+**Implementation Timeline:** 2026-02-10 - Phase 13 (Clinical Task Tracking completion)
+
+**See:**
+- `CLAUDE.md` - Section "Dashboard Widget Layout" for current configuration
+- `app/templates/dashboard.html` - Dashboard grid implementation
+- `app/templates/base.html` - Sidebar navigation
 
 ---
 

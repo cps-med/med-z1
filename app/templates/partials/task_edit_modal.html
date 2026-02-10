@@ -1,0 +1,171 @@
+<!-- app/templates/partials/task_edit_modal.html -->
+<!-- Edit Task Modal -->
+
+<div id="task-edit-modal" class="modal">
+    <div class="modal__overlay" onclick="document.getElementById('task-edit-modal').remove(); document.body.style.overflow = '';"></div>
+    <div class="modal__container">
+        <div class="modal__header">
+            <h2>Edit Task</h2>
+            <button
+                class="modal__close"
+                onclick="document.getElementById('task-edit-modal').remove(); document.body.style.overflow = '';"
+                aria-label="Close"
+            >
+                &times;
+            </button>
+        </div>
+
+        <div class="modal__body">
+            <form
+                hx-put="/api/patient/tasks/{{ task.task_id }}/update"
+                hx-target="#task-edit-modal"
+                hx-swap="outerHTML"
+                hx-indicator="#edit-task-loading">
+
+                <!-- Task ID Display (Read-only) -->
+                <div class="form-group">
+                    <div class="task-edit-meta">
+                        <span class="task-edit-meta__label">Task ID:</span>
+                        <span class="task-edit-meta__value">{{ task.task_id }}</span>
+                        {% if task.is_ai_generated %}
+                        <span class="badge badge--purple badge--sm">
+                            <i class="fa-solid fa-robot"></i> AI-Suggested
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Title Field -->
+                <div class="form-group">
+                    <label for="edit-task-title" class="form-label required">
+                        Task Title
+                    </label>
+                    <input
+                        type="text"
+                        id="edit-task-title"
+                        name="title"
+                        class="form-control"
+                        value="{{ task.title }}"
+                        maxlength="500"
+                        required
+                        autofocus
+                    />
+                    <div class="form-help">Brief description of what needs to be done (max 500 characters)</div>
+                </div>
+
+                <!-- Description Field -->
+                <div class="form-group">
+                    <label for="edit-task-description" class="form-label">
+                        Description (Optional)
+                    </label>
+                    <textarea
+                        id="edit-task-description"
+                        name="description"
+                        class="form-control"
+                        rows="4"
+                        placeholder="Add additional details, context, or instructions...">{{ task.description or '' }}</textarea>
+                    <div class="form-help">Provide more context or specific instructions for this task</div>
+                </div>
+
+                <!-- Priority Field -->
+                <div class="form-group">
+                    <label for="edit-task-priority" class="form-label required">
+                        Priority
+                    </label>
+                    <select id="edit-task-priority" name="priority" class="form-control" required>
+                        <option value="HIGH" {% if task.priority == 'HIGH' %}selected{% endif %}>High Priority</option>
+                        <option value="MEDIUM" {% if task.priority == 'MEDIUM' %}selected{% endif %}>Medium Priority</option>
+                        <option value="LOW" {% if task.priority == 'LOW' %}selected{% endif %}>Low Priority</option>
+                    </select>
+                    <div class="form-help">Select the urgency level for this task</div>
+                </div>
+
+                <!-- Status Field (for completed tasks, show read-only) -->
+                {% if task.status == 'COMPLETED' %}
+                <div class="form-group">
+                    <div class="task-edit-meta">
+                        <span class="task-edit-meta__label">Status:</span>
+                        <span class="badge badge--success">
+                            <i class="fa-solid fa-check-circle"></i> Completed
+                        </span>
+                    </div>
+                    <div class="task-edit-meta">
+                        <span class="task-edit-meta__label">Completed:</span>
+                        <span class="task-edit-meta__value">
+                            {{ task.completed_at[:10] if task.completed_at else '—' }}
+                            {% if task.completed_by_display_name %}
+                            by {{ task.completed_by_display_name }}
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- AI Suggestion Source (read-only if present) -->
+                {% if task.is_ai_generated and task.ai_suggestion_source %}
+                <div class="form-group">
+                    <label class="form-label">
+                        AI Rationale
+                    </label>
+                    <div class="task-ai-source-display">
+                        {{ task.ai_suggestion_source }}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Form Actions -->
+                <div class="modal__footer">
+                    <button
+                        type="button"
+                        class="btn btn--secondary"
+                        onclick="document.getElementById('task-edit-modal').remove(); document.body.style.overflow = '';">
+                        <i class="fa-solid fa-times"></i>
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn btn--primary">
+                        <i class="fa-solid fa-save"></i>
+                        Save Changes
+                    </button>
+                    <div id="edit-task-loading" class="htmx-indicator" style="margin-left: 1rem;">
+                        <i class="fa-solid fa-spinner fa-spin"></i> Saving...
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Show modal immediately
+document.getElementById('task-edit-modal').style.display = 'flex';
+document.body.style.overflow = 'hidden'; // Prevent background scroll
+
+// Focus the title field
+setTimeout(() => {
+    document.getElementById('edit-task-title').focus();
+}, 100);
+
+// Handle Escape key
+document.addEventListener('keydown', function escapeHandler(e) {
+    if (e.key === 'Escape') {
+        const modal = document.getElementById('task-edit-modal');
+        if (modal) {
+            modal.remove();
+            document.body.style.overflow = ''; // Restore scroll
+        }
+        document.removeEventListener('keydown', escapeHandler);
+    }
+});
+
+// Restore scroll when modal is removed (cleanup)
+const modal = document.getElementById('task-edit-modal');
+const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+        if (mutation.type === 'childList' && !document.getElementById('task-edit-modal')) {
+            document.body.style.overflow = ''; // Restore scroll
+            observer.disconnect();
+        }
+    });
+});
+observer.observe(document.body, { childList: true, subtree: true });
+</script>

@@ -1,0 +1,128 @@
+<!-- app/templates/partials/task_create_modal.html -->
+<!-- Quick Create Task Modal -->
+
+<div id="task-create-modal" class="modal">
+    <div class="modal__overlay" onclick="document.getElementById('task-create-modal').remove(); document.body.style.overflow = '';"></div>
+    <div class="modal__container">
+        <div class="modal__header">
+            <h2>Create New Task</h2>
+            <button
+                class="modal__close"
+                onclick="document.getElementById('task-create-modal').remove(); document.body.style.overflow = '';"
+                aria-label="Close"
+            >
+                &times;
+            </button>
+        </div>
+
+        <div class="modal__body">
+            <form
+                hx-post="/api/patient/tasks/{{ patient_icn }}/create"
+                hx-target="#task-create-modal"
+                hx-swap="outerHTML"
+                hx-indicator="#create-task-loading">
+
+                <!-- Title Field -->
+                <div class="form-group">
+                    <label for="task-title" class="form-label required">
+                        Task Title
+                    </label>
+                    <input
+                        type="text"
+                        id="task-title"
+                        name="title"
+                        class="form-control"
+                        placeholder="Enter task title..."
+                        maxlength="500"
+                        required
+                        autofocus
+                    />
+                    <div class="form-help">Brief description of what needs to be done (max 500 characters)</div>
+                </div>
+
+                <!-- Description Field -->
+                <div class="form-group">
+                    <label for="task-description" class="form-label">
+                        Description (Optional)
+                    </label>
+                    <textarea
+                        id="task-description"
+                        name="description"
+                        class="form-control"
+                        rows="4"
+                        placeholder="Add additional details, context, or instructions..."></textarea>
+                    <div class="form-help">Provide more context or specific instructions for this task</div>
+                </div>
+
+                <!-- Priority Field -->
+                <div class="form-group">
+                    <label for="task-priority" class="form-label required">
+                        Priority
+                    </label>
+                    <select id="task-priority" name="priority" class="form-control" required>
+                        <option value="MEDIUM" selected>Medium Priority</option>
+                        <option value="HIGH">High Priority</option>
+                        <option value="LOW">Low Priority</option>
+                    </select>
+                    <div class="form-help">Select the urgency level for this task</div>
+                </div>
+
+                <!-- Hidden Fields -->
+                <input type="hidden" name="is_ai_generated" value="false">
+
+                <!-- Form Actions -->
+                <div class="modal__footer">
+                    <button
+                        type="button"
+                        class="btn btn--secondary"
+                        onclick="document.getElementById('task-create-modal').remove(); document.body.style.overflow = '';">
+                        <i class="fa-solid fa-times"></i>
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn btn--primary">
+                        <i class="fa-solid fa-check"></i>
+                        Create Task
+                    </button>
+                    <div id="create-task-loading" class="htmx-indicator" style="margin-left: 1rem;">
+                        <i class="fa-solid fa-spinner fa-spin"></i> Creating...
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Show modal immediately
+document.getElementById('task-create-modal').style.display = 'flex';
+document.body.style.overflow = 'hidden'; // Prevent background scroll
+
+// Focus the title field
+setTimeout(() => {
+    document.getElementById('task-title').focus();
+}, 100);
+
+// Handle Escape key
+document.addEventListener('keydown', function escapeHandler(e) {
+    if (e.key === 'Escape') {
+        const modal = document.getElementById('task-create-modal');
+        if (modal) {
+            modal.remove();
+            document.body.style.overflow = ''; // Restore scroll
+        }
+        document.removeEventListener('keydown', escapeHandler);
+    }
+});
+
+// Restore scroll when modal is removed (cleanup)
+const modal = document.getElementById('task-create-modal');
+const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+        if (mutation.type === 'childList' && !document.getElementById('task-create-modal')) {
+            document.body.style.overflow = ''; // Restore scroll
+            observer.disconnect();
+        }
+    });
+});
+observer.observe(document.body, { childList: true, subtree: true });
+</script>

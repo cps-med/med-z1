@@ -13,6 +13,7 @@
 
         <!-- Widget Grid -->
         <div class="dashboard-grid" id="dashboard-widgets">
+            <!-- Row 1: Demographics + My Active Tasks -->
             <!-- Demographics Widget (1x1 - Standard) -->
             <div class="widget widget--1x1"
                  id="widget-demographics"
@@ -24,21 +25,22 @@
                 </div>
             </div>
 
-            <!-- Vitals Widget (1x1 - Standard) -->
-            <div class="widget widget--1x1"
-                 id="widget-vitals"
-                 hx-get="/api/patient/dashboard/widget/vitals/{{ patient.icn }}"
-                 hx-trigger="load"
+            <!-- Clinical Tasks Widget (2x1 - Wide) -->
+            <div class="widget widget--2x1"
+                 id="widget-tasks"
+                 hx-get="/api/patient/dashboard/widget/tasks/{{ patient.icn }}"
+                 hx-trigger="load, taskUpdated from:body"
                  hx-swap="innerHTML">
                 <div class="widget__body">
                     <div class="widget__spinner"></div>
                 </div>
             </div>
 
-            <!-- Encounters Widget (1x1 - Standard) -->
+            <!-- Row 2: Vital Signs + Allergies + Encounters -->
+            <!-- Vitals Widget (1x1 - Standard) -->
             <div class="widget widget--1x1"
-                 id="widget-encounters"
-                 hx-get="/api/patient/dashboard/widget/encounters/{{ patient.icn }}"
+                 id="widget-vitals"
+                 hx-get="/api/patient/dashboard/widget/vitals/{{ patient.icn }}"
                  hx-trigger="load"
                  hx-swap="innerHTML">
                 <div class="widget__body">
@@ -57,32 +59,22 @@
                 </div>
             </div>
 
+            <!-- Encounters Widget (1x1 - Standard) -->
+            <div class="widget widget--1x1"
+                 id="widget-encounters"
+                 hx-get="/api/patient/dashboard/widget/encounters/{{ patient.icn }}"
+                 hx-trigger="load"
+                 hx-swap="innerHTML">
+                <div class="widget__body">
+                    <div class="widget__spinner"></div>
+                </div>
+            </div>
+
+            <!-- Row 3: Medications + Immunizations -->
             <!-- Medications Widget (2x1 - Wide) -->
             <div class="widget widget--2x1"
                  id="widget-medications"
                  hx-get="/api/patient/dashboard/widget/medications/{{ patient.icn }}"
-                 hx-trigger="load"
-                 hx-swap="innerHTML">
-                <div class="widget__body">
-                    <div class="widget__spinner"></div>
-                </div>
-            </div>
-
-            <!-- Laboratory Results Widget (3x1 - Full Width) -->
-            <div class="widget widget--3x1"
-                 id="widget-labs"
-                 hx-get="/api/patient/dashboard/widget/labs/{{ patient.icn }}"
-                 hx-trigger="load"
-                 hx-swap="innerHTML">
-                <div class="widget__body">
-                    <div class="widget__spinner"></div>
-                </div>
-            </div>
-
-            <!-- Clinical Notes Widget (2x1 - Compact) -->
-            <div class="widget widget--2x1"
-                 id="widget-notes"
-                 hx-get="/api/patient/dashboard/widget/notes/{{ patient.icn }}"
                  hx-trigger="load"
                  hx-swap="innerHTML">
                 <div class="widget__body">
@@ -101,12 +93,26 @@
                 </div>
             </div>
 
-            <!-- Problems/Diagnoses Widget (2x1 - Wide) -->
-            <div class="widget widget--2x1"
-                 hx-get="/api/patient/dashboard/widget/problems/{{ patient.icn }}"
+            <!-- Row 4: Laboratory Results -->
+            <!-- Laboratory Results Widget (3x1 - Full Width) -->
+            <div class="widget widget--3x1"
+                 id="widget-labs"
+                 hx-get="/api/patient/dashboard/widget/labs/{{ patient.icn }}"
                  hx-trigger="load"
                  hx-swap="innerHTML">
-                <div class="widget__loading">
+                <div class="widget__body">
+                    <div class="widget__spinner"></div>
+                </div>
+            </div>
+
+            <!-- Row 5: Clinical Notes + Orders -->
+            <!-- Clinical Notes Widget (2x1 - Compact) -->
+            <div class="widget widget--2x1"
+                 id="widget-notes"
+                 hx-get="/api/patient/dashboard/widget/notes/{{ patient.icn }}"
+                 hx-trigger="load"
+                 hx-swap="innerHTML">
+                <div class="widget__body">
                     <div class="widget__spinner"></div>
                 </div>
             </div>
@@ -119,6 +125,17 @@
                 description='Recent and pending orders'
             ) }}
 
+            <!-- Row 6: Problems/Diagnoses + Procedures -->
+            <!-- Problems/Diagnoses Widget (2x1 - Wide) -->
+            <div class="widget widget--2x1"
+                 hx-get="/api/patient/dashboard/widget/problems/{{ patient.icn }}"
+                 hx-trigger="load"
+                 hx-swap="innerHTML">
+                <div class="widget__loading">
+                    <div class="widget__spinner"></div>
+                </div>
+            </div>
+
             <!-- Procedures Widget (1x1 - Standard) - Placeholder -->
             {{ placeholder_widget(
                 size='1x1',
@@ -127,9 +144,10 @@
                 description='Surgical and procedural history'
             ) }}
 
-            <!-- Radiology/Imaging Widget (1x1 - Standard) - Placeholder -->
+            <!-- Row 7: Radiology/Imaging -->
+            <!-- Radiology/Imaging Widget (3x1 - Full Width) - Placeholder -->
             {{ placeholder_widget(
-                size='1x1',
+                size='3x1',
                 icon='fa-solid fa-x-ray',
                 title='Radiology/Imaging',
                 description='Imaging studies and reports'

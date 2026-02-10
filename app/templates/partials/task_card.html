@@ -1,0 +1,170 @@
+<!-- Individual Task Card -->
+<div class="task-card task-card--{{ task.priority|lower }} {% if task.status == 'COMPLETED' %}task-card--completed{% endif %}"
+     id="task-card-{{ task.task_id }}"
+     hx-target="this"
+     hx-swap="outerHTML">
+
+    <!-- Card Header -->
+    <div class="task-card__header">
+        <!-- Priority Badge -->
+        <div class="task-card__priority">
+            {% if task.priority == 'HIGH' %}
+                <span class="badge badge--danger">
+                    <i class="fa-solid fa-exclamation-circle"></i> HIGH PRIORITY
+                </span>
+            {% elif task.priority == 'MEDIUM' %}
+                <span class="badge badge--warning">
+                    <i class="fa-solid fa-info-circle"></i> MEDIUM
+                </span>
+            {% else %}
+                <span class="badge badge--secondary">
+                    <i class="fa-regular fa-circle"></i> LOW
+                </span>
+            {% endif %}
+        </div>
+
+        <!-- Status Badge -->
+        <div class="task-card__status">
+            {% if task.status == 'TODO' %}
+                <span class="status-badge status-badge--todo">
+                    <i class="fa-regular fa-circle"></i> To Do
+                </span>
+            {% elif task.status == 'IN_PROGRESS' %}
+                <span class="status-badge status-badge--in-progress">
+                    <i class="fa-solid fa-spinner"></i> In Progress
+                </span>
+            {% elif task.status == 'COMPLETED' %}
+                <span class="status-badge status-badge--completed">
+                    <i class="fa-solid fa-check-circle"></i> Completed
+                </span>
+            {% endif %}
+        </div>
+
+        <!-- AI Badge -->
+        {% if task.is_ai_generated %}
+        <div class="task-card__ai-badge">
+            <span class="badge badge--purple">
+                <i class="fa-solid fa-robot"></i> AI-Suggested
+            </span>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Card Body -->
+    <div class="task-card__body">
+        <!-- Task Title -->
+        <h3 class="task-card__title">
+            {{ task.title }}
+        </h3>
+
+        <!-- Task Description -->
+        {% if task.description %}
+        <div class="task-card__description">
+            {{ task.description }}
+        </div>
+        {% endif %}
+
+        <!-- AI Suggestion Source -->
+        {% if task.is_ai_generated and task.ai_suggestion_source %}
+        <div class="task-card__ai-source">
+            <i class="fa-solid fa-lightbulb"></i>
+            <strong>AI Rationale:</strong> {{ task.ai_suggestion_source }}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Card Meta -->
+    <div class="task-card__meta">
+        <div class="task-card__meta-left">
+            <!-- Created By -->
+            {% if task.created_by_display_name %}
+            <div class="task-meta-item">
+                <i class="fa-solid fa-user"></i>
+                <span>Created by {{ task.created_by_display_name }}</span>
+            </div>
+            {% endif %}
+
+            <!-- Created Date -->
+            {% if task.created_at %}
+            <div class="task-meta-item">
+                <i class="fa-regular fa-clock"></i>
+                <span>{{ task.created_at[:10] }}</span>
+            </div>
+            {% endif %}
+
+            <!-- Completed Info -->
+            {% if task.status == 'COMPLETED' and task.completed_at %}
+            <div class="task-meta-item task-meta-item--completed">
+                <i class="fa-solid fa-check-circle"></i>
+                <span>Completed {{ task.completed_at[:10] }}{% if task.completed_by_display_name %} by {{ task.completed_by_display_name }}{% endif %}</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Actions -->
+        <div class="task-card__actions">
+            {% if task.status != 'COMPLETED' %}
+                <!-- Edit Button -->
+                <button class="btn btn--icon btn--sm btn--secondary"
+                        hx-get="/api/patient/tasks/{{ task.task_id }}/edit-modal"
+                        hx-target="#modal-container"
+                        hx-swap="innerHTML"
+                        title="Edit Task">
+                    <i class="fa-solid fa-pen"></i>
+                </button>
+
+                {% if task.status == 'TODO' %}
+                    <!-- Start Button -->
+                    <button class="btn btn--icon btn--sm btn--secondary"
+                            hx-post="/api/patient/tasks/{{ task.task_id }}/start"
+                            hx-trigger="click"
+                            hx-indicator="#tasks-loading"
+                            title="Start Task">
+                        <i class="fa-solid fa-play"></i>
+                    </button>
+                {% endif %}
+
+                {% if task.status == 'IN_PROGRESS' %}
+                    <!-- Revert Button -->
+                    <button class="btn btn--icon btn--sm btn--secondary"
+                            hx-post="/api/patient/tasks/{{ task.task_id }}/revert-to-todo"
+                            hx-trigger="click"
+                            hx-indicator="#tasks-loading"
+                            title="Revert to To Do">
+                        <i class="fa-solid fa-rotate-left"></i>
+                    </button>
+                {% endif %}
+
+                <!-- Complete Button -->
+                <button class="btn btn--icon btn--sm btn--success"
+                        hx-post="/api/patient/tasks/{{ task.task_id }}/complete"
+                        hx-trigger="click"
+                        hx-confirm="Mark this task as complete?"
+                        hx-indicator="#tasks-loading"
+                        title="Complete Task">
+                    <i class="fa-solid fa-check"></i>
+                </button>
+
+                <!-- Delete Button -->
+                <button class="btn btn--icon btn--sm btn--danger"
+                        hx-delete="/api/patient/tasks/{{ task.task_id }}"
+                        hx-trigger="click"
+                        hx-confirm="Are you sure you want to delete this task? This cannot be undone."
+                        hx-indicator="#tasks-loading"
+                        title="Delete Task">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            {% else %}
+                <!-- View Only for Completed Tasks -->
+                <button class="btn btn--icon btn--sm btn--secondary"
+                        hx-delete="/api/patient/tasks/{{ task.task_id }}"
+                        hx-trigger="click"
+                        hx-confirm="Are you sure you want to delete this completed task?"
+                        hx-indicator="#tasks-loading"
+                        title="Delete Task">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            {% endif %}
+        </div>
+    </div>
+</div>

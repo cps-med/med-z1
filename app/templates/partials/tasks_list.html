@@ -1,0 +1,41 @@
+<!-- Tasks List - HTMX Swappable Section -->
+{% if tasks %}
+    <div class="tasks-list">
+        {% for task in tasks %}
+            {% include 'partials/task_card.html' %}
+        {% endfor %}
+    </div>
+{% else %}
+    <!-- Empty State -->
+    <div class="empty-state">
+        <div class="empty-state__icon">
+            <i class="fa-solid fa-clipboard fa-3x"></i>
+        </div>
+        <h3 class="empty-state__title">No Tasks Found</h3>
+        <p class="empty-state__message">
+            {% if filters.status == 'TODO' %}
+                No tasks with "To Do" status.
+            {% elif filters.status == 'IN_PROGRESS' %}
+                No tasks currently in progress.
+            {% elif filters.status == 'COMPLETED' %}
+                No completed tasks.
+            {% elif filters.priority %}
+                No tasks with {{ filters.priority }} priority.
+            {% elif filters.created_by and filters.created_by != 'ai' %}
+                You haven't created any tasks for this patient yet.
+            {% elif filters.created_by == 'ai' %}
+                No AI-suggested tasks for this patient.
+            {% else %}
+                No tasks have been created for this patient.
+            {% endif %}
+        </p>
+        <button type="button"
+                class="btn btn--primary"
+                hx-get="/api/patient/tasks/quick-create-modal?icn={{ patient_icn }}"
+                hx-target="#modal-container"
+                hx-swap="innerHTML">
+            <i class="fa-solid fa-plus"></i>
+            Create First Task
+        </button>
+    </div>
+{% endif %}

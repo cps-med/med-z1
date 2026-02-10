@@ -838,6 +838,7 @@ docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_immu
 docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_military_history_table.sql
 docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_problems_table.sql
 docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_reference_vaccine_table.sql
+docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_tasks_table.sql
 ```
 
 Verify tables were created:
@@ -845,7 +846,7 @@ Verify tables were created:
 docker exec -it postgres16 psql -U postgres -d medz1 -c "\dt clinical.*"
 ```
 
-Expected output should list **14 tables** in the `clinical` schema:
+Expected output should list **15 tables** in the `clinical` schema:
 
 - patient_demographics, patient_vitals
 - patient_allergies, patient_allergy_reactions
@@ -853,6 +854,7 @@ Expected output should list **14 tables** in the `clinical` schema:
 - patient_flags, patient_flag_history
 - patient_encounters, patient_labs, patient_clinical_notes, patient_immunizations
 - patient_military_history, patient_problems
+- patient_tasks
 
 Additionally, verify the reference table was created:
 ```bash
@@ -861,6 +863,62 @@ docker exec -it postgres16 psql -U postgres -d medz1 -c "\dt reference.*"
 
 Expected output should show **1 table** in the `reference` schema:
 - vaccine (30 CVX-coded vaccines)
+
+### Seeding the Patient Tasks Table
+
+The `clinical.patient_tasks` table supports the Clinical Task Tracking feature. Unlike other clinical domains that use ETL pipelines, this table is populated directly using a seed SQL script.
+
+**Seed the patient_tasks table with test data:**
+```bash
+docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/seed_patient_tasks.sql
+```
+
+This creates 15 test tasks across 4 test patients (ICN100001, ICN100010, ICN100013, ICN100002) with varying priorities, statuses, and scenarios including AI-generated tasks.
+
+**Verify tasks were loaded:**
+```bash
+docker exec -it postgres16 psql -U postgres -d medz1 -c "SELECT COUNT(*) AS task_count FROM clinical.patient_tasks;"
+```
+
+Expected output: `task_count: 15`
+
+**View sample tasks:**
+```bash
+docker exec -it postgres16 psql -U postgres -d medz1 -c "SELECT task_id, patient_key, title, priority, status FROM clinical.patient_tasks ORDER BY created_at DESC LIMIT 5;"
+```
+
+### Recreating the Patient Tasks Table from Scratch
+
+If you need to completely rebuild the `clinical.patient_tasks` table (for example, to start with a clean slate or after schema changes), follow these steps:
+
+**Step 1: Drop the existing table**
+```bash
+docker exec -it postgres16 psql -U postgres -d medz1 -c "DROP TABLE IF EXISTS clinical.patient_tasks CASCADE;"
+```
+
+**Step 2: Recreate the table structure**
+```bash
+docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_tasks_table.sql
+```
+
+**Step 3: Seed with test data**
+```bash
+docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/seed_patient_tasks.sql
+```
+
+**Step 4: Verify the rebuild**
+```bash
+# Count tasks (should show 15)
+docker exec -it postgres16 psql -U postgres -d medz1 -c "SELECT COUNT(*) FROM clinical.patient_tasks;"
+
+# View table structure
+docker exec -it postgres16 psql -U postgres -d medz1 -c "\d clinical.patient_tasks"
+
+# View sample data
+docker exec -it postgres16 psql -U postgres -d medz1 -c "SELECT task_id, patient_key, title, priority, status, created_by_display_name FROM clinical.patient_tasks LIMIT 3;"
+```
+
+**Note:** The `CASCADE` option in the DROP command will also drop any dependent objects (views, foreign keys, etc.). Use with caution in non-development environments.
 
 ### Running ETL Pipelines by Domain
 

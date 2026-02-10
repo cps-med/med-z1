@@ -1,0 +1,133 @@
+<!-- Clinical Tasks Widget Content -->
+<!-- Widget Header -->
+<div class="widget__header">
+    <div class="widget__title-group">
+        <i class="fa-solid fa-tasks widget__icon"></i>
+        <h3 class="widget__title">My Active Tasks</h3>
+    </div>
+    {% if task_count > 0 %}
+        <span class="badge badge--primary">{{ task_count }}</span>
+    {% endif %}
+</div>
+
+<!-- Widget Body -->
+<div class="widget__body">
+    <div class="widget-tasks">
+        {% if error %}
+            <p class="text-muted" style="padding: 1rem; text-align: center;">
+                <i class="fa-solid fa-circle-exclamation"></i> Error loading tasks
+            </p>
+        {% elif not has_tasks %}
+            <div class="empty-state-widget">
+                <i class="fa-regular fa-clipboard"></i>
+                <p>No active tasks for this patient</p>
+            </div>
+        {% else %}
+            <!-- Task List (Top 8 Active Tasks) -->
+            <div class="tasks-list-widget">
+                {% for task in tasks %}
+                <div class="task-item-widget task-item-widget--{{ task.priority|lower }}"
+                     id="task-widget-{{ task.task_id }}">
+
+                    <!-- Priority Badge -->
+                    <div class="task-item-widget__priority">
+                        {% if task.priority == 'HIGH' %}
+                            <span class="badge badge--danger badge--sm" title="High Priority">
+                                <i class="fa-solid fa-exclamation-circle"></i> HIGH
+                            </span>
+                        {% elif task.priority == 'MEDIUM' %}
+                            <span class="badge badge--warning badge--sm" title="Medium Priority">
+                                <i class="fa-solid fa-info-circle"></i> MED
+                            </span>
+                        {% else %}
+                            <span class="badge badge--secondary badge--sm" title="Low Priority">
+                                <i class="fa-regular fa-circle"></i> LOW
+                            </span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Task Content -->
+                    <div class="task-item-widget__content">
+                        <div class="task-item-widget__title">
+                            {{ task.title[:60] }}{% if task.title|length > 60 %}...{% endif %}
+                        </div>
+                        <div class="task-item-widget__meta">
+                            {% if task.status == 'TODO' %}
+                                <span class="task-item-widget__status">
+                                    <i class="fa-regular fa-circle"></i> To Do
+                                </span>
+                            {% elif task.status == 'IN_PROGRESS' %}
+                                <span class="task-item-widget__status task-item-widget__status--in-progress">
+                                    <i class="fa-solid fa-spinner"></i> In Progress
+                                </span>
+                            {% endif %}
+
+                            {% if task.is_ai_generated %}
+                                <span class="task-item-widget__ai-badge" title="AI-suggested task">
+                                    <i class="fa-solid fa-robot"></i> AI
+                                </span>
+                            {% endif %}
+
+                            {% if task.created_by_display_name %}
+                                <span class="task-item-widget__creator">{{ task.created_by_display_name }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="task-item-widget__actions">
+                        {% if task.status == 'TODO' %}
+                            <button class="btn btn--icon btn--sm btn--secondary"
+                                    hx-post="/api/patient/tasks/{{ task.task_id }}/start"
+                                    hx-target="#widget-tasks"
+                                    hx-swap="outerHTML"
+                                    title="Start Task">
+                                <i class="fa-solid fa-play"></i>
+                            </button>
+                            <button class="btn btn--icon btn--sm btn--success"
+                                    hx-post="/api/patient/tasks/{{ task.task_id }}/complete"
+                                    hx-target="#widget-tasks"
+                                    hx-swap="outerHTML"
+                                    hx-confirm="Mark this task as complete?"
+                                    title="Complete Task">
+                                <i class="fa-solid fa-check"></i>
+                            </button>
+                        {% elif task.status == 'IN_PROGRESS' %}
+                            <button class="btn btn--icon btn--sm btn--success"
+                                    hx-post="/api/patient/tasks/{{ task.task_id }}/complete"
+                                    hx-target="#widget-tasks"
+                                    hx-swap="outerHTML"
+                                    hx-confirm="Mark this task as complete?"
+                                    title="Complete Task">
+                                <i class="fa-solid fa-check"></i>
+                            </button>
+                            <button class="btn btn--icon btn--sm btn--secondary"
+                                    hx-post="/api/patient/tasks/{{ task.task_id }}/revert-to-todo"
+                                    hx-target="#widget-tasks"
+                                    hx-swap="outerHTML"
+                                    title="Revert to To Do">
+                                <i class="fa-solid fa-rotate-left"></i>
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Widget Footer -->
+<div class="widget__footer">
+    <div class="widget__footer-content">
+        <a href="/patient/{{ patient_icn }}/tasks" class="widget__footer-link">
+            <i class="fa-solid fa-arrow-right"></i> View All Tasks
+        </a>
+        <button type="button"
+                class="btn btn--icon btn--sm btn--secondary"
+                onclick="htmx.ajax('GET', '/api/patient/tasks/quick-create-modal?icn={{ patient_icn }}', {target:'#modal-container', swap:'innerHTML'})"
+                title="Quick Create Task">
+            <i class="fa-solid fa-plus"></i>
+        </button>
+    </div>
+</div>
