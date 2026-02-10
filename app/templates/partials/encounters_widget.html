@@ -66,13 +66,22 @@
                             <span class="encounter-item-widget__date">
                                 {{ encounter.admit_datetime[:10] if encounter.admit_datetime else 'Unknown date' }}
                             </span>
-                            {% if encounter.is_active %}
-                                <span class="badge badge--danger badge--sm">Active</span>
-                            {% elif encounter.is_extended_stay %}
-                                <span class="badge badge--warning badge--sm">Extended</span>
-                            {% else %}
-                                <span class="badge badge--secondary badge--sm">{{ encounter.admission_category }}</span>
-                            {% endif %}
+                            <div style="display: flex; gap: 0.25rem; align-items: center;">
+                                {% if encounter.is_active %}
+                                    <span class="badge badge--danger badge--sm">Active</span>
+                                {% elif encounter.is_extended_stay %}
+                                    <span class="badge badge--warning badge--sm">Extended</span>
+                                {% else %}
+                                    <span class="badge badge--secondary badge--sm">{{ encounter.admission_category }}</span>
+                                {% endif %}
+                                {% if encounter.data_source %}
+                                    {% if encounter.data_source == 'CDWWork2' %}
+                                        <span class="badge badge--info badge--sm" title="Cerner/Oracle Health data">Cerner</span>
+                                    {% else %}
+                                        <span class="badge badge--secondary badge--sm" title="VistA data">VistA</span>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
                         </div>
                         <div class="encounter-item-widget__facility">
                             {{ encounter.facility_name or 'Unknown facility' }}

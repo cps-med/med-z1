@@ -1,12 +1,12 @@
 # ---------------------------------------------------------------------
 # gold_inpatient.py
 # ---------------------------------------------------------------------
-# Create MinIO Parquet Gold version from Silver inpatient data
-#  - Read Silver: inpatient_cleaned.parquet
-#  - Add patient identity (PatientSID → PatientICN)
-#  - Ensure computed fields are final (is_active, admission_category)
+# Create MinIO Parquet Gold version from Silver encounters data
+#  - Read Silver: encounters_merged.parquet (dual-source)
+#  - Ensure computed fields are final (is_active, is_recent)
 #  - Create patient-centric denormalized view
-#  - Save to med-z1/gold/inpatient as inpatient_final.parquet
+#  - Preserve data_source tracking ('CDWWork' vs 'CDWWork2')
+#  - Save to med-z1/gold/encounters as encounters_final.parquet
 # ---------------------------------------------------------------------
 # To run this script from the project root folder:
 #  $ cd med-z1
@@ -16,88 +16,48 @@
 import polars as pl
 from datetime import datetime, timezone
 import logging
-from sqlalchemy import create_engine
-from config import CDWWORK_DB_CONFIG
 from lake.minio_client import MinIOClient, build_silver_path, build_gold_path
 
 logger = logging.getLogger(__name__)
 
 
-def load_patient_icn_lookup():
+def transform_encounters_gold():
     """
-    Load PatientSID to PatientICN lookup from CDWWork.
-    Returns a polars DataFrame with PatientSID to PatientICN mapping.
+    Transform Silver encounters data to Gold layer.
+
+    Silver layer now contains merged CDWWork + CDWWork2 encounters with:
+    - patient_icn already resolved (no lookup needed!)
+    - data_source column tracking ('CDWWork' vs 'CDWWork2')
+    - Harmonized schema across both sources
     """
-    logger.info("Loading PatientSID to PatientICN lookup from CDWWork")
-
-    # Create SQLAlchemy connection string
-    conn_str = (
-        f"mssql+pyodbc://{CDWWORK_DB_CONFIG['user']}:"
-        f"{CDWWORK_DB_CONFIG['password']}@"
-        f"{CDWWORK_DB_CONFIG['server']}/"
-        f"{CDWWORK_DB_CONFIG['name']}?"
-        f"driver={CDWWORK_DB_CONFIG['driver']}&"
-        f"TrustServerCertificate=yes"
-    )
-
-    engine = create_engine(conn_str)
-
-    query = """
-    SELECT
-        PatientSID,
-        PatientICN
-    FROM SPatient.SPatient
-    WHERE PatientICN IS NOT NULL
-    """
-
-    with engine.connect() as conn:
-        patient_icn_df = pl.read_database(query, connection=conn)
-
-    logger.info(f"  - Loaded {len(patient_icn_df)} PatientSID → PatientICN mappings")
-    logger.info(f"  - Sample mapping: {patient_icn_df.head(3)}")
-
-    return patient_icn_df
-
-
-def transform_inpatient_gold():
-    """Transform Silver inpatient data to Gold layer."""
 
     logger.info("=" * 70)
-    logger.info("Starting Gold inpatient transformation")
+    logger.info("Starting Gold encounters transformation")
     logger.info("=" * 70)
 
     # Initialize MinIO client
     minio_client = MinIOClient()
 
     # ==================================================================
-    # Step 1: Load Silver inpatient
+    # Step 1: Load Silver encounters (merged dual-source)
     # ==================================================================
-    logger.info("Step 1: Loading Silver inpatient...")
+    logger.info("Step 1: Loading Silver encounters...")
 
-    silver_path = build_silver_path("inpatient", "inpatient_cleaned.parquet")
+    silver_path = build_silver_path("encounters", "encounters_merged.parquet")
     df = minio_client.read_parquet(silver_path)
     logger.info(f"  - Loaded {len(df)} encounters from Silver layer")
 
+    # Log data source distribution
+    source_dist = df.group_by("data_source").agg(pl.len().alias("count")).sort("data_source")
+    logger.info("  - Data source distribution:")
+    for row in source_dist.iter_rows(named=True):
+        logger.info(f"    {row['data_source']}: {row['count']} encounters")
+
     # ==================================================================
-    # Step 2: Join with PatientSID → PatientICN lookup
+    # Step 2: Add patient_key alias (for consistency with other domains)
     # ==================================================================
-    logger.info("Step 2: Joining with PatientSID → PatientICN lookup...")
+    logger.info("Step 2: Adding patient_key alias...")
 
-    # Load PatientSID to PatientICN mapping from CDWWork
-    icn_lookup = load_patient_icn_lookup()
-
-    # Join encounters with ICN lookup
-    # Note: Silver has lowercase "patient_sid", lookup has uppercase "PatientSID"
-    df = df.join(
-        icn_lookup.select([
-            pl.col("PatientSID").alias("patient_sid"),  # Match Silver's lowercase column
-            pl.col("PatientICN").alias("patient_icn")
-        ]),
-        on="patient_sid",
-        how="left"
-    )
-
-    # Add patient_key alias (same as patient_icn, for consistency)
     df = df.with_columns([
         pl.col("patient_icn").alias("patient_key")
     ])
@@ -116,20 +76,28 @@ def transform_inpatient_gold():
     # ==================================================================
     logger.info("Step 3: Calculating encounter statistics...")
 
+    # Calculate is_active based on discharge_date
+    df = df.with_columns([
+        pl.when(pl.col("discharge_date").is_null())
+            .then(pl.lit(True))
+            .otherwise(pl.lit(False))
+            .alias("is_active")
+    ])
+
     active_count = df.filter(pl.col("is_active") == True).shape[0]
     discharged_count = df.filter(pl.col("is_active") == False).shape[0]
 
     logger.info(f"  - Active admissions: {active_count}")
     logger.info(f"  - Discharged encounters: {discharged_count}")
 
-    # Count admission categories
-    category_counts = df.group_by("admission_category").agg(pl.len()).sort("len", descending=True)
-    logger.info(f"  - Admission categories:")
-    for row in category_counts.iter_rows(named=True):
-        logger.info(f"    - {row['admission_category']}: {row['len']}")
+    # Count by encounter type
+    type_counts = df.group_by("encounter_type").agg(pl.len().alias("count")).sort("count", descending=True)
+    logger.info(f"  - Encounter types:")
+    for row in type_counts.iter_rows(named=True):
+        logger.info(f"    - {row['encounter_type']}: {row['count']}")
 
     # ==================================================================
-    # Step 4: Add priority flag (for UI highlighting)
+    # Step 4: Add priority flags (for UI highlighting)
     # ==================================================================
     logger.info("Step 4: Adding priority flags...")
 
@@ -137,21 +105,39 @@ def transform_inpatient_gold():
         # is_recent: admitted or discharged within last 30 days
         pl.when(
             (pl.col("is_active") == True) |
-            ((pl.col("discharge_datetime").is_not_null()) &
-             ((pl.lit(datetime.now(timezone.utc)) - pl.col("discharge_datetime")).dt.total_days() <= 30))
+            ((pl.col("discharge_date").is_not_null()) &
+             ((pl.lit(datetime.now(timezone.utc)) - pl.col("discharge_date")).dt.total_days() <= 30))
         )
         .then(pl.lit(True))
         .otherwise(pl.lit(False))
         .alias("is_recent"),
 
-        # is_extended: active admission with LOS > 14 days
+        # is_extended: active admission with LOS > 14 days (inpatient only)
         pl.when(
+            (pl.col("encounter_type") == "INPATIENT") &
             (pl.col("is_active") == True) &
-            (pl.col("total_days") > 14)
+            (pl.col("length_of_stay").is_not_null()) &
+            (pl.col("length_of_stay") > 14)
         )
         .then(pl.lit(True))
         .otherwise(pl.lit(False))
         .alias("is_extended_stay"),
+
+        # admission_category: Categorize based on LOS and status
+        pl.when(pl.col("encounter_type") != "INPATIENT")
+            .then(pl.col("encounter_type"))  # OUTPATIENT, EMERGENCY
+        .when(pl.col("encounter_status").str.to_lowercase() == "active")
+            .then(pl.lit("Active Admission"))
+        .when(pl.col("length_of_stay").is_null())
+            .then(pl.lit("Unknown"))
+        .when(pl.col("length_of_stay") == 0)
+            .then(pl.lit("Observation"))
+        .when(pl.col("length_of_stay") <= 3)
+            .then(pl.lit("Short Stay"))
+        .when(pl.col("length_of_stay") <= 7)
+            .then(pl.lit("Standard Stay"))
+        .otherwise(pl.lit("Extended Stay"))
+        .alias("admission_category"),
     ])
 
     recent_count = df.filter(pl.col("is_recent") == True).shape[0]
@@ -161,11 +147,11 @@ def transform_inpatient_gold():
     logger.info(f"  - Extended stay (active >14 days): {extended_count}")
 
     # ==================================================================
-    # Step 5: Sort by admit_datetime descending
+    # Step 5: Sort by encounter_date descending
     # ==================================================================
-    logger.info("Step 5: Sorting by admit_datetime...")
+    logger.info("Step 5: Sorting by encounter_date...")
 
-    df = df.sort("admit_datetime", descending=True)
+    df = df.sort(["patient_icn", "encounter_date"], descending=[False, True])
 
     # ==================================================================
     # Step 6: Select final columns for Gold layer
@@ -176,33 +162,37 @@ def transform_inpatient_gold():
         # Patient identity
         "patient_icn",
         "patient_key",
-        "patient_sid",
 
         # Encounter ID
-        "inpatient_id",
+        pl.col("encounter_record_id").alias("encounter_id"),
 
-        # Admission info
-        "admit_datetime",
-        "admit_location_id",
+        # Encounter classification
+        "encounter_type",
+
+        # Timing
+        pl.col("encounter_date").alias("encounter_datetime"),
+        pl.col("admit_date").alias("admit_datetime"),
+        pl.col("discharge_date").alias("discharge_datetime"),
+        "length_of_stay",
+
+        # Location info
         "admit_location_name",
         "admit_location_type",
-        "admit_diagnosis_code",
-        "admitting_provider_id",
-        "admitting_provider_name",
-
-        # Discharge info
-        "discharge_datetime",
-        "discharge_date_id",
-        "discharge_location_id",
         "discharge_location_name",
         "discharge_location_type",
-        "discharge_diagnosis_code",
-        "discharge_diagnosis_text",
+
+        # Provider
+        "provider_name",
+
+        # Diagnosis (may be NULL for CDWWork2)
+        "admit_diagnosis_icd10",
+        "discharge_diagnosis_icd10",
+        "discharge_diagnosis",
+
+        # Discharge disposition (may be NULL for CDWWork2)
         "discharge_disposition",
 
-        # Metrics
-        "length_of_stay",
-        "total_days",
+        # Status and categories
         "encounter_status",
         "is_active",
         "admission_category",
@@ -212,11 +202,13 @@ def transform_inpatient_gold():
         "is_extended_stay",
 
         # Facility
-        "sta3n",
+        "facility_sta3n",
         "facility_name",
 
+        # Data source tracking (CDWWork vs CDWWork2)
+        "data_source",
+
         # Metadata
-        "source_system",
         "last_updated",
     ])
 
@@ -225,7 +217,7 @@ def transform_inpatient_gold():
     # ==================================================================
     logger.info("Step 7: Writing to Gold layer...")
 
-    gold_path = build_gold_path("inpatient", "inpatient_final.parquet")
+    gold_path = build_gold_path("encounters", "encounters_final.parquet")
     minio_client.write_parquet(df, gold_path)
 
     logger.info("=" * 70)
@@ -239,9 +231,19 @@ def transform_inpatient_gold():
     return df
 
 
+# Legacy entry point (for backward compatibility)
+def transform_inpatient_gold():
+    """
+    Legacy entry point - redirects to new dual-source function.
+    Maintained for backward compatibility with existing scripts.
+    """
+    logger.warning("transform_inpatient_gold() is deprecated. Use transform_encounters_gold() instead.")
+    return transform_encounters_gold()
+
+
 if __name__ == "__main__":
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     )
-    transform_inpatient_gold()
+    transform_encounters_gold()

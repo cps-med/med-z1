@@ -1,25 +1,27 @@
 # Encounters Domain - Design Specification
 
-**Document Version:** v2.0 (Phase 2 Design - CDWWork2 Integration)
-**Last Updated:** February 9, 2026
+**Document Version:** v2.1 (Phase 2 Complete - CDWWork2 Integration)
+**Last Updated:** February 10, 2026
 **Implementation Status:**
 - ✅ **Phase 1 COMPLETE** - CDWWork Inpatient Admissions (December 15, 2025)
-- 🚧 **Phase 2 IN DESIGN** - CDWWork2 Dual-Source Integration (February 9, 2026)
+- ✅ **Phase 2 COMPLETE** - CDWWork2 Dual-Source Integration (February 10, 2026)
 **Current Scope:**
-- Phase 1: Inpatient Admissions from CDWWork (VistA sites)
-- Phase 2: Dual-source integration with CDWWork2 (Cerner sites)
+- Phase 1: Inpatient Admissions from CDWWork (VistA sites) - 118 encounters
+- Phase 2: Dual-source integration with CDWWork2 (Cerner sites) - 28 additional encounters
+- **Total Dataset:** 146 encounters (118 CDWWork + 28 CDWWork2)
 **Future Scope:** Outpatient Encounters (Phase 3)
 
 ---
 
 ## Implementation Summary
 
-**Status:** ✅ Fully implemented and tested
-**Implementation Date:** December 15, 2025 (6-day roadmap completed)
-**Total Dataset:** 73 encounters across 36 patients
-**First Domain to Implement:** Pagination (ADR-005)
+**Status:** ✅ Phase 1 & Phase 2 fully implemented and tested
+**Phase 1 Implementation Date:** December 15, 2025 (6-day roadmap completed)
+**Phase 2 Implementation Date:** February 10, 2026 (5-day roadmap completed)
+**Total Dataset:** 146 encounters across 41 patients (118 CDWWork + 28 CDWWork2)
+**First Domain to Implement:** Pagination (ADR-005) and Dual-Source Integration
 
-**Key Achievements:**
+**Phase 1 Key Achievements (December 2025):**
 - ✅ Complete ETL pipeline (Bronze → Silver → Gold → PostgreSQL)
 - ✅ Dashboard widget (1x1) showing recent encounters
 - ✅ Full page with table, filtering, and pagination
@@ -28,6 +30,18 @@
 - ✅ Patient ICN mapping fixed (ICN100001 format)
 - ✅ "Home + O₂" disposition badge added (teal styling)
 - ✅ Breadcrumb consistency established across all domain pages
+
+**Phase 2 Key Achievements (February 2026):**
+- ✅ Dual-source ETL pipeline supporting CDWWork (VistA) + CDWWork2 (Cerner)
+- ✅ Bronze extraction from CDWWork2 EncMill.Encounter (28 encounters)
+- ✅ Silver layer refactored for schema harmonization (21-column unified schema)
+- ✅ Gold layer with `data_source` and `encounter_type` tracking
+- ✅ PostgreSQL schema updated with `data_source` and `encounter_type` columns
+- ✅ Query layer updated to return data provenance fields
+- ✅ UI data source badges (Cerner/VistA) added to widget and full page
+- ✅ Thompson family patients (Bailey, Alananah, Joe) demonstrate dual-source integration
+- ✅ Support for INPATIENT and OUTPATIENT encounter types (CDWWork2)
+- ✅ Integration tests verified for all Thompson patients (53 total encounters)
 
 ---
 
@@ -1280,11 +1294,16 @@ def get_all_encounters(
 
 ---
 
-## 10. Phase 2: CDWWork2 Integration
+## 10. Phase 2: CDWWork2 Integration ✅ **COMPLETE** (February 10, 2026)
 
 ### 10.1 Overview and Objectives
 
 **Phase 2 Goal**: Enhance the Encounters domain to process and display encounter data from both CDWWork (VistA sites) and CDWWork2 (Cerner/Oracle Health sites) as a unified dataset.
+
+**Implementation Status**: ✅ Completed February 10, 2026
+**Total Duration**: 5 days (Bronze → Silver → Gold → PostgreSQL → Query Layer → UI)
+**Total Records**: 146 encounters (118 CDWWork + 28 CDWWork2)
+**Test Patients**: Thompson siblings (ICN200001-200003) - 53 encounters across 3 patients
 
 **Key Objectives**:
 1. **Bronze Layer Extraction**: Create Bronze ETL extraction for CDWWork2 `EncMill.Encounter` table
@@ -2529,11 +2548,73 @@ GO
 5. **Real-Time Data**: Phase 2 does not include Vista RPC overlay for T-0 encounters
    - **Future**: Add "Refresh from Vista" button in Phase 3 (per Vitals domain pattern)
 
+### 10.10 Phase 2 Implementation Results ✅
+
+**Completion Date:** February 10, 2026
+**Implementation Duration:** 5 days (Day 1-5 roadmap completed)
+
+**Final Metrics:**
+- **Total Encounters**: 146 (118 CDWWork + 28 CDWWork2)
+- **Patients with Dual-Source Data**: 5 (Adam, Alexander, Bailey, Alananah, Joe)
+- **Thompson Family Encounters**: 53 total (39 Bailey + 11 Alananah + 3 Joe)
+- **Encounter Types Supported**: INPATIENT, OUTPATIENT
+- **Data Sources Tracked**: CDWWork (VistA), CDWWork2 (Cerner)
+- **Facilities Represented**: 11 total (7 VistA sites + 4 Cerner sites)
+
+**Technical Deliverables Completed:**
+1. ✅ **Bronze Layer**: `etl/bronze_cdwwork2_encounters.py` - Extracts 28 CDWWork2 encounters
+2. ✅ **Silver Layer**: `etl/silver_inpatient.py` - Refactored for dual-source harmonization (555 lines)
+3. ✅ **Gold Layer**: `etl/gold_inpatient.py` - Preserves `data_source` and `encounter_type` fields
+4. ✅ **PostgreSQL**: Added `data_source` and `encounter_type` columns to `patient_encounters` table
+5. ✅ **Load Script**: `etl/load_encounters.py` - Maps new Gold schema to PostgreSQL
+6. ✅ **Query Layer**: All 4 functions in `app/db/encounters.py` updated to return data provenance
+7. ✅ **UI Widget**: `encounters_widget.html` - Data source badges (Cerner/VistA) added
+8. ✅ **UI Full Page**: `encounters_content.html` - Source column added to table with badges
+9. ✅ **Integration Tests**: All Thompson patients verified with dual-source data
+
+**User-Visible Features:**
+- **Data Source Badges**: Blue "Cerner" badges for CDWWork2 data, gray "VistA" badges for CDWWork data
+- **Encounter Type Support**: Both INPATIENT and OUTPATIENT encounters displayed
+- **Complete Patient History**: Veterans see all encounters from both VistA and Cerner sites in unified view
+- **Site Transition Tracking**: Thompson patients demonstrate Bay Pines (VistA) → Walla Walla (Cerner) migration
+
+**Thompson Family Validation Results:**
+```
+Bailey Thompson (ICN200001):
+  Total encounters: 39
+  Data sources: CDWWork=32, CDWWork2=7
+  Encounter types: INPATIENT=34, OUTPATIENT=5
+  Facilities: Bay Pines FL (VistA) + Walla Walla WA (Cerner)
+
+Alananah Thompson (ICN200002):
+  Total encounters: 11
+  Data sources: CDWWork=8, CDWWork2=3
+  Encounter types: INPATIENT=8, OUTPATIENT=3
+  Facilities: Bay Pines FL (VistA) + Walla Walla WA (Cerner)
+
+Joe Thompson (ICN200003):
+  Total encounters: 3
+  Data sources: CDWWork=1, CDWWork2=2
+  Encounter types: INPATIENT=1, OUTPATIENT=2
+  Facilities: Bay Pines FL (VistA) + Walla Walla WA (Cerner)
+```
+
+**Backward Compatibility:**
+- Legacy `transform_inpatient_silver()` function maintained with deprecation warning
+- Legacy `transform_inpatient_gold()` function maintained with deprecation warning
+- Existing query functions extended (not replaced) to preserve API compatibility
+
+**Known Limitations (By Design):**
+- Diagnosis fields NULL for CDWWork2 encounters (diagnosis tables not yet integrated)
+- Discharge disposition NULL for CDWWork2 encounters (not tracked in EncMill.Encounter)
+- Discharge location NULL for CDWWork2 encounters (single location field only)
+- Outpatient encounters not yet displayed prominently in UI (future Phase 3)
+
 ---
 
 ## 11. Testing Strategy
 
-### 10.1 Unit Tests
+### 11.1 Unit Tests
 
 **File:** `tests/test_encounters.py`
 

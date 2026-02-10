@@ -106,6 +106,7 @@
                 <th>Discharge Date</th>
                 <th>LOS</th>
                 <th>Facility</th>
+                <th>Source</th>
                 <th>Diagnosis</th>
                 <th>Disposition</th>
             </tr>
@@ -171,6 +172,23 @@
                 <!-- Facility -->
                 <td class="encounter-cell encounter-cell--facility">
                     {{ encounter.facility_name or 'Unknown' }}
+                </td>
+
+                <!-- Data Source -->
+                <td class="encounter-cell encounter-cell--source">
+                    {% if encounter.data_source %}
+                        {% if encounter.data_source == 'CDWWork2' %}
+                            <span class="badge badge--info badge--sm" title="Cerner/Oracle Health EHR">
+                                <i class="fa-solid fa-database"></i> Cerner
+                            </span>
+                        {% else %}
+                            <span class="badge badge--secondary badge--sm" title="VistA EHR">
+                                <i class="fa-solid fa-database"></i> VistA
+                            </span>
+                        {% endif %}
+                    {% else %}
+                        <span class="text-muted">—</span>
+                    {% endif %}
                 </td>
 
                 <!-- Diagnosis -->

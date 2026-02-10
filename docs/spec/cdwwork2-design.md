@@ -1,12 +1,21 @@
 # CDWWork2 (Oracle Health/Cerner) Mock Database - Design Document
 
-**Document Version:** 1.5
+**Document Version:** 1.6
 **Date:** 2025-12-17
-**Last Updated:** 2026-02-09
-**Status:** ✅ Phases 1-4 Complete - Phase 5 (Encounters) In Design
-**Implementation Phase:** Phase 5 (Encounters) - Design Complete, Implementation Pending
+**Last Updated:** 2026-02-10
+**Status:** ✅ Phases 1-5 Complete (Encounters Implementation Complete)
+**Implementation Phase:** Phase 5 (Encounters) - ✅ COMPLETE (February 10, 2026)
 
 **Changelog:**
+- **v1.6** (2026-02-10): Thompson Siblings Added to Shared Patient Registry
+  - **Patient Registry**: Updated Section 7.1 to include Thompson siblings (Bailey, Alananah, Joe) - ICN200001-200003
+  - **Site Mapping**: Added detailed VistA-to-Cerner transitions for all three Thompson patients (Section 7.2.2)
+  - **Walla Walla Site**: Added Sta3n 687 (Walla Walla VAMC) to Cerner sites list
+  - **Historical Data Strategy**: Added Walla Walla go-live date (2024-07-01) to Section 7.3
+  - **Demo Narratives**: Added comprehensive clinical profiles and demo narratives for Bailey (high medical needs - PTSD, chronic pain, TBI), Alananah (cancer survivor + diabetes), and Joe (healthy control)
+  - **Site Transition Timeline**: Updated to include Thompson family relocation scenario (Bay Pines → Walla Walla)
+  - **Total Sites**: Updated from 3 to 4 Cerner sites (11 total sites)
+  - **Key Context**: Thompson patients represent complete site transition - ALL historical care at Bay Pines (Sta3n 516, VistA), ALL current care at Walla Walla (Sta3n 687, Cerner)
 - **v1.5** (2026-02-09): Phase 5 (Encounters Domain) Design Added
   - **Phase 5 Scope**: CDWWork2 `EncMill.Encounter` ETL integration
   - **Roadmap Updates**: Section 10.1 updated with Phase 5 details (4-5 day timeline, 12 Thompson encounters)
@@ -975,12 +984,15 @@ INSERT INTO VeteranMill.SPerson (PatientSID, PatientICN, PatientName, ...)
 VALUES (1001, '1000000001V123456', 'SMITH,JOHN ALPHA', ...);
 ```
 
-**Shared Patient Registry** (Updated for Demo - 2025-12-30):
+**Shared Patient Registry** (Updated for Phase 5 - 2026-02-10):
 
 | PatientSID | ICN | Patient Name | Age | VistA Sites (Sta3n) | Cerner Sites (Sta3n) | Total Sites | Use Case |
 |-----------|-----|--------------|-----|---------------------|---------------------|-------------|----------|
 | 1001 | ICN100001 | Dooree, Adam | 45 | 508 (Atlanta) | 648 (Portland) | 2 | **Primary demo patient** - Cross-source merge, diabetes/HTN |
 | 1010 | ICN100010 | Aminor, Alexander | 59 | 552 (Dayton) | 663 (Seattle) | 2 | **Secondary demo patient** - Multi-site care, post-Vietnam veteran |
+| 2001 | ICN200001 | Thompson, Bailey James | 62 | 516 (Bay Pines, FL) - Historical only | 687 (Walla Walla, WA) | 2 | **High medical needs** - PTSD, chronic pain, TBI; site transition demo |
+| 2002 | ICN200002 | Thompson, Alananah Marie | 62 | 516 (Bay Pines, FL) - Historical only | 687 (Walla Walla, WA) | 2 | **High medical needs** - Breast cancer survivor, diabetes; Bailey's twin |
+| 2003 | ICN200003 | Thompson, Joe Michael | 55 | 516 (Bay Pines, FL) - Historical only | 687 (Walla Walla, WA) | 2 | **Healthy control** - Minimal service connection (10% tinnitus); younger sibling |
 
 **Current VistA Data (CDWWork) for Demo Patients**:
 
@@ -1003,11 +1015,58 @@ VALUES (1001, '1000000001V123456', 'SMITH,JOHN ALPHA', ...);
 - Labs: Routine lab results
 - Flags: Patient record flags
 
+**Bailey Thompson (2001) - VistA Data at Sta3n 516 (Bay Pines, Florida) - Historical Only**:
+- Demographics: Male, Age 62, DOB 1963-04-15
+- Service: Gulf War + Iraq veteran (1990-2010), 70% service-connected disability
+- Clinical conditions: PTSD (Combat-related), Chronic pain (Back/Neck), TBI (Mild)
+- Allergies: Multiple drug allergies
+- Vitals: 231 vital sign readings (2010-2025) with elevated BP trends
+- Medications: 72 prescriptions (pain management, psychiatric, chronic conditions)
+- Labs: Comprehensive lab results
+- Clinical Notes: Mental health documentation, pain management notes
+- Problems: 13 active diagnoses (PTSD, chronic pain, TBI, diabetes, hypertension)
+- Immunizations: Complete vaccination history
+- Encounters: Inpatient admissions (CDWWork historical + CDWWork2 current at Walla Walla)
+- **Current Care**: All active care now at Walla Walla VAMC (Sta3n 687, Cerner/CDWWork2) - NO LONGER receiving care at Bay Pines
+
+**Alananah Thompson (2002) - VistA Data at Sta3n 516 (Bay Pines, Florida) - Historical Only**:
+- Demographics: Female, Age 62, DOB 1963-04-15 (Bailey's twin)
+- Service: Gulf War + Iraq veteran (1990-2010), 70% service-connected disability
+- Clinical conditions: Breast cancer survivor (2012-2013), Type 2 diabetes (2012-present)
+- Allergies: Drug allergies present
+- Vitals: 231 vital sign readings (2010-2025) with diabetes-related monitoring
+- Medications: 32 prescriptions (oncology follow-up, diabetes management, chronic conditions)
+- Labs: Oncology and diabetes lab panels
+- Clinical Notes: Oncology consult, diabetes management, surveillance notes
+- Problems: 16 active diagnoses (breast cancer history, diabetes, hypertension, osteopenia)
+- Immunizations: Complete vaccination history including oncology-related vaccines
+- Encounters: Inpatient admissions (CDWWork historical + CDWWork2 current at Walla Walla)
+- **Current Care**: All active care now at Walla Walla VAMC (Sta3n 687, Cerner/CDWWork2) - NO LONGER receiving care at Bay Pines
+
+**Joe Thompson (2003) - VistA Data at Sta3n 516 (Bay Pines, Florida) - Historical Only**:
+- Demographics: Male, Age 55, DOB 1970-05-10 (younger brother of Bailey & Alananah)
+- Service: Gulf War veteran (1990-1995), 10% service-connected disability (Tinnitus only)
+- Clinical conditions: Minimal - essentially healthy control patient
+- Allergies: No known drug allergies (NKDA)
+- Vitals: 231 vital sign readings (2012-2025) - all normal/stable ranges
+- Medications: 7 prescriptions (minimal, mostly vitamins and tinnitus management)
+- Labs: Routine annual labs - all normal
+- Clinical Notes: Routine primary care notes
+- Problems: 4 diagnoses (tinnitus, hearing loss, minor conditions)
+- Immunizations: Standard vaccination history
+- Encounters: Routine outpatient visits (CDWWork historical + CDWWork2 current at Walla Walla)
+- **Current Care**: All active care now at Walla Walla VAMC (Sta3n 687, Cerner/CDWWork2) - NO LONGER receiving care at Bay Pines
+
 **Key Points**:
 - **Patient 1001 (Adam)**: Primary demo patient for dual-source showcase - will have vitals + allergies in both VistA (Atlanta) and Cerner (Portland)
 - **Patient 1010 (Alexander)**: Secondary demo patient - will have vitals + allergies in both VistA (Dayton) and Cerner (Seattle)
-- Both patients demonstrate the **site transition scenario**: Veterans who received care at VistA sites and then at Cerner sites post-migration
-- **Demo Story**: "Adam received care at Atlanta VAMC (VistA) for years. In 2024, he relocated to Portland and now receives care at Portland VAMC (Cerner). med-z1 seamlessly shows his complete longitudinal record from both systems."
+- **Patient 2001 (Bailey Thompson)**: High medical needs patient - PTSD, chronic pain, TBI; demonstrates complex multi-domain care across VistA (Bay Pines) and Cerner (Walla Walla)
+- **Patient 2002 (Alananah Thompson)**: High medical needs patient - breast cancer survivor, diabetes; Bailey's twin with different clinical trajectory
+- **Patient 2003 (Joe Thompson)**: Healthy control patient - minimal service connection, demonstrates baseline/normal patient profile; younger sibling
+- All five patients demonstrate the **site transition scenario**: Veterans who received historical care at VistA sites and then transitioned to Cerner sites
+- **Critical Note**: Thompson patients (2001-2003) NO LONGER receive care at Bay Pines (Sta3n 516). All current care is at Walla Walla VAMC (Sta3n 687, Cerner). Bay Pines data is historical only.
+- **Demo Story (Adam)**: "Adam received care at Atlanta VAMC (VistA) for years. In 2024, he relocated to Portland and now receives care at Portland VAMC (Cerner). med-z1 seamlessly shows his complete longitudinal record from both systems."
+- **Demo Story (Thompson Siblings)**: "The Thompson siblings (Bailey, Alananah, Joe) all received care at Bay Pines VAMC in Florida for years. In 2024, they relocated to Walla Walla, Washington, and now receive all VA care at Walla Walla VAMC (Cerner site). med-z1 displays their complete longitudinal records, merging historical VistA data from Bay Pines with current Cerner data from Walla Walla, demonstrating cross-EHR continuity for an entire family."
 
 ### 7.2 Site Assignment Strategy
 
@@ -1015,6 +1074,7 @@ VALUES (1001, '1000000001V123456', 'SMITH,JOHN ALPHA', ...);
 - **Sta3n 648** - Portland VA Medical Center (Oregon)
 - **Sta3n 663** - Seattle/Puget Sound VA (Washington)
 - **Sta3n 531** - Boise VA Medical Center (Idaho)
+- **Sta3n 687** - Walla Walla VA Medical Center (Washington) - Thompson patients' current care site
 
 **Designated VistA Sites** (CDWWork only):
 - **Sta3n 508** - Atlanta VA Medical Center (Georgia)
@@ -1025,7 +1085,7 @@ VALUES (1001, '1000000001V123456', 'SMITH,JOHN ALPHA', ...);
 - **Sta3n 500** - Anchorage (used in Vista RPC Broker simulator)
 - **Sta3n 630** - Palo Alto (used in Vista RPC Broker simulator)
 
-**Total Sites**: 7 VistA sites, 3 Cerner sites (10 sites total)
+**Total Sites**: 7 VistA sites, 4 Cerner sites (11 sites total)
 
 **Mutual Exclusivity**: A site's data exists in **either** CDWWork **or** CDWWork2, never both.
 
@@ -1052,9 +1112,9 @@ VALUES (1001, '1000000001V123456', 'SMITH,JOHN ALPHA', ...);
 
 **Recommendation**: ✅ **No negative impacts identified. Safe to add these sites.**
 
-#### 7.2.2 Demo Patient Site Mapping (2025-12-30)
+#### 7.2.2 Demo Patient Site Mapping (Updated 2026-02-10)
 
-This section defines the specific VistA-to-Cerner site transitions for our demo patients, enabling a compelling dual-source demonstration for VA stakeholders.
+This section defines the specific VistA-to-Cerner site transitions for our demo patients, enabling a compelling dual-source demonstration for VA stakeholders. Now includes all five shared/demo patients: Adam Dooree, Alexander Aminor, and the Thompson siblings (Bailey, Alananah, Joe).
 
 **Adam Dooree (PatientSID 1001, ICN100001)**:
 
@@ -1076,29 +1136,72 @@ This section defines the specific VistA-to-Cerner site transitions for our demo 
 **Demo Narrative for Alexander**:
 > "Alexander Aminor is a 59-year-old post-Vietnam veteran who received care at Dayton VAMC. In late 2024, he moved to Seattle to be closer to family. Seattle VAMC is one of VA's early Oracle Health sites. med-z1 shows Alexander's complete allergy history - including a penicillin allergy documented at Dayton (VistA) and a new sulfa allergy added at Seattle (Cerner) - all in one unified view. The system correctly deduplicates and merges data from both sources."
 
+**Bailey Thompson (PatientSID 2001, ICN200001)**:
+
+| Phase | Period | Site | Sta3n | EHR System | Database | Clinical Data |
+|-------|--------|------|-------|------------|----------|---------------|
+| Historical | 2010-2024 | Bay Pines VAMC | 516 | VistA | CDWWork | Vitals (231), Problems (13), Meds (72), Immunizations (51), Notes (clinical), Encounters (inpatient) |
+| Current | 2024-present | Walla Walla VAMC | 687 | Cerner (post-migration) | CDWWork2 | Encounters (7 admissions), Current vitals/meds/problems |
+
+**Demo Narrative for Bailey**:
+> "Bailey Thompson is a 62-year-old Gulf War and Iraq veteran with significant service-connected disabilities (70% - PTSD, chronic pain, TBI). He received comprehensive care at Bay Pines VAMC in Florida from 2010-2024. In mid-2024, Bailey and his siblings relocated to Walla Walla, Washington. Walla Walla VAMC recently transitioned to Oracle Health (Cerner). Bailey's med-z1 record demonstrates the complexity of dual-source integration for high-needs patients - 15 years of VistA data (231 vitals, 72 medications, 13 diagnoses) merged with current Cerner encounter data. This showcases how med-z1 maintains care continuity for veterans with complex medical histories across EHR transitions."
+
+**Alananah Thompson (PatientSID 2002, ICN200002)**:
+
+| Phase | Period | Site | Sta3n | EHR System | Database | Clinical Data |
+|-------|--------|------|-------|------------|----------|---------------|
+| Historical | 2010-2024 | Bay Pines VAMC | 516 | VistA | CDWWork | Vitals (231), Problems (16), Meds (32), Immunizations (34), Notes (oncology/diabetes), Encounters (inpatient) |
+| Current | 2024-present | Walla Walla VAMC | 687 | Cerner (post-migration) | CDWWork2 | Encounters (3 admissions), Current vitals/meds/problems |
+
+**Demo Narrative for Alananah**:
+> "Alananah Thompson is Bailey's twin sister, also a Gulf War and Iraq veteran (70% service-connected). She is a breast cancer survivor (2012-2013) with ongoing Type 2 diabetes management. Her 15-year VistA record at Bay Pines documents her cancer journey and chronic disease management. After relocating to Walla Walla in 2024, her care transitioned to the Cerner system. Alananah's record demonstrates med-z1's ability to integrate oncology surveillance data, diabetes monitoring, and routine care across both EHR systems - critical for continuity in cancer survivors."
+
+**Joe Thompson (PatientSID 2003, ICN200003)**:
+
+| Phase | Period | Site | Sta3n | EHR System | Database | Clinical Data |
+|-------|--------|------|-------|------------|----------|---------------|
+| Historical | 2012-2024 | Bay Pines VAMC | 516 | VistA | CDWWork | Vitals (231 - all normal), Problems (4 minimal), Meds (7 minimal), Immunizations (standard), Encounters (routine outpatient) |
+| Current | 2024-present | Walla Walla VAMC | 687 | Cerner (post-migration) | CDWWork2 | Encounters (2 routine visits), Current vitals/meds |
+
+**Demo Narrative for Joe**:
+> "Joe Thompson is Bailey and Alananah's younger brother (age 55), a Gulf War veteran with minimal service connection (10% - tinnitus only). He represents a 'healthy control' patient profile in our test cohort. Joe's VistA record from Bay Pines shows 13 years of stable, routine care with normal vitals and minimal medications. After moving to Walla Walla in 2024, his care transitioned smoothly to the Cerner system. Joe's record demonstrates that med-z1's dual-source integration works equally well for both complex high-needs patients (like his siblings) and straightforward healthy veterans."
+
 **Site Transition Timeline** (for demo context):
 
 ```
-2020-2023: VistA-Only Period
-           - Adam: Atlanta (508)
-           - Alexander: Dayton (552)
+2010-2023: VistA-Only Period
+           - Adam: Atlanta (508) - 2020-2023
+           - Alexander: Dayton (552) - 2018-2023
+           - Thompson siblings: Bay Pines (516) - 2010-2023
+             * Bailey: 2010-2023 (high medical needs)
+             * Alananah: 2010-2023 (cancer survivor, diabetes)
+             * Joe: 2012-2023 (healthy control)
            - All data in CDWWork
 
 2024 Q1-Q2: Cerner Go-Live
            - Portland (648) migrates to Cerner
            - Seattle (663) migrates to Cerner
+           - Walla Walla (687) migrates to Cerner
            - Historical data remains in CDWWork
            - New data flows to CDWWork2
 
 2024 Q3-Q4: Patient Migration
            - Adam moves to Portland (now Cerner site)
            - Alexander moves to Seattle (now Cerner site)
-           - Both patients now have data in BOTH databases
+           - Thompson siblings move to Walla Walla (now Cerner site)
+             * Bailey, Alananah, Joe relocate together (family)
+             * All three transition from Bay Pines (VistA) to Walla Walla (Cerner)
+           - All five patients now have data in BOTH databases
 
 2024 Q4 (Current): Dual-Source Scenario
            - Med-z1 Silver layer merges CDWWork + CDWWork2
            - UI displays unified longitudinal record
            - Demo showcases VA's future state
+           - Five patients demonstrate various clinical profiles:
+             * Adam & Alexander: Individual relocations, chronic disease management
+             * Bailey: Complex high-needs (PTSD, pain, TBI)
+             * Alananah: Cancer survivor + chronic disease
+             * Joe: Healthy control with minimal needs
 ```
 
 **Key Demo Points**:
@@ -1149,6 +1252,11 @@ This section defines the specific VistA-to-Cerner site transitions for our demo 
 - **Boise (Sta3n 531)** - "Go-Live" date: 2024-11-01
   - Data before 2024-11-01 → CDWWork
   - Data on/after 2024-11-01 → CDWWork2
+
+- **Walla Walla (Sta3n 687)** - "Go-Live" date: 2024-07-01
+  - Data before 2024-07-01 → CDWWork (Bay Pines patients' historical data)
+  - Data on/after 2024-07-01 → CDWWork2 (Cerner era)
+  - **Note**: Thompson patients (2001-2003) received ALL historical care at Bay Pines (Sta3n 516, VistA). After relocating to Walla Walla in mid-2024, ALL current care is at Walla Walla (Sta3n 687, Cerner). No historical data exists in CDWWork for Sta3n 687.
 
 **Implications**:
 - Bronze ETL must extract from BOTH databases
@@ -1830,8 +1938,8 @@ def get_all_vitals(icn: str) -> List[Dict[str, Any]]:
 
 **Total Timeline (Phases 1-4)**: 10 days (2 weeks with buffer)
 
-**Phase 5: Encounters Domain** (Days 11-15) **⏱️ 4-5 days** 🚧 **IN DESIGN (2026-02-09)**
-- **Status**: Design complete, implementation pending
+**Phase 5: Encounters Domain** (Days 11-15) **⏱️ 5 days** ✅ **COMPLETE (2026-02-10)**
+- **Status**: ✅ Implementation complete (February 10, 2026)
 - **Documentation**: See `docs/spec/encounters-design.md` Phase 2 (v2.0, 2026-02-09)
 - **Scope**: Integrate CDWWork2 `EncMill.Encounter` table into ETL pipeline
 - **Test Data**: Thompson patients (Bailey, Alananah, Joe) - 12 encounters at Walla Walla VAMC (Sta3n 687)

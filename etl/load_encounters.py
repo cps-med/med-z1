@@ -36,9 +36,15 @@ def load_encounters_to_postgresql():
     # ==================================================================
     logger.info("Step 1: Loading Gold inpatient encounters...")
 
-    gold_path = build_gold_path("inpatient", "inpatient_final.parquet")
+    gold_path = build_gold_path("encounters", "encounters_final.parquet")
     df = minio_client.read_parquet(gold_path)
     logger.info(f"  - Loaded {len(df)} encounters from Gold layer")
+
+    # Log data source distribution
+    source_dist = df.group_by("data_source").agg(pl.len().alias("count")).sort("data_source")
+    logger.info("  - Data source distribution:")
+    for row in source_dist.iter_rows(named=True):
+        logger.info(f"    {row['data_source']}: {row['count']} encounters")
 
     # ==================================================================
     # Step 2: Transform to match PostgreSQL schema
@@ -46,41 +52,34 @@ def load_encounters_to_postgresql():
     logger.info("Step 2: Transforming to match PostgreSQL schema...")
 
     # Select and rename columns to match patient_encounters table schema
-    # Note: patient_encounters table has these columns:
-    #   encounter_id (auto), patient_key, inpatient_id,
-    #   admit_datetime, admit_location_id, admit_diagnosis_code,
-    #   admitting_provider_id, admitting_provider_name,
-    #   discharge_datetime, discharge_date_id, discharge_location_id,
-    #   discharge_diagnosis_code, discharge_diagnosis_text, discharge_disposition,
-    #   length_of_stay, total_days, encounter_status, is_active,
-    #   admission_category, is_recent, is_extended_stay,
-    #   sta3n, facility_name, source_system, last_updated
+    # Note: Gold layer now has encounter_id, encounter_datetime, encounter_type, data_source
     df_pg = df.select([
         pl.col("patient_key"),
-        pl.col("inpatient_id"),
+        pl.col("encounter_id").alias("inpatient_id"),  # Map encounter_id to existing column name
+        pl.col("encounter_type"),
 
         # Admission details
-        pl.col("admit_datetime"),
-        pl.col("admit_location_id").cast(pl.Int32),
+        pl.col("encounter_datetime").alias("admit_datetime"),
+        pl.lit(None, dtype=pl.Int32).alias("admit_location_id"),  # Not in new schema
         pl.col("admit_location_name"),
         pl.col("admit_location_type"),
-        pl.col("admit_diagnosis_code"),
-        pl.col("admitting_provider_id").cast(pl.Int32),
-        pl.col("admitting_provider_name"),
+        pl.col("admit_diagnosis_icd10").alias("admit_diagnosis_code"),
+        pl.lit(None, dtype=pl.Int32).alias("admitting_provider_id"),  # Not in new schema
+        pl.col("provider_name").alias("admitting_provider_name"),
 
         # Discharge details
         pl.col("discharge_datetime"),
-        pl.col("discharge_date_id").cast(pl.Int32),
-        pl.col("discharge_location_id").cast(pl.Int32),
+        pl.lit(None, dtype=pl.Int32).alias("discharge_date_id"),  # Not in new schema
+        pl.lit(None, dtype=pl.Int32).alias("discharge_location_id"),  # Not in new schema
         pl.col("discharge_location_name"),
         pl.col("discharge_location_type"),
-        pl.col("discharge_diagnosis_code"),
-        pl.col("discharge_diagnosis_text"),
+        pl.col("discharge_diagnosis_icd10").alias("discharge_diagnosis_code"),
+        pl.col("discharge_diagnosis").alias("discharge_diagnosis_text"),
         pl.col("discharge_disposition"),
 
         # Metrics
         pl.col("length_of_stay").cast(pl.Int32),
-        pl.col("total_days").cast(pl.Int32),
+        pl.lit(None, dtype=pl.Int32).alias("total_days"),  # Not in new schema
         pl.col("encounter_status"),
         pl.col("is_active"),
         pl.col("admission_category"),
@@ -90,11 +89,14 @@ def load_encounters_to_postgresql():
         pl.col("is_extended_stay"),
 
         # Facility
-        pl.col("sta3n"),
+        pl.col("facility_sta3n").alias("sta3n"),
         pl.col("facility_name"),
 
-        # Metadata
-        pl.col("source_system"),
+        # Data source tracking (NEW!)
+        pl.col("data_source"),
+
+        # Metadata - use data_source instead of old source_system
+        pl.col("data_source").alias("source_system"),
     ])
 
     logger.info(f"  - Prepared {len(df_pg)} encounters for PostgreSQL")
