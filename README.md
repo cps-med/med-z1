@@ -5,6 +5,7 @@
 Med-z1 combines data from the legacy VistA-based CDW database, **CDWWork**, the VA new EHR CDW database, **CDWWork2**, and mock **VistA** sites with current data, offering a unified view of the complete VA organization.
 
 Refer to `med-z1/docs/screenshot/` for a set of web app UI screenshots.
+For the current implementation snapshot, see `docs/spec/implementation-status.md`.
 
 ## Application Architecture
 The figure below, from `med-z1/docs/spec/med-z1-architecture.md`, provides a summary view of the med-z1 application architecture.  

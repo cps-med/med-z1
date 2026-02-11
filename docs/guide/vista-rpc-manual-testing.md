@@ -540,13 +540,12 @@ After manual testing, you can:
 ## Documentation Links
 
 - **Phase 2 Completion Summary:** `app/services/PHASE2_COMPLETE.md`
-- **Vista Design Document:** `docs/vista-rpc-broker-design.md`
+- **Vista Design Document:** `docs/spec/vista-rpc-broker-design.md`
 - **Integration Test Code:** `vista/tests/test_api_integration.py`
 - **VistaClient Usage Examples:** `app/services/vista_client_example.py`
 - **Automated Manual Test Script:** `app/services/test_vista_manual.py`
 
 ---
 
-**Last Updated:** 2025-12-17
-**Status:** Phase 1 Complete, Phase 2 Complete
-**Next Phase:** Phase 3 - Merge/Dedupe Logic
+**Last Updated:** 2026-02-11
+**Status:** Superseded status text. See `docs/spec/implementation-status.md` and `docs/spec/vista-rpc-broker-design.md` for current implementation state.

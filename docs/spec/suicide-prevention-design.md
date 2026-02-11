@@ -25,6 +25,8 @@
   - Suicide risk test patient data (ICN200000-200099)
   - ETL pipeline for suicide risk scoring
 
+**Implementation Status Source:** `docs/spec/implementation-status.md`
+
 ---
 
 ## Table of Contents

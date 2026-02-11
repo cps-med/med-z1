@@ -48,6 +48,8 @@
 - **v1.1** (2025-12-17): Initial complete design with all open questions resolved
 - **v1.0** (2025-12-17): Initial draft
 
+**Implementation Status Source:** `docs/spec/implementation-status.md`
+
 ---
 
 ## Table of Contents

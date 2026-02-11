@@ -128,6 +128,8 @@ This mirrors the real VA architecture where CDW is updated nightly (always at le
 - PHI/PII handling (synthetic data only)
 - Master Patient Index (MPI) service implementation (future enhancement; Phase 1 uses shared patient registry file)
 
+**Implementation Status Source:** `docs/spec/implementation-status.md`
+
 ---
 
 ## 2. Architecture Decisions

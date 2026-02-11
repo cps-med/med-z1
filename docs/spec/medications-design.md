@@ -5,6 +5,8 @@
 **Status:** ✅ Phase 1 Complete (Days 1-8) | ✅ VistA Real-Time Integration Complete (Days 1-3) | Filter UI Enhancement Specified (Day 9 Pending)
 **Implementation Phase:** Days 1-8 Complete + VistA Integration Complete | Day 9 Pending (Filter UI Refactoring)
 
+**Implementation Status Source:** `docs/spec/implementation-status.md`
+
 ---
 
 ## Table of Contents

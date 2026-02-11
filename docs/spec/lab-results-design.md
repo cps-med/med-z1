@@ -10,6 +10,8 @@
 - **v1.1 (December 16, 2025):** Updated status to reflect ETL completion. All 4 pipeline stages operational (Bronze/Silver/Gold/Load) with 58 lab results in PostgreSQL. UI implementation (widget + full page) pending next phase.
 - **v1.0 (December 16, 2025):** Initial design specification
 
+**Implementation Status Source:** `docs/spec/implementation-status.md`
+
 ---
 
 ## Table of Contents

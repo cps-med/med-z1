@@ -18,6 +18,8 @@
   - Styling: Complete CSS for widget and full page ✅
 - ⏳ **Phase 3: AI Integration** (Pending - See `docs/spec/ai-insight-design.md` Phase 7)
 
+**Implementation Status Source:** `docs/spec/implementation-status.md`
+
 ---
 
 ## Table of Contents

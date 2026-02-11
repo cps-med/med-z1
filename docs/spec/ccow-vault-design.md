@@ -14,6 +14,8 @@ December 20, 2025 • Document version v1.2 (v2.0 completion update)
 > - Reference for core CCOW patterns and implementation techniques
 > - Learning the evolution from single-user to multi-user architecture
 
+**Implementation Status Source:** `docs/spec/implementation-status.md`
+
 ---
 
 > **Note**

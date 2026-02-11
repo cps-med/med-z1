@@ -11,6 +11,8 @@
 - **Total Dataset:** 146 encounters (118 CDWWork + 28 CDWWork2)
 **Future Scope:** Outpatient Encounters (Phase 3)
 
+**Implementation Status Source:** `docs/spec/implementation-status.md`
+
 ---
 
 ## Implementation Summary

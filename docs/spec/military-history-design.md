@@ -6,6 +6,8 @@
 **Current State:** Only `service_connected_percent` field is used from rich disability data
 **Target State:** Full military history tracking with environmental exposures
 
+**Implementation Status Source:** `docs/spec/implementation-status.md`
+
 ---
 
 ## Table of Contents

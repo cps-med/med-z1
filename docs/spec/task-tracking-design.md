@@ -7,6 +7,8 @@
 **Feature Domain:** Clinical Workflow Management, Task Tracking  
 **Priority:** MEDIUM - Enhances clinician workflow efficiency and care coordination  
 
+**Implementation Status Source:** `docs/spec/implementation-status.md`
+
 ---
 
 ## Table of Contents

@@ -7,6 +7,8 @@
 **Implementation Status:** Phase 1 (VistA/CDWWork) - COMPLETE (Days 1-7) ✅
 **Current Scope:** All Note Classes from Both VistA (CDWWork) and Cerner (CDWWork2) Sources
 
+**Implementation Status Source:** `docs/spec/implementation-status.md`
+
 ---
 
 ## Table of Contents

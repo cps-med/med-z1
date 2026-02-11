@@ -6,6 +6,8 @@
 **Duration Estimate:** 3-4 days
 **Status:** Functional Implementation Complete (Days 1-3 Complete)
 
+**Implementation Status Source:** `docs/spec/implementation-status.md`
+
 ---
 
 ## Table of Contents

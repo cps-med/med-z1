@@ -5,6 +5,8 @@
 **Status:** ✅ Complete - Widget and Full Page Implemented
 **Implementation Phase:** Widget Complete (v1.1 - 2025-12-11), Full Page Complete (v2.2 - 2025-12-14)
 
+**Implementation Status Source:** `docs/spec/implementation-status.md`
+
 ---
 
 ## Table of Contents

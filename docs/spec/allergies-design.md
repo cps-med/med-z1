@@ -6,6 +6,8 @@
 **Status:** ✅ Complete - All Implementation Phases Finished
 **Implementation Phase:** Days 1-9 Complete (Database, ETL, API, UI, Testing, Polish)
 
+**Implementation Status Source:** `docs/spec/implementation-status.md`
+
 ---
 
 ## Table of Contents

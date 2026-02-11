@@ -7,6 +7,8 @@
 **Clinical Domain:** Problem List, Diagnoses, Chronic Conditions  
 **Priority:** HIGH - Critical for readmission ML model and clinical decision support  
 
+**Implementation Status Source:** `docs/spec/implementation-status.md`
+
 ---
 
 ## Table of Contents

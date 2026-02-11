@@ -19,9 +19,9 @@
   - **Shared Session Management:** Both med-z1 and CCOW extend session timeout on authenticated requests
   - **Enhanced Documentation:** Added cross-references to:
     - `docs/spec/session-timeout-behavior.md` - Complete session timeout behavior guide
-    - `docs/guide/environment-variables-guide.md` - Environment variable configuration
-    - `docs/spec/ccow-v2-implementation-summary.md` - CCOW v2.0 completion summary
-    - `docs/spec/ccow-v2-testing-guide.md` - API testing guide
+    - `docs/guide/developer-setup-guide.md` - Environment variable configuration
+    - `docs/spec/ccow-multi-user-enhancement.md` - CCOW v2.0 completion summary
+    - `docs/guide/ccow-v2.1-testing-guide.md` - API testing guide
   - **Environment Configuration:** Documented SESSION_TIMEOUT_* environment variables
 - **v1.1** (2025-12-18): Implementation complete
   - All 8 phases implemented and tested
@@ -29,7 +29,7 @@
   - User context display in sidebar with logout button
   - Template context helper utility created
   - Comprehensive test suite with 7 tests
-  - Complete implementation summary in `docs/spec/auth-implementation-summary.md`
+  - Complete implementation summary in `docs/spec/user-auth-design.md`
 - **v1.0** (2025-12-18): Initial design document
   - PostgreSQL auth schema design (users, sessions, audit logs)
   - Mock Microsoft Entra ID authentication flow
@@ -38,6 +38,8 @@
   - Integration with existing med-z1 architecture
   - Implementation roadmap
   - **Note**: Session timeout (default 15 minutes) is globally configurable, not per-user
+
+**Implementation Status Source:** `docs/spec/implementation-status.md`
 
 ---
 
@@ -1219,8 +1221,8 @@ else:
 
 **For Complete Details:**
 - Session timeout behavior, extension rules, and edge cases: See `docs/spec/session-timeout-behavior.md`
-- CCOW v2.0 integration architecture and shared session management: See `docs/spec/ccow-v2-implementation-summary.md`
-- API testing with curl and Insomnia: See `docs/spec/ccow-v2-testing-guide.md`
+- CCOW v2.0 integration architecture and shared session management: See `docs/spec/ccow-multi-user-enhancement.md`
+- API testing with curl and Insomnia: See `docs/guide/ccow-v2.1-testing-guide.md`
 
 ---
 
@@ -1451,7 +1453,7 @@ For a comprehensive guide to all authentication-related environment variables, i
 - Troubleshooting common configuration errors
 - Integration with CCOW Context Vault settings
 
-**See:** `docs/guide/environment-variables-guide.md`
+**See:** `docs/guide/developer-setup-guide.md`
 
 ---
 
@@ -1513,7 +1515,7 @@ is_valid = verify_password("SecurePassword123!", hashed)
 - Clearly indicates demo/development use
 - Same password for all 5 mock users
 
-**Password Documentation Location**: `docs/mock-users.md`
+**Password Documentation Location**: `docs/guide/mock-users-guide.md`
 
 This file is **version-controlled** and serves as the definitive reference for mock user logins.
 
@@ -1523,7 +1525,7 @@ This file is **version-controlled** and serves as the definitive reference for m
 - Dedicated documentation file makes credentials easier to find and reference
 - Consistent with project pattern: `db/seeds/` for application test data, `docs/` for documentation
 
-**Example Documentation File** (`docs/mock-users.md`):
+**Example Documentation File** (`docs/guide/mock-users-guide.md`):
 
 ```markdown
 # Mock User Credentials for med-z1
@@ -1825,7 +1827,7 @@ $ python scripts/generate_password_hash.py --password "VaDemo2025!" --generate-s
    ```
 
 4. **Update documentation**:
-   Add the new user to `docs/mock-users.md` table
+   Add the new user to `docs/guide/mock-users-guide.md` table
 
 5. **Verify**:
    ```bash
@@ -1964,7 +1966,7 @@ response.set_cookie(
 
 **File Locations**:
 - **SQL seed data**: `db/seeds/auth_users.sql` (application test data)
-- **Documentation**: `docs/mock-users.md` (credential reference)
+- **Documentation**: `docs/guide/mock-users-guide.md` (credential reference)
 - **Utility script**: `scripts/generate_password_hash.py` (hash generation)
 
 **Rationale for `db/seeds/` Location**:
@@ -2937,9 +2939,9 @@ def get_user_from_session(session_id: str) -> Optional[Dict[str, Any]]:
    ```
 
 **For Complete Details:**
-- CCOW v2.0 architecture and shared session implementation: See `docs/spec/ccow-v2-implementation-summary.md`
+- CCOW v2.0 architecture and shared session implementation: See `docs/spec/ccow-multi-user-enhancement.md`
 - Session timeout behavior across both services: See `docs/spec/session-timeout-behavior.md`
-- Testing CCOW API with authentication: See `docs/spec/ccow-v2-testing-guide.md`
+- Testing CCOW API with authentication: See `docs/guide/ccow-v2.1-testing-guide.md`
 
 **Benefits:**
 - ✅ Single source of truth for authentication
@@ -3370,7 +3372,7 @@ WHERE event_timestamp < (CURRENT_TIMESTAMP - INTERVAL '90 days');
 - ✅ Create password hashing utility: `scripts/generate_password_hash.py`
 - ✅ Generate bcrypt hashes for mock passwords
 - ✅ Write SQL insert script: `db/seeds/auth_users.sql`
-- ✅ Create documentation: `docs/mock-users.md`
+- ✅ Create documentation: `docs/guide/mock-users-guide.md`
 - ✅ Populate 7 mock users in database (expanded from initial 5)
 - ✅ Test: Query users table, verify hashes
 - **Implementation Notes**: All users share password `VaDemo2025!`, placed in `db/seeds/` not `mock/`
@@ -3421,7 +3423,7 @@ WHERE event_timestamp < (CURRENT_TIMESTAMP - INTERVAL '90 days');
 **✅ Phase 8: Testing and Documentation** (COMPLETE - 2025-12-18)
 - ✅ Create comprehensive test suite: `scripts/test_auth_flow.py`
 - ✅ Test coverage: 7 automated tests (unauthenticated access, login page, invalid login, valid login, authenticated access, logout, post-logout)
-- ✅ Create implementation summary: `docs/auth-implementation-summary.md`
+- ✅ Create implementation summary: `docs/spec/user-auth-design.md`
 - ✅ Update design document with completion status
 - ✅ Test: All tests passing
 - **Implementation Notes**: HTMX session handling works seamlessly with middleware (no special handling needed)
@@ -3822,13 +3824,13 @@ This section provides a complete categorized listing of all authentication imple
 - `docs/spec/user-auth-design.md` - **This document** (comprehensive design specification, v2.1)
   - Single source of truth for authentication design and implementation
   - Supersedes `auth-implementation-summary.md` (all content consolidated in v2.1)
-- `docs/mock-users.md` - Mock user documentation (credentials, roles, sites)
+- `docs/guide/mock-users-guide.md` - Mock user documentation (credentials, roles, sites)
 
 **Related Documentation**:
-- `docs/spec/architecture.md` - Section 5: Authentication and Authorization
+- `docs/spec/med-z1-architecture.md` - Section 5: Authentication and Authorization
 - `docs/spec/session-timeout-behavior.md` - Complete session timeout behavior guide
-- `docs/spec/ccow-v2-implementation-summary.md` - CCOW v2.0 shared authentication
-- `docs/guide/environment-variables-guide.md` - Environment variable configuration
+- `docs/spec/ccow-multi-user-enhancement.md` - CCOW v2.0 shared authentication
+- `docs/guide/developer-setup-guide.md` - Environment variable configuration
 
 ### 16.6 Configuration
 
@@ -4339,17 +4341,17 @@ docker exec -it postgres16 psql -U postgres -d medz1 \
 **Date**: 2025-12-18 (Initial), 2025-12-30 (Latest)
 
 **Related Documents**:
-- `docs/spec/architecture.md` - System architecture and routing patterns (Section 5: Authentication)
+- `docs/spec/med-z1-architecture.md` - System architecture and routing patterns (Section 5: Authentication)
 - `docs/spec/session-timeout-behavior.md` - Complete session timeout behavior guide
-- `docs/spec/ccow-v2-implementation-summary.md` - CCOW v2.0 shared authentication
-- `docs/guide/environment-variables-guide.md` - Environment variable configuration
-- `docs/spec/ccow-v2-testing-guide.md` - API testing guide
-- `docs/mock-users.md` - Mock user credentials and profiles
-- `docs/med-z1-plan.md` - Product roadmap
+- `docs/spec/ccow-multi-user-enhancement.md` - CCOW v2.0 shared authentication
+- `docs/guide/developer-setup-guide.md` - Environment variable configuration
+- `docs/guide/ccow-v2.1-testing-guide.md` - API testing guide
+- `docs/guide/mock-users-guide.md` - Mock user credentials and profiles
+- `docs/spec/med-z1-plan.md` - Product roadmap
 - `app/README.md` - Application setup guide
 
 **Supersedes**:
-- `docs/spec/auth-implementation-summary.md` - All content consolidated into this document (v2.1)
+- `docs/spec/user-auth-design.md` - All content consolidated into this document (v2.1)
 
 **Change Log**:
 - **v2.1** (2025-12-30): Documentation consolidation

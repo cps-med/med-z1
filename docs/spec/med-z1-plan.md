@@ -1,15 +1,17 @@
 # med-z1 – Product & Technical Development Plan
 
-January 20, 2026 • Document version v1.8
+February 11, 2026 • Document version v1.9
 
 **Related Documentation:**
 Refer to `docs/guide/` and `docs/spec/` for project background, implementation approach, developer setup guides, and design specifications for each clinical domain.
+Current implementation status is maintained in `docs/spec/implementation-status.md`.
 
 **Changelog:**
+- **v1.9 (February 11, 2026):** Adopted `docs/spec/implementation-status.md` as the single source of truth for implementation status. Updated high-level references to current spec/guide file paths.
 - **v1.8 (January 20, 2026):** Updated implementation status to reflect 9 clinical domains complete (added Immunizations). Updated Vista RPC Broker to Phase 5 complete (4 domains operational: Vitals, Encounters, Allergies, Medications). Updated AI Clinical Insights to reflect Phase 6 complete (Conversation Memory with PostgreSQL checkpointer). Updated current status dates and counts throughout document.
 - **v1.7 (January 10, 2026):** Updated implementation status to reflect 8 clinical domains complete (added Clinical Notes). Updated AI/ML status to reflect Phase 4 completion (AI Clinical Insights operational with 4 tools). Corrected Python dependencies section (polars, uvicorn, Jinja2). Removed SSN search and facility filter from patient search specification per VA policy decisions.
-- **v1.6 (December 20, 2025):** Updated CCOW Context Management to v2.0 (multi-user enhancement complete). Added session timeout behavior documentation. Fixed timezone bug in session validation. See `docs/ccow-v2-implementation-summary.md`, `docs/session-timeout-behavior.md`, and `docs/environment-variables-guide.md`.
-- **v1.5 (December 18, 2025):** Added User Authentication and Management implementation status. All 8 authentication phases complete (database, routes, middleware, login UI, session management, testing). See `docs/user-auth-design.md` and `docs/auth-implementation-summary.md`.
+- **v1.6 (December 20, 2025):** Updated CCOW Context Management to v2.0 (multi-user enhancement complete). Added session timeout behavior documentation. Fixed timezone bug in session validation. See `docs/spec/ccow-multi-user-enhancement.md`, `docs/session-timeout-behavior.md`, and `docs/guide/developer-setup-guide.md`.
+- **v1.5 (December 18, 2025):** Added User Authentication and Management implementation status. All 8 authentication phases complete (database, routes, middleware, login UI, session management, testing). See `docs/spec/user-auth-design.md`.
 - **v1.4 (December 16, 2025):** Updated current status to reflect 7 clinical domains implemented (added Encounters). Noted Laboratory Results ETL completion (UI implementation pending). Updated "Next Priorities" section.
 - **v1.3 (December 15, 2025):** Refactored to focus on strategic vision and product planning. Removed redundant technical implementation details (now in `med-z1-implementation-roadmap.md`). Updated current status to reflect 6 clinical domains implemented and Vista Phase 1 complete.
 - **v1.2 (December 8, 2025):** Updated with actual implementation details - medallion architecture working, PostgreSQL setup, MinIO client, ETL pipeline complete for patient demographics, actual dependencies and project structure
@@ -255,7 +257,7 @@ The design will favor a **single primary page per patient** with:
 
 Data freshness indicators and ETL status will be **initially treated as admin-level concerns**, not shown prominently in the clinician UI.
 
-**Implementation Reference:** See `docs/patient-topbar-redesign-spec.md` for detailed UI specifications, mockups, and code examples for the patient-aware topbar.
+**Implementation Reference:** See `docs/spec/patient-topbar-design.md` for detailed UI specifications, mockups, and code examples for the patient-aware topbar.
 
 ---
 
@@ -369,9 +371,8 @@ med-z1 implements a **medallion data architecture** (Bronze → Silver → Gold)
   * Prevents user_id spoofing attacks.
 
 **Implementation Reference:**
-- **Design:** `docs/ccow-vault-design.md` (v1.1 baseline), `docs/ccow-multi-user-enhancement.md` (v2.0 spec)
-- **Implementation Summary:** `docs/ccow-v2-implementation-summary.md`
-- **Testing Guide:** `docs/ccow-v2-testing-guide.md`
+- **Design:** `docs/spec/ccow-vault-design.md` (v1.1 baseline), `docs/spec/ccow-multi-user-enhancement.md` (v2.0 spec)
+- **Testing Guide:** `docs/guide/ccow-v2.1-testing-guide.md`
 - **API Testing:** Use curl or Insomnia with `session_id` cookie (see testing guide)
 
 ### 4.6 AI & Agentic
@@ -645,93 +646,12 @@ med-z1/
 
 ## 6. Development Phases & Current Status
 
-### 6.1 Current Implementation Status (as of January 20, 2026)
+### 6.1 Current Implementation Status
 
-**✅ Infrastructure & Data Pipeline: COMPLETE**
-- Medallion architecture (Bronze/Silver/Gold) operational with MinIO
-- PostgreSQL serving database with 36 patients
-- **CCOW Context Vault v2.0** (port 8001) - Multi-user enhancement complete
-- Complete ETL pipeline working for all implemented domains
+Implementation status is maintained in:
+- `docs/spec/implementation-status.md` (single source of truth)
 
-**✅ User Authentication & Management: COMPLETE**
-- PostgreSQL `auth` schema with users, sessions, and audit_logs tables
-- Mock Microsoft Entra ID-style login page with email/password authentication
-- Server-side session management with 15-minute configurable timeout (sliding window)
-- Single-session enforcement (one active session per user)
-- Authentication middleware with automatic session timeout extension on every request
-- User context display in sidebar with logout button
-- Comprehensive audit logging for all authentication events
-- 7 mock users with bcrypt password hashing
-- Complete test suite with 7 automated tests
-- Timezone-aware session expiry validation (fixed timezone bug)
-- **See:** `docs/user-auth-design.md`, `docs/auth-implementation-summary.md`, `docs/session-timeout-behavior.md`
-
-**✅ CCOW Context Vault v2.0 - Multi-User Enhancement: COMPLETE** (December 20, 2025)
-- Per-user context isolation (`user_id`-keyed dictionary storage)
-- Session-based authentication (validates `session_id` cookie against PostgreSQL)
-- Security: `user_id` extracted from validated session (prevents spoofing)
-- Context persistence across med-z1 logout/login (supports multi-app workflows)
-- History tracking with user/global scoping
-- Admin endpoints (get all contexts, manual cleanup)
-- Stale context cleanup (24-hour threshold)
-- Updated all 7 route files to forward `request` object to CCOW client
-- Created `ccow/auth_helper.py` for session validation
-- Fixed timezone comparison bug in session validation
-- Comprehensive test suite (21 unit tests, 14 integration tests)
-- **See:** `docs/ccow-multi-user-enhancement.md` (design), `docs/ccow-v2-implementation-summary.md` (summary), `docs/ccow-v2-testing-guide.md` (API testing)
-
-**✅ Clinical Domains Implemented: 9 DOMAINS**
-1. **Dashboard** - Patient overview with clinical widgets (widget grid system)
-2. **Demographics** - Full implementation (2x1 widget + dedicated page with comprehensive information)
-3. **Patient Flags** - Modal-only implementation (topbar button with badge count, no dashboard widget)
-4. **Vitals** - Full implementation (1x1 widget + dedicated page with interactive charts)
-5. **Allergies** - Full implementation (1x1 widget + dedicated page)
-6. **Medications** - Full implementation (2x1 widget + dedicated page, RxOut + BCMA integration)
-7. **Encounters** - Full implementation (1x1 widget + dedicated page with pagination, inpatient admissions only)
-8. **Clinical Notes** - Full implementation (1x1 widget + dedicated page with filtering by type and date range, 106 notes in PostgreSQL) - **Completed 2026-01-02**
-9. **Immunizations** - Full implementation (1x1 widget + dedicated page with filtering, 138 immunizations + 30 CVX vaccines in PostgreSQL) - **Completed 2026-01-14**
-   - **Key Features:** Multi-source harmonization (VistA + Cerner), CVX code standardization, series parsing ("1 of 2", "BOOSTER"), adverse reaction tracking, incomplete series indicators
-   - **Database:** `app/db/patient_immunizations.py` with comprehensive filtering (vaccine_group, cvx_code, days, incomplete_only, adverse_reactions_only)
-   - **API:** 6 endpoints (JSON APIs, HTML widget, full page, filtered results, CCOW redirect)
-   - **UI:** Dashboard widget shows 5 most recent (2-year lookback), full page with summary stats (6 cards) and HTMX filtering
-   - **ETL:** Complete Bronze/Silver/Gold pipeline with CVX reference table
-   - **See:** `docs/spec/immunizations-design.md` (v1.4)
-
-**✅ Vista RPC Broker Simulator: PHASES 1-5 COMPLETE** (January 13, 2026)
-- Foundation for real-time data (T-0) overlay alongside PostgreSQL (T-1 historical)
-- FastAPI HTTP service (port 8003) with ICN→DFN resolution
-- Multi-site support (3 sites: 200, 500, 630)
-- 4 clinical domains operational with "Refresh VistA" functionality
-- **Domains:** Vitals (GMV), Encounters (ORWCV), Allergies (ORQQAL), Medications (ORWPS)
-- Session-based caching (30-min TTL) with filter persistence
-- ~168 unit tests, 100% passing
-- Comprehensive documentation (`vista/README.md`, `docs/spec/vista-rpc-broker-design.md` v2.0)
-
-**✅ AI Clinical Insights: PHASE 6 COMPLETE** (January 20, 2026)
-- LangGraph-powered clinical decision support at `/insight`
-- 4 AI tools operational: DDI analysis, patient summaries, vitals trends, clinical notes analysis
-- Clinical notes automatically included in AI-generated patient summaries
-- **Conversation Memory:** PostgreSQL checkpointer with user-scoped threads, cross-session persistence
-- OpenAI GPT-4 Turbo integration complete
-- **See:** `docs/spec/ai-insight-design.md` (v2.4)
-
-**🔧 ETL Complete, UI Pending:**
-- **Laboratory Results** - Complete Bronze/Silver/Gold/Load pipeline (58 lab results in PostgreSQL), UI implementation pending (recommended: 3x1 widget for multi-panel display with trend sparklines)
-
-**📋 Next Priorities:**
-- **Laboratory Results UI** - Trending and charting widgets/pages (3x1 widget recommended)
-- **AI Phase 7: Immunizations Integration** - 3 new AI tools (immunization history, CDC ACIP compliance, dose forecasting)
-- **Problems/Diagnoses** - ETL pipeline + UI implementation
-- **Orders** - Clinical orders domain
-- **Imaging** - Radiology and imaging studies
-
-**🔮 Future Work:**
-- Vista Phase 6+ (Laboratory Results, Clinical Notes, additional domains)
-- AI Phase 8+ (care gap analysis, semantic search with pgvector, vector embeddings)
-- Production hardening (comprehensive testing, observability, performance optimization)
-- Advanced UI features (custom dashboards, saved filters, theme switching)
-
-> **For detailed implementation status, roadmap, and technical patterns, see `docs/spec/med-z1-implementation-roadmap.md`.**
+Use this plan document for product strategy and phase planning. Use the status document for current implementation counts and completion state.
 
 ### 6.2 Technology Decisions Made
 

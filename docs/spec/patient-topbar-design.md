@@ -2,6 +2,8 @@
 
 January 21, 2026 • Document version v3.0
 
+**Implementation Status Source:** `docs/spec/implementation-status.md`
+
 ---
 
 ## Implementation Status

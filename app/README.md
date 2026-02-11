@@ -1,6 +1,6 @@
 # app
 
-This is the initial FastAPI + HTMX + Jinja UI shell for med-z1. Current pages are demo-only (overview, HTMX basics, timer) and will be gradually replaced with JLV-like patient views.
+This is the FastAPI + HTMX + Jinja UI subsystem for med-z1. It includes implemented patient-facing domain pages and APIs, plus a few legacy demo routes (`/htmx`, `/timer`) retained for reference.
 
 ## Overview
 
@@ -309,7 +309,7 @@ Med-z1 uses a **dual-source data architecture**:
 - **PostgreSQL (T-1 and earlier):** Fast, cached historical data from CDW via ETL pipeline
 - **Vista RPC Broker (T-0, today):** Real-time queries with 1-3 second latency per site
 
-**Design Document:** `docs/vista-rpc-broker-design.md` (v1.2)
+**Design Document:** `docs/spec/vista-rpc-broker-design.md`
 
 ### Integration Patterns
 
@@ -642,4 +642,3 @@ app/
     ccow_client.py      # CCOW context management
   main.py              # FastAPI application entry point
 ```
-

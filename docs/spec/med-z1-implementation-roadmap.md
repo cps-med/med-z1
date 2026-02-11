@@ -1,11 +1,12 @@
 # med-z1 Implementation Roadmap – Vertical Slice Strategy
 
 December 7, 2025 • Document version v1.3
-**Last Updated:** February 7, 2026
+**Last Updated:** February 11, 2026
 
 > **Related Documentation:**
 > - **Strategic Vision & Product Planning:** See `med-z1-plan.md` for product vision, user personas, core use cases, and UX strategy
-> - **Architecture Decisions & Patterns:** See `architecture.md` for ADRs (Architecture Decision Records) and design patterns
+> - **Architecture Decisions & Patterns:** See `med-z1-architecture.md` for ADRs (Architecture Decision Records) and design patterns
+> - **Current Implementation Status:** See `implementation-status.md` (single source of truth)
 
 ---
 
@@ -81,9 +82,9 @@ FastAPI + HTMX UI - Patient-aware topbar with search
 | **Phase 13** | Clinical Task Tracking | 1 week | ✅ Complete (2026-02-10) |
 
 **Functional Patient-Aware UI: ✅ Delivered**
-**Clinical Domains Implemented: 12** (Demographics, Flags, Vitals, Allergies, Medications, Encounters, Clinical Notes, Immunizations, Military History, Problems, Clinical Tasks, Labs (partial))
+**Clinical Domains Implemented:** See `implementation-status.md` for authoritative current counts and completion status.
 **AI Features: ✅ Operational** (4 tools, conversation memory, environmental exposure awareness)
-**Vista RPC Broker: ✅ Operational** (4 domains with real-time data)
+**Vista RPC Broker:** See `implementation-status.md` for authoritative current RPC/domain coverage.
 
 **Planned Future Domains:**
 - **Family History** (Phase 14+): Familial disease history and genetic risk factors - HL7 FHIR FamilyMemberHistory resource, VistA File #8810.4, ICD-10 Z-codes for risk stratification, cancer/CVD/diabetes screening decisions, genetic counseling criteria
@@ -133,7 +134,7 @@ Instead of building all of Bronze, then all of Silver, then all of Gold (horizon
 **Our first vertical slice: Patient Demographics**
 
 This is the perfect first slice because:
-- ✅ Required for topbar UI (from `patient-topbar-redesign-spec.md`)
+- ✅ Required for topbar UI (from `docs/spec/patient-topbar-design.md`)
 - ✅ Relatively simple data (one main table: `SPatient.SPatient`)
 - ✅ No complex joins or aggregations
 - ✅ Already have 36 patients in mock CDW
@@ -1736,7 +1737,7 @@ print(results)
 
 #### Task 2.2: Implement Patient Routes (1 day)
 
-Use the implementation from `patient-topbar-redesign-spec.md` Section 10.
+Use the implementation from `docs/spec/patient-topbar-design.md` Section 10.
 
 **Files:**
 - `app/routes/patient.py` - All patient API endpoints
@@ -1752,7 +1753,7 @@ Use the implementation from `patient-topbar-redesign-spec.md` Section 10.
 
 #### Task 2.3: Implement Topbar Templates (2 days)
 
-Use the templates from `patient-topbar-redesign-spec.md` Section 7.
+Use the templates from `docs/spec/patient-topbar-design.md` Section 7.
 
 **Files:**
 - `app/templates/base.html` - Modified topbar
@@ -1767,7 +1768,7 @@ Use the templates from `patient-topbar-redesign-spec.md` Section 7.
 
 #### Task 2.4: Add CSS and JavaScript (0.5 day)
 
-Use the CSS and JavaScript from `patient-topbar-redesign-spec.md` Sections 8 and 9.
+Use the CSS and JavaScript from `docs/spec/patient-topbar-design.md` Sections 8 and 9.
 
 **Files:**
 - `app/static/styles.css` - Add modal and patient header styles
@@ -1858,7 +1859,7 @@ Test all workflows:
 ✅ Modal handles patients with 0 flags gracefully
 ✅ Review status calculation (CURRENT, DUE SOON, OVERDUE)
 
-**Reference:** `docs/patient-flags-design.md` (v1.2)
+**Reference:** `docs/spec/patient-flags-design.md` (v1.2)
 
 ### 7.4 UI Implementation Decision (2025-12-14)
 
@@ -2363,7 +2364,7 @@ UI Display (with "AI-generated" disclaimer)
 
 **Purpose:** Simulate VA VistA Remote Procedure Call (RPC) interface to enable real-time data (T-0, today) queries alongside historical PostgreSQL data (T-1 and earlier). This addresses the architectural limitation where CDW is always at least T-1 (nightly batch updates) and provides fresher data for clinical decision-making.
 
-**Design Document:** `docs/vista-rpc-broker-design.md` (v1.2)
+**Design Document:** `docs/spec/vista-rpc-broker-design.md` (v1.2)
 
 ### Key Architecture Decisions
 
@@ -2987,15 +2988,16 @@ df_pandas.to_sql(
 
 ### 14.1 Architecture and Planning
 
-- **`docs/spec/med-z1-architecture.md`** - System architecture and routing decisions (Document v1.0) ✅ Complete
+- **`docs/spec/implementation-status.md`** - Single source of truth for implementation status
+- **`docs/spec/med-z1-architecture.md`** - System architecture and routing decisions
 - **`med-z1-plan.md`** - High-level strategic plan and architecture overview
-- **`ccow-vault-design.md`** - CCOW Context Vault technical specification (v1.1)
-- **`patient-topbar-redesign-spec.md`** - Patient topbar UI detailed specification (v2.0)
+- **`ccow-vault-design.md`** - CCOW Context Vault technical specification
+- **`docs/spec/patient-topbar-design.md`** - Patient topbar UI detailed specification (v2.0)
 
 ### 14.2 Domain-Specific Design Documents
 
 - **`patient-dashboard-design.md`** - Dashboard widget system specification (v1.1) ✅ Complete
-- **`demographics-enhancement-design.md`** - Demographics enhancement (v1.1) ✅ Complete (2025-12-11)
+- **`demographics-design.md`** - Demographics enhancement and full-page implementation
 - **`patient-flags-design.md`** - Patient Flags implementation (v1.2) ✅ Complete (2025-12-11)
 - **`vitals-design.md`** - Vitals implementation ✅ Complete (2025-12-12)
 - **`allergies-design.md`** - Allergies implementation ✅ Complete (2025-12-12)

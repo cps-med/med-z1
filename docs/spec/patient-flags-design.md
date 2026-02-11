@@ -6,6 +6,8 @@
 **Duration Estimate:** 1 week (5-7 days)
 **Progress:** ✅ Complete (Modal-only implementation)
 
+**Implementation Status Source:** `docs/spec/implementation-status.md`
+
 ---
 
 ## ⚠️ UI Implementation Decision (2025-12-14)

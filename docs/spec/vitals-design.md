@@ -5,6 +5,8 @@
 **Status:** Complete (Days 1-8 Complete)
 **Implementation Phase:** Complete
 
+**Implementation Status Source:** `docs/spec/implementation-status.md`
+
 ---
 
 ## Table of Contents

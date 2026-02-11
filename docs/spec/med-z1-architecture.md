@@ -1,8 +1,8 @@
 # med-z1 Architecture Documentation
 
-**Document Version:** 1.1
+**Document Version:** 1.2
 **Date:** 2025-12-30
-**Last Updated:** 2025-12-30 (Added ADR-008: Vista Session Caching for AI Integration)
+**Last Updated:** 2026-02-11 (Updated routing table and status metadata consistency)
 **Status:** Living Document
 
 ---
@@ -234,7 +234,7 @@ page_router = APIRouter(tags=["vitals-pages"])
 |---------------|-------------------|---------|------------|---------|----------------------------------------------|
 | Demographics  | `demographics.py` | B       | Yes        | Yes     | Full page with comprehensive patient information |
 | Flags         | `patient.py`      | A       | **No**     | **No**  | **Modal-only** via topbar button (see note below) |
-| Allergies     | `allergies.py`    | B       | Yes        | Yes     | Full implementation with dedicated page      |
+| Allergies     | `patient.py`      | A       | Yes        | Yes     | Full implementation currently co-located in `patient.py` |
 | Vitals        | `vitals.py`       | B       | Yes        | Yes     | Complex filtering/charting needs full page   |
 | Medications   | `medications.py`  | B       | Yes        | Yes     | Full implementation with 2x1 widget          |
 | Encounters    | `encounters.py`   | B       | Yes        | Yes     | **Complete** - First domain with pagination  |
@@ -242,7 +242,7 @@ page_router = APIRouter(tags=["vitals-pages"])
 | Immunizations | `immunizations.py`| B       | Yes        | Yes     | **Complete (2026-01-14)** - Multi-source harmonization |
 | Problems      | `problems.py`     | B       | Yes        | Yes     | **Complete (2026-02-08)** - Charlson Index, ICD-10 grouping |
 | Tasks         | `tasks.py`        | B       | Yes        | Yes     | **Complete (2026-02-10)** - Task tracking with modal create/edit |
-| Labs          | TBD               | B (rec) | TBD        | TBD     | **ETL Complete** - UI implementation pending |
+| Labs          | `labs.py`         | B       | Yes        | Yes     | Full implementation with widget and dedicated page |
 | Orders        | TBD               | B (rec) | TBD        | TBD     | Planned - Complex workflow domain            |
 | Imaging       | TBD               | B (rec) | TBD        | TBD     | Planned - May need external viewer           |
 | Procedures    | TBD               | A or B  | TBD        | TBD     | Later Phase - Pattern TBD                    |
@@ -1157,6 +1157,7 @@ app.add_middleware(
 
 ### A. Related Documentation
 
+- `docs/spec/implementation-status.md` - Single source of truth for implementation status
 - `docs/spec/med-z1-plan.md` - Product and technical development plan
 - `docs/spec/ai-insight-design.md` - AI Clinical Insights implementation specification (Phase 1 MVP Complete)
 - `docs/spec/patient-dashboard-design.md` - Dashboard and widget system design
@@ -1186,6 +1187,6 @@ app.add_middleware(
 
 **End of Document**
 
-**Document Status:** Version 1.0 - Initial Architecture Documentation
+**Document Status:** Version 1.2 - Living Architecture Documentation
 **Next Review:** After each major feature implementation
 **Maintainers:** Development team

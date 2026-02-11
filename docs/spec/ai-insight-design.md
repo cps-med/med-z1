@@ -11,6 +11,8 @@
 **Post-Phase 5 Enhancements Completion Date:** 2026-01-04
 **Phase 6 Completion Date:** 2026-01-20    
 
+**Implementation Status Source:** `docs/spec/implementation-status.md`
+
 ---
 
 ## Table of Contents
