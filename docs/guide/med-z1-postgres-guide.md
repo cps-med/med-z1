@@ -1,7 +1,7 @@
 # med-z1 PostgreSQL Serving Database Reference
 
-**Document Version:** v1.5
-**Last Updated:** 2026-02-07
+**Document Version:** v1.6
+**Last Updated:** 2026-02-11
 **Database:** `medz1`
 **PostgreSQL Version:** 16+
 
@@ -27,6 +27,7 @@
    - [patient_immunizations](#table-clinicalpatient_immunizations)
    - [patient_military_history](#table-clinicalpatient_military_history)
    - [patient_problems](#table-clinicalpatient_problems)
+   - [patient_tasks](#table-clinicalpatient_tasks)
 5. [Schema: `reference`](#schema-reference)
    - [vaccine](#table-referencevaccine)
 6. [Schema: `auth`](#schema-auth)
@@ -84,12 +85,12 @@ The med-z1 database is organized into four functional schemas:
 
 | Schema | Purpose | Tables |
 |--------|---------|--------|
-| `clinical` | Patient clinical data (demographics, vitals, medications, etc.) | 14 tables |
+| `clinical` | Patient clinical data (demographics, vitals, medications, etc.) | 15 tables |
 | `reference` | Reference data and lookup tables (CVX codes, etc.) | 1 table |
 | `auth` | User authentication and session management | 3 tables |
 | `public` | AI/ML infrastructure (LangGraph checkpoints for conversation memory) | 4 tables |
 
-**Total Tables:** 22
+**Total Tables:** 23
 
 **Note:** The AI checkpoint tables in the `public` schema are **auto-created** by LangGraph's `AsyncPostgresSaver.setup()` at application startup. No manual DDL execution is required.
 
@@ -1156,6 +1157,97 @@ See also: `app/db/medications.py:356` for the active medication count query impl
 - **Patient-Level Aggregations:** Denormalized counts (total_problem_count, active_problem_count, etc.) for performance optimization.
 - **Multi-Source Harmonization:** Combines VistA (CDWWork) and Cerner (CDWWork2) data with deduplication.
 - **Dual Coding:** Both ICD-10-CM and SNOMED CT codes for maximum interoperability.
+
+---
+
+### Table: `clinical.patient_tasks`
+
+**Purpose:** Patient-centric clinical task tracking system with three-state lifecycle (TODO → IN_PROGRESS → COMPLETED). Tasks belong to patients and are visible to all clinicians viewing that patient. Supports user attribution for audit trail and AI-generated task suggestions.
+
+**Primary Key:** `task_id` (auto-increment SERIAL)
+
+**Source:** User-created via UI or AI-generated via AI Insights chatbot
+
+**Phase:** Phase 1 - Core Task Management (MVP) - Completed 2026-02-10
+
+#### Columns
+
+| Column Name | Data Type | Nullable | Description | Example Values |
+|-------------|-----------|----------|-------------|----------------|
+| `task_id` | SERIAL | NOT NULL | **Auto-increment primary key** | `1`, `2`, `3` |
+| `patient_key` | VARCHAR(50) | NOT NULL | Patient ICN (Integrated Care Number) | `"ICN100001"` |
+| `title` | VARCHAR(500) | NOT NULL | Brief task description | `"Schedule A1C test"`, `"Review medication interactions"` |
+| `description` | TEXT | NULL | Rich narrative text with additional context | `"Patient has diabetes. Last A1C was 6 months ago. Due for recheck."` |
+| `priority` | VARCHAR(20) | NOT NULL | Priority level (affects sort order in UI) | `"HIGH"` (red), `"MEDIUM"` (yellow), `"LOW"` (gray) |
+| `status` | VARCHAR(50) | NOT NULL | Task lifecycle state | `"TODO"`, `"IN_PROGRESS"`, `"COMPLETED"` |
+| `created_by_user_id` | UUID | NOT NULL | User who created task (FK to auth.users) | `"a1b2c3d4-e5f6-7890-abcd-ef1234567890"` |
+| `created_by_display_name` | VARCHAR(255) | NULL | Denormalized user display name (avoids JOIN) | `"Dr. Alpha"`, `"RN Johnson"` |
+| `completed_by_user_id` | UUID | NULL | User who completed task (FK to auth.users) | `"a1b2c3d4-e5f6-7890-abcd-ef1234567890"` |
+| `completed_by_display_name` | VARCHAR(255) | NULL | Denormalized user display name | `"Dr. Beta"` |
+| `is_ai_generated` | BOOLEAN | NOT NULL | TRUE if task created via AI Insights chatbot | `true`, `false` |
+| `ai_suggestion_source` | TEXT | NULL | Free text explanation of AI reasoning | `"Active diabetes diagnosis + no A1C in past 6 months"` |
+| `created_at` | TIMESTAMP WITH TIME ZONE | NOT NULL | Timestamp when task was created (auto-populated) | `"2026-02-10 14:30:00+00"` |
+| `updated_at` | TIMESTAMP WITH TIME ZONE | NOT NULL | Timestamp of last modification (auto-updated via trigger) | `"2026-02-10 15:45:00+00"` |
+| `completed_at` | TIMESTAMP WITH TIME ZONE | NULL | Timestamp when task was completed (auto-populated via trigger) | `"2026-02-11 09:15:00+00"`, `NULL` |
+
+#### Indexes
+
+| Index Name | Columns | Type | Notes |
+|------------|---------|------|-------|
+| `idx_patient_tasks_patient_key` | `patient_key` | B-tree | Primary patient lookups (most common query) |
+| `idx_patient_tasks_created_by` | `created_by_user_id` | B-tree | "My Tasks" filter (user's created tasks) |
+| `idx_patient_tasks_status` | `status` | B-tree | Status filtering (TODO, IN_PROGRESS, COMPLETED) |
+| `idx_patient_tasks_patient_status` | `patient_key`, `status` | Composite | Optimized for dashboard widget (patient + status filter) |
+
+#### Constraints
+
+- **Primary Key:** `task_id`
+- **Foreign Key:** `created_by_user_id` → `auth.users(user_id)`
+- **Foreign Key:** `completed_by_user_id` → `auth.users(user_id)`
+- **Check Constraint:** `priority IN ('HIGH', 'MEDIUM', 'LOW')`
+- **Check Constraint:** `status IN ('TODO', 'IN_PROGRESS', 'COMPLETED')`
+
+#### Triggers
+
+**Trigger: `trg_patient_tasks_updated_at`**
+- **Type:** BEFORE UPDATE
+- **Purpose:** Auto-update `updated_at` timestamp on any column change
+- **Function:** `update_patient_tasks_updated_at()`
+
+**Trigger: `trg_patient_tasks_completed_at`**
+- **Type:** BEFORE UPDATE
+- **Purpose:** Auto-populate `completed_at` when status changes to COMPLETED; clear `completed_at`, `completed_by_user_id`, and `completed_by_display_name` when status changes away from COMPLETED
+- **Function:** `set_patient_tasks_completed_at()`
+
+#### Special Features
+
+- **Three-State Lifecycle:** Simple TODO → IN_PROGRESS → COMPLETED workflow with ability to revert tasks
+- **User Attribution:** Tracks both creator and completer for full audit trail
+- **AI Integration:** Supports AI-generated tasks from AI Insights chatbot with reasoning text
+- **Patient-Centric:** Tasks belong to patients, visible to all clinicians viewing that patient (no task ownership model in Phase 1)
+- **Auto-Timestamps:** Database triggers automatically manage `updated_at` and `completed_at` timestamps
+- **Priority Sorting:** UI sorts tasks by priority (HIGH → MEDIUM → LOW) then by most recent created_at
+
+#### Usage Context
+
+**Dashboard Widget (2x1):**
+- Shows 8 active tasks (TODO + IN_PROGRESS) sorted by priority and created_at
+- Quick action buttons: Start, Complete, Revert (no page reload required)
+- Filter by status/priority/creator in modal
+- ⚠️ **Known Issue:** Widget does not auto-refresh after task create/edit (requires manual page refresh)
+
+**Full Page:**
+- Comprehensive filtering by status (Active, TODO, IN_PROGRESS, COMPLETED), priority, creator
+- Summary cards: TODO count, In Progress count, Completed Today count, AI Generated count
+- Modal-based create/edit forms with HTMX integration
+- Inline action buttons with optimistic UI updates
+
+**API Endpoints:**
+- 10 API routes for CRUD operations (create, update, complete, delete, revert)
+- 3 page routes (HTML widget, full page, modals)
+- Session-based authentication required (auth.users integration)
+
+**Design Documentation:** `docs/spec/task-tracking-design.md` (v1.1, 2600+ lines)
 
 ---
 
