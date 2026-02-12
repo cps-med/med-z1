@@ -35,7 +35,8 @@ The following domains are implemented in the FastAPI app and wired in `app/main.
 9. Immunizations
 10. Problems / Diagnoses
 11. Clinical Tasks
-12. AI Insights (assistant workflow and chat UI)
+12. Family History
+13. AI Insights (assistant workflow and chat UI)
 
 Routing evidence:
 - Router inclusion: `app/main.py`
@@ -65,6 +66,7 @@ Implemented tool set currently exposed via `ai/tools/__init__.py`:
 2. `get_patient_summary`
 3. `analyze_vitals_trends`
 4. `get_clinical_notes_summary`
+5. `get_family_history`
 
 Conversation memory is enabled through LangGraph PostgreSQL checkpointer initialized in `app/main.py`.
 

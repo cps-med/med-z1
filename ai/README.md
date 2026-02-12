@@ -9,7 +9,7 @@ The AI Clinical Insights subsystem provides an intelligent chatbot interface to 
 
 ## Current Capabilities (Phases 1-5 Complete)
 
-### Available Tools (4)
+### Available Tools (5)
 
 1. **`check_ddi_risks`** - Drug-Drug Interaction Risk Assessment
    - Analyzes patient medications for potential interactions
@@ -18,7 +18,7 @@ The AI Clinical Insights subsystem provides an intelligent chatbot interface to 
    - Example: "Found 1 interaction: GABAPENTIN + ALPRAZOLAM"
 
 2. **`get_patient_summary`** - Comprehensive Patient Clinical Summary
-   - Synthesizes demographics, medications, vitals, allergies, encounters, clinical notes
+   - Synthesizes demographics, problems, medications, vitals, allergies, family history, encounters, clinical notes
    - Returns multi-section natural language overview
    - Covers 6 clinical domains (added clinical notes in Phase 4)
    - Includes 3 most recent clinical notes automatically
@@ -97,6 +97,7 @@ Then add to `ai/tools/__init__.py:ALL_TOOLS` list.
 │  • get_patient_summary (patient_tools.py)                       │
 │  • analyze_vitals_trends (vitals_tools.py)                      │
 │  • get_clinical_notes_summary (notes_tools.py)                  │
+│  • get_family_history (family_history_tools.py)                 │
 └──────────────────────┬──────────────────────────────────────────┘
                        │ wraps
                        ▼
@@ -133,11 +134,12 @@ ai/
 │   ├── __init__.py
 │   └── insight_agent.py           # LangGraph agent with ToolNode
 ├── tools/
-│   ├── __init__.py                # ALL_TOOLS export (4 tools)
+│   ├── __init__.py                # ALL_TOOLS export (5 tools)
 │   ├── medication_tools.py        # check_ddi_risks
 │   ├── patient_tools.py           # get_patient_summary
 │   ├── vitals_tools.py            # analyze_vitals_trends
 │   └── notes_tools.py             # get_clinical_notes_summary
+│   └── family_history_tools.py    # get_family_history
 ├── services/
 │   ├── __init__.py
 │   ├── ddi_analyzer.py            # DDI reference data analysis
@@ -475,3 +477,8 @@ For questions or issues:
 **Tools Implemented:** 4 (DDI Risk Assessment, Patient Summary, Vitals Trends, Clinical Notes)
 **Production Status:** Operational at `/insight`
 **Next:** Phase 6 - Immunizations Integration (Pending)
+5. **`get_family_history`** - Family History Retrieval Tool (Phase 6)
+   - Retrieves structured family-history findings from `clinical.patient_family_history`
+   - Supports relationship/category filters and active-only filtering
+   - Explicitly highlights first-degree and first-degree high-risk findings
+   - Example: "Any first-degree cardiac family history?"

@@ -81,7 +81,7 @@ body {
 .sidebar__nav {
     display: flex;
     flex-direction: column;
-    gap: 0.225rem;  /* Reduced from 0.25rem (half reduction) */
+    gap: 0.2rem;  /* Tightened spacing to reduce vertical overflow on smaller laptop heights */
     margin-bottom: auto;
 }
 
@@ -89,7 +89,7 @@ body {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    padding: 0.50rem 0.65rem;  /* Reduced vertical padding from 0.55rem (half reduction) */
+    padding: 0.45rem 0.65rem;  /* ~18% tighter vertical spacing vs original 0.55rem */
     border-radius: 0.5rem;
     font-size: 0.9rem;
     color: #e5e7eb;

@@ -351,6 +351,37 @@ PRINT '  ✓ 15 problems inserted (Charlson Index = 5)';
 GO
 
 -- =====================================================
+-- Section 5: Family History (EncMill.FamilyHistory)
+-- =====================================================
+PRINT 'Inserting family history for Bailey Thompson (CDWWork2)...';
+GO
+
+INSERT INTO EncMill.FamilyHistory (
+    EncounterSID, PersonSID, PatientICN, Sta3n,
+    RelationshipCodeSID, ConditionCodeSID, StatusCodeSID,
+    FamilyMemberName, FamilyMemberAge, OnsetAgeYears, NotedDateTime,
+    DocumentedBy, CommentText, IsActive
+)
+VALUES
+-- Update at Walla Walla: sister cancer history reconfirmed
+(5006, 3001, 'ICN200001', '687',
+ (SELECT CodeValueSID FROM NDimMill.CodeValue WHERE CodeSet = 'FAMILY_RELATIONSHIP' AND Code = 'SISTER'),
+ (SELECT CodeValueSID FROM NDimMill.CodeValue WHERE CodeSet = 'FAMILY_HISTORY_CONDITION' AND Code = 'BREAST_CA'),
+ (SELECT CodeValueSID FROM NDimMill.CodeValue WHERE CodeSet = 'FAMILY_HISTORY_STATUS' AND Code = 'ACTIVE'),
+ 'Alananah Thompson', 59, 46, '2025-11-15 10:10:00',
+ 'Dr. Christine Baker', 'Twin sister with prior breast cancer; currently in remission.', 1),
+-- Father cardiovascular history
+(5007, 3001, 'ICN200001', '687',
+ (SELECT CodeValueSID FROM NDimMill.CodeValue WHERE CodeSet = 'FAMILY_RELATIONSHIP' AND Code = 'FATHER'),
+ (SELECT CodeValueSID FROM NDimMill.CodeValue WHERE CodeSet = 'FAMILY_HISTORY_CONDITION' AND Code = 'CAD'),
+ (SELECT CodeValueSID FROM NDimMill.CodeValue WHERE CodeSet = 'FAMILY_HISTORY_STATUS' AND Code = 'RESOLVED'),
+ 'Father', NULL, 58, '2026-02-01 10:12:00',
+ 'Dr. Christine Baker', 'Father deceased with coronary artery disease history.', 1);
+GO
+PRINT '  ✓ 2 family-history records inserted';
+GO
+
+-- =====================================================
 -- COMPLETION SUMMARY
 -- =====================================================
 PRINT '';
@@ -366,6 +397,7 @@ PRINT 'Demographics: 1 record';
 PRINT 'Vitals: 11 records (quarterly 2025-2026)';
 PRINT 'Encounters: 7 records (5 outpatient, 2 inpatient)';
 PRINT 'Problems: 15 records (Charlson=5)';
+PRINT 'Family History: 2 records';
 PRINT 'Purpose: Demonstrate cross-system harmonization (VistA → Cerner)';
 PRINT '========================================';
 GO

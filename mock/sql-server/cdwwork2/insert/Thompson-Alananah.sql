@@ -235,6 +235,37 @@ PRINT '    7 problems inserted (Charlson Index = 2)';
 GO
 
 -- =====================================================
+-- Section 5: Family History (EncMill.FamilyHistory)
+-- =====================================================
+PRINT 'Inserting family history for Alananah Thompson (CDWWork2)...';
+GO
+
+INSERT INTO EncMill.FamilyHistory (
+    EncounterSID, PersonSID, PatientICN, Sta3n,
+    RelationshipCodeSID, ConditionCodeSID, StatusCodeSID,
+    FamilyMemberName, FamilyMemberAge, OnsetAgeYears, NotedDateTime,
+    DocumentedBy, CommentText, IsActive
+)
+VALUES
+-- Brother with metabolic risk (cross-patient context)
+(6002, 3002, 'ICN200002', '687',
+ (SELECT CodeValueSID FROM NDimMill.CodeValue WHERE CodeSet = 'FAMILY_RELATIONSHIP' AND Code = 'BROTHER'),
+ (SELECT CodeValueSID FROM NDimMill.CodeValue WHERE CodeSet = 'FAMILY_HISTORY_CONDITION' AND Code = 'T2DM'),
+ (SELECT CodeValueSID FROM NDimMill.CodeValue WHERE CodeSet = 'FAMILY_HISTORY_STATUS' AND Code = 'ACTIVE'),
+ 'Bailey Thompson', 62, 55, '2025-08-15 11:12:00',
+ 'Dr. Jennifer Davis', 'Brother with type 2 diabetes and chronic kidney disease.', 1),
+-- Maternal hypertension history
+(6003, 3002, 'ICN200002', '687',
+ (SELECT CodeValueSID FROM NDimMill.CodeValue WHERE CodeSet = 'FAMILY_RELATIONSHIP' AND Code = 'MOTHER'),
+ (SELECT CodeValueSID FROM NDimMill.CodeValue WHERE CodeSet = 'FAMILY_HISTORY_CONDITION' AND Code = 'HTN'),
+ (SELECT CodeValueSID FROM NDimMill.CodeValue WHERE CodeSet = 'FAMILY_HISTORY_STATUS' AND Code = 'ACTIVE'),
+ 'Mother', NULL, 49, '2026-02-01 11:14:00',
+ 'Dr. Jennifer Davis', 'Maternal hypertension documented.', 1);
+GO
+PRINT '    2 family-history records inserted';
+GO
+
+-- =====================================================
 -- COMPLETION SUMMARY
 -- =====================================================
 PRINT '';
@@ -250,6 +281,7 @@ PRINT 'Demographics: 1 record';
 PRINT 'Vitals: 6 records (triannual 2025-2026)';
 PRINT 'Encounters: 3 records (all outpatient)';
 PRINT 'Problems: 7 records (Charlson=2)';
+PRINT 'Family History: 2 records';
 PRINT 'Purpose: Demonstrate cross-system harmonization (VistA → Cerner)';
 PRINT '==========================================';
 GO

@@ -52,6 +52,10 @@
 :r Dim.ICD10.sql
 :r Dim.CharlsonMapping.sql
 
+-- Family history dimensions
+:r Dim.FamilyRelationship.sql
+:r Dim.FamilyCondition.sql
+
 -- =======================================================================
 -- PATIENT TABLES
 -- =======================================================================
@@ -113,6 +117,9 @@
 -- Problems/Diagnoses (Outpatient Problem List)
 :r Outpat.ProblemList.sql
 
+-- Family History
+:r Outpat.FamilyHistory.sql
+
 -- =======================================================================
 -- TEST PATIENTS (Thompson Siblings)
 -- =======================================================================
@@ -122,4 +129,3 @@
 :r Thompson-Bailey.sql
 :r Thompson-Alananah.sql
 :r Thompson-Joe.sql
-

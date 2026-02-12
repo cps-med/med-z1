@@ -1,0 +1,74 @@
+<!-- Family History Widget Content -->
+<div class="widget__header">
+    <div class="widget__title-group">
+        <i class="fa-solid fa-people-arrows widget__icon"></i>
+        <h3 class="widget__title">Family History</h3>
+    </div>
+    {% if counts.first_degree_high_risk and counts.first_degree_high_risk > 0 %}
+    <span class="badge badge--warning">{{ counts.first_degree_high_risk }} high-risk</span>
+    {% endif %}
+</div>
+
+<div class="widget__body">
+    {% if error %}
+    <p class="text-muted" style="padding: 1rem; text-align: center;">
+        <i class="fa-solid fa-circle-exclamation"></i> Error loading family history
+    </p>
+    {% elif counts.total == 0 %}
+    <p class="text-muted" style="padding: 1rem; text-align: center;">No family history records</p>
+    {% else %}
+    <div class="immunizations-summary-widget">
+        <div class="immunizations-stat">
+            <div class="immunizations-stat__value">{{ counts.total }}</div>
+            <div class="immunizations-stat__label">Total</div>
+        </div>
+        <div class="immunizations-stat-divider"></div>
+        <div class="immunizations-stat">
+            <div class="immunizations-stat__value">{{ counts.first_degree }}</div>
+            <div class="immunizations-stat__label">1st Degree</div>
+        </div>
+        <div class="immunizations-stat-divider"></div>
+        <div class="immunizations-stat">
+            <div class="immunizations-stat__value">{{ counts.active }}</div>
+            <div class="immunizations-stat__label">Active</div>
+        </div>
+    </div>
+
+    <div class="immunizations-list-widget">
+        {% for item in history %}
+        <div class="immunization-item-widget">
+            <div class="immunization-item-widget__icon">
+                {% if item.first_degree_relative_flag %}
+                <i class="fa-solid fa-user-group text-warning"></i>
+                {% else %}
+                <i class="fa-solid fa-user text-muted"></i>
+                {% endif %}
+            </div>
+            <div class="immunization-item-widget__info">
+                <div class="immunization-item-widget__name">
+                    {{ item.relationship_name or 'Relative' }} - {{ item.condition_name or 'Condition' }}
+                    {% if item.first_degree_relative_flag %}
+                    <span class="badge badge--warning badge--sm">1st</span>
+                    {% endif %}
+                </div>
+                <div class="immunization-item-widget__meta">
+                    {{ item.recorded_datetime[:10] if item.recorded_datetime else 'No date' }}
+                    {% if item.source_system %}
+                    • {{ item.source_system }}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="widget-action">
+        <a href="/patient/{{ icn }}/history" class="btn btn--link btn--sm">
+            <i class="fa-regular fa-arrow-up-right-from-square"></i>
+            View Full History
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<div class="widget__footer"></div>

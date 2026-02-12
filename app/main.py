@@ -41,7 +41,22 @@ from config import (
 )
 
 # Import routers
-from app.routes import patient, dashboard, vitals, medications, demographics, encounters, labs, auth, insight, notes, immunizations, problems, tasks
+from app.routes import (
+    patient,
+    dashboard,
+    vitals,
+    medications,
+    demographics,
+    encounters,
+    labs,
+    auth,
+    insight,
+    notes,
+    immunizations,
+    problems,
+    tasks,
+    family_history,
+)
 
 # Import middleware
 from app.middleware.auth import AuthMiddleware
@@ -218,6 +233,8 @@ app.include_router(problems.router)           # Problems/Diagnoses API routes
 app.include_router(problems.page_router)      # Problems/Diagnoses full page routes
 app.include_router(tasks.router)              # Clinical Tasks API routes
 app.include_router(tasks.page_router)         # Clinical Tasks full page routes
+app.include_router(family_history.router)     # Family History API routes
+app.include_router(family_history.page_router)  # Family History full page routes
 app.include_router(insight.page_router)       # AI Insights full page routes
 
 # Configure logging for the entire application

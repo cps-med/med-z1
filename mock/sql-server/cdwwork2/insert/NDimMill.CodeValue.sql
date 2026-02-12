@@ -112,6 +112,62 @@ VALUES
 PRINT '  - Inserted 4 SEVERITY codes';
 
 -- =======================================================================
+-- FAMILY_RELATIONSHIP Code Set
+-- =======================================================================
+
+INSERT INTO NDimMill.CodeValue (CodeSet, Code, DisplayText, Description, IsActive)
+VALUES
+    ('FAMILY_RELATIONSHIP', 'MOTHER', 'Mother', 'Biological or adoptive mother', 1),
+    ('FAMILY_RELATIONSHIP', 'FATHER', 'Father', 'Biological or adoptive father', 1),
+    ('FAMILY_RELATIONSHIP', 'SISTER', 'Sister', 'Full or half sister', 1),
+    ('FAMILY_RELATIONSHIP', 'BROTHER', 'Brother', 'Full or half brother', 1),
+    ('FAMILY_RELATIONSHIP', 'SON', 'Son', 'Biological or adoptive son', 1),
+    ('FAMILY_RELATIONSHIP', 'DAUGHTER', 'Daughter', 'Biological or adoptive daughter', 1),
+    ('FAMILY_RELATIONSHIP', 'MAT_GRANDMOTHER', 'Maternal Grandmother', 'Mother of mother', 1),
+    ('FAMILY_RELATIONSHIP', 'MAT_GRANDFATHER', 'Maternal Grandfather', 'Father of mother', 1),
+    ('FAMILY_RELATIONSHIP', 'PAT_GRANDMOTHER', 'Paternal Grandmother', 'Mother of father', 1),
+    ('FAMILY_RELATIONSHIP', 'PAT_GRANDFATHER', 'Paternal Grandfather', 'Father of father', 1),
+    ('FAMILY_RELATIONSHIP', 'AUNT', 'Aunt', 'Aunt (maternal or paternal)', 1),
+    ('FAMILY_RELATIONSHIP', 'UNCLE', 'Uncle', 'Uncle (maternal or paternal)', 1),
+    ('FAMILY_RELATIONSHIP', 'UNKNOWN', 'Unknown Relative', 'Relationship not specified', 1);
+
+PRINT '  - Inserted 13 FAMILY_RELATIONSHIP codes';
+
+-- =======================================================================
+-- FAMILY_HISTORY_CONDITION Code Set
+-- =======================================================================
+
+INSERT INTO NDimMill.CodeValue (CodeSet, Code, DisplayText, Description, IsActive)
+VALUES
+    ('FAMILY_HISTORY_CONDITION', 'HTN', 'Hypertension', 'Family history of hypertension', 1),
+    ('FAMILY_HISTORY_CONDITION', 'CAD', 'Coronary Artery Disease', 'Family history of coronary artery disease', 1),
+    ('FAMILY_HISTORY_CONDITION', 'MI', 'Myocardial Infarction', 'Family history of myocardial infarction', 1),
+    ('FAMILY_HISTORY_CONDITION', 'STROKE', 'Stroke', 'Family history of stroke', 1),
+    ('FAMILY_HISTORY_CONDITION', 'T2DM', 'Type 2 Diabetes Mellitus', 'Family history of type 2 diabetes', 1),
+    ('FAMILY_HISTORY_CONDITION', 'BREAST_CA', 'Breast Cancer', 'Family history of breast cancer', 1),
+    ('FAMILY_HISTORY_CONDITION', 'COLON_CA', 'Colon Cancer', 'Family history of colon cancer', 1),
+    ('FAMILY_HISTORY_CONDITION', 'ALZHEIMERS', 'Alzheimer Disease', 'Family history of Alzheimer disease', 1),
+    ('FAMILY_HISTORY_CONDITION', 'ASTHMA', 'Asthma', 'Family history of asthma', 1),
+    ('FAMILY_HISTORY_CONDITION', 'ADHD', 'Attention-Deficit/Hyperactivity Disorder', 'Family history of ADHD', 1),
+    ('FAMILY_HISTORY_CONDITION', 'AUTISM', 'Autism Spectrum Disorder', 'Family history of autism spectrum disorder', 1),
+    ('FAMILY_HISTORY_CONDITION', 'SUBSTANCE_USE', 'Substance Use Disorder', 'Family history of substance use disorder', 1),
+    ('FAMILY_HISTORY_CONDITION', 'NONE_REPORTED', 'No Known Family History', 'No family history reported', 1);
+
+PRINT '  - Inserted 13 FAMILY_HISTORY_CONDITION codes';
+
+-- =======================================================================
+-- FAMILY_HISTORY_STATUS Code Set
+-- =======================================================================
+
+INSERT INTO NDimMill.CodeValue (CodeSet, Code, DisplayText, Description, IsActive)
+VALUES
+    ('FAMILY_HISTORY_STATUS', 'ACTIVE', 'Active', 'Current known family-history finding', 1),
+    ('FAMILY_HISTORY_STATUS', 'RESOLVED', 'Resolved', 'Historical family-history finding', 1),
+    ('FAMILY_HISTORY_STATUS', 'UNKNOWN', 'Unknown', 'Status not known', 1);
+
+PRINT '  - Inserted 3 FAMILY_HISTORY_STATUS codes';
+
+-- =======================================================================
 -- Summary
 -- =======================================================================
 

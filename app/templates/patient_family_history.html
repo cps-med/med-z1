@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}Family History - {{ patient.name_display if patient else 'Med-Z1' }}{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    {% if error %}
+    <div class="page-error">
+        <div class="page-error__icon">
+            <i class="fa-solid fa-triangle-exclamation fa-3x"></i>
+        </div>
+        <h2 class="page-error__title">Error Loading Family History</h2>
+        <p class="page-error__message">{{ error }}</p>
+        <a href="/" class="btn btn--primary">
+            <i class="fa-solid fa-house"></i>
+            Return to Dashboard
+        </a>
+    </div>
+    {% elif not patient %}
+    <div class="page-error">
+        <div class="page-error__icon">
+            <i class="fa-regular fa-user fa-3x"></i>
+        </div>
+        <h2 class="page-error__title">No Patient Selected</h2>
+        <p class="page-error__message">Please select a patient to view family history</p>
+        <a href="/" class="btn btn--primary">
+            <i class="fa-solid fa-house"></i>
+            Return to Dashboard
+        </a>
+    </div>
+    {% else %}
+    <div class="page-header-breadcrumb">
+        <nav aria-label="breadcrumb" class="breadcrumb-nav">
+            <a href="/?icn={{ patient.icn }}" class="breadcrumb-link">
+                <i class="fa-solid fa-house"></i>
+                Dashboard
+            </a>
+            <i class="fa-solid fa-chevron-right breadcrumb-separator"></i>
+            <span class="breadcrumb-current">Family History</span>
+        </nav>
+    </div>
+
+    <div class="page-header__title-group">
+        <h1 class="page-header__title">Family History</h1>
+    </div>
+
+    <div class="immunizations-summary-bar">
+        <div class="immunization-stat-card">
+            <div class="immunization-stat-card__value">{{ counts.total or 0 }}</div>
+            <div class="immunization-stat-card__label">Total Findings</div>
+        </div>
+        <div class="immunization-stat-card">
+            <div class="immunization-stat-card__value">{{ counts.active or 0 }}</div>
+            <div class="immunization-stat-card__label">Active</div>
+        </div>
+        <div class="immunization-stat-card">
+            <div class="immunization-stat-card__value">{{ counts.first_degree or 0 }}</div>
+            <div class="immunization-stat-card__label">First Degree</div>
+        </div>
+        <div class="immunization-stat-card">
+            <div class="immunization-stat-card__value">{{ counts.first_degree_high_risk or 0 }}</div>
+            <div class="immunization-stat-card__label">First Degree High-Risk</div>
+        </div>
+    </div>
+
+    <div class="immunizations-controls">
+        <form class="immunizations-filters"
+              hx-get="/patient/{{ patient.icn }}/history/filtered"
+              hx-target="#family-history-table-body"
+              hx-swap="innerHTML"
+              hx-trigger="change, submit"
+              hx-indicator=".htmx-indicator">
+            <div class="filter-group">
+                <label class="filter-group__label">
+                    <i class="fa-solid fa-users"></i>
+                    Relationship:
+                </label>
+                <select name="relationship" class="filter-select">
+                    <option value="">All</option>
+                    {% for rel in relationship_options %}
+                    <option value="{{ rel }}" {% if current_filters.relationship == rel %}selected{% endif %}>{{ rel }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label class="filter-group__label">
+                    <i class="fa-solid fa-layer-group"></i>
+                    Category:
+                </label>
+                <select name="category" class="filter-select">
+                    <option value="">All</option>
+                    {% for cat in category_options %}
+                    <option value="{{ cat }}" {% if current_filters.category == cat %}selected{% endif %}>{{ cat }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label class="filter-group__label">
+                    <i class="fa-solid fa-calendar-days"></i>
+                    Time Period:
+                </label>
+                <select name="days" class="filter-select">
+                    <option value="" {% if not current_filters.days %}selected{% endif %}>All Time</option>
+                    <option value="365" {% if current_filters.days == 365 %}selected{% endif %}>Last Year</option>
+                    <option value="730" {% if current_filters.days == 730 %}selected{% endif %}>Last 2 Years</option>
+                    <option value="1825" {% if current_filters.days == 1825 %}selected{% endif %}>Last 5 Years</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label class="filter-group__label" style="display:flex; align-items:center; gap:8px;">
+                    <input type="checkbox" name="active_only" value="true" {% if current_filters.active_only %}checked{% endif %}>
+                    Active Only
+                </label>
+            </div>
+
+            <div class="htmx-indicator" style="display:none; margin-left:1rem;">
+                <i class="fa-solid fa-spinner fa-spin"></i> Loading...
+            </div>
+        </form>
+
+        <div class="results-summary">
+            Showing <strong>{{ history|length }}</strong> family history entr{% if history|length == 1 %}y{% else %}ies{% endif %}
+        </div>
+    </div>
+
+    <div id="family-history-table-container" class="table-container">
+        <table class="immunizations-table">
+            <thead class="immunizations-table__header">
+                <tr>
+                    <th>Relationship</th>
+                    <th>Condition</th>
+                    <th>Category</th>
+                    <th>Onset Age</th>
+                    <th>Status</th>
+                    <th>Recorded Date</th>
+                    <th>Source</th>
+                </tr>
+            </thead>
+            <tbody id="family-history-table-body" class="immunizations-table__body">
+                {% include 'partials/family_history_table_rows.html' %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('.immunizations-filters');
+    if (!form) return;
+
+    form.addEventListener('htmx:configRequest', function(evt) {
+        const params = evt.detail.parameters;
+        if (params.days === '') {
+            delete params.days;
+        }
+    });
+});
+</script>
+{% endblock %}

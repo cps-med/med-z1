@@ -36,7 +36,7 @@
                 </div>
             </div>
 
-            <!-- Row 2: Vital Signs + Allergies + Encounters -->
+            <!-- Row 2: Vital Signs + Allergies + History -->
             <!-- Vitals Widget (1x1 - Standard) -->
             <div class="widget widget--1x1"
                  id="widget-vitals"
@@ -59,10 +59,10 @@
                 </div>
             </div>
 
-            <!-- Encounters Widget (1x1 - Standard) -->
+            <!-- History Widget (1x1 - Standard) -->
             <div class="widget widget--1x1"
-                 id="widget-encounters"
-                 hx-get="/api/patient/dashboard/widget/encounters/{{ patient.icn }}"
+                 id="widget-history"
+                 hx-get="/api/patient/dashboard/widget/history/{{ patient.icn }}"
                  hx-trigger="load"
                  hx-swap="innerHTML">
                 <div class="widget__body">
@@ -105,8 +105,8 @@
                 </div>
             </div>
 
-            <!-- Row 5: Clinical Notes + Orders -->
-            <!-- Clinical Notes Widget (2x1 - Compact) -->
+            <!-- Row 5: Clinical Notes + Encounters -->
+            <!-- Clinical Notes Widget (2x1 - Wide) -->
             <div class="widget widget--2x1"
                  id="widget-notes"
                  hx-get="/api/patient/dashboard/widget/notes/{{ patient.icn }}"
@@ -117,6 +117,18 @@
                 </div>
             </div>
 
+            <!-- Encounters Widget (1x1 - Standard) -->
+            <div class="widget widget--1x1"
+                 id="widget-encounters"
+                 hx-get="/api/patient/dashboard/widget/encounters/{{ patient.icn }}"
+                 hx-trigger="load"
+                 hx-swap="innerHTML">
+                <div class="widget__body">
+                    <div class="widget__spinner"></div>
+                </div>
+            </div>
+
+            <!-- Row 6: Orders + Procedures -->
             <!-- Orders Widget (1x1 - Standard) - Placeholder -->
             {{ placeholder_widget(
                 size='1x1',
@@ -125,7 +137,15 @@
                 description='Recent and pending orders'
             ) }}
 
-            <!-- Row 6: Problems/Diagnoses + Procedures -->
+            <!-- Procedures Widget (2x1 - Wide) - Placeholder -->
+            {{ placeholder_widget(
+                size='2x1',
+                icon='fa-solid fa-user-doctor',
+                title='Procedures',
+                description='Surgical and procedural history'
+            ) }}
+
+            <!-- Row 7: Problems/Diagnoses -->
             <!-- Problems/Diagnoses Widget (2x1 - Wide) -->
             <div class="widget widget--2x1"
                  hx-get="/api/patient/dashboard/widget/problems/{{ patient.icn }}"
@@ -136,18 +156,10 @@
                 </div>
             </div>
 
-            <!-- Procedures Widget (1x1 - Standard) - Placeholder -->
+            <!-- Row 8: Radiology/Imaging -->
+            <!-- Radiology/Imaging Widget (1x1 - Standard) - Placeholder -->
             {{ placeholder_widget(
                 size='1x1',
-                icon='fa-solid fa-user-doctor',
-                title='Procedures',
-                description='Surgical and procedural history'
-            ) }}
-
-            <!-- Row 7: Radiology/Imaging -->
-            <!-- Radiology/Imaging Widget (3x1 - Full Width) - Placeholder -->
-            {{ placeholder_widget(
-                size='3x1',
                 icon='fa-solid fa-x-ray',
                 title='Radiology/Imaging',
                 description='Imaging studies and reports'

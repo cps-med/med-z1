@@ -1,0 +1,26 @@
+{% for item in history %}
+<tr>
+    <td>{{ item.relationship_name or '—' }}</td>
+    <td>
+        {{ item.condition_name or '—' }}
+        {% if item.first_degree_relative_flag %}
+        <span class="badge badge--warning badge--sm" style="margin-left: 6px;">1st Degree</span>
+        {% endif %}
+    </td>
+    <td>{{ item.condition_category or item.risk_condition_group or '—' }}</td>
+    <td>{{ item.onset_age_years if item.onset_age_years is not none else '—' }}</td>
+    <td>{{ item.clinical_status or 'UNKNOWN' }}</td>
+    <td>{{ item.recorded_datetime[:10] if item.recorded_datetime else '—' }}</td>
+    <td>
+        <span class="badge badge--secondary badge--sm">{{ item.source_system or 'UNKNOWN' }}</span>
+    </td>
+</tr>
+{% endfor %}
+
+{% if history|length == 0 %}
+<tr>
+    <td colspan="7" class="text-center text-muted" style="padding: 2rem;">
+        No family history records found
+    </td>
+</tr>
+{% endif %}

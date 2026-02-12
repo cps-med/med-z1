@@ -75,6 +75,9 @@ PRINT '';
 -- Problems/Diagnoses (Problem List)
 :r EncMill.ProblemList.sql
 
+-- Family History
+:r EncMill.FamilyHistory.sql
+
 PRINT '';
 PRINT '=======================================================================';
 PRINT 'CDWWork2 Database Creation Complete!';

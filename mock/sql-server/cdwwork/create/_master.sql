@@ -58,6 +58,10 @@
 :r Dim.ICD10.sql
 :r Dim.CharlsonMapping.sql
 
+-- Family history dimensions
+:r Dim.FamilyRelationship.sql
+:r Dim.FamilyCondition.sql
+
 -- =======================================================================
 -- PATIENT TABLES
 -- =======================================================================
@@ -118,3 +122,6 @@
 
 -- Problems/Diagnoses (Outpatient Problem List)
 :r Outpat.ProblemList.sql
+
+-- Family History
+:r Outpat.FamilyHistory.sql

@@ -71,11 +71,11 @@
                     <i class="fa-solid fa-capsules fa-lg"></i>
                     <span class="sidebar__text">Allergies</span>
                 </a>
-                <a href="/encounters"
-                   class="sidebar__link {{ 'sidebar__link--active' if active_page == 'encounters' else '' }}"
-                   data-tooltip="Inpatient Encounters">
-                    <i class="fa-solid fa-hospital fa-lg"></i>
-                    <span class="sidebar__text">Encounters</span>
+                <a href="/history"
+                   class="sidebar__link {{ 'sidebar__link--active' if active_page == 'history' else '' }}"
+                   data-tooltip="Family History">
+                    <i class="fa-solid fa-people-arrows fa-lg"></i>
+                    <span class="sidebar__text">History</span>
                 </a>
                 <a href="/medications"
                    class="sidebar__link {% if active_page == 'medications' %}sidebar__link--active{% endif %}"
@@ -101,23 +101,29 @@
                     <i class="fa-solid fa-file-medical fa-lg"></i>
                     <span class="sidebar__text">Notes</span>
                 </a>
+                <a href="/encounters"
+                   class="sidebar__link {{ 'sidebar__link--active' if active_page == 'encounters' else '' }}"
+                   data-tooltip="Inpatient Encounters">
+                    <i class="fa-solid fa-hospital fa-lg"></i>
+                    <span class="sidebar__text">Encounters</span>
+                </a>
                 <a href="#"
                    class="sidebar__link sidebar__link--disabled"
                    data-tooltip="Orders (Coming Soon)">
                     <i class="fa-solid fa-clipboard-list fa-lg"></i>
                     <span class="sidebar__text">Orders</span>
                 </a>
-                <a href="/problems"
-                   class="sidebar__link {% if active_page == 'problems' %}sidebar__link--active{% endif %}"
-                   data-tooltip="Problems/Diagnoses">
-                    <i class="fa-solid fa-stethoscope fa-lg"></i>
-                    <span class="sidebar__text">Problems</span>
-                </a>
                 <a href="#"
                    class="sidebar__link sidebar__link--disabled"
                    data-tooltip="Procedures (Coming Soon)">
                     <i class="fa-solid fa-user-doctor fa-lg"></i>
                     <span class="sidebar__text">Procedures</span>
+                </a>
+                <a href="/problems"
+                   class="sidebar__link {% if active_page == 'problems' %}sidebar__link--active{% endif %}"
+                   data-tooltip="Problems/Diagnoses">
+                    <i class="fa-solid fa-stethoscope fa-lg"></i>
+                    <span class="sidebar__text">Problems</span>
                 </a>
                 <a href="#"
                    class="sidebar__link sidebar__link--disabled"

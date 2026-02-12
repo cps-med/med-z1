@@ -685,7 +685,7 @@ sqlcmd -S 127.0.0.1,1433 -U sa -P 'MyS3cur3P@ssw0rd' -C -Q "SELECT @@VERSION"
 
 ## Create and Populate SQL Server Mock Data
 
-The **med-z1** application uses Microsoft SQL Server 2019 to simulate the VA Corporate Data Warehouse (CDW) for local development. The mock CDW contains synthetic patient data for a number of VistA sites (aka "stations") and spans multiple clinical domains, such as Allergies, Vitals, Labs, Encounters, Clinical Notes, and Immunizations.
+The **med-z1** application uses Microsoft SQL Server 2019 to simulate the VA Corporate Data Warehouse (CDW) for local development. The mock CDW contains synthetic patient data for a number of VistA sites (aka "stations") and spans multiple clinical domains, such as Allergies, Vitals, Labs, Encounters, Clinical Notes, Immunizations, and Family History.
 
 ### CDWWork Database (VistA Sites)
 
@@ -837,6 +837,7 @@ docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_clin
 docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_immunizations_table.sql
 docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_military_history_table.sql
 docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_problems_table.sql
+docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_family_history_table.sql
 docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_reference_vaccine_table.sql
 docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_tasks_table.sql
 ```
@@ -846,14 +847,14 @@ Verify tables were created:
 docker exec -it postgres16 psql -U postgres -d medz1 -c "\dt clinical.*"
 ```
 
-Expected output should list **15 tables** in the `clinical` schema:
+Expected output should list **16 tables** in the `clinical` schema:
 
 - patient_demographics, patient_vitals
 - patient_allergies, patient_allergy_reactions
 - patient_medications_outpatient, patient_medications_inpatient
 - patient_flags, patient_flag_history
 - patient_encounters, patient_labs, patient_clinical_notes, patient_immunizations
-- patient_military_history, patient_problems
+- patient_military_history, patient_problems, patient_family_history
 - patient_tasks
 
 Additionally, verify the reference table was created:
@@ -924,7 +925,7 @@ docker exec -it postgres16 psql -U postgres -d medz1 -c "SELECT task_id, patient
 
 Each clinical domain has a complete pipeline (Bronze → Silver → Gold → Load). Run pipelines in the order shown below to respect data dependencies.  
 
-**Important Note:** All of the clinical domain pipelines detailed below (1 through 12) can be run via a single shell script, as described later in this guide.
+**Important Note:** All of the clinical domain pipelines detailed below (1 through 13) can be run via a single shell script, as described later in this guide.
 
 All ETL scripts are run as Python modules from the project root:
 
@@ -1140,7 +1141,23 @@ python -m etl.load_problems
 - 7 unique patients with Charlson Index scores
 - Test patients: ICN100001 (Charlson ~7-8, high complexity), ICN100010 (Charlson ~4, moderate)
 
-#### 12. Drug-Drug Interaction (DDI) Reference Data Pipeline
+#### 12. Family History Pipeline
+
+```bash
+# Bronze: Extract Family History from CDWWork (VistA) and CDWWork2 (Cerner)
+python -m etl.bronze_family_history
+
+# Silver: Harmonize and deduplicate Family History findings
+python -m etl.silver_family_history
+
+# Gold: Create patient-centric Family History dataset with derived risk counts
+python -m etl.gold_family_history
+
+# Load: Insert into PostgreSQL
+python -m etl.load_family_history
+```
+
+#### 13. Drug-Drug Interaction (DDI) Reference Data Pipeline
 
 The DDI pipeline provides reference data for the AI Clinical Insights feature. Unlike clinical domains, this pipeline does NOT load into PostgreSQL—the Gold Parquet is consumed directly by the AI service at runtime.
 
@@ -1178,7 +1195,7 @@ You can also verify that Parquet files were created in MinIO via the Web Console
 
 For convenience, you can run all ETL pipelines (clinical domains + DDI reference data) sequentially via a single shell script.  
 
-**Important Note:** The DDI pipeline requires the Kaggle CSV to exist in MinIO's `med-sandbox` bucket at path `kaggle-data/ddi/db_drug_interactions.csv`. If the file is missing, the script will fail at the DDI Bronze extraction step. See section **_10. Drug-Drug Interaction (DDI) Reference Data Pipeline_** above for DDI prerequisites and how to verify MinIO setup.  
+**Important Note:** The DDI pipeline requires the Kaggle CSV to exist in MinIO's `med-sandbox` bucket at path `kaggle-data/ddi/db_drug_interactions.csv`. If the file is missing, the script will fail at the DDI Bronze extraction step. See section **_13. Drug-Drug Interaction (DDI) Reference Data Pipeline_** above for DDI prerequisites and how to verify MinIO setup.  
 
 Run the full ETL Pipeline:
 ```bash

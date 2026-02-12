@@ -129,6 +129,16 @@ python -m etl.silver_problems
 python -m etl.gold_problems
 python -m etl.load_problems
 
+# Family History
+echo "══════════════════════════════════════════════════"
+echo ">>> Running Family History pipeline..."
+echo "══════════════════════════════════════════════════"
+sleep 2
+python -m etl.bronze_family_history
+python -m etl.silver_family_history
+python -m etl.gold_family_history
+python -m etl.load_family_history
+
 # Drug-Drug Interaction Reference Data
 echo "══════════════════════════════════════════════════"
 echo ">>> Running DDI Reference Data pipeline..."

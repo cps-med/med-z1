@@ -29,6 +29,10 @@ from app.db.encounters import get_recent_encounters
 from app.db.notes import get_recent_notes_for_ai
 from app.db.military_history import get_patient_military_history
 from app.db.patient_problems import get_problems_summary, get_charlson_score
+from app.db.patient_family_history import (
+    get_patient_family_history,
+    get_family_history_counts,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -513,6 +517,72 @@ class PatientContextBuilder:
 
         return text.strip()
 
+    def get_family_history_summary(self) -> str:
+        """
+        Get patient family history formatted as natural language text.
+
+        Highlights first-degree and first-degree high-risk findings for
+        clinical risk context.
+
+        Returns:
+            Natural language family history summary
+        """
+        rows = get_patient_family_history(self.icn, active_only=True)
+        counts = get_family_history_counts(self.icn)
+
+        if not rows or counts.get("total", 0) == 0:
+            return "No family history findings on record"
+
+        total = counts.get("total", 0)
+        active = counts.get("active", 0)
+        first_degree = counts.get("first_degree", 0)
+        first_degree_high_risk = counts.get("first_degree_high_risk", 0)
+
+        text = (
+            "Family History "
+            f"({total} total, {active} active, {first_degree} first-degree, "
+            f"{first_degree_high_risk} first-degree high-risk):\n"
+        )
+
+        # Prioritize first-degree rows, then most recent rows.
+        first_degree_rows = [r for r in rows if r.get("first_degree_relative_flag")]
+        other_rows = [r for r in rows if not r.get("first_degree_relative_flag")]
+        first_degree_rows.sort(key=lambda r: r.get("recorded_datetime") or "", reverse=True)
+        other_rows.sort(key=lambda r: r.get("recorded_datetime") or "", reverse=True)
+        prioritized = first_degree_rows + other_rows
+
+        for row in prioritized[:8]:
+            relationship = row.get("relationship_name") or "Relative"
+            condition = row.get("condition_name") or "Unknown condition"
+            category = row.get("condition_category") or row.get("risk_condition_group") or "Other"
+            status = row.get("clinical_status") or "UNKNOWN"
+            recorded = row.get("recorded_datetime")
+            recorded_date = recorded[:10] if isinstance(recorded, str) else "unknown date"
+
+            tags = []
+            if row.get("first_degree_relative_flag"):
+                tags.append("FIRST-DEGREE")
+            if row.get("hereditary_risk_flag"):
+                tags.append("HEREDITARY-RISK")
+            tag_text = f" [{' | '.join(tags)}]" if tags else ""
+
+            text += (
+                f"- {relationship}: {condition} ({category}, status: {status}, "
+                f"recorded: {recorded_date}){tag_text}\n"
+            )
+
+        if total > 8:
+            text += f"... and {total - 8} more family history entr{'y' if total - 8 == 1 else 'ies'}\n"
+
+        # Explicit first-degree callout per design guidance.
+        if first_degree > 0:
+            text += (
+                f"\nFirst-degree findings present: {first_degree}"
+                f" ({first_degree_high_risk} high-risk)."
+            )
+
+        return text.strip()
+
     def build_comprehensive_summary(self) -> str:
         """
         Build comprehensive patient summary combining all clinical domains.
@@ -551,6 +621,7 @@ class PatientContextBuilder:
         encounters = self.get_encounters_summary()
         notes = self.get_notes_summary()  # Phase 4: Clinical notes
         problems = self.get_problems_summary()  # Phase 6: Problems/diagnoses
+        family_history = self.get_family_history_summary()  # Phase 6: Family history
 
         # Build multi-section summary
         summary = f"""PATIENT DEMOGRAPHICS
@@ -568,13 +639,16 @@ RECENT VITALS (last 7 days)
 ALLERGIES
 {allergies}
 
+FAMILY HISTORY
+{family_history}
+
 RECENT ENCOUNTERS (last 90 days)
 {encounters}
 
 RECENT CLINICAL NOTES (last 90 days)
 {notes}
 
-Data sources: PostgreSQL (demographics, problems, medications, vitals, allergies, encounters, clinical_notes)"""
+Data sources: PostgreSQL (demographics, problems, medications, vitals, allergies, family_history, encounters, clinical_notes)"""
 
         logger.info(f"Comprehensive summary built for patient {self.icn} ({len(summary)} characters)")
 
