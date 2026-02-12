@@ -278,19 +278,20 @@ Imagine your model has 70% precision at the top 20% risk tier. Out of 1000 disch
 ### 3.1 Jupyter Notebook Organization
 
 **Recommended Notebook Structure:**
-```
-notebook/
-├── readmission/                      # Your learning project folder
-│   ├── 01_data_exploration.ipynb     # Phase 1: Understand the data
-│   ├── 02_feature_engineering.ipynb  # Phase 2: Create predictive variables
-│   ├── 03_baseline_model.ipynb       # Phase 3: Logistic Regression
-│   ├── 04_advanced_models.ipynb      # Phase 4: Random Forest, XGBoost
-│   ├── 05_model_evaluation.ipynb     # Phase 5: Compare and interpret
-│   ├── 06_clinical_validation.ipynb  # Phase 6: Clinical scenarios
-│   └── data/                         # Extracted datasets (CSV/Parquet)
-│       ├── encounters_raw.csv
-│       ├── patient_features.csv
-│       └── training_set.csv
+```bash
+notebooks/
+└── readmission/                      # Your learning project folder
+    ├── data/                         # Extracted datasets (CSV/Parquet)
+    │   ├── encounters_raw.csv
+    │   ├── patient_features.csv
+    │   └── training_set.csv
+    ├── 01_data_exploration.ipynb     # Phase 1: Understand the data
+    ├── 02_feature_engineering.ipynb  # Phase 2: Create predictive variables
+    ├── 03_baseline_model.ipynb       # Phase 3: Logistic Regression
+    ├── 04_advanced_models.ipynb      # Phase 4: Random Forest, XGBoost
+    ├── 05_model_evaluation.ipynb     # Phase 5: Compare and interpret
+    ├── 06_clinical_validation.ipynb  # Phase 6: Clinical scenarios
+    └── readmission-ml-guide          # This document
 ```
 
 **Why Multiple Notebooks?**
@@ -356,7 +357,9 @@ Verify they work by importing each in a test notebook cell.
 **Database Schema You'll Query:**
 - `clinical.patient_encounters` - Hospital admissions (your target events)
 - `clinical.patient_demographics` - Age, sex, DOB
+- `clinical.patient_problems` - Longitudinal problem list, chronic condition flags, and Charlson disease burden
 - `clinical.patient_military_history` - Service-connected %, environmental exposures (VA-specific risk factors)
+- `clinical.patient_family_history` - Family condition burden, first-degree hereditary risk indicators
 - `clinical.patient_medications_outpatient` - Active meds (polypharmacy feature)
 - `clinical.patient_vitals` - BP, weight, temp (clinical instability features)
 - `clinical.patient_labs` - Creatinine, Hgb (abnormal lab features)
@@ -430,6 +433,7 @@ For each encounter (index admission):
 - **Death during index admission:** Exclude (can't be readmitted)
 - **Transfer to another hospital:** Counts as readmission if within 30 days
 - **Planned procedures:** Exclude (colonoscopy scheduled at discharge ≠ readmission)
+- **Insufficient follow-up window:** Exclude index discharges from the final 30 days of your dataset (you cannot know true readmission status yet)
 
 **Pandas Exploration Pattern:**
 ```python
@@ -470,6 +474,14 @@ Calculate your readmission rate. If it's:
 - **Age vs. Readmission:** Do older patients readmit more?
 - **Prior admissions vs. Readmission:** Does history predict future?
 - **Medication count vs. Readmission:** Polypharmacy effect?
+- **Charlson Index vs. Readmission:** Does disease burden increase risk?
+- **Chronic condition flags vs. Readmission:** Which diagnoses carry strongest signal?
+
+**3. Problems/Diagnoses Domain Profiling (High-Value):**
+- Distribution of `charlson_index` (0, 1-2, 3-4, 5+)
+- Distribution of `active_problem_count`
+- Prevalence of `has_chf`, `has_copd`, `has_diabetes`, `has_ckd`, `has_depression`, `has_ptsd`
+- Top ICD-10 categories (to understand signal concentration and sparsity)
 
 **Visualization Examples to Create:**
 
@@ -521,6 +533,8 @@ For your dataset, create:
 1. Histogram of medication counts (how many meds per patient?)
 2. Bar chart of readmission rate by number of prior admissions (0, 1, 2, 3+)
 3. Box plot of age for readmitted vs. not readmitted patients
+4. Bar chart of readmission rate by Charlson band (`0`, `1-2`, `3-4`, `5+`)
+5. Table of readmission rates for key chronic flags (`has_chf`, `has_ckd`, `has_copd`, `has_diabetes`)
 
 What patterns do you notice? Write 2-3 observations.
 
@@ -621,7 +635,20 @@ For Encounter 3 (predicting readmission from this discharge):
 - `los_very_long` - Binary (LOS >10 days = complex case)
 - `had_icu_stay` - Binary (was in ICU during admission)
 
-**7. Military History & Environmental Exposures (VA-Specific):**
+**7. Problems/Diagnoses & Comorbidity Features (High-Value):**
+- `charlson_index` - Comorbidity burden score (higher = more complex)
+- `charlson_condition_count` - Number of unique Charlson condition groups
+- `active_problem_count` - Number of active problems
+- `has_chf` - Binary (active heart failure)
+- `has_copd` - Binary (active COPD)
+- `has_diabetes` - Binary (active diabetes)
+- `has_ckd` - Binary (active CKD)
+- `has_depression` - Binary (active depression)
+- `has_ptsd` - Binary (active PTSD)
+- `service_connected_problem_count` - Count of active service-connected problems
+- `high_risk_multimorbidity` - Binary (`charlson_index >= 5` OR `active_problem_count >= 8`)
+
+**8. Military History & Environmental Exposures (VA-Specific):**
 - `service_connected_pct` - Continuous (0-100%, higher = more engaged with VA system)
 - `is_high_priority` - Binary (SC% ≥70%, Priority Group 1)
 - `agent_orange_exposure` - Binary (linked to diabetes, CVD, cancers)
@@ -629,6 +656,17 @@ For Encounter 3 (predicting readmission from this discharge):
 - `gulf_war_service` - Binary (burn pit exposure, Gulf War Illness)
 - `camp_lejeune_exposure` - Binary (water contamination, cancer risk)
 - `ionizing_radiation_exposure` - Binary (increased cancer risk)
+
+**9. Family History Features (New Clinical Domain):**
+- `fhx_total_count` - Total family-history findings per patient
+- `fhx_active_count` - Active family-history findings
+- `fhx_first_degree_count` - Count of first-degree relative findings
+- `fhx_first_degree_high_risk_count` - First-degree + hereditary-risk findings
+- `fhx_hereditary_risk_any` - Binary (any hereditary-risk finding)
+- `fhx_cvd_first_degree` - Binary (first-degree cardiovascular family history)
+- `fhx_dm_first_degree` - Binary (first-degree diabetes family history)
+- `fhx_cancer_first_degree` - Binary (first-degree cancer family history)
+- `fhx_recency_days` - Days since most recent recorded family-history entry (as-of discharge date)
 
 ---
 
@@ -714,6 +752,27 @@ features['service_connected_pct'] = military_history['service_connected_percent'
 features['is_high_priority'] = 1 if features['service_connected_pct'] >= 70 else 0
 ```
 
+**F. Problems/Diagnoses Features (Comorbidity Burden):**
+```python
+# Query problems table as-of discharge date
+problems = get_patient_problems_before_date(patient_key, discharge_date)
+
+# Disease burden
+features['charlson_index'] = problems['charlson_index'].max()
+features['charlson_condition_count'] = problems['charlson_condition_count'].max()
+features['active_problem_count'] = problems['active_problem_count'].max()
+
+# High-value chronic flags
+features['has_chf'] = int(problems['has_chf'].max())
+features['has_copd'] = int(problems['has_copd'].max())
+features['has_diabetes'] = int(problems['has_diabetes'].max())
+features['has_ckd'] = int(problems['has_ckd'].max())
+
+# Practical interaction features
+features['chf_with_recent_admit'] = features['has_chf'] * (features['prior_admits_6m'] > 0)
+features['ckd_with_polypharmacy'] = features['has_ckd'] * features['has_polypharmacy']
+```
+
 ---
 
 ### 5.4 Avoiding Data Leakage
@@ -748,9 +807,14 @@ If no → data leakage.
 - ❌ Using lab values from after discharge
 - ❌ Using total lifetime admissions (includes future)
 - ❌ Using medication counts from after discharge date
+- ❌ Using problems entered/modified after discharge
+- ❌ Using resolved status that occurs after discharge
+- ❌ Using family-history rows recorded after discharge (future documentation)
 - ✅ Using prior admissions (before discharge)
 - ✅ Using active meds at discharge
 - ✅ Using discharge vitals (available at discharge)
+- ✅ Using problem list fields only from records available by discharge
+- ✅ Using only family-history records with `recorded_datetime <= discharge_datetime`
 
 **Learning Exercise 5.1:**
 For each feature, mark if it has data leakage:
@@ -759,6 +823,8 @@ For each feature, mark if it has data leakage:
 3. `admits_in_next_year` - Future admission count: _____
 4. `meds_prescribed_at_discharge` - Discharge med list: _____
 5. `readmission_diagnosis` - Diagnosis from readmission: _____
+6. `problem_status_as_of_today` - Active status pulled months after discharge: _____
+7. `charlson_index_as_of_discharge` - Charlson from problem rows available at discharge: _____
 
 ---
 
@@ -787,6 +853,7 @@ One row per encounter, columns are features, plus `readmitted` label.
 
 ## 1. Load Data
 encounters = load_encounters()
+problems = load_problems()
 medications = load_medications()
 vitals = load_vitals()
 
@@ -813,6 +880,8 @@ for idx, encounter in encounters.iterrows():
 
         # Features
         'age': calculate_age(patient_key, discharge_date),
+        'charlson_index': calculate_charlson_index(patient_key, discharge_date),
+        'has_chf': calculate_has_chf(patient_key, discharge_date),
         'prior_admits_12m': calculate_prior_admissions(patient_key, discharge_date, 365),
         'med_count': calculate_medication_count(patient_key, discharge_date),
         # ... 20-30 more features
@@ -822,7 +891,7 @@ for idx, encounter in encounters.iterrows():
 feature_df = pd.DataFrame(features)
 
 ## 4. Save for modeling
-feature_df.to_csv('notebook/readmission/data/feature_matrix.csv', index=False)
+feature_df.to_csv('notebooks/readmission/data/feature_matrix.csv', index=False)
 ```
 
 **Learning Exercise 5.2:**
@@ -845,6 +914,133 @@ For military history features, answer these questions:
 2. How would you create an interaction feature between Gulf War service and respiratory conditions? Write the pseudocode.
 3. Which environmental exposure would you expect to have the strongest impact on readmission prediction? Why?
 4. If you have 1000 patients and 7% have Gulf War service (like your data), will this feature help the model? Or is the sample size too small?
+
+**Learning Exercise 5.4 (Problems/Diagnoses Domain):**
+1. Write pseudocode to compute `charlson_index_as_of_discharge` from `clinical.patient_problems`.
+2. Create a binary flag `high_risk_multimorbidity` and define your threshold logic.
+3. Create one interaction feature combining diagnosis burden with utilization.
+4. Which 3 diagnosis features would you force-include in your first baseline model? Why?
+
+### 5.6 Practical Uses of `clinical.patient_problems` in This Learning Project
+
+**A. Strong baseline risk signal:**
+- Use `charlson_index`, `active_problem_count`, and key chronic flags in your first model version.
+- These often outperform many weak/rare features early in model development.
+
+**B. Better clinical interpretability:**
+- SHAP explanations with diagnosis burden are intuitive for clinicians ("risk driven by CHF + CKD + high comorbidity burden").
+- Easier to validate whether model behavior matches expected clinical reasoning.
+
+**C. Targeted subgroup testing:**
+- Evaluate model performance by disease burden bands and chronic cohorts (CHF, COPD, diabetes, CKD).
+- Identify where model underperforms and which features are missing.
+
+**D. Interaction feature generation:**
+- Build practical interactions: diagnosis burden x utilization, CKD x polypharmacy, COPD x recent ED use.
+- These often capture real clinical complexity better than single-domain features.
+
+**E. Incremental value measurement (ablation):**
+- Quantify value by comparing:
+  1. Base model (demographics + utilization)
+  2. Base + Problems/Diagnoses
+  3. Base + Problems + other domains
+- Keep diagnosis features if they improve discrimination and/or calibration.
+
+### 5.7 Learning Scaffold Example for `02_feature_engineering.ipynb`
+
+Use this as a learning template when you build your feature engineering notebook. The goal is to enforce "as-of discharge" logic for Problems features.
+
+```python
+import pandas as pd
+from sqlalchemy import create_engine
+from config import DATABASE_URL
+
+engine = create_engine(DATABASE_URL)
+
+# 1) Load index encounters (already labeled or ready to label)
+encounters_sql = """
+SELECT
+    encounter_key,
+    patient_key,
+    discharge_datetime
+FROM clinical.patient_encounters
+WHERE discharge_datetime IS NOT NULL
+"""
+encounters = pd.read_sql(encounters_sql, engine)
+
+# 2) Load problems table once (then filter as-of per encounter)
+problems_sql = """
+SELECT
+    patient_key,
+    entered_datetime,
+    modified_datetime,
+    problem_status,
+    charlson_index,
+    charlson_condition_count,
+    active_problem_count,
+    has_chf,
+    has_copd,
+    has_diabetes,
+    has_ckd,
+    has_depression,
+    has_ptsd
+FROM clinical.patient_problems
+"""
+problems = pd.read_sql(problems_sql, engine)
+
+def problems_as_of(patient_key, discharge_dt):
+    # Keep only rows that existed by prediction time (leakage-safe)
+    p = problems[problems["patient_key"] == patient_key].copy()
+    p = p[(p["entered_datetime"].isna()) | (p["entered_datetime"] <= discharge_dt)]
+    p = p[(p["modified_datetime"].isna()) | (p["modified_datetime"] <= discharge_dt)]
+    return p
+
+def build_problem_features(patient_key, discharge_dt):
+    p = problems_as_of(patient_key, discharge_dt)
+    if p.empty:
+        return {
+            "charlson_index": 0,
+            "charlson_condition_count": 0,
+            "active_problem_count": 0,
+            "has_chf": 0,
+            "has_copd": 0,
+            "has_diabetes": 0,
+            "has_ckd": 0,
+            "has_depression": 0,
+            "has_ptsd": 0,
+        }
+    return {
+        "charlson_index": int(p["charlson_index"].max()),
+        "charlson_condition_count": int(p["charlson_condition_count"].max()),
+        "active_problem_count": int(p["active_problem_count"].max()),
+        "has_chf": int(p["has_chf"].max()),
+        "has_copd": int(p["has_copd"].max()),
+        "has_diabetes": int(p["has_diabetes"].max()),
+        "has_ckd": int(p["has_ckd"].max()),
+        "has_depression": int(p["has_depression"].max()),
+        "has_ptsd": int(p["has_ptsd"].max()),
+    }
+
+# 3) Apply to each encounter
+rows = []
+for _, e in encounters.iterrows():
+    f = build_problem_features(e["patient_key"], e["discharge_datetime"])
+    rows.append(
+        {
+            "encounter_key": e["encounter_key"],
+            "patient_key": e["patient_key"],
+            "discharge_datetime": e["discharge_datetime"],
+            **f,
+        }
+    )
+
+problem_feature_df = pd.DataFrame(rows)
+```
+
+**How to use this scaffold as a learning exercise:**
+1. Run the scaffold on a small sample of encounters first (for example, first 100 rows).
+2. Manually inspect 5 patients to verify no post-discharge problem updates are included.
+3. Add one interaction feature (`has_ckd * has_polypharmacy` or `has_chf * prior_admits_6m`) and assess whether it improves model quality.
 
 ---
 
@@ -890,6 +1086,11 @@ print(f"Test: {len(X_test)} encounters")
 print(f"Training readmit rate: {y_train.mean():.1%}")
 print(f"Test readmit rate: {y_test.mean():.1%}")
 ```
+
+**Recommended Upgrade for Clinical Validity:**
+- Start with random split for learning mechanics.
+- Then move to a temporal split (train on earlier discharges, test on later discharges) to better simulate real deployment.
+- Avoid patient overlap across train/test when possible (same patient in both sets can inflate metrics).
 
 **What to Verify:**
 - Training and test sets have similar readmission rates (stratify worked)
@@ -1424,6 +1625,31 @@ Average performance across all 5 folds = CV score
 **Learning Exercise 7.3:**
 Run a small grid search on 2-3 hyperparameters. Does tuning improve AUC? By how much? (Even 0.02 improvement = 2% better discrimination = meaningful clinically)
 
+### 7.5 Domain Ablation (Measure Feature Domain Value)
+
+**Goal:** Quantify how much each domain helps your model.
+
+```python
+# Example ablation sequence
+feature_sets = {
+    "base": base_features,  # demographics + utilization
+    "base_plus_problems": base_features + problems_features,
+    "base_plus_problems_plus_other": base_features + problems_features + other_domain_features,
+}
+
+for name, cols in feature_sets.items():
+    model = xgb.XGBClassifier(random_state=42, eval_metric='auc')
+    model.fit(X_train[cols], y_train)
+    pred = model.predict_proba(X_test[cols])[:, 1]
+    auc = roc_auc_score(y_test, pred)
+    print(name, auc)
+```
+
+**What to Look For:**
+- AUC/PR-AUC lift after adding Problems/Diagnoses features
+- Precision at operational threshold (for your care management capacity)
+- Calibration changes (does added diagnosis burden improve probability trustworthiness?)
+
 ---
 
 ## Phase 5: Model Evaluation & Interpretation (Days 10-11)
@@ -1720,11 +1946,24 @@ for admit_group in ['0 prior', '1-2 prior', '3+ prior']:
 # Question: Does model fail for first-time admits (no history)?
 ```
 
+**Analysis by Disease Burden (Problems Domain):**
+```python
+# Charlson burden groups
+for burden_group in ['0', '1-2', '3-4', '5+']:
+    # Filter test set by charlson_index group
+    # Calculate AUC
+    # Calculate precision at top 20% risk
+    # Compare calibration
+
+# Question: Does performance drop in low-comorbidity patients?
+```
+
 **Identifying Bias:**
 If model performs worse for certain groups:
 1. **Insufficient data:** Not enough examples to learn patterns
 2. **Different patterns:** Group behaves differently (need separate model?)
 3. **Data quality:** Missing features for this group
+4. **Domain mismatch:** Disease burden not represented consistently at index time
 
 **Learning Exercise 9.2:**
 Perform subgroup analysis on 2-3 patient characteristics. Does AUC vary across groups? By how much? Is the difference clinically meaningful (>0.05 AUC difference)?

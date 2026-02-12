@@ -808,7 +808,7 @@ def _format_ddi_results(interactions: list[dict], med_count: int) -> str:
             "DrugBank reference database (~191K interactions)",
             "PostgreSQL patient_medications_outpatient table",
             "PostgreSQL patient_medications_inpatient table",
-            "MinIO Parquet (gold/ddi_reference.parquet)"
+            "PostgreSQL reference.ddi table"
         ],
         metadata={
             "Medications analyzed": med_count,

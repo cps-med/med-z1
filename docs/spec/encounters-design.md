@@ -1,7 +1,7 @@
 # Encounters Domain - Design Specification
 
-**Document Version:** v2.1 (Phase 2 Complete - CDWWork2 Integration)
-**Last Updated:** February 10, 2026
+**Document Version:** v2.2 (Phase 2 Complete - CDWWork2 Integration, Outpatient Roadmap Added)
+**Last Updated:** February 12, 2026
 **Implementation Status:**
 - ✅ **Phase 1 COMPLETE** - CDWWork Inpatient Admissions (December 15, 2025)
 - ✅ **Phase 2 COMPLETE** - CDWWork2 Dual-Source Integration (February 10, 2026)
@@ -75,7 +75,7 @@ The **Encounters domain** provides clinicians with visibility into patient hospi
 - Admission/discharge dates, locations (wards), providers, and diagnoses
 - Length of stay calculations
 
-**Phase 2: Outpatient Encounters** (future) will add clinic visits, appointments, and outpatient procedures as a separate implementation (see Section 11).
+**Phase 3: Outpatient Encounters** (future) will add clinic visits, appointments, and outpatient procedures (see Section 11).
 
 ### 1.2 Scope - Phase 1: Inpatient Admissions
 
@@ -89,8 +89,8 @@ The **Encounters domain** provides clinicians with visibility into patient hospi
 - Dedicated full-page view with filtering, sorting, and pagination
 
 **Out of Scope (Phase 1):**
-- Outpatient clinic visits (Phase 2 - future)
-- Emergency department visits (Phase 2 - future)
+- Outpatient clinic visits (Phase 3 - future)
+- Emergency department visits (Phase 3 - future)
 - Detailed ward transfer history (Phase 2 enhancement)
 - Real-time Vista overlay for T-0 data (Phase 3 - future)
 - DoD encounter data (CHCS/AHLTA - explicitly out of scope)
@@ -104,6 +104,7 @@ The **Encounters domain** provides clinicians with visibility into patient hospi
 | **CDW Schema** | Modify existing `Inpat.Inpatient` table | Table already exists with basic structure; enhance with discharge fields rather than recreate |
 | **Widget Size** | 1x1 (small) | Shows 3-4 recent encounters; full details available on dedicated page |
 | **Test Data Volume** | 35 encounters across 36 patients | Sufficient to test active/discharged states, multiple facilities, date ranges, and edge cases |
+| **Outpatient Rollout Strategy** | Separate outpatient table first, unified encounters UI second | Minimizes delivery risk while aligning with clinician workflow (single mixed timeline) |
 
 ---
 
@@ -2776,28 +2777,65 @@ def test_widget_endpoint_returns_json():
 
 ## 11. Future Enhancements
 
-### 11.1 Phase 2: Outpatient Encounters
+### 11.1 Phase 3: Outpatient Encounters (Pragmatic Rollout)
 
-**Scope:**
-- Clinic visits and appointments (VistA File #9000010)
-- Outpatient procedures
-- Emergency department visits
+**Decision Record (finalized):**
+- **Data Model:** Keep inpatient and outpatient as separate serving tables.
+  - Existing: `clinical.patient_encounters` (inpatient-focused)
+  - New: `clinical.patient_outpatient_visits` (outpatient/ED-focused)
+- **UI Strategy:** Present a unified encounters experience for clinicians.
+  - Single mixed timeline with explicit `encounter_type` labeling (`INPATIENT`, `OUTPATIENT`, `EMERGENCY`)
+  - Filters/toggles for inpatient-only or outpatient-only views
 
-**Data Source:**
-- CDWWork schema: `Outpat` (new schema to create)
-- Primary table: `Outpat.Visit`
+**Clinical rationale:**
+- Clinicians reason in timeline context, not by source table.
+- Readmission-relevant workflow requires seeing discharge events and follow-up/no-show behavior together.
 
-**UI Changes:**
-- Separate tab or toggle on full page: "Inpatient | Outpatient"
-- Widget: Show mix of recent inpatient and outpatient (combined or separate widget?)
-- Filters: Add "Encounter Type" dropdown (Inpatient, Outpatient, All)
+**Phase 3A (Data + Separate UI, lower risk):**
+- Add CDWWork outpatient source extraction from `Outpat.Visit` (and related reference lookups).
+- Implement ETL and serving table: `clinical.patient_outpatient_visits`.
+- Ship separate outpatient widget/page for quick validation.
+- Keep inpatient UI unchanged during stabilization.
 
-**Design Decision Needed:**
-- **Option A**: Extend this design document with "Phase 2: Outpatient" section
-- **Option B**: Create separate `outpatient-encounters-design.md`
-- **Recommendation**: Option A (single document) for logical grouping
+**Phase 3B (Unified UI, higher value):**
+- Merge inpatient + outpatient displays into one encounters widget/page.
+- Preserve clear type labeling and data-source badges.
+- Keep backend tables separate; unify at query/service layer.
 
-**Estimated Effort:** 5-7 days (similar to Phase 1)
+**Data contract - `clinical.patient_outpatient_visits` (minimum required fields):**
+- Identity/time:
+  - `visit_id`, `patient_key`, `sta3n`, `visit_datetime`, `check_in_datetime`, `check_out_datetime`
+- Encounter classification:
+  - `encounter_type` (`OUTPATIENT`/`EMERGENCY`), `clinic_stop_code`, `clinic_stop_name`
+- Appointment workflow:
+  - `appointment_status` (completed/cancelled/no-show), `is_no_show`, `is_cancelled`
+- Clinical linkage:
+  - `primary_diagnosis_code`, `primary_diagnosis_text`, `provider_name`, `location_name`
+- Provenance:
+  - `source_system`, `source_record_id`, `last_updated`
+
+**UI acceptance criteria (Phase 3B unified view):**
+- Encounters page defaults to one mixed, reverse-chronological timeline.
+- Each row clearly displays encounter type badge (`INPATIENT`, `OUTPATIENT`, `EMERGENCY`).
+- User can filter by encounter type and date range without page reload regressions.
+- Widget surfaces recent mixed encounters with a one-click drill-in to full page.
+
+**ML/readmission feature hooks enabled by outpatient domain:**
+- `no_show_count_6m`
+- `completed_followup_7d_post_discharge` (boolean)
+- `days_to_first_followup_after_discharge`
+- `ed_visits_30d` and `ed_visits_6m`
+- `outpatient_visit_count_30d`
+- `post_discharge_visit_gap_days`
+
+**Migration notes (separate UI -> unified UI):**
+- Reuse outpatient query functions inside a new unified service layer.
+- Maintain backward compatibility for Phase 3A endpoints until unified page is stable.
+- Mark legacy standalone outpatient widget/page as deprecated once unified adoption is complete.
+
+**Estimated Effort:**
+- Phase 3A: 5-7 days
+- Phase 3B: 3-5 days
 
 ### 11.2 Ward Transfer History
 

@@ -117,11 +117,11 @@ Then add to `ai/tools/__init__.py:ALL_TOOLS` list.
 │  • get_patient_allergies()                                      │
 │  • get_recent_encounters()                                      │
 │  • get_all_notes() / get_recent_notes_for_ai()                  │
-│  • get_ddi_reference() (MinIO Parquet)                          │
+│  • get_ddi_reference() (PostgreSQL reference.ddi)               │
 └──────────────────────┬──────────────────────────────────────────┘
                        │
                        ▼
-                PostgreSQL + MinIO
+                PostgreSQL
 ```
 
 ## Directory Structure
@@ -342,7 +342,7 @@ AI_NOTES_QUERY_MAX_LIMIT = int(os.getenv("AI_NOTES_QUERY_MAX_LIMIT", "20"))
 - ✅ `check_ddi_risks()` - Drug-drug interaction analysis
 - ✅ `get_patient_summary()` - Comprehensive patient overview
 - ✅ LangGraph agent with tool binding
-- ✅ DDI reference data pipeline (MinIO Parquet)
+- ✅ DDI reference data pipeline (MinIO Bronze/Silver/Gold + PostgreSQL reference.ddi load)
 
 ### Phase 2: Web UI Integration (Week 2) ✅
 - ✅ FastAPI routes at `/insight`

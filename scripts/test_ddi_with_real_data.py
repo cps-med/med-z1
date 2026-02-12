@@ -1,11 +1,11 @@
 """
 Test DDI Analyzer with Real Data
 
-Tests the DDI analyzer with actual DDI reference data loaded from MinIO
+Tests the DDI analyzer with actual DDI reference data loaded from PostgreSQL
 and real patient medication data from PostgreSQL.
 
 This verifies:
-1. DDI reference data loads correctly from MinIO
+1. DDI reference data loads correctly from PostgreSQL reference.ddi
 2. Real patient medications can be queried
 3. Interactions are found for actual drug pairs
 4. The complete flow works end-to-end
@@ -14,7 +14,7 @@ Usage:
     python scripts/test_ddi_with_real_data.py
 
 Prerequisites:
-    - DDI reference data loaded into MinIO (med-z1/gold/ddi/ddi_reference.parquet)
+    - DDI reference data loaded into PostgreSQL (reference.ddi)
     - PostgreSQL with patient medication data
     - Patient ICN with medications in the database
 """
@@ -41,15 +41,15 @@ def print_separator(title=""):
 
 
 def test_ddi_reference_load():
-    """Test 1: Load DDI reference data from MinIO"""
+    """Test 1: Load DDI reference data from PostgreSQL"""
     print_separator("Test 1: Load DDI Reference Data")
 
     try:
         # Clear cache to force fresh load
         clear_ddi_cache()
 
-        # Initialize analyzer (this will load DDI reference from MinIO)
-        print("\nInitializing DDI Analyzer (loading from MinIO)...")
+        # Initialize analyzer (this will load DDI reference from PostgreSQL)
+        print("\nInitializing DDI Analyzer (loading from PostgreSQL)...")
         analyzer = DDIAnalyzer()
 
         # Get statistics
@@ -193,7 +193,7 @@ def main():
     print("=" * 70)
     print("DDI Analyzer Real Data Test Suite")
     print("=" * 70)
-    print("\nTesting DDI analyzer with actual MinIO and PostgreSQL data...")
+    print("\nTesting DDI analyzer with PostgreSQL reference and clinical data...")
 
     # Test 1: Load DDI reference
     analyzer = test_ddi_reference_load()
@@ -213,7 +213,7 @@ def main():
     if analyzer and medications and interactions is not None:
         print("\n✅ All tests completed successfully!")
         print("\nThe DDI analyzer is working correctly with real data:")
-        print(f"   ✓ DDI reference loaded from MinIO")
+        print(f"   ✓ DDI reference loaded from PostgreSQL reference.ddi")
         print(f"   ✓ Patient medications queried from PostgreSQL")
         print(f"   ✓ DDI analysis completed")
         print("\nNext steps:")

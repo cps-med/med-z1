@@ -1181,7 +1181,7 @@ Beyond basic data sources, clinical tools include:
 
 **Data Provenance:**
   • **Tool:** `check_drug_interactions`
-  • **Data Sources:** DrugBank reference database (~191K interactions), PostgreSQL patient_medications_outpatient table, PostgreSQL patient_medications_inpatient table, MinIO Parquet (gold/ddi_reference.parquet)
+  • **Data Sources:** DrugBank reference database (~191K interactions), PostgreSQL patient_medications_outpatient table, PostgreSQL patient_medications_inpatient table, PostgreSQL reference.ddi table
   • **Analysis Timestamp:** 2026-02-02 15:45 UTC
   • **Medications analyzed:** 7
   • **Interactions found:** 2
@@ -1663,7 +1663,7 @@ def _format_ddi_results(interactions: list[dict], med_count: int) -> str:
 1. **Section 5 Complete and Working**
    - EHR Data Server must be operational
    - Database connection verified
-   - DDI reference data loaded in MinIO
+   - DDI reference data loaded in PostgreSQL `reference.ddi`
 
 2. **Verify DDI Reference Data**
 ```bash
@@ -1920,4 +1920,3 @@ Once all tests pass:
 **End of Section 6 Walkthrough**
 
 *Section 7 will be added when you're ready to implement Clinical Notes Search.*
-

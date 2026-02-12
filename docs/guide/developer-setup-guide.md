@@ -839,6 +839,7 @@ docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_mili
 docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_problems_table.sql
 docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_family_history_table.sql
 docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_reference_vaccine_table.sql
+docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_reference_ddi_table.sql
 docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/create_patient_tasks_table.sql
 ```
 
@@ -857,13 +858,14 @@ Expected output should list **16 tables** in the `clinical` schema:
 - patient_military_history, patient_problems, patient_family_history
 - patient_tasks
 
-Additionally, verify the reference table was created:
+Additionally, verify the reference tables were created:
 ```bash
 docker exec -it postgres16 psql -U postgres -d medz1 -c "\dt reference.*"
 ```
 
-Expected output should show **1 table** in the `reference` schema:
+Expected output should show **2 tables** in the `reference` schema:
 - vaccine (30 CVX-coded vaccines)
+- ddi (DrugBank DDI reference pairs)
 
 ### Seeding the Patient Tasks Table
 
@@ -1159,7 +1161,7 @@ python -m etl.load_family_history
 
 #### 13. Drug-Drug Interaction (DDI) Reference Data Pipeline
 
-The DDI pipeline provides reference data for the AI Clinical Insights feature. Unlike clinical domains, this pipeline does NOT load into PostgreSQL—the Gold Parquet is consumed directly by the AI service at runtime.
+The DDI pipeline provides reference data for the AI Clinical Insights feature. It follows medallion storage in MinIO and then loads the Gold output into PostgreSQL `reference.ddi` for runtime AI queries.
 
 **Important Prerequisites:**
 - MinIO `med-sandbox` bucket must exist
@@ -1175,9 +1177,10 @@ python -m etl.silver_ddi
 
 # Gold: Create AI-optimized reference
 python -m etl.gold_ddi
-```
 
-**Note:** This is a reference data pipeline, not a clinical domain pipeline. It does not load into PostgreSQL.
+# Load: Insert into PostgreSQL reference.ddi
+python -m etl.load_ddi
+```
 
 ### Verify ETL Pipeline Results
 After running all pipelines, verify clinical domain data was successfully loaded into PostgreSQL.  

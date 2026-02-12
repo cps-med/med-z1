@@ -5,6 +5,7 @@ Runs the complete medallion architecture pipeline for DDI reference data:
 1. Bronze: Extract CSV from med-sandbox → Parquet
 2. Silver: Clean and normalize
 3. Gold: Create query-optimized reference
+4. Load: Insert Gold data into PostgreSQL reference.ddi
 
 Usage:
     python scripts/load_ddi_reference.py
@@ -25,6 +26,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from etl.bronze_ddi import extract_ddi_bronze
 from etl.silver_ddi import clean_ddi_silver
 from etl.gold_ddi import create_gold_ddi_reference
+from etl.load_ddi import load_ddi_to_postgresql
 
 logging.basicConfig(
     level=logging.INFO,
@@ -62,19 +64,28 @@ def run_ddi_pipeline():
         print(f"✅ Gold complete: {len(df_gold):,} rows")
         print()
 
+        # Step 4: PostgreSQL load
+        print("Step 4/4: PostgreSQL Load (reference.ddi)")
+        print("-" * 70)
+        loaded_count = load_ddi_to_postgresql()
+        print(f"✅ PostgreSQL load complete: {loaded_count:,} rows")
+        print()
+
         # Summary
         print("=" * 70)
         print("Pipeline Summary")
         print("=" * 70)
         print(f"Bronze → Silver: {len(df_bronze):,} → {len(df_silver):,} rows ({len(df_bronze) - len(df_silver):,} removed)")
         print(f"Silver → Gold:   {len(df_silver):,} → {len(df_gold):,} rows ({len(df_silver) - len(df_gold):,} removed)")
+        print(f"Gold → Postgres: {len(df_gold):,} → {loaded_count:,} rows loaded")
         print(f"Overall:         {len(df_bronze):,} → {len(df_gold):,} rows ({100 * len(df_gold) / len(df_bronze):.1f}% retained)")
         print()
         print("✅ DDI reference data pipeline complete!")
         print()
-        print("Output location:")
+        print("Output locations:")
         print("  MinIO bucket: med-z1")
         print("  Path: gold/ddi/ddi_reference.parquet")
+        print("  PostgreSQL: reference.ddi")
         print()
         print("Next steps:")
         print("  1. Test DDI analyzer with real data:")

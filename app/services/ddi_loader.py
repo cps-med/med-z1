@@ -1,18 +1,18 @@
 """
 DDI Reference Data Loader
 
-Loads drug-drug interaction reference data from MinIO for use by the
+Loads drug-drug interaction reference data from PostgreSQL for use by the
 AI Clinical Insights feature. Provides cached access to the DDI dataset
 processed through the medallion architecture.
 
 Architecture:
-- Loads from MinIO med-z1 bucket (Gold layer Parquet)
-- Converts from Polars to Pandas for compatibility with DDIAnalyzer
-- Caches in memory to avoid repeated MinIO calls
+- Loads from PostgreSQL reference.ddi table
+- Returns Pandas DataFrame for compatibility with DDIAnalyzer
+- Caches in memory to avoid repeated DB calls
 - Thread-safe for concurrent access
 
 Data Source: Kaggle DrugBank dataset (~191K interactions)
-MinIO Path: med-z1/gold/ddi/ddi_reference.parquet
+Serving Table: reference.ddi
 
 Design Reference: docs/spec/ai-insight-design.md Section 3.1
 """
@@ -21,28 +21,37 @@ import pandas as pd
 import logging
 from typing import Optional
 
-from lake.minio_client import MinIOClient
+from sqlalchemy import create_engine, text
+from sqlalchemy.pool import NullPool
+
+from config import DATABASE_URL
 
 logger = logging.getLogger(__name__)
 
 # Module-level cache for DDI reference data
 _ddi_cache: Optional[pd.DataFrame] = None
 
+engine = create_engine(
+    DATABASE_URL,
+    poolclass=NullPool,
+    echo=False,
+)
+
 
 def get_ddi_reference(force_reload: bool = False) -> pd.DataFrame:
     """
-    Get DDI reference data from MinIO (cached).
+    Get DDI reference data from PostgreSQL (cached).
 
-    Loads the drug-drug interaction reference dataset from the MinIO
-    gold layer. The data is cached in memory after the first load to
-    avoid repeated MinIO calls.
+    Loads the drug-drug interaction reference dataset from PostgreSQL
+    `reference.ddi`. The data is cached in memory after the first load
+    to avoid repeated database calls.
 
     The reference data contains ~191K drug-drug interactions from the
     DrugBank dataset (via Kaggle), processed through the medallion
     architecture (Bronze → Silver → Gold).
 
     Args:
-        force_reload: If True, bypass cache and reload from MinIO
+        force_reload: If True, bypass cache and reload from PostgreSQL
                      (default: False, use cache if available)
 
     Returns:
@@ -52,7 +61,7 @@ def get_ddi_reference(force_reload: bool = False) -> pd.DataFrame:
             - interaction_description: Description of the interaction
 
     Raises:
-        FileNotFoundError: If DDI Parquet file not found in MinIO
+        RuntimeError: If DDI table query fails
         ValueError: If required columns are missing from dataset
 
     Example:
@@ -69,21 +78,20 @@ def get_ddi_reference(force_reload: bool = False) -> pd.DataFrame:
         logger.debug(f"Returning cached DDI data ({len(_ddi_cache):,} interactions)")
         return _ddi_cache
 
-    logger.info("Loading DDI reference data from MinIO...")
+    logger.info("Loading DDI reference data from PostgreSQL (reference.ddi)...")
 
     try:
-        # Initialize MinIO client
-        client = MinIOClient()
+        query = text("""
+            SELECT
+                drug_1,
+                drug_2,
+                interaction_description
+            FROM reference.ddi
+            ORDER BY ddi_id ASC
+        """)
 
-        # Load DDI reference Parquet from Gold layer
-        # Path: med-z1/gold/ddi/ddi_reference.parquet
-        object_key = "gold/ddi/ddi_reference.parquet"
-
-        # Read Parquet file (returns Polars DataFrame)
-        df_polars = client.read_parquet(object_key)
-
-        # Convert to Pandas for compatibility with DDIAnalyzer
-        df_pandas = df_polars.to_pandas()
+        with engine.connect() as conn:
+            df_pandas = pd.read_sql_query(query, conn)
 
         # Validate required columns exist
         required_columns = ['drug_1', 'drug_2', 'interaction_description']
@@ -105,16 +113,9 @@ def get_ddi_reference(force_reload: bool = False) -> pd.DataFrame:
 
         return df_pandas
 
-    except FileNotFoundError:
-        logger.error(
-            f"DDI reference file not found in MinIO: {object_key}. "
-            "Ensure DDI data has been processed through ETL pipeline."
-        )
-        raise
-
     except Exception as e:
-        logger.error(f"Failed to load DDI reference data: {e}")
-        raise
+        logger.error(f"Failed to load DDI reference data from PostgreSQL: {e}")
+        raise RuntimeError(f"Failed to load DDI reference from PostgreSQL: {e}") from e
 
 
 def clear_ddi_cache() -> None:
@@ -128,7 +129,7 @@ def clear_ddi_cache() -> None:
 
     Example:
         >>> clear_ddi_cache()
-        >>> # Next call to get_ddi_reference() will reload from MinIO
+        >>> # Next call to get_ddi_reference() will reload from PostgreSQL
     """
     global _ddi_cache
     _ddi_cache = None

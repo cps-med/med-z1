@@ -1,14 +1,14 @@
 # Family Health / Family History - Design Specification
 
-**Document Version:** v1.0  
+**Document Version:** v1.1  
 **Created:** 2026-02-11  
-**Last Updated:** 2026-02-11  
-**Status:** PLANNED (Design Complete, Implementation Pending)  
+**Last Updated:** 2026-02-12  
+**Status:** IMPLEMENTED (Phases 1-6 complete; VistA real-time overlay deferred by design)  
 **Clinical Domain Name (Program):** Family Health  
 **UI Display Name (Widget + Detail Page):** Family History  
 **Sidebar Link Name:** History
 
-**Implementation Status Source:** `docs/spec/implementation-status.md`
+**Implementation Status Source:** `docs/spec/med-z1-implementation-status.md`
 
 ---
 
@@ -433,105 +433,142 @@ Safety notes:
 
 ## 9. Implementation Roadmap
 
-### Phase 1 - Mock SQL Foundations (1-2 days)
-- Create CDWWork family-history dimension/fact DDL + inserts
-- Create CDWWork2 family-history fact DDL + inserts
-- Update all `_master.sql` scripts
-- Validate database build from scratch
+### Progress Summary (as of 2026-02-12)
 
-Phase Exit Criteria:
-- [ ] New create/insert scripts execute successfully in both databases.
-- [ ] New tables exist with expected columns, FKs, and indexes.
-- [ ] Sample rows present for both adult and pediatric family-history patterns.
+- ✅ Phase 1: Mock SQL foundations complete
+- ✅ Phase 2: ETL complete (Bronze/Silver/Gold)
+- ✅ Phase 3: PostgreSQL serving layer complete
+- ✅ Phase 4: API endpoints complete
+- ✅ Phase 5: UI/navigation complete
+- ✅ Phase 6: AI integration complete
+- ⏸️ Deferred: VistA real-time RPC overlay (explicitly out of scope for this domain version)
 
-Manual Testing:
-- Rebuild mock SQL databases with create + insert master scripts.
-- Run `SELECT TOP 20 *` checks on each new table and verify referential integrity.
-- Verify Thompson and baseline demo patients have family-history rows where expected.
+Primary implementation commit reference:
+- `779c2388dbe2a17bdc0de3aac200038e2fb97e0e` (`Implement Family History clinical domain`)
 
-### Phase 2 - ETL (1-2 days)
-- Bronze extraction for both sources
-- Silver harmonization and dedup
-- Gold patient-centric output
+### Phase 1 - Mock SQL Foundations (1-2 days) ✅ COMPLETE
 
-Phase Exit Criteria:
-- [ ] Bronze files written for both sources.
-- [ ] Silver harmonized output produced with `data_source`.
-- [ ] Gold patient-centric output available and schema-validated.
+Implemented outcomes:
+- Added CDWWork family-history dimensions + fact DDL/seed data.
+- Added CDWWork2 family-history fact DDL/seed data and code sets.
+- Updated CDWWork/CDWWork2 master scripts for create/insert orchestration.
+- Added Thompson cohort family-history rows in CDWWork2 seed scripts.
 
-Manual Testing:
-- Run Bronze, Silver, and Gold jobs in order.
-- Inspect Parquet outputs for key columns (`patient_icn`, `relationship`, `condition_name`, `recorded_datetime`).
-- Spot-check dedup behavior on repeated conditions across sources.
+Files created/modified in this phase:
+- `mock/sql-server/cdwwork/create/Dim.FamilyCondition.sql`
+- `mock/sql-server/cdwwork/create/Dim.FamilyRelationship.sql`
+- `mock/sql-server/cdwwork/create/Outpat.FamilyHistory.sql`
+- `mock/sql-server/cdwwork/create/_master.sql`
+- `mock/sql-server/cdwwork/insert/Dim.FamilyCondition.sql`
+- `mock/sql-server/cdwwork/insert/Dim.FamilyRelationship.sql`
+- `mock/sql-server/cdwwork/insert/Outpat.FamilyHistory.sql`
+- `mock/sql-server/cdwwork/insert/_master.sql`
+- `mock/sql-server/cdwwork2/create/EncMill.FamilyHistory.sql`
+- `mock/sql-server/cdwwork2/create/_master.sql`
+- `mock/sql-server/cdwwork2/insert/EncMill.FamilyHistory.sql`
+- `mock/sql-server/cdwwork2/insert/NDimMill.CodeValue.sql`
+- `mock/sql-server/cdwwork2/insert/Thompson-Alananah.sql`
+- `mock/sql-server/cdwwork2/insert/Thompson-Bailey.sql`
+- `mock/sql-server/cdwwork2/insert/Thompson-Joe.sql`
+- `mock/sql-server/cdwwork2/insert/_master.sql`
 
-### Phase 3 - PostgreSQL Serving Layer (0.5-1 day)
-- Create `clinical.patient_family_history`
-- Add load script and DB access functions
+### Phase 2 - ETL (1-2 days) ✅ COMPLETE
 
-Phase Exit Criteria:
-- [ ] `clinical.patient_family_history` created with indexes.
-- [ ] Gold-to-PostgreSQL load completes without errors.
-- [ ] DB access functions return expected records for test ICNs.
+Implemented outcomes:
+- Built source extraction for both CDWWork and CDWWork2 family-history data.
+- Harmonized and deduplicated rows into a unified Silver representation.
+- Generated patient-centric Gold output for serving-layer load.
+- Added Family History steps to full-pipeline execution script.
 
-Manual Testing:
-- Execute PostgreSQL migration/load and verify row counts.
-- Run direct SQL queries by ICN and compare with Gold Parquet samples.
-- Exercise DB access functions from a Python shell or route-level smoke test.
+Files created/modified in this phase:
+- `etl/bronze_family_history.py`
+- `etl/silver_family_history.py`
+- `etl/gold_family_history.py`
+- `scripts/run_all_etl.sh`
 
-### Phase 4 - API Endpoints (0.5-1 day)
-- Create `app/routes/family_history.py`
-- Add endpoint: `GET /api/patient/{icn}/history`
-- Add endpoint: `GET /api/patient/{icn}/history/recent`
-- Add endpoint: `GET /api/patient/dashboard/widget/history/{icn}`
-- Add endpoint: `GET /patient/{icn}/history`
-- Add endpoint: `GET /patient/{icn}/history/filtered`
-- Add endpoint: `GET /history` (CCOW redirect)
-- Register router in `app/main.py`
+### Phase 3 - PostgreSQL Serving Layer (0.5-1 day) ✅ COMPLETE
 
-Phase Exit Criteria:
-- [ ] All six endpoints respond successfully.
-- [ ] Endpoint payloads and HTML fragments match expected schema/layout.
-- [ ] Error/empty states return safe responses (no server exception pages).
+Implemented outcomes:
+- Added serving table DDL for `clinical.patient_family_history`.
+- Added load job from Gold output to PostgreSQL.
+- Added query-layer functions for list/recent/count use cases.
 
-Manual Testing:
-- Call all endpoints with valid ICN, invalid ICN, and no-patient context cases.
-- Verify `/history` redirect follows CCOW patient context correctly.
-- Confirm filter endpoint updates rows correctly for relationship/category/time filters.
+Files created/modified in this phase:
+- `db/ddl/create_patient_family_history_table.sql`
+- `etl/load_family_history.py`
+- `app/db/patient_family_history.py`
 
-### Phase 5 - UI + Navigation (1-2 days)
-- Add 1x1 dashboard widget (`Family History`)
-- Add full `/history` page + filters
-- Reorder sidebar and dashboard widgets
-- Keep Procedures and Imaging as placeholders, resize both to 2x1
+### Phase 4 - API Endpoints (0.5-1 day) ✅ COMPLETE
 
-Phase Exit Criteria:
-- [ ] Dashboard shows `Family History` widget as 1x1.
-- [ ] Full history page renders with default sort `Recorded Date DESC`.
-- [ ] Sidebar and dashboard order match required sequence.
-- [ ] Procedures/Imaging placeholders render at 2x1.
+Implemented outcomes:
+- Added family-history API router and page router.
+- Implemented all planned endpoints:
+  - `GET /api/patient/{icn}/history`
+  - `GET /api/patient/{icn}/history/recent`
+  - `GET /api/patient/dashboard/widget/history/{icn}`
+  - `GET /history`
+  - `GET /patient/{icn}/history`
+  - `GET /patient/{icn}/history/filtered`
+- Registered routers in app entrypoint.
 
-Manual Testing:
-- Open dashboard and verify widget order/size visually.
-- Navigate via sidebar `History` link and validate table/filter behavior.
-- Test responsive layouts (desktop/tablet/mobile) for order and sizing consistency.
-- Verify no regressions in adjacent widgets (Meds, Immunizations, Labs, Notes, Encounters).
+Files created/modified in this phase:
+- `app/routes/family_history.py`
+- `app/main.py`
 
-### Phase 6 - AI Integration (0.5-1 day)
-- Add context enrichment
-- Add optional dedicated retrieval tool
-- Add prompt guidance and validation examples
+### Phase 5 - UI + Navigation (1-2 days) ✅ COMPLETE
 
-Phase Exit Criteria:
-- [ ] Patient summary includes family-history context when data exists.
-- [ ] First-degree relative findings are explicitly highlighted.
-- [ ] Tool output is source-attributed and uses uncertainty language when needed.
+Implemented outcomes:
+- Added dashboard Family History widget (`1x1`).
+- Added full Family History page with filterable table and HTMX row partial.
+- Added sidebar `History` navigation link and dashboard widget integration.
+- Added supporting styles for page/widget rendering.
 
-Manual Testing:
-- Run AI summary prompts for patients with and without family-history data.
-- Ask first-degree risk-context questions and verify explicit highlighting.
-- Validate responses avoid deterministic diagnosis language.
+Files created/modified in this phase:
+- `app/templates/partials/family_history_widget.html`
+- `app/templates/patient_family_history.html`
+- `app/templates/partials/family_history_table_rows.html`
+- `app/templates/dashboard.html`
+- `app/templates/base.html`
+- `app/static/styles.css`
 
-**Estimated Total:** 5 to 8 days
+### Phase 6 - AI Integration (0.5-1 day) ✅ COMPLETE
+
+Implemented outcomes:
+- Added family-history context text generation to AI patient summary composition.
+- Added dedicated `get_family_history` AI tool with first-degree/high-risk prioritization.
+- Registered tool in AI tool registry and updated AI prompt/readme references.
+
+Files created/modified in this phase:
+- `ai/tools/family_history_tools.py`
+- `ai/tools/__init__.py`
+- `ai/services/patient_context.py`
+- `ai/prompts/system_prompts.py`
+- `ai/README.md`
+
+### Phase 7 - Operational Documentation and Status Tracking ✅ COMPLETE
+
+Implemented outcomes:
+- Added Family History pipeline and DB setup guidance in developer docs.
+- Updated implementation status tracking to include Family History domain/tooling.
+
+Files created/modified in this phase:
+- `docs/guide/developer-setup-guide.md`
+- `docs/spec/med-z1-implementation-status.md` (historically introduced as `docs/spec/implementation-status.md`)
+- `docs/spec/family-history-design.md`
+
+### Recommended Additions Per Phase (for future domains like Orders)
+
+For each phase, add a compact "evidence pack" subsection with:
+- `Files changed`: exact list (as above).
+- `Verification commands`: exact commands run and expected outputs.
+- `Data contract checks`: required columns, nullability expectations, and enum/value constraints.
+- `Known deferrals`: explicit non-goals with owner + target phase (for example, real-time VistA overlay).
+- `Rollback notes`: what to disable/revert if a phase is partially deployed.
+
+This format keeps the roadmap useful as both onboarding documentation and a release checklist.
+
+**Estimated Total (original plan):** 5 to 8 days  
+**Actual Status:** Core planned scope delivered; VistA real-time overlay intentionally deferred.
 
 ---
 

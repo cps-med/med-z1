@@ -164,7 +164,7 @@ Clinical decision support tools include additional metadata:
 
 **Data Provenance:**
   • Tool: check_drug_interactions
-  • Data Sources: DrugBank reference database (~191K interactions), PostgreSQL patient_medications_outpatient table, PostgreSQL patient_medications_inpatient table, MinIO Parquet (gold/ddi_reference.parquet)
+  • Data Sources: DrugBank reference database (~191K interactions), PostgreSQL patient_medications_outpatient table, PostgreSQL patient_medications_inpatient table, PostgreSQL reference.ddi table
   • Analysis Timestamp: 2026-02-02 15:45 UTC
   • Medications analyzed: 7
   • Interactions found: 2

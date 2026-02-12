@@ -6,7 +6,7 @@ database. Refactored from notebook/src/ddi_transforms.py for production use in t
 AI Clinical Insights feature.
 
 Architecture:
-- Loads DDI reference data from MinIO Parquet (cached in memory)
+- Loads DDI reference data from PostgreSQL reference.ddi (cached in memory)
 - Normalizes drug names for fuzzy matching
 - Checks all medication pairs for interactions
 - Returns interaction details from DrugBank dataset
@@ -39,7 +39,7 @@ class DDIAnalyzer:
     4. Returns list of interactions with descriptions
 
     Attributes:
-        ddi_data: Cached DataFrame of DDI reference data from MinIO
+        ddi_data: Cached DataFrame of DDI reference data from PostgreSQL
 
     Example:
         >>> analyzer = DDIAnalyzer()
@@ -58,7 +58,7 @@ class DDIAnalyzer:
         Initialize DDI analyzer with reference data.
 
         Args:
-            ddi_data: Optional pre-loaded DDI DataFrame. If None, loads from MinIO.
+            ddi_data: Optional pre-loaded DDI DataFrame. If None, loads from PostgreSQL.
                      Useful for testing with mock data.
         """
         if ddi_data is not None:
@@ -70,17 +70,17 @@ class DDIAnalyzer:
 
     def _load_ddi_reference(self) -> pd.DataFrame:
         """
-        Load DDI reference data from MinIO Parquet (cached in memory).
+        Load DDI reference data from PostgreSQL (cached in memory).
 
-        Loads the processed DDI data from the med-z1 MinIO bucket.
-        The data has been processed through the medallion architecture
-        (Bronze → Silver → Gold) and is stored as Parquet for fast loading.
+        Loads the processed DDI data from PostgreSQL `reference.ddi`.
+        Data is produced via medallion architecture and loaded through
+        the `etl.load_ddi` step for serving-time lookup.
 
         Returns:
             DataFrame with columns: drug_1, drug_2, interaction_description
 
         Raises:
-            FileNotFoundError: If DDI Parquet file not found in MinIO
+            RuntimeError: If DDI reference query fails
             ValueError: If required columns are missing from dataset
         """
         from app.services.ddi_loader import get_ddi_reference

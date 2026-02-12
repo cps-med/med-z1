@@ -30,6 +30,7 @@
    - [patient_tasks](#table-clinicalpatient_tasks)
 5. [Schema: `reference`](#schema-reference)
    - [vaccine](#table-referencevaccine)
+   - [ddi](#table-referenceddi)
 6. [Schema: `auth`](#schema-auth)
    - [users](#table-authusers)
    - [sessions](#table-authsessions)
@@ -86,11 +87,11 @@ The med-z1 database is organized into four functional schemas:
 | Schema | Purpose | Tables |
 |--------|---------|--------|
 | `clinical` | Patient clinical data (demographics, vitals, medications, etc.) | 15 tables |
-| `reference` | Reference data and lookup tables (CVX codes, etc.) | 1 table |
+| `reference` | Reference data and lookup tables (CVX codes, DDI pairs) | 2 tables |
 | `auth` | User authentication and session management | 3 tables |
 | `public` | AI/ML infrastructure (LangGraph checkpoints for conversation memory) | 4 tables |
 
-**Total Tables:** 23
+**Total Tables:** 24
 
 **Note:** The AI checkpoint tables in the `public` schema are **auto-created** by LangGraph's `AsyncPostgresSaver.setup()` at application startup. No manual DDL execution is required.
 
@@ -1290,6 +1291,41 @@ The `reference` schema contains reference data and lookup tables.
 - **Primary Key:** `cvx_code`
 
 **Seed Data:** Contains 30 common vaccines (childhood, adult, annual influenza, COVID-19).
+
+---
+
+### Table: `reference.ddi`
+
+**Purpose:** Drug-drug interaction reference table used by AI DDI analysis tooling.
+
+**Primary Key:** `ddi_id` (BIGSERIAL)
+
+**Source:** Gold DDI ETL output loaded via `python -m etl.load_ddi`
+
+#### Columns
+
+| Column Name | Data Type | Nullable | Description | Example Values |
+|-------------|-----------|----------|-------------|----------------|
+| `ddi_id` | BIGINT | NOT NULL | Surrogate row identifier | `1`, `2`, `3` |
+| `drug_1` | TEXT | NOT NULL | Normalized first drug name | `"warfarin"` |
+| `drug_2` | TEXT | NOT NULL | Normalized second drug name | `"aspirin"` |
+| `interaction_description` | TEXT | NOT NULL | Drug interaction description | `"The risk or severity of bleeding can be increased..."` |
+| `source_name` | VARCHAR(100) | NULL | Reference source label | `"DrugBank (Kaggle)"` |
+| `last_updated` | TIMESTAMP | NULL | Record update timestamp | `"2026-02-12 11:00:00"` |
+
+#### Indexes
+
+| Index Name | Columns | Type | Notes |
+|------------|---------|------|-------|
+| `idx_reference_ddi_pair` | `drug_1`, `drug_2` | Unique | Ensures each interaction pair is loaded once |
+| `idx_reference_ddi_drug_1` | `drug_1` | B-tree | Lookup support |
+| `idx_reference_ddi_drug_2` | `drug_2` | B-tree | Lookup support |
+
+#### Constraints
+
+- **Primary Key:** `ddi_id`
+- **Uniqueness:** (`drug_1`, `drug_2`)
+- **Checks:** `drug_1`, `drug_2`, and `interaction_description` are non-empty
 
 ---
 

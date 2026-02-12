@@ -147,6 +147,7 @@ sleep 2
 python -m etl.bronze_ddi
 python -m etl.silver_ddi
 python -m etl.gold_ddi
+python -m etl.load_ddi
 
 echo "══════════════════════════════════════════"
 echo "All ETL pipelines completed successfully!"
