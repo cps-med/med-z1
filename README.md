@@ -50,6 +50,21 @@ The figure below, from `med-z1/docs/spec/med-z1-architecture.md`, provides a sum
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+## AI Architecture Sketch
+
+```text
+User Question (/insight)
+  -> LangGraph Agent (tool selection + response synthesis)
+  -> Tools:
+       - check_ddi_risks
+       - get_patient_summary
+       - get_family_history
+       - analyze_vitals_trends
+       - get_clinical_notes_summary
+  -> Services/DB access
+  -> Response with clinical context
+```
+
 ## Local Environment Setup
 Refer to the Developer Setup Guide for information on local development environment setup, and general guidance. This document is located at: `docs/guide/developer-setup-guide.md`.
 
