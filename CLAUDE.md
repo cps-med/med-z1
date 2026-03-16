@@ -540,7 +540,7 @@ db/
 ### Code Quality and Testing
 
 The project uses:
-- `pytest` for testing (configured in `pytest.ini` with cache relocated to `.cache/pytest`)
+- `pytest` for testing (configured in `pyproject.toml` under `[tool.pytest.ini_options]` with cache relocated to `.cache/pytest`)
 - `ruff`, `black`, `mypy` for linting and formatting (optional)
 - Docker/Podman for SQL Server, MinIO, PostgreSQL containers
 
@@ -550,7 +550,7 @@ The project uses:
   - **Formal pytest tests:** Use `test_*.py` naming convention for automated tests
   - **Ad-hoc utilities:** Use descriptive names (e.g., `minio_test.py`, `update_vitals_locations.py`)
   - Examples: pytest test suites, MinIO connection tests, manual CCOW vault tests, Parquet file readers, data update utilities
-  - Run tests with: `pytest scripts/` or configure `testpaths = scripts` in `pytest.ini`
+  - Run tests with: `pytest scripts/` or configure `testpaths` in `pyproject.toml` under `[tool.pytest.ini_options]`
 
 ### Security and Privacy
 

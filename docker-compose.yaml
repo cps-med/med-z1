@@ -1,7 +1,7 @@
 # -----------------------------------------------------------
 # Docker Compose File
-# • used by PoP!_OS environemnt
-# • not used by macOS environment (uses Docker Desketop)
+#  - used by linux-based development environment
+#  - not used by macOS environment (uses Docker Desketop)
 # -----------------------------------------------------------
 
 services:
