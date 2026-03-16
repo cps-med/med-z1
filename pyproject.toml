@@ -1,0 +1,87 @@
+# =============================================================================
+# pyproject.toml — med-z1 project configuration
+#
+# This file serves two purposes:
+#   1. Project metadata (informational, not published to PyPI)
+#   2. Tool configuration (pytest, ruff, mypy, coverage, etc.)
+#
+# Dependencies are NOT managed here. See requirements.txt for all pinned
+# runtime and development dependencies.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Build system
+# Minimal declaration enabling `pip install -e .` for clean internal imports.
+# med-z1 is not published to PyPI.
+# Note: med-z1 does not currently need or use: `pip install -e .`
+# -----------------------------------------------------------------------------
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.backends.legacy:build"
+
+# -----------------------------------------------------------------------------
+# Project metadata (PEP 621)
+# Informational only. Does not replace requirements.txt.
+# -----------------------------------------------------------------------------
+[project]
+name = "med-z1"
+version = "0.1.0"
+description = "VA next-generation longitudinal health record viewer"
+readme = "README.md"
+requires-python = ">=3.11"
+# Note: no [project.dependencies] — runtime deps live in requirements.txt
+
+# -----------------------------------------------------------------------------
+# pytest configuration
+# Migrated from pytest.ini (which should be deleted after this file is added).
+# -----------------------------------------------------------------------------
+[tool.pytest.ini_options]
+# Relocate cache directory to keep project root clean
+cache_dir = ".cache/pytest"
+
+# Look for tests in scripts/ directory (consolidated approach per CLAUDE.md)
+testpaths = ["scripts"]
+
+# Uncomment when pytest-asyncio is actively used in tests:
+# asyncio_mode = "auto"
+
+# -----------------------------------------------------------------------------
+# ruff — linter and formatter (future, when linting is adopted)
+# Combines flake8 + isort + pyupgrade + black-compatible formatting.
+# Uncomment and configure when linting is introduced to the project.
+# -----------------------------------------------------------------------------
+# [tool.ruff]
+# line-length = 100
+# target-version = "py311"
+#
+# [tool.ruff.lint]
+# select = ["E", "F", "W", "I"]
+# ignore = []
+#
+# [tool.ruff.lint.per-file-ignores]
+# "scripts/*" = ["E402"]   # Allow imports not at top of file in scripts
+
+# -----------------------------------------------------------------------------
+# mypy — static type checking (future, when type checking is adopted)
+# Uncomment and configure when mypy is introduced to the project.
+# -----------------------------------------------------------------------------
+# [tool.mypy]
+# python_version = "3.11"
+# ignore_missing_imports = true
+# warn_unused_ignores = true
+
+# -----------------------------------------------------------------------------
+# coverage — test coverage reporting (future)
+# Uncomment when coverage reporting is actively used.
+# -----------------------------------------------------------------------------
+# [tool.coverage.run]
+# source = ["app", "ai", "etl", "vista", "ccow"]
+# omit = [
+#     "scripts/*",
+#     ".venv/*",
+#     "mock/*",
+# ]
+#
+# [tool.coverage.report]
+# show_missing = true
+# skip_covered = false
