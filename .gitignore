@@ -60,6 +60,9 @@ tmp/
 temp/
 .tmp/
 
+# Ignore libcurl cookie jar
+cookies_alpha.txt
+
 # Claude Code specific files
 .claude_history
 .claude_session
