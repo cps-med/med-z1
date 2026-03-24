@@ -20,7 +20,7 @@ med-output/sample/
 # Python
 pycache/ *.pyc
 __pycache__/
-.cache/
+.pytest_cache/
 
 #Logs
 *.Log
@@ -64,6 +64,7 @@ temp/
 cookies_alpha.txt
 
 # Claude Code specific files
+.claude/
 .claude_history
 .claude_session
 

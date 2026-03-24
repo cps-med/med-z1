@@ -209,6 +209,9 @@ To deactivate a Python virtual environment:
 deactivate
 ```
 
+**About `pyproject.toml`**
+The project root includes a `pyproject.toml` file that serves as the central configuration file for development tooling. It contains project metadata and configures tools such as pytest (test discovery, cache location), ruff (linting), and mypy (type checking). No action is required with respect to `pyproject.toml` during environment setup — it is automatically read by pytest and other tools when they run. Runtime dependencies are managed separately in `requirements.txt`, not in `pyproject.toml`.
+
 ## Install and Run Docker
 
 The **med-z1** application uses three core services that run within Docker container images:  
@@ -1235,3 +1238,25 @@ uvicorn app.main:app --reload --port 8000
 # Login with: clinician.alpha@va.gov / VaDemo2025!
 # Search for patient by ICN (e.g., ICN100001)
 ```
+
+## Running Tests
+
+Formal pytest test scripts are located in the `test/` folder at the project root. These cover a range of areas including AI agent behavior, API endpoints, data query functions, VistA integration, and conversation memory.
+
+Ensure you are in the project root with the virtual environment activated:
+```bash
+cd ~/swdev/med/med-z1
+source .venv/bin/activate
+```
+
+Run the full test suite:
+```bash
+pytest
+```
+
+pytest is configured in `pyproject.toml` to automatically discover tests in `test/` and store its cache in `test/.pytest_cache/`. You can also run a specific test file directly:
+```bash
+pytest test/test_vitals_trends.py
+```
+
+**Note:** Most tests require the FastAPI application and dependent services (PostgreSQL, VistA simulator) to be running. Check individual test files for their specific runtime prerequisites.

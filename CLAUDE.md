@@ -31,7 +31,8 @@ med-z1/
   db/            # Serving DB DDL, migrations (create when needed)
   docs/          # Architecture, design docs
   lake/          # MinIO/Parquet access configs (create when needed)
-  scripts/       # All testing, debugging, and utility scripts (both ad-hoc and formal tests)
+  test/          # Formal pytest test scripts (test_*.py files)
+  scripts/       # Ad-hoc utilities, data scripts, shell scripts, diagnostic SQL
 ```
 
 ## Common Development Commands
@@ -540,17 +541,16 @@ db/
 ### Code Quality and Testing
 
 The project uses:
-- `pytest` for testing (configured in `pyproject.toml` under `[tool.pytest.ini_options]` with cache relocated to `.cache/pytest`)
+- `pytest` for testing (configured in `pyproject.toml` under `[tool.pytest.ini_options]`; cache stored in `test/.pytest_cache/`)
 - `ruff`, `black`, `mypy` for linting and formatting (optional)
 - Docker/Podman for SQL Server, MinIO, PostgreSQL containers
 
 **Script Organization:**
-- **`scripts/`** - All testing, debugging, and utility scripts (consolidated approach for simplicity)
-  - Place all scripts here, not in project root
-  - **Formal pytest tests:** Use `test_*.py` naming convention for automated tests
-  - **Ad-hoc utilities:** Use descriptive names (e.g., `minio_test.py`, `update_vitals_locations.py`)
-  - Examples: pytest test suites, MinIO connection tests, manual CCOW vault tests, Parquet file readers, data update utilities
-  - Run tests with: `pytest scripts/` or configure `testpaths` in `pyproject.toml` under `[tool.pytest.ini_options]`
+- **`test/`** - All formal pytest test files (`test_*.py`); pytest is configured to discover tests here
+  - Run tests with: `pytest` (uses `testpaths = ["test"]` from `pyproject.toml`)
+- **`scripts/`** - Ad-hoc utilities, data scripts, shell scripts, diagnostic SQL
+  - Use descriptive names (e.g., `minio_test.py`, `update_vitals_locations.py`, `fix_*.py`)
+  - Examples: MinIO connectivity tests, data fix scripts, ETL utilities, mock data generators
 
 ### Security and Privacy
 
