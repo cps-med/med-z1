@@ -42,7 +42,7 @@ This document captures architectural decisions, patterns, and rationale for the 
 │   ┌───────────────┐      ┌───────────────┐                      │
 │   │   CCOW Vault  │      │ VistA Service │                      │
 │   │   (FastAPI)   │◄────►│   (FastAPI)   │                      │
-│   │   Port 8001   │      │   Port 8003   │                      │
+│   │   Port 8002   │      │   Port 8003   │                      │
 │   └───────────────┘      └─────┬─────────┘                      │
 │             ▲ Active           │ T-0                            │
 │             │ Patient          │                                │
@@ -50,7 +50,7 @@ This document captures architectural decisions, patterns, and rationale for the 
 │   ┌──────────────────────────────────┐      ┌───────────────┐   │
 │   │              Web UI              │      │     AI/ML     │   │
 │   │             (FastAPI)            │◄────►│     Tools     │   │
-│   │             Port 8000            │      │  (LangGraph)  │   │
+│   │             Port 8001            │      │  (LangGraph)  │   │
 │   └──────────────────────────────────┘      └───────────────┘   │
 │             ▲                                                   │
 │             │ T-1 and prior                                     │
@@ -77,7 +77,7 @@ This document captures architectural decisions, patterns, and rationale for the 
 ### 2.2 Component Responsibilities
 
 **Web UI (app/):**
-- FastAPI application serving HTML via Jinja2 templates
+- FastAPI application serving HTML via Jinja2 templates (Port 8001)
 - HTMX for dynamic updates without full page reloads
 - Routes organized by function: patient, dashboard, vitals, etc.
 - Queries PostgreSQL serving database for historical data (T-1 and earlier)
@@ -86,7 +86,7 @@ This document captures architectural decisions, patterns, and rationale for the 
 - Invokes AI/ML Tools for clinical insights and decision support
 
 **CCOW Vault (ccow/):**
-- Separate FastAPI service for patient context management (Port 8001)
+- Separate FastAPI service for patient context management (Port 8002)
 - Thread-safe in-memory context storage
 - REST API for get/set/clear active patient
 - Enables context synchronization across applications

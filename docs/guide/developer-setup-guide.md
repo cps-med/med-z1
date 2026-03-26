@@ -61,7 +61,7 @@ git config --global --list
 
 ## Clone med-z1 Repo to Local Dev Machine
 
-Create and CD to the folder where you would like to clone the med-z1 repo, e.g.  
+Create and go to the folder where you would like to clone the med-z1 repo, e.g.  
 ```bash
 mkdir -p ~/swdev/med
 cd ~/swdev/med
@@ -189,7 +189,7 @@ You can list the default "starter" dependencies in your new environment:
 pip list
 ```
 
-Install dependencies
+Install required dependencies:
 ```bash
 pip install -r requirements.txt
 ```
@@ -461,19 +461,20 @@ docker exec -i postgres16 psql -U postgres -d medz1 < db/seeds/auth_users.sql
 
 Verify Mock Users Were Loaded via SQL Query
 ```bash
-docker exec -it postgres16 psql -U postgres -d medz1 -c "SELECT email, display_name, home_site_sta3n, is_active FROM auth.users ORDER BY email;"
+docker exec -it postgres16 psql -U postgres -d medz1 -c \
+"SELECT email, display_name, home_site_sta3n, is_active FROM auth.users ORDER BY email;"
 ```
 
 You can now test the authentication system by logging into the med-z1 application.
 
 Start the FastAPI application using Uvicorn
 ```bash
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload --port 8001
 ```
 
 Start a browser and navigate to
 ```bash
-http://127.0.0.1:8000/
+http://127.0.0.1:8001/
 ```
 You should be redirected to the login page where you can use these credentials
 
@@ -487,13 +488,6 @@ Password: VaDemo2025!
 
 This section explains the AI infrastructure tables within the PostgreSQL `medz1` database. These tables support the AI Clinical Insights feature, specifically enabling **conversation memory** using LangGraph's PostgreSQL checkpointer.
 
-**Purpose:**
-- Enable persistent chat history across page refreshes and login sessions
-- Maintain user-scoped conversation memory (persists across logins)
-- Isolate conversations by user ID + patient ICN
-- Auto-clear history on patient changes (different ICN = new conversation)
-- Manual clear via "Clear Chat History" button
-
 **Note: Auto-Created Tables (No Manual Setup Required)**    
 
 The LangGraph checkpoint tables are **automatically created** when the FastAPI application starts. The `AsyncPostgresSaver.setup()` method in the lifespan handler creates these tables in the `public` schema if they don't exist.
@@ -502,7 +496,7 @@ No manual DDL execution is required, simply start the application:
 
 ```bash
 # Tables are auto-created during application startup
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload --port 8001
 ```
 
 **What happens at startup:**

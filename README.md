@@ -18,7 +18,7 @@ The figure below, from `med-z1/docs/spec/med-z1-architecture.md`, provides a sum
 │   ┌───────────────┐      ┌───────────────┐                      │
 │   │   CCOW Vault  │      │ VistA Service │                      │
 │   │   (FastAPI)   │◄────►│   (FastAPI)   │                      │
-│   │   Port 8001   │      │   Port 8003   │                      │
+│   │   Port 8002   │      │   Port 8003   │                      │
 │   └───────────────┘      └─────┬─────────┘                      │
 │             ▲ Active           │ T-0                            │
 │             │ Patient          │                                │
@@ -26,7 +26,7 @@ The figure below, from `med-z1/docs/spec/med-z1-architecture.md`, provides a sum
 │   ┌──────────────────────────────────┐      ┌───────────────┐   │
 │   │              Web UI              │      │     AI/ML     │   │
 │   │             (FastAPI)            │◄────►│     Tools     │   │
-│   │             Port 8000            │      │  (LangGraph)  │   │
+│   │             Port 8001            │      │  (LangGraph)  │   │
 │   └──────────────────────────────────┘      └───────────────┘   │
 │             ▲                                                   │
 │             │ T-1 and prior                                     │
@@ -89,7 +89,7 @@ docker start sqlserver2019 postgres16 med-insight-minio
 
 #### Tips for Postgres startup and verification
 
-User authorization tables:
+Review the structure and contents of User Authorization tables:
 ```bash
 docker exec -it postgres16 psql -U postgres -d medz1
 \d auth.users
@@ -112,12 +112,20 @@ source .venv/bin/activate
 
 Each of the three services must be running for the med-z1 application to function properly. Given the dependencies between each of the services, I recommend the following starup order:
 ```bash
+# Run these from the project root folder
+
+# VistA realtime overlay service
 uvicorn vista.app.main:app --reload --port 8003
-uvicorn ccow.main:app --reload --port 8001
-uvicorn app.main:app --reload --port 8000
+
+# CCOW context management service
+uvicorn ccow.main:app --reload --port 8002
+
+# Main med-z1 application
+uvicorn app.main:app --reload --port 8001
 ```
 
-Note that the main app uses default port 8000 (the --port 8000 argument is optional).
+These services use assigned ports, as opposed to the default (8000). Therefore, it is important to include the  
+`--port 800x` argument.  
 
 ## Mock Users
 
