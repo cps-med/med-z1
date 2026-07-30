@@ -294,11 +294,12 @@ The med-z1 AI subsystem provides LangGraph-powered clinical decision support via
   - Dedicated `get_clinical_notes_summary()` tool for targeted note queries
   - 500-char note previews for optimal context vs cost balance
 
-**Available AI Tools (4 total):**
+**Available AI Tools (5 total):**
 1. **`check_ddi_risks`** - Drug-drug interaction analysis with severity assessment
 2. **`get_patient_summary`** - Comprehensive patient overview (demographics, meds, vitals, allergies, encounters, recent notes)
 3. **`analyze_vitals_trends`** - Statistical vitals analysis with clinical interpretation
 4. **`get_clinical_notes_summary`** - Query clinical notes with filtering by type and date range ⭐ **NEW (Phase 4)**
+5. **`get_family_history`** - Structured family-history findings with relationship/category filters and first-degree risk callouts ⭐ **NEW (Phase 6)**
 
 **Enabled Query Types:**
 - "What are the key clinical risks for this patient?"
@@ -307,6 +308,7 @@ The med-z1 AI subsystem provides LangGraph-powered clinical decision support via
 - "Show me consult notes from the last 6 months" ⭐ **NEW**
 - "What did the cardiology consult recommend?" ⭐ **NEW**
 - "Summarize recent progress notes" ⭐ **NEW**
+- "Any first-degree family history of cardiac disease?" ⭐ **NEW (Phase 6)**
 
 **Primary Use Cases:**
 - Chart overview summarization with clinical notes context
@@ -314,6 +316,7 @@ The med-z1 AI subsystem provides LangGraph-powered clinical decision support via
 - Patient flag-aware risk narratives
 - Clinical note analysis and synthesis
 - Vital sign trend analysis with statistical significance
+- Family history risk assessment (first-degree relative callouts)
 
 **Technical Stack:**
 - **LLM:** OpenAI GPT-4 Turbo (configured via `config.py`)
@@ -345,6 +348,7 @@ The med-z1 AI subsystem provides LangGraph-powered clinical decision support via
 5. ✅ Allergies - Full implementation (widget + dedicated page)
 6. ✅ Medications - Full implementation (2x1 widget + dedicated page)
 7. ✅ Encounters - Full implementation (1x1 widget + dedicated page with pagination) - **Completed 2025-12-15**
+   - **Key Features:** Multi-source harmonization (VistA + Cerner) via `bronze_cdwwork2_encounters.py`, includes both `INPATIENT` and `OUTPATIENT` encounter types from CDWWork2's `EncMill.Encounter`
 8. ✅ **Clinical Notes** - Full implementation (widget + dedicated page with filtering, 106 notes in PostgreSQL) - **Completed 2026-01-02**
    - **AI Integration:** Phase 4 complete (2026-01-03) - Notes included in AI insights with dedicated query tool
 9. ✅ **Immunizations** - **Full implementation** (1x1 widget + dedicated page with filtering, 138 immunizations + 30 CVX vaccines in PostgreSQL) - **Completed 2026-01-14**
@@ -401,7 +405,7 @@ Sidebar navigation order matches dashboard widget order for consistency.
 
 **UI Implementation Notes:**
 - **Patient Flags**: Modal-only (accessible via topbar "View Flags" button with badge count). No dashboard widget or dedicated page per design decision 2025-12-14.
-- **Encounters**: First domain to implement pagination (ADR-005). Shows inpatient admissions only (outpatient visits deferred to Phase 2). Default page size: 20, supports 10/20/50/100 per page.
+- **Encounters**: First domain to implement pagination (ADR-005). Merges CDWWork (VistA, inpatient only) with CDWWork2 (Cerner, includes `INPATIENT` and `OUTPATIENT` encounter types) via `encounter_type` and `data_source` columns on `clinical.patient_encounters`. Default page size: 20, supports 10/20/50/100 per page.
 - **Laboratory Results**: Recommended as 3x1 full-width widget to display multiple lab panels side-by-side with trend sparklines.
 - **Problems/Diagnoses**: Full page groups problems by ICD-10 category (collapsible sections). Widget shows top 5 active problems with Charlson Comorbidity Index badge. VistA cache auto-merges on page load (fixes cache inconsistency bug from 2026-02-08).
 - **Clinical Tasks**: Uses dedicated router (Pattern B). Modal forms use `onclick="htmx.ajax(...)"` for widget integration due to HTMX attribute processing issues with dynamically loaded content.

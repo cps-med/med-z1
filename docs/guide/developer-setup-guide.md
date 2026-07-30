@@ -469,12 +469,12 @@ You can now test the authentication system by logging into the med-z1 applicatio
 
 Start the FastAPI application using Uvicorn
 ```bash
-uvicorn app.main:app --reload --port 8001
+uvicorn app.main:app --reload --port 8000
 ```
 
 Start a browser and navigate to
 ```bash
-http://127.0.0.1:8001/
+http://127.0.0.1:8000/
 ```
 You should be redirected to the login page where you can use these credentials
 
@@ -496,7 +496,7 @@ No manual DDL execution is required, simply start the application:
 
 ```bash
 # Tables are auto-created during application startup
-uvicorn app.main:app --reload --port 8001
+uvicorn app.main:app --reload --port 8000
 ```
 
 **What happens at startup:**

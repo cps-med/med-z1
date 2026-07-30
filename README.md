@@ -18,7 +18,7 @@ The figure below, from `med-z1/docs/spec/med-z1-architecture.md`, provides a sum
 │   ┌───────────────┐      ┌───────────────┐                      │
 │   │   CCOW Vault  │      │ VistA Service │                      │
 │   │   (FastAPI)   │◄────►│   (FastAPI)   │                      │
-│   │   Port 8002   │      │   Port 8003   │                      │
+│   │   Port 8001   │      │   Port 8003   │                      │
 │   └───────────────┘      └─────┬─────────┘                      │
 │             ▲ Active           │ T-0                            │
 │             │ Patient          │                                │
@@ -26,7 +26,7 @@ The figure below, from `med-z1/docs/spec/med-z1-architecture.md`, provides a sum
 │   ┌──────────────────────────────────┐      ┌───────────────┐   │
 │   │              Web UI              │      │     AI/ML     │   │
 │   │             (FastAPI)            │◄────►│     Tools     │   │
-│   │             Port 8001            │      │  (LangGraph)  │   │
+│   │             Port 8000            │      │  (LangGraph)  │   │
 │   └──────────────────────────────────┘      └───────────────┘   │
 │             ▲                                                   │
 │             │ T-1 and prior                                     │
@@ -118,14 +118,13 @@ Each of the three services must be running for the med-z1 application to functio
 uvicorn vista.app.main:app --reload --port 8003
 
 # CCOW context management service
-uvicorn ccow.main:app --reload --port 8002
+uvicorn ccow.main:app --reload --port 8001
 
 # Main med-z1 application
-uvicorn app.main:app --reload --port 8001
+uvicorn app.main:app --reload --port 8000
 ```
 
-These services use assigned ports, as opposed to the default (8000). Therefore, it is important to include the  
-`--port 800x` argument.  
+The main med-z1 application uses Uvicorn's default port (8000), so `--port` is optional there. CCOW and VistA use non-default ports, so it's important to include the `--port 800x` argument for those two.  
 
 ## Mock Users
 
