@@ -312,7 +312,7 @@ MinIO Setup:
 # Create MinIO container with password
 # Replace placeholder password value with correct value (from .env)
 
-docker run -d --name med-insight-minio \
+docker run -d --name medz1-minio \
   -p 9000:9000 -p 9001:9001 \
   -e MINIO_ROOT_USER=admin \
   -e MINIO_ROOT_PASSWORD=password \
@@ -422,7 +422,7 @@ DROP DATABASE medz1 WITH (FORCE);
 
 ## PostgreSQL User Authentication Setup
 
-This section guides you through setting up the user authentication schema and tables within the PostgreSQL `medz1` database and populating these tables with mock user data. This one-line command uses the PostgreSQL DDL script shown below.
+This section guides you through setting up the medz1 user authentication schema and tables within the PostgreSQL `medz1` database and populating these tables with mock user data. This one-line command uses the PostgreSQL DDL script shown below.
 
 Create Authentication Schema and Tables
 ```bash
@@ -554,7 +554,7 @@ docker exec -it postgres16 psql -U postgres -d medz1 -c "\d public.checkpoint_bl
 
 ## MinIO Setup and Bucket Creation
 
-The med-z1 application uses MinIO as an S3-compatible object storage system for the data lake. The primary file types that will be managed within MinIO are csv and Parquet. MinIO must be properly configured before running ETL pipelines, as the pipelines read and write parquet files to and from MinIO.  
+The med-z1 application uses MinIO as an S3-compatible object storage system for the data lake. The primary file types that will be managed within MinIO are `csv` and `parquet`. MinIO must be properly configured before running ETL pipelines, as the pipelines read and write parquet files to and from MinIO.  
 
 The MinIO service should already be running from the `docker compose up -d` command executed earlier.  
 
@@ -586,10 +586,10 @@ The ETL pipelines expect a bucket named `med-z1` (or name specified in `.env` fi
 
 Create the med-z1 bucket via web console
 ```text
-2. Click "Create Bucket" button
-3. Enter bucket name: med-z1
-4. Click "Create Bucket"
-5. Verify the bucket appears in the bucket list
+1. Click "Create Bucket" button
+2. Enter bucket name: med-z1
+3. Click "Create Bucket"
+4. Verify the bucket appears in the bucket list
 ```
 
 **Test MinIO Connectivity**
@@ -809,7 +809,7 @@ The **med-z1** ETL (Extract, Transform, Load) pipelines transform raw data from 
 Before running ETL pipelines, ensure the following are complete:
 
 - PostgreSQL container running with `medz1` database created
-- PostgreSQL auth schema and tables created (from previous section)
+- PostgreSQL auth schema and tables created, and mock user data loaded (from previous section) — required before seeding `patient_tasks`, which looks up `created_by_user_id`/`completed_by_user_id` by email against `auth.users`
 - MinIO container running with `med-z1` bucket created
 - MinIO connectivity tested successfully (`python -m scripts.minio_test`)
 - SQL Server container running with CDWWork and CDWWork2 databases populated
@@ -868,6 +868,8 @@ Expected output should show **2 tables** in the `reference` schema:
 
 The `clinical.patient_tasks` table supports the Clinical Task Tracking feature. Unlike other clinical domains that use ETL pipelines, this table is populated directly using a seed SQL script.
 
+**Prerequisite:** `db/seeds/auth_users.sql` must already be loaded before running this seed script. `seed_patient_tasks.sql` assigns each task's `created_by_user_id`/`completed_by_user_id` via a lookup against `auth.users.email` (e.g., `clinician.alpha@va.gov`), so those mock user rows must exist first or the inserts will fail with a foreign key violation. See [PostgreSQL User Authentication Setup](#postgresql-user-authentication-setup) earlier in this guide.
+
 **Seed the patient_tasks table with test data:**
 ```bash
 docker exec -i postgres16 psql -U postgres -d medz1 < db/ddl/seed_patient_tasks.sql
@@ -890,6 +892,8 @@ docker exec -it postgres16 psql -U postgres -d medz1 -c "SELECT task_id, patient
 ### Recreating the Patient Tasks Table from Scratch
 
 If you need to completely rebuild the `clinical.patient_tasks` table (for example, to start with a clean slate or after schema changes), follow these steps:
+
+**Prerequisite:** `auth.users` must already contain the mock clinician rows (from `db/seeds/auth_users.sql`) before Step 3, since the seed script resolves each task's creator/completer by email.
 
 **Step 1: Drop the existing table**
 ```bash
@@ -1044,8 +1048,11 @@ python -m etl.load_patient_flags
 #### 7. Encounters (Inpatient) Pipeline
 
 ```bash
-# Bronze: Extract inpatient encounters
+# Bronze: Extract inpatient encounters (CDWWork)
 python -m etl.bronze_inpatient
+
+# Bronze: Extract inpatient encounters (CDWWork2)
+python -m etl.bronze_cdwwork2_encounters
 
 # Silver: Clean and harmonize
 python -m etl.silver_inpatient

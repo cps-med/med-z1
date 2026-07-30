@@ -68,6 +68,11 @@ websockets==15.0.1
 langchain==1.2.0
 langchain-openai==1.1.6
 langgraph==1.0.5
+# Pinned: langgraph-prebuilt>=1.0.9 imports ExecutionInfo/ServerInfo from
+# langgraph.runtime, which doesn't exist until langgraph>=1.2.x. Without this
+# pin, pip resolves the newest 1.0.x prebuilt (still valid per langgraph
+# 1.0.5's own constraint) and breaks the app import on a fresh install.
+langgraph-prebuilt==1.0.8
 openai==2.14.0
 markdown==3.10
 langgraph-checkpoint-postgres==3.0.3

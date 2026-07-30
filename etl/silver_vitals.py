@@ -188,7 +188,7 @@ def transform_cdwwork_vitals(minio_client, sta3n_lookup, patient_icn_lookup):
         df_qualifiers_detail
         .with_columns([
             pl.format(
-                '{"qualifier_type":"{}","qualifier_name":"{}"}',
+                '{{"qualifier_type":"{}","qualifier_name":"{}"}}',
                 pl.col("qualifier_type"),
                 pl.col("qualifier_name")
             ).alias("qualifier_json")

@@ -84,6 +84,7 @@ echo ">>> Running Encounters pipeline..."
 echo "══════════════════════════════════════════════════"
 sleep 2
 python -m etl.bronze_inpatient
+python -m etl.bronze_cdwwork2_encounters
 python -m etl.silver_inpatient
 python -m etl.gold_inpatient
 python -m etl.load_encounters

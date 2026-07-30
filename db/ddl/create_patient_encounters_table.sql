@@ -13,6 +13,7 @@ CREATE TABLE clinical.patient_encounters (
     encounter_id            SERIAL PRIMARY KEY,
     patient_key             VARCHAR(50) NOT NULL,       -- ICN
     inpatient_id            BIGINT NOT NULL UNIQUE,     -- Source InpatientSID
+    encounter_type          VARCHAR(20),                -- INPATIENT or OUTPATIENT
 
     -- Admission details
     admit_datetime          TIMESTAMP NOT NULL,         -- Admission date/time
@@ -49,6 +50,7 @@ CREATE TABLE clinical.patient_encounters (
     facility_name           VARCHAR(100),               -- Facility name (e.g., "Atlanta VA Medical Center")
 
     -- Metadata
+    data_source             VARCHAR(20),                -- Track origin: CDWWork, CDWWork2
     source_system           VARCHAR(50),                -- "CDWWork"
     last_updated            TIMESTAMP DEFAULT NOW()
 );
@@ -85,10 +87,16 @@ CREATE INDEX idx_patient_encounters_admit_location_type
 CREATE INDEX idx_patient_encounters_discharge_location_type
     ON clinical.patient_encounters (discharge_location_type);
 
+-- Index for data source filtering
+CREATE INDEX idx_patient_encounters_data_source
+    ON clinical.patient_encounters (data_source);
+
 -- Comments
 COMMENT ON TABLE clinical.patient_encounters IS 'Patient inpatient encounters (admissions) from Gold layer';
 COMMENT ON COLUMN clinical.patient_encounters.patient_key IS 'Patient ICN (Integrated Care Number)';
 COMMENT ON COLUMN clinical.patient_encounters.inpatient_id IS 'Source InpatientSID from CDWWork';
+COMMENT ON COLUMN clinical.patient_encounters.encounter_type IS 'INPATIENT or OUTPATIENT';
+COMMENT ON COLUMN clinical.patient_encounters.data_source IS 'Data origin: CDWWork (VistA) or CDWWork2 (Cerner)';
 COMMENT ON COLUMN clinical.patient_encounters.is_active IS 'True if patient is currently admitted (no discharge date)';
 COMMENT ON COLUMN clinical.patient_encounters.is_recent IS 'True if admitted or discharged within last 30 days';
 COMMENT ON COLUMN clinical.patient_encounters.is_extended_stay IS 'True if active admission with total_days > 14';

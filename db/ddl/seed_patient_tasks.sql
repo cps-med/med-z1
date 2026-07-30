@@ -29,7 +29,7 @@ INSERT INTO clinical.patient_tasks (
     'Patient discharged 2 days ago from Alexandria VAMC. Need to review discharge medications, ensure no DDIs with current med list, and confirm follow-up cardiology appointment scheduled.',
     'HIGH',
     'IN_PROGRESS',
-    '5dbd2ba1-4b8d-4d0c-a4ea-5a3f9f6969c2',  -- Dr. Anderson
+    (SELECT user_id FROM auth.users WHERE email = 'clinician.alpha@va.gov'),  -- Dr. Anderson
     'Dr. Alice Anderson, MD',
     FALSE,
     NOW() - INTERVAL '1 day'
@@ -46,7 +46,7 @@ INSERT INTO clinical.patient_tasks (
     'Last A1C: 8.2% on 2025-06-15 (8 months ago). Current ADA guidelines recommend A1C every 6 months for uncontrolled diabetes (target <7% for most patients). Patient has active Type 2 diabetes diagnosis.',
     'MEDIUM',
     'TODO',
-    '5dbd2ba1-4b8d-4d0c-a4ea-5a3f9f6969c2',  -- Dr. Anderson
+    (SELECT user_id FROM auth.users WHERE email = 'clinician.alpha@va.gov'),  -- Dr. Anderson
     'Dr. Alice Anderson, MD',
     TRUE,
     'AI Insights: Active diabetes diagnosis + no A1C in past 6 months',
@@ -64,7 +64,7 @@ INSERT INTO clinical.patient_tasks (
     'INR critically elevated at 5.2 (target 2-3 for afib). Patient on warfarin 5mg daily. Assess for bleeding symptoms, hold next dose, recheck INR in 48 hours.',
     'HIGH',
     'TODO',
-    '76bb61c4-8d22-4605-b290-f1a2b757019b',  -- Dr. Brown
+    (SELECT user_id FROM auth.users WHERE email = 'clinician.bravo@va.gov'),  -- Dr. Brown
     'Dr. Bob Brown, DO',
     FALSE,
     NOW() - INTERVAL '3 hours'
@@ -81,7 +81,7 @@ INSERT INTO clinical.patient_tasks (
     'Patient has new-onset systolic murmur on exam. Obtain echo to rule out valvular disease or worsening cardiomyopathy. EF was 40% on last echo 2 years ago.',
     'MEDIUM',
     'TODO',
-    '5dbd2ba1-4b8d-4d0c-a4ea-5a3f9f6969c2',  -- Dr. Anderson
+    (SELECT user_id FROM auth.users WHERE email = 'clinician.alpha@va.gov'),  -- Dr. Anderson
     'Dr. Alice Anderson, MD',
     FALSE,
     NOW() - INTERVAL '6 hours'
@@ -98,7 +98,7 @@ INSERT INTO clinical.patient_tasks (
     'Provide patient with revised CHF handout including daily weight monitoring instructions, dietary sodium limits, and warning signs of decompensation.',
     'LOW',
     'TODO',
-    'a7b8f182-f105-4c97-aaa0-8765e1d6ec3d',  -- Nurse Chen
+    (SELECT user_id FROM auth.users WHERE email = 'clinician.charlie@va.gov'),  -- Nurse Chen
     'Nurse Carol Chen, RN',
     FALSE,
     NOW() - INTERVAL '1 week'
@@ -116,9 +116,9 @@ INSERT INTO clinical.patient_tasks (
     'Cardiologist recommended increasing metoprolol to 100mg BID and adding spironolactone 25mg daily for CHF management. Reviewed and implemented medication changes.',
     'MEDIUM',
     'COMPLETED',
-    '5dbd2ba1-4b8d-4d0c-a4ea-5a3f9f6969c2',  -- Dr. Anderson (creator)
+    (SELECT user_id FROM auth.users WHERE email = 'clinician.alpha@va.gov'),  -- Dr. Anderson (creator)
     'Dr. Alice Anderson, MD',
-    '5dbd2ba1-4b8d-4d0c-a4ea-5a3f9f6969c2',  -- Dr. Anderson (completer)
+    (SELECT user_id FROM auth.users WHERE email = 'clinician.alpha@va.gov'),  -- Dr. Anderson (completer)
     'Dr. Alice Anderson, MD',
     FALSE,
     NOW() - INTERVAL '3 days',
@@ -140,7 +140,7 @@ INSERT INTO clinical.patient_tasks (
     'Patient on warfarin but no INR test in past 30 days. Warfarin requires regular INR monitoring to prevent bleeding/clotting complications. Last INR: 2.8 on 2025-12-15.',
     'HIGH',
     'TODO',
-    '76bb61c4-8d22-4605-b290-f1a2b757019b',  -- Dr. Brown
+    (SELECT user_id FROM auth.users WHERE email = 'clinician.bravo@va.gov'),  -- Dr. Brown
     'Dr. Bob Brown, DO',
     TRUE,
     'AI Insights: Active warfarin prescription + no recent INR',
@@ -158,7 +158,7 @@ INSERT INTO clinical.patient_tasks (
     'Patient presented to ER 3 days ago with chest pain. Rule out MI protocol completed. Need to reconcile medications and ensure patient is on appropriate post-event therapy.',
     'MEDIUM',
     'IN_PROGRESS',
-    'd388af7d-4ac5-438e-ab70-db14ba59081b',  -- Dr. Davis
+    (SELECT user_id FROM auth.users WHERE email = 'clinician.delta@va.gov'),  -- Dr. Davis
     'Dr. David Davis, MD',
     FALSE,
     NOW() - INTERVAL '2 days'
@@ -176,9 +176,9 @@ INSERT INTO clinical.patient_tasks (
     'Patient called pharmacy requesting refill of lisinopril 20mg and metoprolol 50mg. Both due for renewal.',
     'LOW',
     'COMPLETED',
-    '7d3ccf18-b5e8-4513-8178-da6de0839721',  -- Pharmacist Evans (creator)
+    (SELECT user_id FROM auth.users WHERE email = 'clinician.echo@va.gov'),  -- Pharmacist Evans (creator)
     'Pharmacist Emma Evans, PharmD',
-    '7d3ccf18-b5e8-4513-8178-da6de0839721',  -- Pharmacist Evans (completer)
+    (SELECT user_id FROM auth.users WHERE email = 'clinician.echo@va.gov'),  -- Pharmacist Evans (completer)
     'Pharmacist Emma Evans, PharmD',
     FALSE,
     NOW() - INTERVAL '5 hours',
@@ -200,7 +200,7 @@ INSERT INTO clinical.patient_tasks (
     'Lab reported critical hyperkalemia. Patient on ACE inhibitor and spironolactone. Repeat labs ordered stat, nephrology consult placed. Monitor for EKG changes.',
     'HIGH',
     'TODO',
-    '6c84a732-4834-40ed-8c49-3fd8c69df8f6',  -- Dr. Foster
+    (SELECT user_id FROM auth.users WHERE email = 'clinician.foxtrot@va.gov'),  -- Dr. Foster
     'Dr. Frank Foster, MD',
     FALSE,
     NOW() - INTERVAL '30 minutes'
@@ -217,7 +217,7 @@ INSERT INTO clinical.patient_tasks (
     'Patient is 58 years old with family history of colon cancer. Last colonoscopy: 2015 (10 years ago). Current guidelines recommend colonoscopy every 10 years, or every 5 years with family history.',
     'MEDIUM',
     'TODO',
-    '87661185-e2d1-4a1a-ac16-eb7d5ea71de0',  -- Dr. Green
+    (SELECT user_id FROM auth.users WHERE email = 'clinician.golf@va.gov'),  -- Dr. Green
     'Dr. Grace Green, MD',
     TRUE,
     'AI Insights: Age 58 + family history + overdue by 5 years',
@@ -236,9 +236,9 @@ INSERT INTO clinical.patient_tasks (
     'Chest X-ray ordered for chronic cough. Radiology report finalized this morning. Need to review findings and communicate results to patient.',
     'MEDIUM',
     'COMPLETED',
-    '5dbd2ba1-4b8d-4d0c-a4ea-5a3f9f6969c2',  -- Dr. Anderson (creator)
+    (SELECT user_id FROM auth.users WHERE email = 'clinician.alpha@va.gov'),  -- Dr. Anderson (creator)
     'Dr. Alice Anderson, MD',
-    '76bb61c4-8d22-4605-b290-f1a2b757019b',  -- Dr. Brown (completer, team handoff)
+    (SELECT user_id FROM auth.users WHERE email = 'clinician.bravo@va.gov'),  -- Dr. Brown (completer, team handoff)
     'Dr. Bob Brown, DO',
     FALSE,
     NOW() - INTERVAL '8 hours',
@@ -260,7 +260,7 @@ INSERT INTO clinical.patient_tasks (
     'Patient discharged 5 days ago from CHF admission. Discharge summary includes medication changes and 2-week follow-up. Need to review and schedule appointments.',
     'HIGH',
     'TODO',
-    'd388af7d-4ac5-438e-ab70-db14ba59081b',  -- Dr. Davis
+    (SELECT user_id FROM auth.users WHERE email = 'clinician.delta@va.gov'),  -- Dr. Davis
     'Dr. David Davis, MD',
     TRUE,
     'AI Insights: Recent inpatient discharge (5 days ago)',
@@ -278,7 +278,7 @@ INSERT INTO clinical.patient_tasks (
     'Patient''s current inhaler (albuterol) not providing adequate symptom control. Pulmonologist recommended switching to Symbicort. Need to complete prior authorization paperwork.',
     'MEDIUM',
     'IN_PROGRESS',
-    '7d3ccf18-b5e8-4513-8178-da6de0839721',  -- Pharmacist Evans
+    (SELECT user_id FROM auth.users WHERE email = 'clinician.echo@va.gov'),  -- Pharmacist Evans
     'Pharmacist Emma Evans, PharmD',
     FALSE,
     NOW() - INTERVAL '1 day'
@@ -295,7 +295,7 @@ INSERT INTO clinical.patient_tasks (
     'Patient expressed interest in updating healthcare proxy and living will during last visit. Send forms to patient and schedule follow-up discussion.',
     'LOW',
     'TODO',
-    'a7b8f182-f105-4c97-aaa0-8765e1d6ec3d',  -- Nurse Chen
+    (SELECT user_id FROM auth.users WHERE email = 'clinician.charlie@va.gov'),  -- Nurse Chen
     'Nurse Carol Chen, RN',
     FALSE,
     NOW() - INTERVAL '2 weeks'
