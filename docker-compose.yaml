@@ -22,8 +22,8 @@ services:
   # 2. MinIO (S3 Compatible Storage)
   minio:
     image: quay.io/minio/minio
-    container_name: med-insight-minio
-    hostname: med-insight-minio
+    container_name: medz1-minio
+    hostname: medz1-minio
     restart: always
     ports:
       - "9000:9000" # API
